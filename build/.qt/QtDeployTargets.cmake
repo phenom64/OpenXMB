@@ -1,0 +1,2 @@
+set(__QT_DEPLOY_TARGET_XMS_FILE /Users/phenom/Developer/OpenXMB/build/XMS)
+set(__QT_DEPLOY_TARGET_XMS_TYPE EXECUTABLE)

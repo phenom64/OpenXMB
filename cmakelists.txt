@@ -1,0 +1,44 @@
+# CMakeLists.txt for OpenXMB
+#
+# TM & (C) 2025 Syndromatic Ltd. All rights reserved.
+# Designed by Kavish Krishnakumar in Manchester.
+#
+# This project is licensed under the GNU General Public License v3.0.
+
+# Set the minimum required version of CMake.
+cmake_minimum_required(VERSION 3.16)
+
+# Define the project name and specify C++ as the language.
+project(XMS CXX)
+
+# Enforce the C++17 standard for modern language features.
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Find the necessary Qt6 packages on the system.
+find_package(Qt6 COMPONENTS Quick REQUIRED)
+
+# Enable Qt's automatic tools for handling meta-object compilation (moc),
+# user interface compilation (uic), and resource compilation (rcc).
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
+
+# Define a Qt resource file to bundle QML and shaders.
+# This embeds them into the binary for portability.
+qt_add_resources(RESOURCE_FILES resources.qrc)
+
+# Define our executable target.
+# This creates an application named "XMS" from the source files and resources.
+add_executable(XMS
+    src/main.cpp
+    src/WaveItem.cpp
+    src/WaveItem.h
+    ${RESOURCE_FILES}
+)
+
+# Link our executable against the required Qt libraries.
+target_link_libraries(XMS PRIVATE Qt6::Quick)
+
+# Include directories for our custom headers.
+target_include_directories(XMS PRIVATE src)
