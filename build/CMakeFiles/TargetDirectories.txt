@@ -1,0 +1,5 @@
+/Users/phenom/Developer/OpenXMB/build/CMakeFiles/XMS.dir
+/Users/phenom/Developer/OpenXMB/build/CMakeFiles/edit_cache.dir
+/Users/phenom/Developer/OpenXMB/build/CMakeFiles/rebuild_cache.dir
+/Users/phenom/Developer/OpenXMB/build/CMakeFiles/XMS_autogen_timestamp_deps.dir
+/Users/phenom/Developer/OpenXMB/build/CMakeFiles/XMS_autogen.dir
