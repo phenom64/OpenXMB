@@ -7,61 +7,59 @@
 // Adapted from Shadertoy PS3 XMB wave by int_45h.
 #version 450
 
-layout(location = 0) in vec2 fragTexCoord;
-layout(location = 0) out vec4 outColor;
+layout(location = 0) in vec2 vUV;
+layout(location = 0) out vec4 fragColor;
 
 layout(std140, binding = 0) uniform UniformBlock {
   float time;
   float speed;
   float amplitude;
   float frequency;
-  vec4 baseColor;
-  vec4 waveColor;
+  vec4  baseColor;
+  vec4  waveColor;
   float threshold;
   float dustIntensity;
   float minDist;
   float maxDist;
-  int maxDraws;
-  vec2 resolution;
+  int   maxDraws;
+  vec2  resolution;
+  float brightness;
+  float pad;
 } ub;
 
 #define THRESHOLD ub.threshold
-#define MIN_DIST ub.minDist
-#define MAX_DIST ub.maxDist
+#define MIN_DIST  ub.minDist
+#define MAX_DIST  ub.maxDist
 #define MAX_DRAWS ub.maxDraws
 
+// Float-only hash (iq style) to avoid uint literals across all backends.
 float hash12(vec2 p) {
-  uvec2 q = uvec2(ivec2(p)) * uvec2(1597334673U, 3812015801U);
-  uint n = (q.x ^ q.y) * 1597334673U;
-  return float(n) * 2.328306437080797e-10;
+  float h = dot(p, vec2(127.1, 311.7));
+  return fract(sin(h) * 43758.5453123);
 }
 
 float value2d(vec2 p) {
-  vec2 pg = floor(p), pc = p - pg, k = vec2(0, 1);
+  vec2 pg = floor(p), pc = p - pg, k = vec2(0.0, 1.0);
   pc *= pc * pc * (3.0 - 2.0 * pc);
   return mix(
-    mix(hash12(pg + k.xx), hash12(pg + k.yx), pc.x),
-    mix(hash12(pg + k.xy), hash12(pg + k.yy), pc.x),
-    pc.y
-  );
+           mix(hash12(pg + k.xx), hash12(pg + k.yx), pc.x),
+           mix(hash12(pg + k.xy), hash12(pg + k.yy), pc.x),
+           pc.y);
 }
 
 float get_stars_rough(vec2 p) {
   float s = smoothstep(THRESHOLD, 1.0, hash12(p));
-  if (s >= THRESHOLD) {
-    s = pow((s - THRESHOLD) / (1.0 - THRESHOLD), 10.0);
-  }
+  if (s >= THRESHOLD) s = pow((s - THRESHOLD) / (1.0 - THRESHOLD), 10.0);
   return s;
 }
 
 float get_stars(vec2 p, float a, float t) {
-  vec2 pg = floor(p), pc = p - pg, k = vec2(0, 1);
+  vec2 pg = floor(p), pc = p - pg, k = vec2(0.0, 1.0);
   pc *= pc * pc * (3.0 - 2.0 * pc);
   float s = mix(
-    mix(get_stars_rough(pg + k.xx), get_stars_rough(pg + k.yx), pc.x),
-    mix(get_stars_rough(pg + k.xy), get_stars_rough(pg + k.yy), pc.x),
-    pc.y
-  );
+      mix(get_stars_rough(pg + k.xx), get_stars_rough(pg + k.yx), pc.x),
+      mix(get_stars_rough(pg + k.xy), get_stars_rough(pg + k.yy), pc.x),
+      pc.y);
   return smoothstep(a, a + t, s) *
          pow(value2d(p * 0.1 + ub.time) * 0.5 + 0.5, 8.3);
 }
@@ -127,20 +125,19 @@ vec2 raymarch(vec3 o, vec3 d, float omega) {
 }
 
 void main() {
-  vec2 uv = fragTexCoord;
+  vec2 uv = vUV;
   vec3 o = vec3(0);
-  vec3 d =
-      vec3((fragTexCoord - 0.5) *
-               vec2(ub.resolution.x / ub.resolution.y, 1.0),
-           1);
+  vec3 d = vec3((uv - 0.5) * vec2(ub.resolution.x / ub.resolution.y, 1.0), 1.0);
   vec2 mg = raymarch(o, d, 1.2);
   float m = mg.x;
 
   vec3 c = mix(mix(ub.baseColor.rgb, ub.waveColor.rgb, uv.x),
                mix(ub.waveColor.rgb, ub.baseColor.rgb, uv.x), uv.y);
-  c = mix(c, vec3(1.0), m);
 
+  c = mix(c, vec3(1.0), m);
   c += get_dust(uv, vec2(2000.0), mg.y) * 0.3 * ub.dustIntensity;
 
-  outColor = vec4(c, 1.0);
+  c *= clamp(ub.brightness, 0.0, 1.5);
+
+  fragColor = vec4(c, 1.0);
 }

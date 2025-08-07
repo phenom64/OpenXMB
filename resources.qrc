@@ -1,7 +1,8 @@
 <RCC>
   <qresource prefix="/">
     <file>qml/main.qml</file>
-    <file>shaders/WaveShader.vert.spv</file>
-    <file>shaders/WaveShader.frag.spv</file>
+    <file>interfaceFX/AudioServer/NSE.startup.ogg</file>
+    <file>interfaceFX/TypefaceServer/Play-Regular.ttf</file>
+    <file>interfaceFX/TypefaceServer/Play-Bold.ttf</file>
   </qresource>
 </RCC>

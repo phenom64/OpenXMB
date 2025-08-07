@@ -7,45 +7,79 @@
 
 import QtQuick 2.15
 import QtQuick.Window 2.15
+import QtMultimedia 6.5
 import Syndromatic.XMS 1.0
 
 Window {
-    id: root
+  id: root
+  visible: true
+  visibility: Window.FullScreen
+  color: "black"
+
+  WaveItem {
+    id: wave
+    anchors.fill: parent
+    useXmbScheme: true
+    speed: 0.5
+    amplitude: 0.05
+    frequency: 10.0
+    threshold: 0.99
+    dustIntensity: 1.0
+    minDist: 0.13
+    maxDist: 40.0
+    maxDraws: 40
+    brightness: 1.0
+
+    Timer {
+      interval: 16
+      running: true
+      repeat: true
+      onTriggered: {
+        wave.time += 0.01
+        if (wave.time > 1000) wave.time = 0
+        wave.update()
+      }
+    }
+  }
+
+  Audio {
+    id: startup
+    source: "qrc:/interfaceFX/AudioServer/NSE.startup.ogg"
+    loops: 1
+    onStatusChanged: if (status === Audio.Ready) play()
+  }
+
+  Item {
+    id: splash
+    anchors.fill: parent
+    opacity: 0.0
     visible: true
-    color: "black"  // Base color if rendering fails.
 
-    // Fullscreen wave background using custom WaveItem with Vulkan.
-    WaveItem {
-        anchors.fill: parent
-
-        // Properties for animation and customization (mapped to uniforms in the shader).
-        time: 0.0  // Drives the animation.
-        speed: 0.5  // How fast the wave moves.
-        amplitude: 0.05  // Wave height.
-        frequency: 10.0  // Wave density.
-        baseColor: "#000000"  // Dark base.
-        waveColor: "#1A1A1A"  // Subtle grey wave for XMB vibe.
-        threshold: 0.99
-        dustIntensity: 1.0
-        minDist: 0.13
-        maxDist: 40.0
-        maxDraws: 40
-
-        // Animate the time property for continuous motion.
-        Timer {
-            interval: 16  // ~60 FPS.
-            running: true
-            repeat: true
-            onTriggered: {
-                parent.time += 0.01;  // Increment for smooth animation.
-                if (parent.time > 1000) parent.time = 0;  // Loop to prevent overflow.
-            }
-        }
+    Text {
+      id: title
+      text: "Syndromatic Engineering Bharat Britannia"
+      color: "white"
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.verticalCenter: parent.verticalCenter
+      wrapMode: Text.WordWrap
+      horizontalAlignment: Text.AlignHCenter
+      font.family: "Play"
+      font.bold: true
+      font.pixelSize: Math.round(Math.min(root.width, root.height) * 0.06)
+      opacity: splash.opacity
+      layer.enabled: true
+      layer.smooth: true
     }
 
-    // Placeholder for future UI elements (e.g., icons, menus).
-    Item {
-        anchors.fill: parent
-        // Add typography, icons, etc., here later.
+    SequentialAnimation on opacity {
+      id: splashAnim
+      running: true
+      NumberAnimation { from: 0; to: 1; duration: 900; easing.type: Easing.InOutQuad }
+      PauseAnimation { duration: 1400 }
+      NumberAnimation { from: 1; to: 0; duration: 900; easing.type: Easing.InOutQuad }
+      onFinished: splash.visible = false
     }
+  }
+
+  Keys.onPressed: if (event.key === Qt.Key_Escape || event.key === Qt.Key_Q) Qt.quit()
 }
