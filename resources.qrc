@@ -1,6 +1,7 @@
 <RCC>
-    <qresource prefix="/">
-        <file>qml/main.qml</file>
-        <file>shaders/WaveShader.frag</file>
-    </qresource>
+  <qresource prefix="/">
+    <file>qml/main.qml</file>
+    <file>shaders/WaveShader.vert.spv</file>
+    <file>shaders/WaveShader.frag.spv</file>
+  </qresource>
 </RCC>

@@ -7,32 +7,39 @@
 
 import QtQuick 2.15
 import QtQuick.Window 2.15
-import Syndromatic.XMS 1.0 // Import our custom C++ components
+import Syndromatic.XMS 1.0
 
 Window {
     id: root
     visible: true
-    color: "black"
+    color: "black"  // Base color if rendering fails.
 
-    // Use our powerful, custom C++ WaveItem for rendering.
+    // Fullscreen wave background using custom WaveItem with Vulkan.
     WaveItem {
-        id: waveBackground
         anchors.fill: parent
 
-        // Set initial properties for the wave.
-        speed: 0.5
-        amplitude: 0.05
-        frequency: 10.0
-        baseColor: "#000000"
-        waveColor: "#1A1A1A"
+        // Properties for animation and customization (mapped to uniforms in the shader).
+        time: 0.0  // Drives the animation.
+        speed: 0.5  // How fast the wave moves.
+        amplitude: 0.05  // Wave height.
+        frequency: 10.0  // Wave density.
+        baseColor: "#000000"  // Dark base.
+        waveColor: "#1A1A1A"  // Subtle grey wave for XMB vibe.
+        threshold: 0.99
+        dustIntensity: 1.0
+        minDist: 0.13
+        maxDist: 40.0
+        maxDraws: 40
 
-        // Animate the 'time' property for continuous motion.
-        NumberAnimation on time {
-            from: 0
-            to: 3600 // Animate over an hour's worth of seconds
-            duration: 3600 * 1000 // at 1 second per second
-            loops: Animation.Infinite
+        // Animate the time property for continuous motion.
+        Timer {
+            interval: 16  // ~60 FPS.
             running: true
+            repeat: true
+            onTriggered: {
+                parent.time += 0.01;  // Increment for smooth animation.
+                if (parent.time > 1000) parent.time = 0;  // Loop to prevent overflow.
+            }
         }
     }
 

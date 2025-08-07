@@ -8,18 +8,29 @@
 #ifndef WAVEITEM_H
 #define WAVEITEM_H
 
+
 #include <QQuickItem>
-#include <QSGMaterial>
-#include <QSGMaterialShader>
+#include <QSGRendererInterface>
 #include <QSGTexture>
 #include <QSGGeometryNode>
-#include <QOpenGLShaderProgram>
+#include <QFile>
+#include <QByteArray>
+#include <QDebug>
+#include <QVector2D>
+#include <QVector3D>
+#include <QMatrix4x4>
+#include <QColor>
 
-// Forward declarations
-class WaveMaterial;
-class WaveShader;
+// Forward declarations for QRhi types (private Qt headers)
+class QRhi;
+class QRhiCommandBuffer;
+class QRhiGraphicsPipeline;
+class QRhiShaderResourceBindings;
+class QRhiBuffer;
+class QRhiRenderPassDescriptor;
+class QRhiRenderTarget;
 
-// Custom QQuickItem for rendering a GPU-accelerated PS3-style wave shader.
+// Custom QQuickItem for rendering a GPU-accelerated PS3-style wave shader using Vulkan via QRhi.
 class WaveItem : public QQuickItem
 {
     Q_OBJECT
@@ -37,31 +48,39 @@ class WaveItem : public QQuickItem
 
 public:
     explicit WaveItem(QQuickItem *parent = nullptr);
+    ~WaveItem() override;
 
-    // Property getters
     qreal time() const { return m_time; }
-    qreal speed() const { return m_speed; }
-    qreal amplitude() const { return m_amplitude; }
-    qreal frequency() const { return m_frequency; }
-    QColor baseColor() const { return m_baseColor; }
-    QColor waveColor() const { return m_waveColor; }
-    qreal threshold() const { return m_threshold; }
-    qreal dustIntensity() const { return m_dustIntensity; }
-    qreal minDist() const { return m_minDist; }
-    qreal maxDist() const { return m_maxDist; }
-    int maxDraws() const { return m_maxDraws; }
-
-    // Property setters
     void setTime(qreal time);
+
+    qreal speed() const { return m_speed; }
     void setSpeed(qreal speed);
+
+    qreal amplitude() const { return m_amplitude; }
     void setAmplitude(qreal amplitude);
+
+    qreal frequency() const { return m_frequency; }
     void setFrequency(qreal frequency);
+
+    QColor baseColor() const { return m_baseColor; }
     void setBaseColor(const QColor &color);
+
+    QColor waveColor() const { return m_waveColor; }
     void setWaveColor(const QColor &color);
+
+    qreal threshold() const { return m_threshold; }
     void setThreshold(qreal threshold);
+
+    qreal dustIntensity() const { return m_dustIntensity; }
     void setDustIntensity(qreal dustIntensity);
+
+    qreal minDist() const { return m_minDist; }
     void setMinDist(qreal minDist);
+
+    qreal maxDist() const { return m_maxDist; }
     void setMaxDist(qreal maxDist);
+
+    int maxDraws() const { return m_maxDraws; }
     void setMaxDraws(int maxDraws);
 
 signals:
@@ -78,10 +97,24 @@ signals:
     void maxDrawsChanged();
 
 protected:
-    // This is the main entry point for rendering our custom item.
-    QSGNode *updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *data) override;
+    QSGNode *updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *) override;
 
 private:
+    void initializeRhi();
+    void updateUniformBuffer();
+    const char* vertexShader() const;
+    const char* fragmentShader() const;
+    QByteArray loadShaderSource(const QString &path) const;
+
+    QRhi *m_rhi = nullptr;
+    QRhiCommandBuffer *m_cb = nullptr;
+    QRhiGraphicsPipeline *m_pipeline = nullptr;
+    QRhiShaderResourceBindings *m_bindings = nullptr;
+    QRhiBuffer *m_uniformBuffer = nullptr;
+    QRhiBuffer *m_vertexBuffer = nullptr;
+    QRhiRenderPassDescriptor *m_rpDesc = nullptr;
+    QRhiRenderTarget *m_rt = nullptr;
+
     qreal m_time = 0.0;
     qreal m_speed = 0.5;
     qreal m_amplitude = 0.05;
@@ -93,42 +126,8 @@ private:
     qreal m_minDist = 0.13;
     qreal m_maxDist = 40.0;
     int m_maxDraws = 40;
-};
 
-
-// The material defines the state (uniforms) for our shader.
-class WaveMaterial : public QSGMaterial
-{
-public:
-    WaveMaterial();
-    QSGMaterialType *type() const override;
-    QSGMaterialShader *createShader(QSGRendererInterface::RenderMode renderMode) const override;
-    int compare(const QSGMaterial *other) const override;
-
-    // We store all uniform data directly in the material.
-    qreal m_time = 0.0;
-    qreal m_speed = 0.5;
-    qreal m_amplitude = 0.05;
-    qreal m_frequency = 10.0;
-    QColor m_baseColor = QColor("#000000");
-    QColor m_waveColor = QColor("#1A1A1A");
-    qreal m_threshold = 0.99;
-    qreal m_dustIntensity = 1.0;
-    qreal m_minDist = 0.13;
-    qreal m_maxDist = 40.0;
-    int m_maxDraws = 40;
-    QSizeF m_resolution;
-};
-
-
-// The shader class handles compiling and linking the GLSL code.
-class WaveShader : public QSGMaterialShader
-{
-public:
-    WaveShader();
-    bool updateUniformData(RenderState &state, QSGMaterial *newMaterial, QSGMaterial *oldMaterial) override;
-
-
+    bool m_initialized = false;
 };
 
 #endif // WAVEITEM_H
