@@ -8,7 +8,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick Multimedia ShaderTools)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui GuiPrivate Quick Multimedia ShaderTools)
 
 add_executable(XMS
   src/main.cpp
@@ -16,12 +16,10 @@ add_executable(XMS
   src/WaveItem.cpp
   src/XmbColorScheme.h
   src/XmbColorScheme.cpp
+  resources.qrc
 )
 
-# QML, audio, fonts
-qt6_add_resources(XMS resources.qrc)
-
-# Bake Vulkan-friendly shaders to QSB (SPIR-V is embedded for Vulkan)
+# Bake shaders to QSB and embed under /shaders
 qt6_add_shaders(XMS xms_shaders
   PREFIX "/shaders"
   FILES

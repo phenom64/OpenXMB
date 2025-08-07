@@ -5,9 +5,9 @@
 //
 // This file is part of the OpenXMB project, licensed under GPLv3.
 
-import QtQuick 2.15
+import QtQuick
 import QtQuick.Window 2.15
-import QtMultimedia 6.5
+import QtMultimedia
 import Syndromatic.XMS 1.0
 
 Window {
@@ -42,11 +42,15 @@ Window {
     }
   }
 
-  Audio {
+  // Startup sound using MediaPlayer + AudioOutput
+  MediaPlayer {
     id: startup
     source: "qrc:/interfaceFX/AudioServer/NSE.startup.ogg"
-    loops: 1
-    onStatusChanged: if (status === Audio.Ready) play()
+    audioOutput: AudioOutput {
+      id: out
+      volume: 1.0
+    }
+    Component.onCompleted: play()
   }
 
   Item {
