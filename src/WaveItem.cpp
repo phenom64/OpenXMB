@@ -14,6 +14,10 @@
 #include <QtGui>
 #include <rhi/qrhi.h>
 #include <QTimer>
+#include <QCoreApplication>
+#include <QDir>
+#include <QFileInfo>
+#include <QDebug>
 
 // Must match shaders/WaveRhi.frag (std140).
 struct UniformBlock {
@@ -38,15 +42,62 @@ struct Vertex {
   QVector2D uv;
 };
 
-static QShader loadQsb(const QString &path) {
-  QFile f(path);
-  if (!f.open(QIODevice::ReadOnly)) {
-    qFatal("Cannot open shader: %s", qPrintable(path));
+static void dumpQrcTree(const QString &prefix = QStringLiteral(":/")) {
+  QDir d(prefix);
+  qDebug() << "QRC list under" << prefix << ":" << d.entryList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot);
+  if (prefix == QStringLiteral(":/")) {
+    const QString shaders = QStringLiteral(":/shaders");
+    if (QDir(shaders).exists())
+      qDebug() << "QRC /shaders:" << QDir(shaders).entryList(QDir::Files);
   }
-  const QByteArray data = f.readAll();
-  QShader s = QShader::fromSerialized(data);
-  if (!s.isValid()) qFatal("Invalid QSB: %s", qPrintable(path));
-  return s;
+}
+
+static QStringList shaderSearchPaths(const QString &nameWithExt) {
+QStringList paths;
+
+// 1) Embedded resources
+paths << (":/shaders/" + nameWithExt);
+paths << ("qrc:/shaders/" + nameWithExt);
+
+// 2) Dev-time filesystem fallbacks
+const QString exeDir = QCoreApplication::applicationDirPath();
+
+// Case A: running from build/; .qsb are in build/.qsb/shaders
+paths << (QDir(exeDir).filePath("../.qsb/shaders/" + nameWithExt));  // build/XMS -> ../.qsb/shaders
+
+// Case B: some environments place shaders next to the exe
+paths << (QDir(exeDir).filePath("shaders/" + nameWithExt));
+
+// Case C: project root build/.qsb/shaders if running from root
+paths << (QDir(exeDir).filePath(".qsb/shaders/" + nameWithExt));
+
+return paths;
+}
+
+static QShader loadQsb(const QString &qsbFileName) {
+const QStringList candidates = shaderSearchPaths(qsbFileName);
+
+for (const QString &p : candidates) {
+QFile f(p);
+if (f.open(QIODevice::ReadOnly)) {
+const QByteArray data = f.readAll();
+QShader s = QShader::fromSerialized(data);
+if (!s.isValid()) {
+qWarning() << "Invalid QSB:" << p;
+continue;
+}
+qDebug() << "Loaded shader:" << p;
+return s;
+}
+}
+
+// Diagnostics
+qWarning() << "Failed to open shader at any of:" << candidates;
+qWarning() << "QRC root listing:" << QDir(":/").entryList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot);
+qWarning() << "QRC /shaders listing:" << QDir(":/shaders").entryList(QDir::Files);
+
+qFatal("Cannot open shader '%s' from resources or filesystem.", qPrintable(qsbFileName));
+return QShader();
 }
 
 class WaveNode final : public QSGRenderNode {
@@ -97,9 +148,10 @@ public:
     QRhiRenderPassDescriptor *rpDesc = rt->renderPassDescriptor();
     if (!m_inited) init(rhi, rpDesc);
     if (m_rpDesc != rpDesc) {
-      m_rpDesc = rpDesc;
-      m_pipeline->setRenderPassDescriptor(m_rpDesc);
-      if (!m_pipeline->create()) qFatal("Pipeline recreate failed");
+        m_rpDesc = rpDesc;
+        m_pipeline->setRenderPassDescriptor(m_rpDesc);
+        m_pipeline->setShaderResourceBindings(m_srb);  // ensure layout set
+        if (!m_pipeline->create()) qFatal("Pipeline recreate failed");
     }
 
     if (m_sizeDirty) {
@@ -157,8 +209,8 @@ private:
     m_rhi = rhi;
     m_rpDesc = rp;
 
+    // Buffers
     if (!m_vbuf) {
-      // Dynamic so we can write via updateDynamicBuffer
       m_vbuf = m_rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::VertexBuffer,
                                 sizeof(Vertex) * 4);
       if (!m_vbuf->create()) qFatal("Vertex buffer create failed");
@@ -169,9 +221,24 @@ private:
       if (!m_ubuf->create()) qFatal("Uniform buffer create failed");
     }
 
-    if (!m_vs.isValid()) m_vs = loadQsb(":/shaders/WaveRhi.vert.qsb");
-    if (!m_fs.isValid()) m_fs = loadQsb(":/shaders/WaveRhi.frag.qsb");
+    // Shaders
+    if (!m_vs.isValid()) m_vs = loadQsb("WaveRhi.vert.qsb");
+    if (!m_fs.isValid()) m_fs = loadQsb("WaveRhi.frag.qsb");
 
+    // SRB must exist BEFORE pipeline create
+    if (!m_srb) {
+      m_srb = m_rhi->newShaderResourceBindings();
+      m_srb->setBindings({
+          QRhiShaderResourceBinding::uniformBuffer(
+              0,
+              QRhiShaderResourceBinding::VertexStage |
+                  QRhiShaderResourceBinding::FragmentStage,
+              m_ubuf),
+      });
+      if (!m_srb->create()) qFatal("SRB create failed");
+    }
+
+    // Pipeline
     if (!m_pipeline) {
       m_pipeline = m_rhi->newGraphicsPipeline();
 
@@ -195,20 +262,11 @@ private:
       tb.enable = false;
       m_pipeline->setTargetBlends({tb});
 
+      // Important: provide SRB to define the pipeline layout
+      m_pipeline->setShaderResourceBindings(m_srb);
       m_pipeline->setRenderPassDescriptor(m_rpDesc);
-      if (!m_pipeline->create()) qFatal("Pipeline create failed");
-    }
 
-    if (!m_srb) {
-      m_srb = m_rhi->newShaderResourceBindings();
-      m_srb->setBindings({
-          QRhiShaderResourceBinding::uniformBuffer(
-              0,
-              QRhiShaderResourceBinding::VertexStage |
-                  QRhiShaderResourceBinding::FragmentStage,
-              m_ubuf),
-      });
-      if (!m_srb->create()) qFatal("SRB create failed");
+      if (!m_pipeline->create()) qFatal("Pipeline create failed");
     }
 
     m_inited = true;

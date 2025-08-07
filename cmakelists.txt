@@ -16,23 +16,22 @@ add_executable(XMS
   src/WaveItem.cpp
   src/XmbColorScheme.h
   src/XmbColorScheme.cpp
-  resources.qrc
+  resources.qrc               # ensure AUTORCC embeds your qml/audio/fonts
 )
 
-# Bake shaders to QSB and embed under /shaders
-qt6_add_shaders(XMS xms_shaders
-  PREFIX "/shaders"
-  FILES
-    shaders/WaveRhi.vert
-    shaders/WaveRhi.frag
+qt_add_shaders(XMS "xms_shaders"
+PREFIX "/shaders"
+FILES
+shaders/WaveRhi.vert
+shaders/WaveRhi.frag
 )
 
 target_link_libraries(XMS PRIVATE
-  Qt6::Core
-  Qt6::Gui
-  Qt6::GuiPrivate
-  Qt6::Quick
-  Qt6::Multimedia
+Qt6::Core
+Qt6::Gui
+Qt6::GuiPrivate
+Qt6::Quick
+Qt6::Multimedia
 )
 
 target_compile_definitions(XMS PRIVATE QT_NO_KEYWORDS)

@@ -1,5 +1,10 @@
 {
     "files.associations": {
-        "qqmlapplicationengine": "cpp"
+        "qqmlapplicationengine": "cpp",
+        "qfontdatabase": "cpp",
+        "array": "cpp",
+        "string": "cpp",
+        "string_view": "cpp",
+        "vector": "cpp"
     }
 }

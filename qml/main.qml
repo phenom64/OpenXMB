@@ -12,9 +12,16 @@ import Syndromatic.XMS 1.0
 
 Window {
   id: root
-  visible: true
-  visibility: Window.FullScreen
+  // Do not set 'visible' here; C++ will show full screen.
   color: "black"
+
+  // Keys must be on an Item
+  Item {
+    id: keyLayer
+    anchors.fill: parent
+    focus: true
+    Keys.onPressed: if (event.key === Qt.Key_Escape || event.key === Qt.Key_Q) Qt.quit()
+  }
 
   WaveItem {
     id: wave
@@ -42,14 +49,10 @@ Window {
     }
   }
 
-  // Startup sound using MediaPlayer + AudioOutput
   MediaPlayer {
     id: startup
     source: "qrc:/interfaceFX/AudioServer/NSE.startup.ogg"
-    audioOutput: AudioOutput {
-      id: out
-      volume: 1.0
-    }
+    audioOutput: AudioOutput { id: out; volume: 1.0 }
     Component.onCompleted: play()
   }
 
@@ -76,14 +79,11 @@ Window {
     }
 
     SequentialAnimation on opacity {
-      id: splashAnim
       running: true
       NumberAnimation { from: 0; to: 1; duration: 900; easing.type: Easing.InOutQuad }
-      PauseAnimation { duration: 1400 }
+      PauseAnimation { duration: 1800 }
       NumberAnimation { from: 1; to: 0; duration: 900; easing.type: Easing.InOutQuad }
       onFinished: splash.visible = false
     }
   }
-
-  Keys.onPressed: if (event.key === Qt.Key_Escape || event.key === Qt.Key_Q) Qt.quit()
 }
