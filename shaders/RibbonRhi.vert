@@ -1,51 +1,68 @@
 #version 450
 
-layout(location = 0) in vec2 inPos;   // NDC x in [-1,1], dummy y (ignored)
-layout(location = 1) in vec2 inUV;    // uv in [0,1]^2
+layout(location = 0) in vec2 inPosition;  // from WaveItem grid, x in [-1,1], y in [0..1] strip
+layout(location = 1) in vec2 inUV;        // same as above
 
-layout(location = 0) out vec2 vUV;
-layout(location = 1) out float vHeight; // displaced y for crest detection
+layout(location = 0) out VS_OUT {
+    vec2  uv;        // 0..1 across strip
+    float vDist;     // distance from centreline (0 at the mid)
+    float vSlope;    // curve slope for specular hint
+} v;
 
-layout(std140, binding = 0) uniform UniformBlock {
-  float time;
-  float speed;
-  float amplitude;
-  float frequency;
-  vec4  baseColor;
-  vec4  waveColor;
-  float threshold;
-  float dustIntensity;
-  float minDist;
-  float maxDist;
-  int   maxDraws;
-  vec2  resolution;
-  float brightness;
-  float pad;
+layout(std140, binding = 0) uniform RibbonUBO {
+    float time;
+    float speed;
+    float amplitude;   // NDC amplitude, e.g. 0.06..0.12
+    float frequency;   // base angular frequency in clip space
+    vec4  baseColor;   // background tint used for subtle mix
+    vec4  waveColor;   // main ribbon colour
+    float brightness;  // overall brightness multiplier
+    vec2  resolution;  // px; not used here but kept to match UBO
+    float _pad0;       // std140 pad
+    float _pad1;
 } ub;
 
-// Map the ribbon vertically into a comfortable band on screen.
-// You can tweak these to taste (PS3 vibe sits a bit below centre).
-const float bandMin = -0.25;
-const float bandMax =  0.30;
+// Multi‑octave sine curve for a PS3‑ish shape (matches XMBShell flavour)
+float waveY(float x) {
+    float t = ub.time * ub.speed;
+    float f = ub.frequency;
+    return
+        0.55 * sin(x * f * 0.90 + t * 1.20) +
+        0.30 * sin(x * f * 0.50 + t * 0.65) +
+        0.15 * sin(x * f * 1.70 + t * 0.95);
+}
 
-void main() {
-  vUV = inUV;
+float waveYd(float x) {
+    float t = ub.time * ub.speed;
+    float f = ub.frequency;
+    return
+        0.55 * (f * 0.90) * cos(x * f * 0.90 + t * 1.20) +
+        0.30 * (f * 0.50) * cos(x * f * 0.50 + t * 0.65) +
+        0.15 * (f * 1.70) * cos(x * f * 1.70 + t * 0.95);
+}
 
-  float t = ub.time * ub.speed;
+void main(){
+    float x = inPosition.x;             // already in clip space
 
-  // Layered sines (broad + mid + fine) – stable, PS3-ish motion.
-  float w1 = sin(inPos.x * 6.0  + t * 0.80);
-  float w2 = sin(inPos.x * 2.6  + t * 0.35 + inUV.y * 0.8);
-  float w3 = sin(inPos.x * 12.0 + t * 1.40);
+    // Base vertical placement: slightly below centre like XMB
+    float baseY = -0.08;
 
-  // frequency scales the composite “wavelength”; amplitude the height.
-  float disp = (0.55*w1 + 0.30*w2 + 0.15*w3);
-  disp *= ub.amplitude;
-  disp *= clamp(ub.frequency * 0.1, 0.3, 3.0); // tame over/under-frequency
+    // NDC amplitude (WaveItem drives this)
+    float amp = ub.amplitude;           // try 0.08 initially
 
-  // Base vertical placement per-row, then add displacement
-  float y = mix(bandMin, bandMax, inUV.y) + disp;
+    // Curve centreline
+    float centre = baseY + amp * waveY(x);
 
-  vHeight = y;
-  gl_Position = vec4(inPos.x, y, 0.0, 1.0);
+    // Physical thickness of the ribbon in NDC
+    float thickness = clamp(amp * 1.6, 0.02, 0.20);
+
+    // Expand the 0..1 strip around the curve
+    float y = centre + (inUV.y - 0.5) * thickness;
+
+    // Varyings for the fragment shader
+    v.uv    = inUV;
+    v.vDist = abs(inUV.y - 0.5) * (2.0);   // 0 at centre, ~1 at edge
+    v.vSlope= atan(waveYd(x));
+
+    gl_Position = vec4(x, y, 0.0, 1.0);
 }

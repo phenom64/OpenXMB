@@ -4,5 +4,6 @@
     <file>interfaceFX/AudioServer/NSE.startup.ogg</file>
     <file>interfaceFX/TypefaceServer/Play-Regular.ttf</file>
     <file>interfaceFX/TypefaceServer/Play-Bold.ttf</file>
+    <file>interfaceFX/GraphicsServer/dissolve.png</file>
   </qresource>
 </RCC>
