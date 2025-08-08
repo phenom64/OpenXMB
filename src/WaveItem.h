@@ -91,7 +91,7 @@ private:
   qreal m_threshold = 0.99;
   qreal m_dustIntensity = 1.0;
   qreal m_minDist = 0.13;
-  qreal m_maxDist = 40.0;
+  qreal m_maxDist = 120.0;
   int m_maxDraws = 40;
   qreal m_brightness = 1.0;
   bool m_useXmbScheme = true;

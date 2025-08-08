@@ -98,7 +98,7 @@ XmbScheme XmbColorScheme::current(const QDateTime& dt) {
       std::clamp(base.blueF() * 0.7f, 0.0f, 1.0f), 1.0f);
 
   const float br =
-      std::clamp(hourBrightness(dt.time().hour(), dt.time().minute()), 0.0f,
+      std::clamp(hourBrightness(dt.time().hour(), dt.time().minute()), 0.12f,
                  1.2f);
 
   XmbScheme s;

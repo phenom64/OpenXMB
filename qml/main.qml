@@ -26,15 +26,17 @@ Window {
   WaveItem {
     id: wave
     anchors.fill: parent
-    useXmbScheme: true
+    useXmbScheme: false
+    baseColor: "#203a9a"
+    waveColor: "#3a9aff"
     speed: 0.5
-    amplitude: 0.05
+    amplitude: 0.12 //0.05
     frequency: 10.0
     threshold: 0.99
     dustIntensity: 1.0
-    minDist: 0.13
-    maxDist: 40.0
-    maxDraws: 40
+    minDist: 0.10
+    maxDist: 120.0
+    maxDraws: 80
     brightness: 1.0
 
     Timer {
@@ -64,7 +66,7 @@ Window {
 
     Text {
       id: title
-      text: "Syndromatic Engineering Bharat Britannia"
+      text: "Syndromatic Design Engineering"
       color: "white"
       anchors.horizontalCenter: parent.horizontalCenter
       anchors.verticalCenter: parent.verticalCenter
@@ -72,7 +74,7 @@ Window {
       horizontalAlignment: Text.AlignHCenter
       font.family: "Play"
       font.bold: true
-      font.pixelSize: Math.round(Math.min(root.width, root.height) * 0.06)
+      font.pixelSize: Math.round(Math.min(root.width, root.height) * 0.04)
       opacity: splash.opacity
       layer.enabled: true
       layer.smooth: true
@@ -80,8 +82,8 @@ Window {
 
     SequentialAnimation on opacity {
       running: true
-      NumberAnimation { from: 0; to: 1; duration: 900; easing.type: Easing.InOutQuad }
-      PauseAnimation { duration: 1800 }
+      NumberAnimation { from: 0; to: 1; duration: 600; easing.type: Easing.InOutQuad }
+      PauseAnimation { duration: 1600 }
       NumberAnimation { from: 1; to: 0; duration: 900; easing.type: Easing.InOutQuad }
       onFinished: splash.visible = false
     }

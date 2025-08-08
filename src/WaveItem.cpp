@@ -154,12 +154,14 @@ public:
         if (!m_pipeline->create()) qFatal("Pipeline recreate failed");
     }
 
-    if (m_sizeDirty) {
-      m_ub.resolution =
-          QVector2D(float(m_itemSize.width()), float(m_itemSize.height()));
-      m_sizeDirty = false;
-      m_propsDirty = true;
-    }
+    // Use render target pixel size for resolution
+    const QSize ps = rt->pixelSize();
+    // Always set viewport (in pixels)
+    cb->setViewport(QRhiViewport(0.0f, 0.0f, float(ps.width()), float(ps.height())));
+    cb->setScissor(QRhiScissor(0, 0, ps.width(), ps.height()));
+
+    // Keep resolution in pixels for proper aspect
+    m_ub.resolution = QVector2D(float(ps.width()), float(ps.height()));
 
     if (m_schemeDirty && m_autoScheme) {
       const auto s = XmbColorScheme::current(QDateTime::currentDateTime());
@@ -183,8 +185,8 @@ public:
       m_vbufUploaded = true;
     }
     if (m_propsDirty) {
-      rub->updateDynamicBuffer(m_ubuf, 0, sizeof(UniformBlock), &m_ub);
-      m_propsDirty = false;
+        rub->updateDynamicBuffer(m_ubuf, 0, sizeof(UniformBlock), &m_ub);
+        m_propsDirty = false;
     }
     cb->resourceUpdate(rub);
 
@@ -195,10 +197,8 @@ public:
     cb->draw(4);
   }
 
-  // Qt 6.9: State flags are DepthState, StencilState, ScissorState, ColorState, BlendState, CullState, ViewportState
   StateFlags changedStates() const override {
-    return BlendState | CullState | DepthState | StencilState | ScissorState |
-           ViewportState | ColorState;
+    return StateFlags(0); // Let Qt manage state like viewport/scissor/etc.
   }
 
   RenderingFlags flags() const override { return BoundedRectRendering; }

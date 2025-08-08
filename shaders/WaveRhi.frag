@@ -84,13 +84,13 @@ float sdf(vec3 p) {
                 sin(p.z * 0.2 + ub.time * ub.speed) *
                 value2d(vec2(0.03, 0.4) * p.xz +
                         vec2(ub.time * 0.5 * ub.speed, 0));
-  return abs(dot(p, normalize(vec3(0, 1, 0.05))) + 2.5 +
+  return abs(dot(p, normalize(vec3(0, 1, 0.05))) - 2.5 +
              o * 0.5 * ub.amplitude);
 }
 
 vec2 raymarch(vec3 o, vec3 d, float omega) {
   float t = 0.0, a = 0.0;
-  float g = MAX_DIST, dt = 0.0, sl = 0.0, emin = 0.03, ed = emin;
+  float g = MAX_DIST, dt = 0.0, sl = 0.0, emin = 0.04, ed = emin;
   int dr = 0;
   bool hit = false;
 
@@ -110,13 +110,21 @@ vec2 raymarch(vec3 o, vec3 d, float omega) {
     if (dt < MIN_DIST) {
       if (dr > MAX_DRAWS) break;
       dr++;
-      float f = smoothstep(0.09, 0.11, (p.z * 0.9) / 100.0);
+      // approximate plane normal used in sdf()
+      vec3 n = normalize(vec3(0.0, 1.0, 0.05));
+
+      // estimate where this ray would hit the plane if there were no ripples
+      float denom = dot(d, n);
+      float t0    = (-2.5) / max(denom, 1e-3);   // plane offset in your sdf()
+
+      // build a smooth “near-horizon” weight around that point (2.5-unit band)
+      float f = smoothstep(1.5, 0.0, abs(t - t0));
       if (!hit) {
         a = 0.01;
         hit = true;
       }
       ed = 2.0 * max(emin, abs(ndt));
-      a += 0.0135 * f * ub.frequency;
+      a += 0.0135 * f;   // keep alpha growth tied to fade, not frequency
       t += ed;
     }
   }
@@ -137,7 +145,9 @@ void main() {
   c = mix(c, vec3(1.0), m);
   c += get_dust(uv, vec2(2000.0), mg.y) * 0.3 * ub.dustIntensity;
 
-  c *= clamp(ub.brightness, 0.0, 1.5);
+  float b = clamp(ub.brightness, 0.12, 1.5); // never fully black at night
+  b = pow(b, 0.85);                          // gentle lift so dusk isn’t muddy
+  c *= b;
 
   fragColor = vec4(c, 1.0);
 }
