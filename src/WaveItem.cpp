@@ -85,11 +85,11 @@ static QShader loadQsb(const QString &qsbFileName) {
 }
 
 // =====================================================================================
-// Ribbon grid builder (triangle strips with degenerate stitching) — 32-bit indices
+// Ribbon grid builder (triangle strips with degenerate stitching)
 // =====================================================================================
 static void buildRibbonGrid(int cols, int rows,
                             QVector<RibbonVertex> &verts,
-                            QVector<quint32> &idx)
+                            QVector<quint16> &idx)
 {
   cols = qMax(1, cols);
   rows = qMax(1, rows);
@@ -117,20 +117,20 @@ static void buildRibbonGrid(int cols, int rows,
   idx.clear();
   idx.reserve(totalIdx);
 
-  auto vIndex = [cols](int r, int c) -> quint32 {
-    return quint32(r * (cols + 1) + c);
+  auto vIndex = [cols](int r, int c) -> quint16 {
+    return quint16(r * (cols + 1) + c);
   };
 
   for (int r = 0; r < rows; ++r) {
     if (r > 0) {
-      idx.push_back(vIndex(r, 0)); // degenerate (bridge from previous row)
+      idx.push_back(vIndex(r, 0)); // degenerate
     }
     for (int c = 0; c <= cols; ++c) {
       idx.push_back(vIndex(r, c));
       idx.push_back(vIndex(r + 1, c));
     }
     if (r < rows - 1) {
-      idx.push_back(vIndex(r + 1, cols)); // degenerate (bridge to next row)
+      idx.push_back(vIndex(r + 1, cols)); // degenerate
     }
   }
 }
@@ -203,11 +203,11 @@ public:
     if (m_useRibbon && !m_ribbonUploaded) {
       // Build & upload grid once
       QVector<RibbonVertex> verts;
-      QVector<quint32> idx;
+      QVector<quint16> idx;
       buildRibbonGrid(192, 64, verts, idx); // wide & smooth
 
       const quint32 vsize = verts.size() * quint32(sizeof(RibbonVertex));
-      const quint32 isize = idx.size()   * quint32(sizeof(quint32));
+      const quint32 isize = idx.size()   * quint32(sizeof(quint16));
 
       if (!m_vbufRibbon) {
         m_vbufRibbon = m_rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, vsize);
@@ -234,21 +234,18 @@ public:
 
     // Pick pipeline
     bool drew = false;
-    if (m_useRibbon && m_gpRibbon && m_gpRibbonReady &&
-        m_vbufRibbon && m_ibufRibbon && m_ribbonIndexCount >= 3)
-    {
+    if (m_useRibbon && m_gpRibbon && m_gpRibbonReady && m_ribbonUploaded) {
       cb->setGraphicsPipeline(m_gpRibbon);
-      // Use SRB that matches ribbon shader layout
-      cb->setShaderResources(m_srbRibbon ? m_srbRibbon : m_srbWave);
+      cb->setShaderResources(m_srbRibbon);
       const QRhiCommandBuffer::VertexInput v(m_vbufRibbon, 0);
-      cb->setVertexInput(0, 1, &v, m_ibufRibbon, 0, QRhiCommandBuffer::IndexUInt32);
+      cb->setVertexInput(0, 1, &v, m_ibufRibbon, 0, QRhiCommandBuffer::IndexUInt16);
       cb->drawIndexed(m_ribbonIndexCount, 1);
       drew = true;
     }
 
     if (!drew && m_gpQuad && m_gpQuadReady) {
       cb->setGraphicsPipeline(m_gpQuad);
-      cb->setShaderResources(m_srbWave);
+      cb->setShaderResources(m_srbQuad);
       const QRhiCommandBuffer::VertexInput v(m_vbufQuad, 0);
       cb->setVertexInput(0, 1, &v, nullptr);
       cb->draw(4);
@@ -256,7 +253,7 @@ public:
     }
 
     if (!drew) {
-      qWarning() << "WaveNode: nothing drawn (pipelines or buffers missing).";
+      qWarning() << "WaveNode: nothing drawn (pipelines missing).";
     }
   }
 
@@ -265,37 +262,6 @@ public:
   QRectF rect() const override { return QRectF(QPointF(0, 0), m_itemSize); }
 
 private:
-  // inside WaveNode
-  QRhiShaderResourceBindings *makeSrb(bool includeSampler)
-  {
-      auto *srb = m_rhi->newShaderResourceBindings();
-
-      if (includeSampler && m_noiseTex && m_noiseSamp) {
-          srb->setBindings({
-              QRhiShaderResourceBinding::uniformBuffer(
-                  0,
-                  QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage,
-                  m_ubuf),
-              QRhiShaderResourceBinding::sampledTexture(
-                  1,
-                  QRhiShaderResourceBinding::FragmentStage,
-                  m_noiseTex, m_noiseSamp)
-          });
-      } else {
-          srb->setBindings({
-              QRhiShaderResourceBinding::uniformBuffer(
-                  0,
-                  QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage,
-                  m_ubuf)
-          });
-      }
-
-      if (!srb->create())
-          qFatal("SRB create failed");
-      return srb;
-  }
-
-
   void init(QRhi *rhi) {
     m_rhi = rhi;
 
@@ -322,14 +288,12 @@ private:
       if (!m_noiseSamp->create()) qFatal("noise sampler create failed");
     }
     if (!m_noiseTex) {
-      // No special flags needed for uploads on Qt 6.9
       m_noiseTex = m_rhi->newTexture(QRhiTexture::RGBA8, QSize(256, 256), 1);
       if (!m_noiseTex->create()) qFatal("noise texture create failed");
 
       // Load dissolve.png from qrc, fallback to procedural if missing
       QImage img(QStringLiteral("qrc:/interfaceFX/GraphicsServer/dissolve.png"));
       if (img.isNull()) {
-        // quick procedural fallback
         img = QImage(256, 256, QImage::Format_RGBA8888);
         srand(1);
         for (int y = 0; y < 256; ++y) {
@@ -346,22 +310,35 @@ private:
         img = img.convertToFormat(QImage::Format_RGBA8888);
       }
 
-      // Convenience upload: copies the QImage into the texture
       QRhiResourceUpdateBatch *rub = m_rhi->nextResourceUpdateBatch();
-      rub->uploadTexture(m_noiseTex, img); // QRhi copies the data
+      QRhiTextureSubresourceUploadDescription sub(img);
+      QRhiTextureUploadDescription up;
+      up.setEntries({ QRhiTextureUploadEntry(0, 0, sub) });
+      rub->uploadTexture(m_noiseTex, up);
       commandBuffer()->resourceUpdate(rub);
       m_noiseReady = true;
     }
 
-    // SRBs
-    m_srbWave   = makeSrb(true);    // UBO + sampler (wave)
-    m_srbRibbon = makeSrb(false);   // UBO only (ribbon)
-    if (!m_srbRibbon) {
-      // In case ribbon shaders actually have the sampler too, fall back
-      m_srbRibbon = makeSrb(true);
-    }
-    if (!m_srbWave) qFatal("Failed to create wave SRB");
-    // m_srbRibbon can be null if ribbon shaders are absent; we check at draw time.
+    // --- SRBs: split by pipeline layout ---
+    // Wave (quad): UBO@0 + sampler@1
+    m_srbQuad = m_rhi->newShaderResourceBindings();
+    m_srbQuad->setBindings({
+      QRhiShaderResourceBinding::uniformBuffer(
+        0, QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage,
+        m_ubuf),
+      QRhiShaderResourceBinding::sampledTexture(
+        1, QRhiShaderResourceBinding::FragmentStage, m_noiseTex, m_noiseSamp)
+    });
+    if (!m_srbQuad->create()) qFatal("SRB (quad) create failed");
+
+    // Ribbon: UBO@0 only (no sampler)
+    m_srbRibbon = m_rhi->newShaderResourceBindings();
+    m_srbRibbon->setBindings({
+      QRhiShaderResourceBinding::uniformBuffer(
+        0, QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage,
+        m_ubuf)
+    });
+    if (!m_srbRibbon->create()) qFatal("SRB (ribbon) create failed");
 
     m_rpDesc = renderTarget() ? renderTarget()->renderPassDescriptor() : nullptr;
     m_rtSampleCount = renderTarget() ? renderTarget()->sampleCount() : 1;
@@ -373,7 +350,7 @@ private:
   void createPipelines() {
     if (!m_rpDesc) return; // wait until we have a valid renderpass
 
-    // Quad pipeline (fullscreen)
+    // Quad pipeline (fullscreen, additive)
     if (!m_gpQuad && m_vsQuad.isValid() && m_fsQuad.isValid()) {
       m_gpQuad = m_rhi->newGraphicsPipeline();
 
@@ -389,7 +366,15 @@ private:
       m_gpQuad->setTopology(QRhiGraphicsPipeline::TriangleStrip);
       m_gpQuad->setCullMode(QRhiGraphicsPipeline::None);
 
-      QRhiGraphicsPipeline::TargetBlend tb; tb.enable = false; // opaque base
+      // Make the wave visible regardless of background: additive blend
+      QRhiGraphicsPipeline::TargetBlend tb;
+      tb.enable = true;
+      tb.srcColor = QRhiGraphicsPipeline::SrcAlpha;
+      tb.dstColor = QRhiGraphicsPipeline::One;
+      tb.opColor  = QRhiGraphicsPipeline::Add;
+      tb.srcAlpha = QRhiGraphicsPipeline::One;
+      tb.dstAlpha = QRhiGraphicsPipeline::OneMinusSrcAlpha;
+      tb.opAlpha  = QRhiGraphicsPipeline::Add;
       m_gpQuad->setTargetBlends({ tb });
 
       m_gpQuad->setShaderStages({
@@ -397,14 +382,14 @@ private:
         QRhiShaderStage(QRhiShaderStage::Fragment, m_fsQuad),
       });
 
-      m_gpQuad->setShaderResourceBindings(m_srbWave);
+      m_gpQuad->setShaderResourceBindings(m_srbQuad);
       m_gpQuad->setRenderPassDescriptor(m_rpDesc);
 
       if (!m_gpQuad->create()) qFatal("Quad pipeline create failed");
       m_gpQuadReady = true;
     }
 
-    // Ribbon pipeline (if shaders exist)
+    // Ribbon pipeline (alpha blend over base)
     if (!m_gpRibbon && m_vsRibbon.isValid() && m_fsRibbon.isValid()) {
       m_gpRibbon = m_rhi->newGraphicsPipeline();
 
@@ -420,7 +405,6 @@ private:
       m_gpRibbon->setTopology(QRhiGraphicsPipeline::TriangleStrip);
       m_gpRibbon->setCullMode(QRhiGraphicsPipeline::None);
 
-      // Enable alpha blending only for ribbon (so it can glow over base)
       QRhiGraphicsPipeline::TargetBlend tb2;
       tb2.enable = true;
       tb2.srcColor = QRhiGraphicsPipeline::SrcAlpha;
@@ -436,8 +420,7 @@ private:
         QRhiShaderStage(QRhiShaderStage::Fragment, m_fsRibbon),
       });
 
-      // Bind SRB that matches ribbon shaders
-      m_gpRibbon->setShaderResourceBindings(m_srbRibbon ? m_srbRibbon : m_srbWave);
+      m_gpRibbon->setShaderResourceBindings(m_srbRibbon);
       m_gpRibbon->setRenderPassDescriptor(m_rpDesc);
 
       if (!m_gpRibbon->create()) {
@@ -457,8 +440,9 @@ private:
   void release() {
     destroyPipelines();
 
-    if (m_srbWave)   { delete m_srbWave;   m_srbWave = nullptr; }
+    if (m_srbQuad)   { delete m_srbQuad;   m_srbQuad = nullptr; }
     if (m_srbRibbon) { delete m_srbRibbon; m_srbRibbon = nullptr; }
+
     if (m_ubuf)       { delete m_ubuf;       m_ubuf = nullptr; }
     if (m_vbufQuad)   { delete m_vbufQuad;   m_vbufQuad = nullptr; }
     if (m_vbufRibbon) { delete m_vbufRibbon; m_vbufRibbon = nullptr; }
@@ -488,9 +472,8 @@ private:
   bool m_gpRibbonReady = false;
 
   // SRBs & buffers
-  QRhiShaderResourceBindings *m_srbWave = nullptr;   // UBO + sampler
-  QRhiShaderResourceBindings *m_srbRibbon = nullptr; // UBO only (or fallback with sampler)
-
+  QRhiShaderResourceBindings *m_srbQuad = nullptr;   // UBO+sampler (Wave)
+  QRhiShaderResourceBindings *m_srbRibbon = nullptr; // UBO only (Ribbon)
   QRhiBuffer *m_ubuf = nullptr;
 
   QRhiBuffer *m_vbufQuad = nullptr;   // fullscreen quad (dynamic)

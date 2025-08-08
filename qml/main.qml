@@ -29,7 +29,7 @@ Window {
     useRibbon: false
     useXmbScheme: false
     baseColor: "#203a9a"
-    waveColor: "#3a9aff"
+    waveColor: "#ffffff"
     speed: 0.5
     amplitude: 0.12 //0.05
     frequency: 10.0
