@@ -20,11 +20,14 @@ add_executable(XMS
 )
 
 qt_add_shaders(XMS "xms_shaders"
-PREFIX "/shaders"
-FILES
-shaders/WaveRhi.vert
-shaders/WaveRhi.frag
+  PREFIX "/shaders"
+  FILES
+    shaders/WaveRhi.vert
+    shaders/WaveRhi.frag
+    shaders/RibbonRhi.vert
+    shaders/RibbonRhi.frag
 )
+
 
 target_link_libraries(XMS PRIVATE
 Qt6::Core

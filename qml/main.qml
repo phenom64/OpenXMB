@@ -26,6 +26,7 @@ Window {
   WaveItem {
     id: wave
     anchors.fill: parent
+    useRibbon: true
     useXmbScheme: false
     baseColor: "#203a9a"
     waveColor: "#3a9aff"

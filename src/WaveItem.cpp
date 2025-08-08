@@ -19,148 +19,165 @@
 #include <QFileInfo>
 #include <QDebug>
 
-// Must match shaders/WaveRhi.frag (std140).
+// =====================================================================================
+// Uniforms & vertices (must match shaders)
+// =====================================================================================
 struct UniformBlock {
-  float time;
-  float speed;
-  float amplitude;
-  float frequency;
+  float    time;
+  float    speed;
+  float    amplitude;
+  float    frequency;
   QVector4D baseColor;
   QVector4D waveColor;
-  float threshold;
-  float dustIntensity;
-  float minDist;
-  float maxDist;
-  int maxDraws;
-  QVector2D resolution;
-  float brightness;
-  float pad;
+  float    threshold;
+  float    dustIntensity;
+  float    minDist;
+  float    maxDist;
+  int      maxDraws;
+  QVector2D resolution; // pixels
+  float    brightness;
+  float    pad;
 };
 
-struct Vertex {
+struct QuadVertex {
   QVector2D pos;
   QVector2D uv;
 };
 
-static void dumpQrcTree(const QString &prefix = QStringLiteral(":/")) {
-  QDir d(prefix);
-  qDebug() << "QRC list under" << prefix << ":" << d.entryList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot);
-  if (prefix == QStringLiteral(":/")) {
-    const QString shaders = QStringLiteral(":/shaders");
-    if (QDir(shaders).exists())
-      qDebug() << "QRC /shaders:" << QDir(shaders).entryList(QDir::Files);
-  }
-}
+struct RibbonVertex {
+  QVector3D pos; // x,z in [-1..1], y=0 initially
+  QVector2D uv;  // [0..1]
+};
 
+// =====================================================================================
+// QRC helpers + QSB loader
+// =====================================================================================
 static QStringList shaderSearchPaths(const QString &nameWithExt) {
-QStringList paths;
-
-// 1) Embedded resources
-paths << (":/shaders/" + nameWithExt);
-paths << ("qrc:/shaders/" + nameWithExt);
-
-// 2) Dev-time filesystem fallbacks
-const QString exeDir = QCoreApplication::applicationDirPath();
-
-// Case A: running from build/; .qsb are in build/.qsb/shaders
-paths << (QDir(exeDir).filePath("../.qsb/shaders/" + nameWithExt));  // build/XMS -> ../.qsb/shaders
-
-// Case B: some environments place shaders next to the exe
-paths << (QDir(exeDir).filePath("shaders/" + nameWithExt));
-
-// Case C: project root build/.qsb/shaders if running from root
-paths << (QDir(exeDir).filePath(".qsb/shaders/" + nameWithExt));
-
-return paths;
+  QStringList paths;
+  // 1) Embedded resources
+  paths << ("qrc:/shaders/" + nameWithExt);
+  paths << (":/shaders/" + nameWithExt);
+  // 2) Dev-time filesystem fallbacks
+  const QString exeDir = QCoreApplication::applicationDirPath();
+  paths << QDir(exeDir).filePath("../.qsb/shaders/" + nameWithExt); // build tree
+  paths << QDir(exeDir).filePath("shaders/" + nameWithExt);         // side-by-side
+  paths << QDir(exeDir).filePath(".qsb/shaders/" + nameWithExt);    // local .qsb
+  return paths;
 }
 
 static QShader loadQsb(const QString &qsbFileName) {
-const QStringList candidates = shaderSearchPaths(qsbFileName);
-
-for (const QString &p : candidates) {
-QFile f(p);
-if (f.open(QIODevice::ReadOnly)) {
-const QByteArray data = f.readAll();
-QShader s = QShader::fromSerialized(data);
-if (!s.isValid()) {
-qWarning() << "Invalid QSB:" << p;
-continue;
-}
-qDebug() << "Loaded shader:" << p;
-return s;
-}
-}
-
-// Diagnostics
-qWarning() << "Failed to open shader at any of:" << candidates;
-qWarning() << "QRC root listing:" << QDir(":/").entryList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot);
-qWarning() << "QRC /shaders listing:" << QDir(":/shaders").entryList(QDir::Files);
-
-qFatal("Cannot open shader '%s' from resources or filesystem.", qPrintable(qsbFileName));
-return QShader();
+  const QStringList candidates = shaderSearchPaths(qsbFileName);
+  for (const QString &p : candidates) {
+    QFile f(p);
+    if (f.open(QIODevice::ReadOnly)) {
+      const QByteArray data = f.readAll();
+      QShader s = QShader::fromSerialized(data);
+      if (!s.isValid()) {
+        qWarning() << "Invalid QSB:" << p;
+        continue;
+      }
+      qInfo() << "Loaded shader:" << p;
+      return s;
+    }
+  }
+  qWarning() << "Failed to open shader at any of:" << candidates;
+  return QShader();
 }
 
+// =====================================================================================
+// Ribbon grid builder (triangle strips with degenerate stitching)
+// =====================================================================================
+static void buildRibbonGrid(int cols, int rows,
+                            QVector<RibbonVertex> &verts,
+                            QVector<quint16> &idx)
+{
+  cols = qMax(1, cols);
+  rows = qMax(1, rows);
+
+  const int vtxCount = (cols + 1) * (rows + 1);
+  verts.clear();
+  verts.reserve(vtxCount);
+
+  for (int r = 0; r <= rows; ++r) {
+    const float v = float(r) / float(rows);      // 0..1 (vertical)
+    const float z = v * 2.0f - 1.0f;             // -1..1 (depth)
+    for (int c = 0; c <= cols; ++c) {
+      const float u = float(c) / float(cols);    // 0..1 (horizontal)
+      const float x = u * 2.0f - 1.0f;           // -1..1
+      RibbonVertex rv;
+      rv.pos = QVector3D(x, 0.0f, z);
+      rv.uv  = QVector2D(u, v);
+      verts.push_back(rv);
+    }
+  }
+
+  // Indices for triangle strips per row
+  // Each strip covers row r and r+1 across all columns
+  const int stripForRow = (cols + 1) * 2 + 2; // +2 for two degenerate verts between rows
+  const int totalIdx = rows * stripForRow - 2; // last strip doesn't need trailing degenerates
+  idx.clear();
+  idx.reserve(totalIdx);
+
+  auto vIndex = [cols](int r, int c) -> quint16 {
+    return quint16(r * (cols + 1) + c);
+  };
+
+  for (int r = 0; r < rows; ++r) {
+    if (r > 0) {
+      // Degenerate: repeat first vertex of this strip
+      idx.push_back(vIndex(r, 0));
+    }
+    for (int c = 0; c <= cols; ++c) {
+      idx.push_back(vIndex(r, c));
+      idx.push_back(vIndex(r + 1, c));
+    }
+    if (r < rows - 1) {
+      // Degenerate: repeat last vertex of this strip
+      idx.push_back(vIndex(r + 1, cols));
+    }
+  }
+}
+
+// =====================================================================================
+// WaveNode: QRhi on QSGRenderNode
+// =====================================================================================
 class WaveNode final : public QSGRenderNode {
 public:
   explicit WaveNode(QQuickWindow *w) : m_window(w) {
     m_schemeTimer = new QTimer();
     m_schemeTimer->setInterval(30000);
-    QObject::connect(m_schemeTimer, &QTimer::timeout, [this] {
-      m_schemeDirty = true;
-    });
+    QObject::connect(m_schemeTimer, &QTimer::timeout, [this]{ m_schemeDirty = true; });
     m_schemeTimer->start();
   }
+  ~WaveNode() override { release(); delete m_schemeTimer; }
 
-  ~WaveNode() override {
-    release();
-    delete m_schemeTimer;
-  }
+  void setProperties(const UniformBlock &ub) { m_ub = ub; m_propsDirty = true; }
+  void setItemSize(const QSizeF &s) { if (m_itemSize == s) return; m_itemSize = s; }
+  void setAutoScheme(bool on) { if (m_autoScheme == on) return; m_autoScheme = on; m_schemeDirty = true; }
+  void setUseRibbon(bool on) { m_useRibbon = on; }
 
-  void setProperties(const UniformBlock &ub) {
-    m_ub = ub;
-    m_propsDirty = true;
-  }
-
-  void setItemSize(const QSizeF &s) {
-    if (m_itemSize == s) return;
-    m_itemSize = s;
-    m_sizeDirty = true;
-  }
-
-  void setAutoScheme(bool on) {
-    if (m_autoScheme == on) return;
-    m_autoScheme = on;
-    m_schemeDirty = true;
-  }
-
-  void render(const RenderState *state) override {
-    Q_UNUSED(state);
-
-    // Since Qt 6.6+, prefer the direct helpers:
-    // - window()->rhi()
-    // - this->commandBuffer()
-    // - this->renderTarget()
-    QRhi *rhi = m_window->rhi();
+  // QSGRenderNode API
+  void render(const RenderState *) override {
+    QRhi *rhi = m_window ? m_window->rhi() : nullptr;
     QRhiCommandBuffer *cb = commandBuffer();
     QRhiRenderTarget *rt = renderTarget();
     if (!rhi || !cb || !rt) return;
 
-    QRhiRenderPassDescriptor *rpDesc = rt->renderPassDescriptor();
-    if (!m_inited) init(rhi, rpDesc);
-    if (m_rpDesc != rpDesc) {
-        m_rpDesc = rpDesc;
-        m_pipeline->setRenderPassDescriptor(m_rpDesc);
-        m_pipeline->setShaderResourceBindings(m_srb);  // ensure layout set
-        if (!m_pipeline->create()) qFatal("Pipeline recreate failed");
+    if (!m_inited) init(rhi);
+
+    // Recreate pipelines if renderpass or sample count changed
+    if (m_rpDesc != rt->renderPassDescriptor() || m_rtSampleCount != rt->sampleCount()) {
+      m_rpDesc = rt->renderPassDescriptor();
+      m_rtSampleCount = rt->sampleCount();
+      destroyPipelines();
+      createPipelines();
     }
 
-    // Use render target pixel size for resolution
     const QSize ps = rt->pixelSize();
-    // Always set viewport (in pixels)
-    cb->setViewport(QRhiViewport(0.0f, 0.0f, float(ps.width()), float(ps.height())));
+    cb->setViewport(QRhiViewport(0, 0, float(ps.width()), float(ps.height())));
     cb->setScissor(QRhiScissor(0, 0, ps.width(), ps.height()));
 
-    // Keep resolution in pixels for proper aspect
+    // Keep resolution in pixels
     m_ub.resolution = QVector2D(float(ps.width()), float(ps.height()));
 
     if (m_schemeDirty && m_autoScheme) {
@@ -172,154 +189,259 @@ public:
       m_schemeDirty = false;
     }
 
-    // Resource updates
+    // Upload resources
     QRhiResourceUpdateBatch *rub = rhi->nextResourceUpdateBatch();
-    if (!m_vbufUploaded) {
-      const Vertex quad[4] = {
-          {{-1.0f, -1.0f}, {0.0f, 0.0f}},
-          {{-1.0f,  1.0f}, {0.0f, 1.0f}},
-          {{ 1.0f, -1.0f}, {1.0f, 0.0f}},
-          {{ 1.0f,  1.0f}, {1.0f, 1.0f}},
+
+    if (!m_quadUploaded) {
+      const QuadVertex quad[4] = {
+        {{-1.0f, -1.0f}, {0.0f, 0.0f}},
+        {{-1.0f,  1.0f}, {0.0f, 1.0f}},
+        {{ 1.0f, -1.0f}, {1.0f, 0.0f}},
+        {{ 1.0f,  1.0f}, {1.0f, 1.0f}},
       };
-      rub->updateDynamicBuffer(m_vbuf, 0, sizeof(quad), quad);
-      m_vbufUploaded = true;
+      rub->updateDynamicBuffer(m_vbufQuad, 0, sizeof(quad), quad);
+      m_quadUploaded = true;
     }
+
+    if (m_useRibbon && !m_ribbonUploaded) {
+      // Build & upload grid once
+      QVector<RibbonVertex> verts;
+      QVector<quint16> idx;
+      buildRibbonGrid(192, 64, verts, idx); // wide & smooth
+
+      const quint32 vsize = verts.size() * quint32(sizeof(RibbonVertex));
+      const quint32 isize = idx.size()   * quint32(sizeof(quint16));
+
+      if (!m_vbufRibbon) {
+        m_vbufRibbon = m_rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, vsize);
+        if (!m_vbufRibbon->create()) qFatal("Ribbon vertex buffer create failed");
+      }
+      if (!m_ibufRibbon) {
+        m_ibufRibbon = m_rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::IndexBuffer, isize);
+        if (!m_ibufRibbon->create()) qFatal("Ribbon index buffer create failed");
+      }
+
+      rub->uploadStaticBuffer(m_vbufRibbon, 0, vsize, verts.constData());
+      rub->uploadStaticBuffer(m_ibufRibbon, 0, isize, idx.constData());
+
+      m_ribbonIndexCount = idx.size();
+      m_ribbonUploaded = true;
+    }
+
     if (m_propsDirty) {
-        rub->updateDynamicBuffer(m_ubuf, 0, sizeof(UniformBlock), &m_ub);
-        m_propsDirty = false;
+      rub->updateDynamicBuffer(m_ubuf, 0, sizeof(UniformBlock), &m_ub);
+      m_propsDirty = false;
     }
+
     cb->resourceUpdate(rub);
 
-    cb->setGraphicsPipeline(m_pipeline);
-    cb->setShaderResources(m_srb);
-    const QRhiCommandBuffer::VertexInput v(m_vbuf, 0);
-    cb->setVertexInput(0, 1, &v, nullptr);
-    cb->draw(4);
+    // Pick pipeline
+    bool drew = false;
+    if (m_useRibbon && m_gpRibbon && m_gpRibbonReady) {
+      cb->setGraphicsPipeline(m_gpRibbon);
+      cb->setShaderResources(m_srb);
+      const QRhiCommandBuffer::VertexInput v(m_vbufRibbon, 0);
+      cb->setVertexInput(0, 1, &v, m_ibufRibbon, 0, QRhiCommandBuffer::IndexUInt16);
+      cb->drawIndexed(m_ribbonIndexCount, 1);
+      drew = true;
+    }
+
+    if (!drew && m_gpQuad && m_gpQuadReady) {
+      cb->setGraphicsPipeline(m_gpQuad);
+      cb->setShaderResources(m_srb);
+      const QRhiCommandBuffer::VertexInput v(m_vbufQuad, 0);
+      cb->setVertexInput(0, 1, &v, nullptr);
+      cb->draw(4);
+      drew = true;
+    }
+
+    if (!drew) {
+      qWarning() << "WaveNode: nothing drawn (pipelines missing).";
+    }
   }
 
-  StateFlags changedStates() const override {
-    return StateFlags(0); // Let Qt manage state like viewport/scissor/etc.
-  }
-
+  StateFlags changedStates() const override { return StateFlags(0); }
   RenderingFlags flags() const override { return BoundedRectRendering; }
   QRectF rect() const override { return QRectF(QPointF(0, 0), m_itemSize); }
 
 private:
-  void init(QRhi *rhi, QRhiRenderPassDescriptor *rp) {
+  void init(QRhi *rhi) {
     m_rhi = rhi;
-    m_rpDesc = rp;
+    // UB
+    m_ubuf = m_rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, sizeof(UniformBlock));
+    if (!m_ubuf->create()) qFatal("Uniform buffer create failed");
 
-    // Buffers
-    if (!m_vbuf) {
-      m_vbuf = m_rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::VertexBuffer,
-                                sizeof(Vertex) * 4);
-      if (!m_vbuf->create()) qFatal("Vertex buffer create failed");
-    }
-    if (!m_ubuf) {
-      m_ubuf = m_rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer,
-                                sizeof(UniformBlock));
-      if (!m_ubuf->create()) qFatal("Uniform buffer create failed");
-    }
+    // Fullscreen quad VB
+    m_vbufQuad = m_rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::VertexBuffer, sizeof(QuadVertex) * 4);
+    if (!m_vbufQuad->create()) qFatal("Quad vertex buffer create failed");
 
-    // Shaders
-    if (!m_vs.isValid()) m_vs = loadQsb("WaveRhi.vert.qsb");
-    if (!m_fs.isValid()) m_fs = loadQsb("WaveRhi.frag.qsb");
+    // Load shaders (quad is mandatory; ribbon optional)
+    if (!m_vsQuad.isValid()) m_vsQuad = loadQsb("WaveRhi.vert.qsb");
+    if (!m_fsQuad.isValid()) m_fsQuad = loadQsb("WaveRhi.frag.qsb");
 
-    // SRB must exist BEFORE pipeline create
-    if (!m_srb) {
-      m_srb = m_rhi->newShaderResourceBindings();
-      m_srb->setBindings({
-          QRhiShaderResourceBinding::uniformBuffer(
-              0,
-              QRhiShaderResourceBinding::VertexStage |
-                  QRhiShaderResourceBinding::FragmentStage,
-              m_ubuf),
-      });
-      if (!m_srb->create()) qFatal("SRB create failed");
-    }
+    // Optional ribbon pipeline shaders (only if present)
+    m_vsRibbon = loadQsb("RibbonRhi.vert.qsb");
+    m_fsRibbon = loadQsb("RibbonRhi.frag.qsb");
 
-    // Pipeline
-    if (!m_pipeline) {
-      m_pipeline = m_rhi->newGraphicsPipeline();
+    // SRB first (defines pipeline layout)
+    m_srb = m_rhi->newShaderResourceBindings();
+    m_srb->setBindings({
+      QRhiShaderResourceBinding::uniformBuffer(0,
+        QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage,
+        m_ubuf)
+    });
+    if (!m_srb->create()) qFatal("SRB create failed");
 
-      QRhiVertexInputLayout il;
-      il.setBindings({QRhiVertexInputBinding(sizeof(Vertex))});
-      il.setAttributes({
-          QRhiVertexInputAttribute(0, 0, QRhiVertexInputAttribute::Float2, 0),
-          QRhiVertexInputAttribute(0, 1, QRhiVertexInputAttribute::Float2,
-                                   offsetof(Vertex, uv)),
-      });
+    m_rpDesc = renderTarget() ? renderTarget()->renderPassDescriptor() : nullptr;
+    m_rtSampleCount = renderTarget() ? renderTarget()->sampleCount() : 1;
 
-      m_pipeline->setVertexInputLayout(il);
-      m_pipeline->setSampleCount(1);
-      m_pipeline->setTopology(QRhiGraphicsPipeline::TriangleStrip);
-      m_pipeline->setShaderStages({
-          QRhiShaderStage(QRhiShaderStage::Vertex, m_vs),
-          QRhiShaderStage(QRhiShaderStage::Fragment, m_fs),
-      });
-
-      QRhiGraphicsPipeline::TargetBlend tb;
-      tb.enable = false;
-      m_pipeline->setTargetBlends({tb});
-
-      // Important: provide SRB to define the pipeline layout
-      m_pipeline->setShaderResourceBindings(m_srb);
-      m_pipeline->setRenderPassDescriptor(m_rpDesc);
-
-      if (!m_pipeline->create()) qFatal("Pipeline create failed");
-    }
-
+    createPipelines();
     m_inited = true;
   }
 
+  void createPipelines() {
+    // Quad pipeline (fullscreen)
+    if (!m_gpQuad && m_vsQuad.isValid() && m_fsQuad.isValid() && m_rpDesc) {
+      m_gpQuad = m_rhi->newGraphicsPipeline();
+
+      QRhiVertexInputLayout il;
+      il.setBindings({ QRhiVertexInputBinding(sizeof(QuadVertex)) });
+      il.setAttributes({
+        QRhiVertexInputAttribute(0, 0, QRhiVertexInputAttribute::Float2, 0),
+        QRhiVertexInputAttribute(0, 1, QRhiVertexInputAttribute::Float2, offsetof(QuadVertex, uv)),
+      });
+
+      m_gpQuad->setVertexInputLayout(il);
+      m_gpQuad->setSampleCount(m_rtSampleCount);
+      m_gpQuad->setTopology(QRhiGraphicsPipeline::TriangleStrip);
+      m_gpQuad->setCullMode(QRhiGraphicsPipeline::None);
+
+      QRhiGraphicsPipeline::TargetBlend tb; tb.enable = false; // opaque base
+      m_gpQuad->setTargetBlends({ tb });
+
+      m_gpQuad->setShaderStages({
+        QRhiShaderStage(QRhiShaderStage::Vertex,   m_vsQuad),
+        QRhiShaderStage(QRhiShaderStage::Fragment, m_fsQuad),
+      });
+
+      m_gpQuad->setShaderResourceBindings(m_srb);
+      m_gpQuad->setRenderPassDescriptor(m_rpDesc);
+
+      if (!m_gpQuad->create()) qFatal("Quad pipeline create failed");
+      m_gpQuadReady = true;
+    }
+
+    // Ribbon pipeline (if shaders exist)
+    if (!m_gpRibbon && m_vsRibbon.isValid() && m_fsRibbon.isValid() && m_rpDesc) {
+      m_gpRibbon = m_rhi->newGraphicsPipeline();
+
+      QRhiVertexInputLayout il2;
+      il2.setBindings({ QRhiVertexInputBinding(sizeof(RibbonVertex)) });
+      il2.setAttributes({
+        QRhiVertexInputAttribute(0, 0, QRhiVertexInputAttribute::Float3, 0),
+        QRhiVertexInputAttribute(0, 1, QRhiVertexInputAttribute::Float2, offsetof(RibbonVertex, uv)),
+      });
+
+      m_gpRibbon->setVertexInputLayout(il2);
+      m_gpRibbon->setSampleCount(m_rtSampleCount);
+      m_gpRibbon->setTopology(QRhiGraphicsPipeline::TriangleStrip);
+      m_gpRibbon->setCullMode(QRhiGraphicsPipeline::None);
+
+      QRhiGraphicsPipeline::TargetBlend tb2; tb2.enable = false; // start opaque; can enable later
+      m_gpRibbon->setTargetBlends({ tb2 });
+
+      m_gpRibbon->setShaderStages({
+        QRhiShaderStage(QRhiShaderStage::Vertex,   m_vsRibbon),
+        QRhiShaderStage(QRhiShaderStage::Fragment, m_fsRibbon),
+      });
+
+      m_gpRibbon->setShaderResourceBindings(m_srb);
+      m_gpRibbon->setRenderPassDescriptor(m_rpDesc);
+
+      if (!m_gpRibbon->create()) {
+        qWarning() << "Ribbon pipeline create failed; falling back to quad.";
+        delete m_gpRibbon; m_gpRibbon = nullptr; m_gpRibbonReady = false;
+      } else {
+        m_gpRibbonReady = true;
+      }
+    }
+  }
+
+  void destroyPipelines() {
+    if (m_gpQuad)   { delete m_gpQuad;   m_gpQuad = nullptr;   m_gpQuadReady = false; }
+    if (m_gpRibbon) { delete m_gpRibbon; m_gpRibbon = nullptr; m_gpRibbonReady = false; }
+  }
+
   void release() {
-    if (!m_rhi) return;
-    delete m_pipeline;
-    delete m_srb;
-    delete m_ubuf;
-    delete m_vbuf;
-    m_pipeline = nullptr;
-    m_srb = nullptr;
-    m_ubuf = nullptr;
-    m_vbuf = nullptr;
+    destroyPipelines();
+
+    if (m_srb)        { delete m_srb;        m_srb = nullptr; }
+    if (m_ubuf)       { delete m_ubuf;       m_ubuf = nullptr; }
+    if (m_vbufQuad)   { delete m_vbufQuad;   m_vbufQuad = nullptr; }
+    if (m_vbufRibbon) { delete m_vbufRibbon; m_vbufRibbon = nullptr; }
+    if (m_ibufRibbon) { delete m_ibufRibbon; m_ibufRibbon = nullptr; }
+
+    m_quadUploaded = false;
+    m_ribbonUploaded = false;
+
     m_inited = false;
-    m_vbufUploaded = false;
   }
 
 private:
   QQuickWindow *m_window = nullptr;
   QSizeF m_itemSize;
-  QRhi *m_rhi = nullptr;
-  QRhiRenderPassDescriptor *m_rpDesc = nullptr;
 
-  QRhiGraphicsPipeline *m_pipeline = nullptr;
+  // RHI
+  QRhi *m_rhi = nullptr;
+  QRhiRenderPassDescriptor *m_rpDesc = nullptr; // not owned
+  int m_rtSampleCount = 1;
+
+  // Pipelines
+  QRhiGraphicsPipeline *m_gpQuad = nullptr;
+  QRhiGraphicsPipeline *m_gpRibbon = nullptr;
+  bool m_gpQuadReady = false;
+  bool m_gpRibbonReady = false;
+
+  // SRB & buffers
   QRhiShaderResourceBindings *m_srb = nullptr;
-  QRhiBuffer *m_vbuf = nullptr;
   QRhiBuffer *m_ubuf = nullptr;
 
-  QShader m_vs;
-  QShader m_fs;
+  QRhiBuffer *m_vbufQuad = nullptr;   // fullscreen quad (dynamic)
+  bool m_quadUploaded = false;
 
+  QRhiBuffer *m_vbufRibbon = nullptr; // grid (immutable)
+  QRhiBuffer *m_ibufRibbon = nullptr; // indices (immutable)
+  bool m_ribbonUploaded = false;
+  int  m_ribbonIndexCount = 0;
+
+  // Shaders
+  QShader m_vsQuad, m_fsQuad;
+  QShader m_vsRibbon, m_fsRibbon; // optional
+
+  // Uniforms
   UniformBlock m_ub{};
-  bool m_inited = false;
   bool m_propsDirty = true;
-  bool m_sizeDirty = true;
 
-  bool m_vbufUploaded = false;
-
+  // Colour scheme auto-refresh
   bool m_autoScheme = true;
   bool m_schemeDirty = true;
   QTimer *m_schemeTimer = nullptr;
+
+  // Mode
+  bool m_useRibbon = false;
+
+  bool m_inited = false;
 };
 
+// =====================================================================================
+// WaveItem (QQuickItem)
+// =====================================================================================
 WaveItem::WaveItem(QQuickItem *parent) : QQuickItem(parent) {
   setFlag(ItemHasContents, true);
-  connect(this, &QQuickItem::windowChanged, this, [this] {
-    if (window()) window()->setColor(Qt::black);
-  });
+  connect(this, &QQuickItem::windowChanged, this, [this]{ if (window()) window()->setColor(Qt::black); });
 }
 
-WaveItem::~WaveItem() {}
+WaveItem::~WaveItem() = default;
 
 void WaveItem::scheduleUpdate() { update(); }
 
@@ -328,6 +450,7 @@ QSGNode *WaveItem::updatePaintNode(QSGNode *old, UpdatePaintNodeData *) {
   if (!node) node = new WaveNode(window());
 
   node->setAutoScheme(m_useXmbScheme);
+  node->setUseRibbon(m_useRibbon);
 
   if (m_useXmbScheme) {
     const auto s = XmbColorScheme::current(QDateTime::currentDateTime());
@@ -341,10 +464,8 @@ QSGNode *WaveItem::updatePaintNode(QSGNode *old, UpdatePaintNodeData *) {
   ub.speed = float(m_speed);
   ub.amplitude = float(m_amplitude);
   ub.frequency = float(m_frequency);
-  ub.baseColor = QVector4D(m_baseColor.redF(), m_baseColor.greenF(),
-                           m_baseColor.blueF(), 1.0f);
-  ub.waveColor = QVector4D(m_waveColor.redF(), m_waveColor.greenF(),
-                           m_waveColor.blueF(), 1.0f);
+  ub.baseColor = QVector4D(m_baseColor.redF(), m_baseColor.greenF(), m_baseColor.blueF(), 1.0f);
+  ub.waveColor = QVector4D(m_waveColor.redF(), m_waveColor.greenF(), m_waveColor.blueF(), 1.0f);
   ub.threshold = float(m_threshold);
   ub.dustIntensity = float(m_dustIntensity);
   ub.minDist = float(m_minDist);
@@ -376,16 +497,17 @@ void WaveItem::updateXmbScheme() {
 }
 
 // setters (Q_EMIT because QT_NO_KEYWORDS)
-void WaveItem::setTime(qreal v) { if (m_time == v) return; m_time = v; Q_EMIT timeChanged(); scheduleUpdate(); }
-void WaveItem::setSpeed(qreal v) { if (m_speed == v) return; m_speed = v; Q_EMIT speedChanged(); scheduleUpdate(); }
-void WaveItem::setAmplitude(qreal v) { if (m_amplitude == v) return; m_amplitude = v; Q_EMIT amplitudeChanged(); scheduleUpdate(); }
-void WaveItem::setFrequency(qreal v) { if (m_frequency == v) return; m_frequency = v; Q_EMIT frequencyChanged(); scheduleUpdate(); }
+void WaveItem::setTime(qreal v)         { if (m_time == v) return; m_time = v; Q_EMIT timeChanged();         scheduleUpdate(); }
+void WaveItem::setSpeed(qreal v)        { if (m_speed == v) return; m_speed = v; Q_EMIT speedChanged();        scheduleUpdate(); }
+void WaveItem::setAmplitude(qreal v)    { if (m_amplitude == v) return; m_amplitude = v; Q_EMIT amplitudeChanged(); scheduleUpdate(); }
+void WaveItem::setFrequency(qreal v)    { if (m_frequency == v) return; m_frequency = v; Q_EMIT frequencyChanged(); scheduleUpdate(); }
 void WaveItem::setBaseColor(const QColor &c) { if (m_baseColor == c) return; m_baseColor = c; Q_EMIT baseColorChanged(); scheduleUpdate(); }
 void WaveItem::setWaveColor(const QColor &c) { if (m_waveColor == c) return; m_waveColor = c; Q_EMIT waveColorChanged(); scheduleUpdate(); }
-void WaveItem::setThreshold(qreal v) { if (m_threshold == v) return; m_threshold = v; Q_EMIT thresholdChanged(); scheduleUpdate(); }
-void WaveItem::setDustIntensity(qreal v) { if (m_dustIntensity == v) return; m_dustIntensity = v; Q_EMIT dustIntensityChanged(); scheduleUpdate(); }
-void WaveItem::setMinDist(qreal v) { if (m_minDist == v) return; m_minDist = v; Q_EMIT minDistChanged(); scheduleUpdate(); }
-void WaveItem::setMaxDist(qreal v) { if (m_maxDist == v) return; m_maxDist = v; Q_EMIT maxDistChanged(); scheduleUpdate(); }
-void WaveItem::setMaxDraws(int v) { if (m_maxDraws == v) return; m_maxDraws = v; Q_EMIT maxDrawsChanged(); scheduleUpdate(); }
-void WaveItem::setBrightness(qreal v) { if (m_brightness == v) return; m_brightness = v; Q_EMIT brightnessChanged(); scheduleUpdate(); }
-void WaveItem::setUseXmbScheme(bool v) { if (m_useXmbScheme == v) return; m_useXmbScheme = v; Q_EMIT useXmbSchemeChanged(); if (m_useXmbScheme) updateXmbScheme(); scheduleUpdate(); }
+void WaveItem::setThreshold(qreal v)    { if (m_threshold == v) return; m_threshold = v; Q_EMIT thresholdChanged();    scheduleUpdate(); }
+void WaveItem::setDustIntensity(qreal v){ if (m_dustIntensity == v) return; m_dustIntensity = v; Q_EMIT dustIntensityChanged(); scheduleUpdate(); }
+void WaveItem::setMinDist(qreal v)      { if (m_minDist == v) return; m_minDist = v; Q_EMIT minDistChanged();      scheduleUpdate(); }
+void WaveItem::setMaxDist(qreal v)      { if (m_maxDist == v) return; m_maxDist = v; Q_EMIT maxDistChanged();      scheduleUpdate(); }
+void WaveItem::setMaxDraws(int v)       { if (m_maxDraws == v) return; m_maxDraws = v; Q_EMIT maxDrawsChanged();       scheduleUpdate(); }
+void WaveItem::setBrightness(qreal v)   { if (m_brightness == v) return; m_brightness = v; Q_EMIT brightnessChanged();   scheduleUpdate(); }
+void WaveItem::setUseXmbScheme(bool v)  { if (m_useXmbScheme == v) return; m_useXmbScheme = v; Q_EMIT useXmbSchemeChanged(); if (m_useXmbScheme) updateXmbScheme(); scheduleUpdate(); }
+// Note: setUseRibbon(bool) is inline in WaveItem.h – do not duplicate here.

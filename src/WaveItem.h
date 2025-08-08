@@ -26,6 +26,7 @@ class WaveItem : public QQuickItem {
   Q_PROPERTY(int maxDraws READ maxDraws WRITE setMaxDraws NOTIFY maxDrawsChanged)
   Q_PROPERTY(qreal brightness READ brightness WRITE setBrightness NOTIFY brightnessChanged)
   Q_PROPERTY(bool useXmbScheme READ useXmbScheme WRITE setUseXmbScheme NOTIFY useXmbSchemeChanged)
+  Q_PROPERTY(bool useRibbon READ useRibbon WRITE setUseRibbon NOTIFY useRibbonChanged)
 
 public:
   explicit WaveItem(QQuickItem* parent = nullptr);
@@ -44,6 +45,7 @@ public:
   int maxDraws() const { return m_maxDraws; }
   qreal brightness() const { return m_brightness; }
   bool useXmbScheme() const { return m_useXmbScheme; }
+  bool useRibbon() const { return m_useRibbon; }
 
   void setTime(qreal v);
   void setSpeed(qreal v);
@@ -58,6 +60,7 @@ public:
   void setMaxDraws(int v);
   void setBrightness(qreal v);
   void setUseXmbScheme(bool v);
+  void setUseRibbon(bool v) { if (m_useRibbon == v) return; m_useRibbon = v; Q_EMIT useRibbonChanged(); update(); }
 
 Q_SIGNALS:
   void timeChanged();
@@ -73,6 +76,7 @@ Q_SIGNALS:
   void maxDrawsChanged();
   void brightnessChanged();
   void useXmbSchemeChanged();
+  void useRibbonChanged();
 
 protected:
   QSGNode* updatePaintNode(QSGNode* old, UpdatePaintNodeData*) override;
@@ -81,6 +85,7 @@ protected:
 private:
   void scheduleUpdate();
   void updateXmbScheme();
+  bool m_useRibbon = true;              // default to ribbon path
 
   qreal m_time = 0.0;
   qreal m_speed = 0.5;
