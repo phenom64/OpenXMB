@@ -1,75 +1,107 @@
-/*
- * TM & (C) 2025 Syndromatic Ltd. All rights reserved.
- * Designed by Kavish Krishnakumar in Manchester.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at  option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITH ABSOLUTELY NO WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
- */
+#include <iostream>
+#include <thread>
 
-#include <QGuiApplication>
-#include <QFontDatabase>
-#include <QQmlApplicationEngine>
-#include <QQuickWindow>
-#include <QVulkanInstance>
-#include <QSGRendererInterface>
+#include <libintl.h>
 
-#include "WaveItem.h"
+#define SDL_MAIN_HANDLED
+#include <SDL2/SDL.h>
 
-using namespace Qt::StringLiterals;
+import sdl2;
+import spdlog;
+import glibmm;
+import giomm;
+import dreamrender;
+import argparse;
+import xmbshell.app;
+import xmbshell.dbus;
+import xmbshell.config;
 
-static bool initVulkanInstance(QVulkanInstance &inst) {
-  QByteArrayList instExt;
-  instExt << "VK_KHR_portability_enumeration";
-  inst.setExtensions(instExt);
-  return inst.create();
-}
+#undef main
+int main(int argc, char *argv[])
+{
+#ifndef NDEBUG
+    spdlog::set_level(spdlog::level::trace);
+#endif
+    spdlog::cfg::load_env_levels();
 
-int main(int argc, char *argv[]) {
-  QGuiApplication app(argc, argv);
-  app.setApplicationName("OpenXMB");
-  app.setOrganizationName("Syndromatic Ltd");
-  app.setApplicationVersion("0.1.0");
+    argparse::ArgumentParser program("OpenXMB");
+    program.add_argument("--width")
+        .help("Width of the window")
+        .metavar("WIDTH")
+        .scan<'i', int>()
+        .default_value(1280);
+    program.add_argument("--height")
+        .help("Height of the window")
+        .metavar("HEIGHT")
+        .scan<'i', int>()
+        .default_value(800);
+    program.add_argument("--no-fullscreen").flag()
+        .help("Do not start in fullscreen mode");
+    program.add_argument("--background-only").flag()
+        .help("Only render the background");
 
-  QFontDatabase::addApplicationFont("qrc:/interfaceFX/TypefaceServer/Play-Regular.ttf");
-  QFontDatabase::addApplicationFont("qrc:/interfaceFX/TypefaceServer/Play-Bold.ttf");
-  QGuiApplication::setFont(QFont("Play"));
-
-  // Prefer Vulkan; fall back to Metal if not available
-  QQuickWindow::setGraphicsApi(QSGRendererInterface::Vulkan);
-  QVulkanInstance vkInst;
-  const bool vulkanOk = initVulkanInstance(vkInst);
-  if (!vulkanOk) {
-    qWarning("Vulkan instance failed (MoltenVK not available?). Falling back to Metal.");
-    QQuickWindow::setGraphicsApi(QSGRendererInterface::Metal);
-  }
-
-  qmlRegisterType<WaveItem>("Syndromatic.XMS", 1, 0, "WaveItem");
-
-  QQmlApplicationEngine engine;
-  const QUrl url(u"qrc:/qml/main.qml"_s);
-  QObject::connect(&engine, &QQmlApplicationEngine::objectCreated, &app,
-                   [url](QObject *obj, const QUrl &objUrl) {
-                     if (!obj && url == objUrl) QCoreApplication::exit(-1);
-                   }, Qt::QueuedConnection);
-  engine.load(url);
-
-  for (QObject *obj : engine.rootObjects()) {
-    if (auto *win = qobject_cast<QQuickWindow *>(obj)) {
-      if (vulkanOk)
-        win->setVulkanInstance(&vkInst);
-      win->showFullScreen();
+    try {
+        program.parse_args(argc, argv);
     }
-  }
+    catch (const std::exception& err) {
+        std::cerr << err.what() << std::endl;
+        std::cerr << program;
+        std::exit(1);
+    }
 
-  return app.exec();
+    spdlog::info("Welcome to OpenXMB!");
+    std::set_terminate([]() {
+        spdlog::critical("Uncaught exception");
+
+        try {
+            std::rethrow_exception(std::current_exception());
+        } catch(const std::exception& e) {
+            spdlog::critical("Exception: {}", e.what());
+        } catch(...) {
+            spdlog::critical("Unknown exception");
+        }
+
+        std::abort();
+    });
+
+    Gio::init();
+    setlocale(LC_ALL, "");
+    // bindtextdomain("xmbshell", config::CONFIG.locale_directory.string().c_str());
+    // textdomain("xmbshell");
+    Glib::RefPtr<Glib::MainLoop> loop;
+    std::thread main_loop_thread([&loop]() {
+        loop = Glib::MainLoop::create();
+        loop->run();
+    });
+
+    config::CONFIG.load();
+    spdlog::debug("Config loaded");
+
+    SDL_SetMainReady();
+
+    dreamrender::window_config window_config;
+    window_config.name = "OpenXMB";
+    window_config.title = "OpenXMB";
+    window_config.preferredPresentMode = config::CONFIG.preferredPresentMode;
+    window_config.sampleCount = config::CONFIG.sampleCount;
+    window_config.fpsLimit = config::CONFIG.maxFPS;
+    window_config.width = program.get<int>("--width");
+    window_config.height = program.get<int>("--height");
+    window_config.fullscreen = !program.get<bool>("--no-fullscreen");
+
+    dreamrender::window window{window_config};
+    window.init();
+
+    auto* shell = new app::xmbshell(&window);
+    if(program.get<bool>("--background-only")) {
+        shell->set_background_only(true);
+    }
+    window.set_phase(shell, shell, shell);
+
+    window.loop();
+
+    loop->quit();
+    main_loop_thread.join();
+
+    return 0;
 }

@@ -1,40 +1,266 @@
-cmake_minimum_required(VERSION 3.19)
+# cmakelists.txt for the OpenXMB project
+# TM & (C) 2025 Syndromatic Ltd Britannia, Syndromatic Ltd Bharat. All rights reserved.
+# Designed by Kavish Krishnakumar in Manchester.
+# Licensed with the GPLv3, see LICENSE
 
-project(OpenXMB LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.22)
+cmake_policy(SET CMP0097 NEW)
+cmake_policy(SET CMP0144 NEW)
 
-set(CMAKE_CXX_STANDARD 17)
+# ANSI color codes for terminal output
+string(ASCII 27 ESC) 
+set(COLOR_RESET   "${ESC}[0m")
+set(COLOR_CYAN    "${ESC}[36m")
+set(COLOR_YELLOW  "${ESC}[33m")
+
+project(OpenXMB VERSION 1.0 LANGUAGES CXX)
+
+message(STATUS "${COLOR_CYAN}Starting OpenXMB Builder...${COLOR_RESET}")
+message(STATUS "${COLOR_YELLOW}TM & (C) 2025 Syndromatic Ltd Britannia, Syndromatic Ltd Bharat. All rights reserved.${COLOR_RESET}")
+
+# Platform Detection
+if(APPLE)
+  set(PLATFORM_NAME "Mac OS X")
+elseif(WIN32)
+  set(PLATFORM_NAME "Windows")
+elseif(UNIX)
+  if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+    if(EXISTS "/etc/os-release")
+      file(READ "/etc/os-release" OS_RELEASE_CONTENT)
+      string(REGEX MATCH "ID=ubuntu" IS_UBUNTU "${OS_RELEASE_CONTENT}")
+      if(IS_UBUNTU)
+        set(PLATFORM_NAME "SynOS")
+      else()
+        set(PLATFORM_NAME "Linux")
+      endif()
+    else()
+      set(PLATFORM_NAME "Linux")
+    endif()
+  else()
+    set(PLATFORM_NAME "Unix (BSDs)")
+  endif()
+else()
+  set(PLATFORM_NAME "Unknown")
+endif()
+message(STATUS "Running on ${PLATFORM_NAME}")
+
+if(APPLE)
+  list(APPEND CMAKE_PREFIX_PATH "/usr/local")
+  set(FFMPEG_ROOT "/usr/local/opt/ffmpeg")
+  add_compile_options(-isysroot "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk")
+endif()
+if(NOT DEFINED BUILD_VERSION)
+  set(BUILD_VERSION ${PROJECT_VERSION})
+endif()
+message(STATUS "Building version ${BUILD_VERSION}")
+
+set(CMAKE_CXX_SCAN_FOR_MODULES ON)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
+add_compile_options(-fPIC)
+add_compile_options(-Wno-nullability-completeness)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui GuiPrivate Quick Multimedia ShaderTools)
+find_package(glm REQUIRED)
+find_package(Freetype REQUIRED)
+find_package(PkgConfig REQUIRED)
+find_package(Gettext REQUIRED)
+find_package(fmt REQUIRED)
+pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET libavcodec libavformat libavutil libswscale libswresample)
 
-add_executable(XMS
+include(FetchContent)
+
+if(APPLE)
+  find_package(Vulkan REQUIRED)
+endif()
+
+FetchContent_Declare(i18n++
+  GIT_REPOSITORY https://github.com/JnCrMx/i18n-cpp.git
+  GIT_TAG        trunk    #trunk = master branch
+)
+
+if(APPLE)
+  include_directories(/usr/local/include)
+endif()
+
+# We are using our own stable, maintained fork of the rendering engine.
+# This version has a corrected build system that properly uses the latest
+# Vulkan-HPP, resolving all previous dependency and compilation issues.
+set(DREAMS_BUILD_WITH_POSIX_THREADS ON CACHE BOOL "" FORCE)
+
+FetchContent_Declare(dreamrender
+  GIT_REPOSITORY https://github.com/phenom64/AuroreEngine.git
+  GIT_TAG        master
+  OVERRIDE_FIND_PACKAGE
+)
+
+FetchContent_Declare(argparse
+  GIT_REPOSITORY https://github.com/p-ranav/argparse.git
+  GIT_TAG        v3.1
+)
+
+FetchContent_GetProperties(dreamrender)
+if(NOT dreamrender_POPULATED)
+  FetchContent_Populate(dreamrender)
+  add_subdirectory(${dreamrender_SOURCE_DIR} ${dreamrender_BINARY_DIR})
+endif()
+
+set(DREAMS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(DREAMS_FIND_PACKAGES OFF CACHE BOOL "" FORCE)
+
+# For i18n++, we disable the optional tools (plugin, merge tool) and tests
+# by setting these cache variables before FetchContent makes the project available.
+# prevents it from needing dependencies like Clang and fmt blah blah etc.
+set(BUILD_PLUGIN OFF CACHE BOOL "Disable i18n++ Clang plugin" FORCE)
+set(BUILD_MERGE OFF CACHE BOOL "Disable i18n++ merge tool" FORCE)
+set(BUILD_TESTING OFF CACHE BOOL "Disable i18n++ tests" FORCE)
+
+# make both dependencies available. CMake will use the options we just set
+# when it configures i18n++.
+FetchContent_MakeAvailable(i18n++ argparse)
+
+pkg_check_modules(glibmm glibmm-2.68 REQUIRED IMPORTED_TARGET)
+pkg_check_modules(giomm giomm-2.68 REQUIRED IMPORTED_TARGET)
+
+set(SDL_BUILDING_LIBRARY ON CACHE BOOL "" FORCE)
+find_package(SDL2 REQUIRED)
+find_package(SDL2_image REQUIRED)
+find_package(SDL2_mixer REQUIRED)
+
+add_library(glibmmModule STATIC)
+target_sources(glibmmModule PUBLIC FILE_SET CXX_MODULES FILES third_party/glibmm.cppm)
+target_compile_features(glibmmModule PUBLIC cxx_std_20)
+target_link_libraries(glibmmModule PUBLIC PkgConfig::glibmm)
+target_compile_options(glibmmModule PRIVATE -pthread)
+
+add_library(giommModule STATIC)
+target_sources(giommModule PUBLIC FILE_SET CXX_MODULES FILES third_party/giomm.cppm)
+target_compile_features(giommModule PUBLIC cxx_std_20)
+target_link_libraries(giommModule PUBLIC PkgConfig::giomm)
+target_compile_options(giommModule PRIVATE -pthread)
+
+add_library(i18nModule STATIC)
+target_sources(i18nModule PUBLIC FILE_SET CXX_MODULES FILES third_party/i18n.cppm)
+target_compile_features(i18nModule PUBLIC cxx_std_20)
+target_link_libraries(i18nModule PUBLIC i18n::i18n-lib)
+target_compile_options(i18nModule PRIVATE -pthread)
+
+add_library(argparseModule STATIC)
+target_sources(argparseModule PUBLIC FILE_SET CXX_MODULES BASE_DIRS ${argparse_SOURCE_DIR}/module FILES ${argparse_SOURCE_DIR}/module/argparse.cppm)
+target_compile_features(argparseModule PUBLIC cxx_std_23)
+target_link_libraries(argparseModule PUBLIC argparse::argparse)
+target_compile_options(argparseModule PRIVATE -pthread)
+
+set(XMS_SOURCES
+  src/app/xmbshell.cpp
+  src/app/components/choice_overlay.cpp
+  src/app/components/main_menu.cpp
+  src/app/components/message_overlay.cpp
+  src/app/components/news_display.cpp
+  src/app/components/progress_overlay.cpp
+  src/app/layers/blur_layer.cpp
+  src/menu/applications_menu.cpp
+  src/menu/files_menu.cpp
+  src/menu/settings_menu.cpp
+  src/menu/users_menu.cpp
+  src/dbus.cpp
+  src/render/shaders.cpp
+  src/config.cpp
   src/main.cpp
-  src/WaveItem.h
-  src/WaveItem.cpp
-  src/XmbColorScheme.h
-  src/XmbColorScheme.cpp
-  resources.qrc               # ensure AUTORCC embeds your qml/audio/fonts
+  src/utils.cpp
+)
+set(XMS_MODULE_SOURCES
+  src/app/module.cppm
+  src/app/xmbshell.cppm
+  src/app/component.cppm
+  src/app/components/choice_overlay.cppm
+  src/app/components/main_menu.cppm
+  src/app/components/message_overlay.cppm
+  src/app/components/news_display.cppm
+  src/app/components/progress_overlay.cppm
+  src/app/layers/blur_layer.cppm
+  src/config.cppm
+  src/constants.cppm
+  src/dbus.cppm
+  src/menu/applications_menu.cppm
+  src/menu/base.cppm
+  src/menu/files_menu.cppm
+  src/menu/settings_menu.cppm
+  src/menu/users_menu.cppm
+  src/menu/utils.cppm
+  src/programs.cppm
+  src/programs/base_viewer.cppm
+  src/programs/image_viewer.cppm
+  src/programs/text_viewer.cppm
+  src/programs/video_player.cppm
+  src/render/module.cppm
+  src/render/shaders.cppm
+  src/render/components/wave_renderer.cppm
+  src/utils.cppm
+)
+set(XMS_SHADERS
+  shaders/blur.comp
+  shaders/wave.vert
+  shaders/wave.frag
+  shaders/yuv420p_decode.comp
 )
 
-qt_add_shaders(XMS "xms_shaders"
-  PREFIX "/shaders"
-  FILES
-    shaders/WaveRhi.vert
-    shaders/WaveRhi.frag
-    shaders/RibbonRhi.vert
-    shaders/RibbonRhi.frag
+add_executable(XMS ${XMS_SOURCES})
+target_sources(XMS PUBLIC
+  FILE_SET CXX_MODULES
+  BASE_DIRS src
+  FILES ${XMS_MODULE_SOURCES}
 )
 
+target_compile_options(XMS PRIVATE -pthread)
 
-target_link_libraries(XMS PRIVATE
-Qt6::Core
-Qt6::Gui
-Qt6::GuiPrivate
-Qt6::Quick
-Qt6::Multimedia
+target_include_directories(XMS PRIVATE include/ ${FFMPEG_INCLUDE_DIRS})
+if(APPLE)
+  target_include_directories(XMS PRIVATE ${Vulkan_INCLUDE_DIRS})
+endif()
+
+target_compile_options(XMS PRIVATE --embed-dir=${CMAKE_CURRENT_BINARY_DIR}/shaders)
+target_compile_options(XMS PRIVATE --embed-dir=${CMAKE_CURRENT_BINARY_DIR})
+
+target_link_libraries(XMS PRIVATE dreams::dreamrender)
+target_link_libraries(XMS PRIVATE dreams::sdl2Module)
+target_link_libraries(XMS PRIVATE dreams::glmModule)
+target_link_libraries(XMS PRIVATE dreams::VulkanHppModule)
+target_link_libraries(XMS PRIVATE dreams::vmaModule)
+target_link_libraries(XMS PRIVATE dreams::spdlogModule)
+target_link_libraries(XMS PRIVATE Freetype::Freetype)
+target_link_libraries(XMS PRIVATE glibmmModule)
+target_link_libraries(XMS PRIVATE giommModule)
+target_link_libraries(XMS PRIVATE i18nModule)
+target_link_libraries(XMS PRIVATE argparseModule)
+
+target_link_directories(XMS PRIVATE ${FFMPEG_LIBRARY_DIRS})
+
+target_link_libraries(XMS PRIVATE ${FFMPEG_LIBRARIES})
+target_link_libraries(XMS PRIVATE i18n::i18n-lib)
+target_link_libraries(XMS PRIVATE fmt::fmt)
+
+if(APPLE)
+  target_link_libraries(XMS PRIVATE ${Vulkan_LIBRARIES})
+  find_library(ICONV_LIBRARY iconv)
+  if(ICONV_LIBRARY)
+    target_link_libraries(XMS PRIVATE ${ICONV_LIBRARY})
+  endif()
+  target_link_libraries(XMS PRIVATE "-framework CoreVideo -framework Cocoa -framework IOKit -framework Carbon -framework ForceFeedback -framework Metal")
+endif()
+
+if(UNIX AND NOT APPLE)
+  target_link_libraries(XMS PRIVATE dl X11)
+endif()
+
+foreach(shader ${XMS_SHADERS})
+  dreams_add_shader(XMS ${shader})
+endforeach()
+target_include_directories(XMS PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/shaders)
+
+include(GNUInstallDirs)
+
+install(TARGETS XMS
+  RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}/"
+  ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}/"
+  LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}/"
 )
-
-target_compile_definitions(XMS PRIVATE QT_NO_KEYWORDS)

@@ -1,10 +1,10 @@
 #version 450
 
-layout(std140, binding = 0) uniform UniformBlock {
+layout(push_constant) uniform UBO
+{
     vec4 color;
     float time;
-} ub;
-
+} constants;
 layout(location = 0) in vec3 vEC;
 layout(location = 0) out vec4 FragColor;
 
@@ -16,5 +16,5 @@ void main()
     vec3 normal = normalize(cross(x, y));
     float c = 1.0 - dot(normal, vec3(0.0, 0.0, 1.0));
     c = (1.0 - cos(c * c)) / 3.0;
-    FragColor = vec4(c, c, c, 1.0) * ub.color;
+    FragColor = vec4(c, c, c, 1.0) * constants.color;
 }

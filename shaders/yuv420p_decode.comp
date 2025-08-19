@@ -1,0 +1,44 @@
+#version 450
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(binding = 0, rgba8) uniform writeonly image2D outputImage;
+layout(binding = 1, r8) uniform readonly image2D inputImageY;
+layout(binding = 2, r8) uniform readonly image2D inputImageCb;
+layout(binding = 3, r8) uniform readonly image2D inputImageCr;
+
+vec4 toRGB(float y, float cb, float cr)
+{
+    float r = y + 1.402 * (cr - 0.5);
+    float g = y - 0.344136 * (cb - 0.5) - 0.714136 * (cr - 0.5);
+    float b = y + 1.772 * (cb - 0.5);
+
+    return vec4(r, g, b, 1.0);
+}
+
+void conditional_store(ivec2 coord, ivec2 size, vec4 color)
+{
+    if(coord.x < size.x && coord.y < size.y) {
+        imageStore(outputImage, coord, color);
+    } else {
+        imageStore(outputImage, coord, vec4(0.0));
+    }
+}
+
+void main()
+{
+	uvec2 coord = gl_GlobalInvocationID.xy;
+    ivec2 size = imageSize(inputImageY);
+
+    float y00 = imageLoad(inputImageY, ivec2(coord.x*2+0, coord.y*2+0)).r;
+    float y01 = imageLoad(inputImageY, ivec2(coord.x*2+0, coord.y*2+1)).r;
+    float y10 = imageLoad(inputImageY, ivec2(coord.x*2+1, coord.y*2+0)).r;
+    float y11 = imageLoad(inputImageY, ivec2(coord.x*2+1, coord.y*2+1)).r;
+    float cb = imageLoad(inputImageCb, ivec2(coord.x, coord.y)).r;
+    float cr = imageLoad(inputImageCr, ivec2(coord.x, coord.y)).r;
+
+    conditional_store(ivec2(coord.x*2+0, coord.y*2+0), size, toRGB(y00, cb, cr));
+    conditional_store(ivec2(coord.x*2+0, coord.y*2+1), size, toRGB(y01, cb, cr));
+    conditional_store(ivec2(coord.x*2+1, coord.y*2+0), size, toRGB(y10, cb, cr));
+    conditional_store(ivec2(coord.x*2+1, coord.y*2+1), size, toRGB(y11, cb, cr));
+}
