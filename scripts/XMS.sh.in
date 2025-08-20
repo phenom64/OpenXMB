@@ -1,5 +1,8 @@
 #!/bin/sh
 # Launcher script for OpenXMB
 DIR=$(cd "$(dirname "$0")" && pwd)
-export GSETTINGS_SCHEMA_DIR="$DIR/../@SCHEMA_INSTALL_DIR@"
+# Copy the config file if it doesn't exist, so the user has a default.
+if [ ! -f "config.json" ]; then
+    cp "../share/OpenXMB/config.json" "config.json"
+fi
 exec "$DIR/XMS.bin" "$@"

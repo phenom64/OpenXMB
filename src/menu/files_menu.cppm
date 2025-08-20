@@ -5,26 +5,26 @@ module;
 #include <string>
 #include <vector>
 
-export module xmbshell.app:files_menu;
+export module shell.app:files_menu;
 
 import spdlog;
 import glibmm;
 import giomm;
 import dreamrender;
-import xmbshell.config;
-import xmbshell.utils;
+import shell.config;
+import shell.utils;
 import :menu_base;
 import :menu_utils;
 
 namespace app {
-    class xmbshell;
+    class shell;
 }
 
 export namespace menu {
 
 class files_menu : public simple_menu {
     public:
-        files_menu(std::string name, dreamrender::texture&& icon, app::xmbshell* xmb, std::filesystem::path path, dreamrender::resource_loader& loader);
+        files_menu(std::string name, dreamrender::texture&& icon, app::shell* xmb, std::filesystem::path path, dreamrender::resource_loader& loader);
         ~files_menu() override = default;
 
         void on_open() override;
@@ -77,7 +77,7 @@ class files_menu : public simple_menu {
         void reload();
         void resort();
 
-        app::xmbshell* xmb;
+        app::shell* xmb;
         std::filesystem::path path;
         dreamrender::resource_loader& loader;
 
@@ -98,7 +98,7 @@ class files_menu : public simple_menu {
         std::filesystem::path old_selected_item;
         // This is extremely hacky, but it works for now.
         std::shared_ptr<bool> exists_flag = std::make_shared<bool>(true);
-        friend bool cut_file(app::xmbshell* xmb, std::weak_ptr<void> exists, files_menu* ptr, const std::filesystem::path& src, const std::filesystem::path& dst);
+        friend bool cut_file(app::shell* xmb, std::weak_ptr<void> exists, files_menu* ptr, const std::filesystem::path& src, const std::filesystem::path& dst);
 };
 
 }

@@ -5,13 +5,13 @@ module;
 #include <string>
 #include <vector>
 
-export module xmbshell.app:choice_overlay;
+export module shell.app:choice_overlay;
 
 import dreamrender;
 import sdl2;
 import vulkan_hpp;
 import vma;
-import xmbshell.utils;
+import shell.utils;
 import :component;
 
 namespace app {
@@ -23,7 +23,7 @@ export class choice_overlay : public component, public action_receiver {
             std::function<void()> cancel_callback = [](){}
         );
 
-        void render(dreamrender::gui_renderer& renderer, class xmbshell* xmb) override;
+        void render(dreamrender::gui_renderer& renderer, class shell* xmb) override;
         result on_action(action action) override;
 
         [[nodiscard]] bool is_opaque() const override { return false; }

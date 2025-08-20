@@ -14,7 +14,7 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
-export module xmbshell.app:video_player;
+export module shell.app:video_player;
 
 import dreamrender;
 import glm;
@@ -22,13 +22,13 @@ import spdlog;
 import vulkan_hpp;
 import vma;
 import i18n;
-import xmbshell.utils;
+import shell.utils;
 import :component;
 import :programs;
 import :message_overlay;
 import :base_viewer;
-import xmbshell.app;
-import xmbshell.render;
+import shell.app;
+import shell.render;
 
 namespace programs {
 
@@ -83,7 +83,7 @@ export class video_player : private base_viewer, public component, public action
             }
         }
 
-        result tick(xmbshell* xmb) override {
+        result tick(shell* xmb) override {
             if(!loaded && !utils::is_ready(load_future)) {
                 return result::success;
             }
@@ -191,8 +191,8 @@ export class video_player : private base_viewer, public component, public action
             return result::success;
         }
 
-        void prerender(vk::CommandBuffer cmd, int frame, xmbshell* xmb) override;
-        void render(dreamrender::gui_renderer& renderer, class xmbshell* xmb) override;
+        void prerender(vk::CommandBuffer cmd, int frame, shell* xmb) override;
+        void render(dreamrender::gui_renderer& renderer, class shell* xmb) override;
         result on_action(action action) override;
 
         result on_joystick(unsigned int index, float x, float y) override {
@@ -256,7 +256,7 @@ export class video_player : private base_viewer, public component, public action
         std::chrono::steady_clock::time_point start_time;
 };
 
-void video_player::prerender(vk::CommandBuffer cmd, int frame, xmbshell* xmb) {
+void video_player::prerender(vk::CommandBuffer cmd, int frame, shell* xmb) {
     if(!loaded || state != play_state::playing) {
         return;
     }
@@ -350,7 +350,7 @@ void video_player::prerender(vk::CommandBuffer cmd, int frame, xmbshell* xmb) {
     av_packet_free(&pkt);
 }
 
-void video_player::render(dreamrender::gui_renderer& renderer, class xmbshell* xmb) {
+void video_player::render(dreamrender::gui_renderer& renderer, class shell* xmb) {
     if(!loaded) {
         return;
     }

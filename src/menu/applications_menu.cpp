@@ -6,14 +6,14 @@ module;
 #include <string>
 #include <vector>
 
-module xmbshell.app;
+module shell.app;
 
 import spdlog;
 import glibmm;
 import giomm;
 import i18n;
 import dreamrender;
-import xmbshell.config;
+import shell.config;
 
 import :applications_menu;
 import :choice_overlay;
@@ -23,7 +23,7 @@ namespace menu {
 
 using namespace mfk::i18n::literals;
 
-applications_menu::applications_menu(std::string name, dreamrender::texture&& icon, app::xmbshell* xmb, dreamrender::resource_loader& loader, AppFilter filter)
+applications_menu::applications_menu(std::string name, dreamrender::texture&& icon, app::shell* xmb, dreamrender::resource_loader& loader, AppFilter filter)
     : simple_menu(std::move(name), std::move(icon)), xmb(xmb), loader(loader), filter(filter)
 {
     auto appInfos = Gio::AppInfo::get_all();
@@ -156,4 +156,4 @@ void applications_menu::get_button_actions(std::vector<std::pair<action, std::st
     v.emplace_back(action::extra, show_hidden ? "Hide excluded apps"_() : "Show excluded apps"_());
 }
 
-}
+} // namespace menu

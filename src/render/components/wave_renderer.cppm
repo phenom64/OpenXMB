@@ -4,7 +4,7 @@ module;
 #include <cstdint>
 #include <vector>
 
-export module xmbshell.render:wave_renderer;
+export module shell.render:wave_renderer;
 
 import dreamrender;
 import :shaders;

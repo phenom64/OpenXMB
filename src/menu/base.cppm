@@ -5,9 +5,9 @@ module;
 #include <functional>
 #include <memory>
 
-export module xmbshell.app:menu_base;
+export module shell.app:menu_base;
 import dreamrender;
-import xmbshell.utils;
+import shell.utils;
 
 export namespace menu {
 

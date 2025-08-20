@@ -8,7 +8,7 @@ cmake_policy(SET CMP0097 NEW)
 cmake_policy(SET CMP0144 NEW)
 
 # ANSI color codes for terminal output
-string(ASCII 27 ESC) 
+string(ASCII 27 ESC)
 set(COLOR_RESET   "${ESC}[0m")
 set(COLOR_CYAN    "${ESC}[36m")
 set(COLOR_YELLOW  "${ESC}[33m")
@@ -98,6 +98,12 @@ FetchContent_Declare(argparse
   GIT_TAG        v3.1
 )
 
+FetchContent_Declare(
+  nlohmann_json
+  GIT_REPOSITORY https://github.com/nlohmann/json.git
+  GIT_TAG        v3.12.0
+)
+
 FetchContent_GetProperties(dreamrender)
 if(NOT dreamrender_POPULATED)
   FetchContent_Populate(dreamrender)
@@ -116,36 +122,12 @@ set(BUILD_TESTING OFF CACHE BOOL "Disable i18n++ tests" FORCE)
 
 # make both dependencies available. CMake will use the options we just set
 # when it configures i18n++.
-FetchContent_MakeAvailable(i18n++ argparse)
-
-pkg_check_modules(glibmm glibmm-2.68 REQUIRED IMPORTED_TARGET)
-pkg_check_modules(giomm giomm-2.68 REQUIRED IMPORTED_TARGET)
-
-find_path(GSETTINGS_SCHEMA_DIR_GLIB NAMES gschema.dtd PATHS ${glib_PREFIX}/share/glib-2.0/schemas)
-find_path(GSETTINGS_SCHEMA_DIR_GIO NAMES gschema.dtd PATHS ${giomm_PREFIX}/share/glib-2.0/schemas)
-
-# Collect all the schema XML files.
-file(GLOB GSETTINGS_SCHEMAS
-    "${GSETTINGS_SCHEMA_DIR_GLIB}/*.gschema.xml"
-    "${GSETTINGS_SCHEMA_DIR_GIO}/*.gschema.xml"
-)
+FetchContent_MakeAvailable(i18n++ argparse nlohmann_json)
 
 set(SDL_BUILDING_LIBRARY ON CACHE BOOL "" FORCE)
 find_package(SDL2 REQUIRED)
 find_package(SDL2_image REQUIRED)
 find_package(SDL2_mixer REQUIRED)
-
-add_library(glibmmModule STATIC)
-target_sources(glibmmModule PUBLIC FILE_SET CXX_MODULES FILES third_party/glibmm.cppm)
-target_compile_features(glibmmModule PUBLIC cxx_std_20)
-target_link_libraries(glibmmModule PUBLIC PkgConfig::glibmm)
-target_compile_options(glibmmModule PRIVATE -pthread)
-
-add_library(giommModule STATIC)
-target_sources(giommModule PUBLIC FILE_SET CXX_MODULES FILES third_party/giomm.cppm)
-target_compile_features(giommModule PUBLIC cxx_std_20)
-target_link_libraries(giommModule PUBLIC PkgConfig::giomm)
-target_compile_options(giommModule PRIVATE -pthread)
 
 add_library(i18nModule STATIC)
 target_sources(i18nModule PUBLIC FILE_SET CXX_MODULES FILES third_party/i18n.cppm)
@@ -160,7 +142,7 @@ target_link_libraries(argparseModule PUBLIC argparse::argparse)
 target_compile_options(argparseModule PRIVATE -pthread)
 
 set(XMS_SOURCES
-  src/app/xmbshell.cpp
+  src/app/shell.cpp
   src/app/components/choice_overlay.cpp
   src/app/components/main_menu.cpp
   src/app/components/message_overlay.cpp
@@ -171,7 +153,6 @@ set(XMS_SOURCES
   src/menu/files_menu.cpp
   src/menu/settings_menu.cpp
   src/menu/users_menu.cpp
-  src/dbus.cpp
   src/render/shaders.cpp
   src/config.cpp
   src/main.cpp
@@ -179,7 +160,7 @@ set(XMS_SOURCES
 )
 set(XMS_MODULE_SOURCES
   src/app/module.cppm
-  src/app/xmbshell.cppm
+  src/app/shell.cppm
   src/app/component.cppm
   src/app/components/choice_overlay.cppm
   src/app/components/main_menu.cppm
@@ -189,7 +170,6 @@ set(XMS_MODULE_SOURCES
   src/app/layers/blur_layer.cppm
   src/config.cppm
   src/constants.cppm
-  src/dbus.cppm
   src/menu/applications_menu.cppm
   src/menu/base.cppm
   src/menu/files_menu.cppm
@@ -222,7 +202,7 @@ target_sources(XMS PUBLIC
 
 target_compile_options(XMS PRIVATE -pthread)
 
-target_include_directories(XMS PRIVATE include/ ${FFMPEG_INCLUDE_DIRS})
+target_include_directories(XMS PRIVATE include/ ${FFMPEG_INCLUDE_DIRS} ${nlohmann_json_SOURCE_DIR}/include)
 if(APPLE)
   target_include_directories(XMS PRIVATE ${Vulkan_INCLUDE_DIRS})
 endif()
@@ -237,10 +217,9 @@ target_link_libraries(XMS PRIVATE dreams::VulkanHppModule)
 target_link_libraries(XMS PRIVATE dreams::vmaModule)
 target_link_libraries(XMS PRIVATE dreams::spdlogModule)
 target_link_libraries(XMS PRIVATE Freetype::Freetype)
-target_link_libraries(XMS PRIVATE glibmmModule)
-target_link_libraries(XMS PRIVATE giommModule)
 target_link_libraries(XMS PRIVATE i18nModule)
 target_link_libraries(XMS PRIVATE argparseModule)
+target_link_libraries(XMS PRIVATE nlohmann_json::nlohmann_json)
 
 target_link_directories(XMS PRIVATE ${FFMPEG_LIBRARY_DIRS})
 
@@ -297,39 +276,11 @@ if(UNIX)
         RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
     )
 
-    # Define the installation path for the schemas.
-    set(SCHEMA_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/glib-2.0/schemas")
-
-    # Install the GSettings schemas from the libraries we linked against.
-    # The GSETTINGS_SCHEMA_DIR_GLIB and GSETTINGS_SCHEMA_DIR_GIO variables
-    # were already correctly determined earlier in the script.
-    if(GSETTINGS_SCHEMA_DIR_GLIB AND EXISTS "${GSETTINGS_SCHEMA_DIR_GLIB}")
-        install(
-            DIRECTORY "${GSETTINGS_SCHEMA_DIR_GLIB}/"
-            DESTINATION "${SCHEMA_INSTALL_DIR}"
-            FILES_MATCHING PATTERN "*.gschema.xml"
-        )
-    endif()
-
-    if(GSETTINGS_SCHEMA_DIR_GIO AND EXISTS "${GSETTINGS_SCHEMA_DIR_GIO}")
-        install(
-            DIRECTORY "${GSETTINGS_SCHEMA_DIR_GIO}/"
-            DESTINATION "${SCHEMA_INSTALL_DIR}"
-            FILES_MATCHING PATTERN "*.gschema.xml"
-        )
-    endif()
-
-    # After installation, run glib-compile-schemas to create the binary cache.
-    install(CODE "
-        message(STATUS \"Compiling GSettings schemas...\")
-        execute_process(
-            COMMAND glib-compile-schemas \"\${CMAKE_INSTALL_PREFIX}/${SCHEMA_INSTALL_DIR}\"
-            RESULT_VARIABLE res
-        )
-        if(NOT res EQUAL 0)
-            message(FATAL_ERROR \"Failed to compile GSettings schemas. Is glib installed correctly?\")
-        endif()
-    ")
+    # Install the default config.json so the launcher script can copy it on first run.
+    install(
+        FILES ${CMAKE_CURRENT_SOURCE_DIR}/config.json
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/OpenXMB"
+    )
 
     # Configure our launcher script template and install it.
     configure_file(

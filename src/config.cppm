@@ -13,12 +13,10 @@ module;
 #include <libloaderapi.h>
 #endif
 
-export module xmbshell.config;
+export module shell.config;
 
-import glibmm;
-import giomm;
 import vulkan_hpp;
-import xmbshell.constants;
+import shell.constants;
 
 export namespace config
 {

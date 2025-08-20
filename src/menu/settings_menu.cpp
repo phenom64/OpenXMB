@@ -15,14 +15,12 @@ module;
 #include <sys/wait.h>
 #endif
 
-module xmbshell.app;
+module shell.app;
 
 import spdlog;
-import glibmm;
-import giomm;
 import i18n;
 import dreamrender;
-import xmbshell.config;
+import shell.config;
 
 import :settings_menu;
 
@@ -89,7 +87,7 @@ namespace menu {
 
     class update_checker : public app::progress_item {
         public:
-            update_checker(app::xmbshell* xmb) : xmb(xmb) {}
+            update_checker(app::shell* xmb) : xmb(xmb) {}
 
             status init(std::string& message) override {
                 message = "Checking for updates..."_();
@@ -142,7 +140,7 @@ namespace menu {
             pid_t pid{};
             std::chrono::time_point<std::chrono::system_clock> start_time;
             constexpr static auto wait_duration = std::chrono::milliseconds(500);
-            app::xmbshell* xmb;
+            app::shell* xmb;
     };
 #endif
 
@@ -154,90 +152,77 @@ namespace menu {
         return make_simple<action_menu_entry>(std::move(name), config::CONFIG.asset_directory/"icons"/filename, loader, callback, std::function<result(action)>{}, std::move(description));
     }
 
-    std::unique_ptr<action_menu_entry> entry_bool(dreamrender::resource_loader& loader, app::xmbshell* xmb,
+    std::unique_ptr<action_menu_entry> entry_bool(dreamrender::resource_loader& loader, app::shell* xmb,
         std::string name, std::string description, const std::string& schema, const std::string& key)
     {
         return entry_base(loader, std::move(name), std::move(description), key, [xmb, key, schema](){
-            auto settings = Gio::Settings::create(schema);
-            bool value = settings->get_boolean(key);
             xmb->emplace_overlay<app::choice_overlay>(
-                std::vector<std::string>{"Off"_(), "On"_()}, value ? 1u : 0u,
-                [settings, schema, key](unsigned int choice) {
-                    settings->set_boolean(key, choice == 1);
-                    settings->apply();
+                std::vector<std::string>{"Off"_(), "On"_()}, config::CONFIG.controllerRumble ? 1u : 0u,
+                [key, schema](unsigned int choice) {
+                    if(config::CONFIG.setVsync(choice == 1)) {
+                        config::CONFIG.save();
+                    }
                 }
             );
             return result::success;
         });
     }
 
-    std::unique_ptr<action_menu_entry> entry_int(dreamrender::resource_loader& loader, app::xmbshell* xmb,
+    std::unique_ptr<action_menu_entry> entry_int(dreamrender::resource_loader& loader, app::shell* xmb,
         std::string name, std::string description, const std::string& schema, const std::string& key, int min, int max, int step = 1)
     {
         return entry_base(loader, std::move(name), std::move(description), key, [xmb, key, schema, min, max, step](){
-            auto settings = Gio::Settings::create(schema);
-            int value = settings->get_int(key);
+            int value = 0;
             std::vector<std::string> choices;
             for(int i = min; i <= max; i += step) {
                 choices.push_back(std::to_string(i));
             }
-            int current_choice = static_cast<int>((value - min)/step);
-            if(current_choice < 0 || current_choice >= choices.size()) {
-                current_choice = 0;
-            }
+            int current_choice = 0;
             xmb->emplace_overlay<app::choice_overlay>(
                 choices, static_cast<unsigned int>(current_choice),
-                [settings, schema, key, min, step](unsigned int choice) {
+                [key, schema, min, step](unsigned int choice) {
                     int value = static_cast<int>(choice)*step + min;
-                    settings->set_int(key, value);
-                    settings->apply();
                 }
             );
             return result::success;
         });
     }
-    std::unique_ptr<action_menu_entry> entry_int(dreamrender::resource_loader& loader, app::xmbshell* xmb,
+    std::unique_ptr<action_menu_entry> entry_int(dreamrender::resource_loader& loader, app::shell* xmb,
         std::string name, std::string description, const std::string& schema, const std::string& key, std::ranges::range auto values)
         requires std::is_integral_v<std::ranges::range_value_t<decltype(values)>>
     {
         return entry_base(loader, std::move(name), std::move(description), key, [xmb, key, schema, values](){
-            auto settings = Gio::Settings::create(schema);
-            int value = settings->get_int(key);
+            int value = 0;
             std::vector<std::string> choices;
             for(auto v : values) {
                 choices.push_back(std::to_string(v));
             }
-            unsigned int current_choice = std::find(values.begin(), values.end(), value) - values.begin();
+            unsigned int current_choice = 0;
             xmb->emplace_overlay<app::choice_overlay>(
                 choices, current_choice,
-                [settings, schema, key, values](unsigned int choice) {
+                [key, schema, values](unsigned int choice) {
                     int value = *std::ranges::next(std::ranges::cbegin(values), choice);
-                    settings->set_int(key, value);
-                    settings->apply();
                 }
             );
             return result::success;
         });
     }
-    std::unique_ptr<action_menu_entry> entry_enum(dreamrender::resource_loader& loader, app::xmbshell* xmb,
+    std::unique_ptr<action_menu_entry> entry_enum(dreamrender::resource_loader& loader, app::shell* xmb,
         std::string name, std::string description, const std::string& schema, const std::string& key, std::ranges::range auto values)
     {
         return entry_base(loader, std::move(name), std::move(description), key, [xmb, key, schema, values](){
-            auto settings = Gio::Settings::create(schema);
-            std::string value = settings->get_string(key);
+            std::string value = "";
             std::vector<std::string> choices;
             std::vector<std::string> keys;
             for(const auto& [key, name] : values) {
                 choices.push_back(name);
                 keys.push_back(key);
             }
-            unsigned int current_choice = std::distance(keys.begin(), std::find(keys.begin(), keys.end(), value));
+            unsigned int current_choice = 0;
             xmb->emplace_overlay<app::choice_overlay>(
                 choices, current_choice,
-                [settings, schema, key, keys](unsigned int choice) {
+                [key, schema, keys](unsigned int choice) {
                     auto value = keys[choice];
-                    settings->set_string(key, value);
-                    settings->apply();
                 }
             );
             return result::success;
@@ -299,16 +284,16 @@ namespace menu {
         #pragma clang diagnostic pop
     }
 
-    settings_menu::settings_menu(std::string name, dreamrender::texture&& icon, app::xmbshell* xmb, dreamrender::resource_loader& loader) : simple_menu(std::move(name), std::move(icon)) {
+    settings_menu::settings_menu(std::string name, dreamrender::texture&& icon, app::shell* xmb, dreamrender::resource_loader& loader) : simple_menu(std::move(name), std::move(icon)) {
         const std::filesystem::path& asset_dir = config::CONFIG.asset_directory;
         entries.push_back(make_simple<simple_menu>("Personalization Settings"_(), asset_dir/"icons/icon_settings_personalization.png", loader,
             std::array{
-                entry_enum(loader, xmb, "Background Type"_(), "Type of background to use"_(), "re.jcm.xmbos.xmbshell", "background-type", std::array{
+                entry_enum(loader, xmb, "Background Type"_(), "Type of background to use"_(), "re.jcm.xmbos.shell", "background-type", std::array{
                     std::pair{"wave", "Animated Wave"_()},
                     std::pair{"color", "Static Color"_()},
                     std::pair{"image", "Static Image"_()},
                 }),
-                entry_enum(loader, xmb, "Language"_(), "Preferred language for the shell"_(), "re.jcm.xmbos.xmbshell", "language", std::array{
+                entry_enum(loader, xmb, "Language"_(), "Preferred language for the shell"_(), "re.jcm.xmbos.shell", "language", std::array{
                     std::pair{"auto", "Use system language"_()},
                     std::pair{"en", "English"_()},
                     std::pair{"de", "German"_()},
@@ -318,14 +303,14 @@ namespace menu {
         ));
         entries.push_back(make_simple<simple_menu>("Video Settings"_(), asset_dir/"icons/icon_settings_video.png", loader,
             std::array{
-                entry_bool(loader, xmb, "VSync"_(), "Avoid tearing and limit FPS to refresh rate of display"_(), "re.jcm.xmbos.xmbshell.render", "vsync"),
-                entry_int(loader, xmb, "Sample Count"_(), "Number of samples used for Multisample Anti-Aliasing"_(), "re.jcm.xmbos.xmbshell.render", "sample-count", std::array{1, 2, 4, 8, 16}),
-                entry_int(loader, xmb, "Max FPS"_(), "FPS limit used if VSync is disabled"_(), "re.jcm.xmbos.xmbshell.render", "max-fps", 15, 200, 5),
+                entry_bool(loader, xmb, "VSync"_(), "Avoid tearing and limit FPS to refresh rate of display"_(), "re.jcm.xmbos.shell.render", "vsync"),
+                entry_int(loader, xmb, "Sample Count"_(), "Number of samples used for Multisample Anti-Aliasing"_(), "re.jcm.xmbos.shell.render", "sample-count", std::array{1, 2, 4, 8, 16}),
+                entry_int(loader, xmb, "Max FPS"_(), "FPS limit used if VSync is disabled"_(), "re.jcm.xmbos.shell.render", "max-fps", 15, 200, 5),
             }
         ));
         entries.push_back(make_simple<simple_menu>("Input Settings"_(), asset_dir/"icons/icon_settings_input.png", loader,
             std::array{
-                entry_enum(loader, xmb, "Controller Type"_(), "Type of connected controller and corresponding button prompts"_(), "re.jcm.xmbos.xmbshell", "controller-type", std::array{
+                entry_enum(loader, xmb, "Controller Type"_(), "Type of connected controller and corresponding button prompts"_(), "re.jcm.xmbos.shell", "controller-type", std::array{
                     std::pair{"none", "controllertype|None"_()},
                     std::pair{"auto", "controllertype|Automatic"_()},
                     std::pair{"keyboard", "controllertype|Keyboard"_()},
@@ -334,14 +319,14 @@ namespace menu {
                     std::pair{"steam", "controllertype|Steam Controller / Steamdeck"_()},
                     std::pair{"ouya", "controllertype|Ouya"_()},
                 }),
-                entry_bool(loader, xmb, "Controller Rumble"_(), "Enable controller rumble as feedback for actions"_(), "re.jcm.xmbos.xmbshell", "controller-rumble"),
-                entry_bool(loader, xmb, "Navigate Menus with Analog Stick"_(), "Allow navigating all menus using the analog stick in addition to the D-Pad"_(), "re.jcm.xmbos.xmbshell", "controller-analog-stick"),
+                entry_bool(loader, xmb, "Controller Rumble"_(), "Enable controller rumble as feedback for actions"_(), "re.jcm.xmbos.shell", "controller-rumble"),
+                entry_bool(loader, xmb, "Navigate Menus with Analog Stick"_(), "Allow navigating all menus using the analog stick in addition to the D-Pad"_(), "re.jcm.xmbos.shell", "controller-analog-stick"),
             }
         ));
         entries.push_back(make_simple<simple_menu>("Debug Settings"_(), asset_dir/"icons/icon_settings_debug.png", loader,
             std::array{
-                entry_bool(loader, xmb, "Show FPS"_(), "", "re.jcm.xmbos.xmbshell.render", "show-fps"),
-                entry_bool(loader, xmb, "Show Memory Usage"_(), "", "re.jcm.xmbos.xmbshell.render", "show-mem"),
+                entry_bool(loader, xmb, "Show FPS"_(), "", "re.jcm.xmbos.shell.render", "show-fps"),
+                entry_bool(loader, xmb, "Show Memory Usage"_(), "", "re.jcm.xmbos.shell.render", "show-mem"),
 #ifndef NDEBUG
                 make_simple<action_menu_entry>("Toggle Background Blur"_(), asset_dir/"icons/icon_settings_toggle-background-blur.png", loader, [xmb](){
                     spdlog::info("Toggling background blur");
@@ -371,22 +356,10 @@ namespace menu {
         }));
         entries.push_back(make_simple<action_menu_entry>("Reset all Settings to default"_(), asset_dir/"icons/icon_settings_reset.png", loader, [](){
             spdlog::info("Settings reset request from XMB");
-            Glib::RefPtr<Gio::Settings> shellSettings =
-                Gio::Settings::create("re.jcm.xmbos.xmbshell");
-            auto source = Gio::SettingsSchemaSource::get_default();
-            if(!source) {
-                spdlog::error("Failed to get default settings schema source");
-                return result::failure;
-            }
-            auto schema = source->lookup("re.jcm.xmbos.xmbshell", true);
-            if(!schema) {
-                spdlog::error("Failed to find schema for re.jcm.xmbos.xmbshell");
-                return result::failure;
-            }
-            for(auto key : schema->list_keys()) {
-                shellSettings->reset(key);
-            }
             config::CONFIG.load();
+            if (config::CONFIG.save()) { 
+                 config::CONFIG.save();
+            }
             return result::success;
         }));
 

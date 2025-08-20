@@ -3,7 +3,7 @@ module;
 #include <filesystem>
 #include <memory>
 
-export module xmbshell.app:menu_utils;
+export module shell.app:menu_utils;
 import dreamrender;
 import :menu_base;
 

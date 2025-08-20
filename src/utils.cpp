@@ -19,10 +19,8 @@ module;
 #include <sys/mman.h>
 #endif
 
-module xmbshell.utils;
+module shell.utils;
 
-import glibmm;
-import giomm;
 import spdlog;
 
 namespace utils {
@@ -210,7 +208,7 @@ namespace utils {
         if(xdg_data_dirs) {
             std::istringstream iss(xdg_data_dirs);
             std::string dir;
-            while(std::getline(iss, dir, ':')) {
+            while(std::getline(iss, dir, ":")) {
                 process_dir(dir);
             }
         }

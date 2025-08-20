@@ -10,7 +10,7 @@ module;
 #include <vector>
 #include <version>
 
-module xmbshell.app;
+module shell.app;
 
 import i18n;
 import spdlog;
@@ -19,9 +19,9 @@ import glm;
 import vulkan_hpp;
 import vma;
 import sdl2;
-import xmbshell.config;
-import xmbshell.render;
-import xmbshell.utils;
+import shell.config;
+import shell.render;
+import shell.utils;
 
 using namespace mfk::i18n::literals;
 
@@ -32,15 +32,15 @@ namespace app
         int size = 20;
     };
 
-    xmbshell::xmbshell(window* window) : phase(window)
+    shell::shell(window* window) : phase(window)
     {
     }
 
-    xmbshell::~xmbshell()
+    shell::~shell()
     {
     }
 
-    void xmbshell::preload()
+    void shell::preload()
     {
         phase::preload();
 
@@ -171,7 +171,7 @@ namespace app
         }
     }
 
-    void xmbshell::preload_fixed_components()
+    void shell::preload_fixed_components()
     {
         if(fixed_components_loaded) {
             return;
@@ -188,7 +188,7 @@ namespace app
         reload_button_icons();
     }
 
-    void xmbshell::prepare(std::vector<vk::Image> swapchainImages, std::vector<vk::ImageView> swapchainViews)
+    void shell::prepare(std::vector<vk::Image> swapchainImages, std::vector<vk::ImageView> swapchainViews)
     {
         phase::prepare(swapchainImages, swapchainViews);
 
@@ -239,7 +239,7 @@ namespace app
         wave_render->prepare(swapchainViews.size());
     }
 
-    void xmbshell::render(int frame, vk::Semaphore imageAvailable, vk::Semaphore renderFinished, vk::Fence fence)
+    void shell::render(int frame, vk::Semaphore imageAvailable, vk::Semaphore renderFinished, vk::Fence fence)
     {
         tick();
 
@@ -450,7 +450,7 @@ namespace app
         graphicsQueue.submit(submit_info, fence);
     }
 
-    void xmbshell::render_gui(gui_renderer& renderer) {
+    void shell::render_gui(gui_renderer& renderer) {
         bool render_menu = true;
         unsigned int overlay_begin = 0;
         bool has_overlay = !overlays.empty();
@@ -496,18 +496,10 @@ namespace app
             if(overlay_transition || has_overlay) {
                 renderer.pop_color();
             }
-            /*if(choice_overlay || choice_overlay_progress < 1.0) {
-                renderer.pop_color();
-                renderer.push_color(glm::mix(glm::vec4(0.0), glm::vec4(1.0), choice_overlay ? choice_overlay_progress : 1.0 - choice_overlay_progress));
-                choice_overlay.or_else([this](){return old_choice_overlay;})->render(renderer);
-                renderer.pop_color();
-            } else {
-                old_choice_overlay = std::nullopt;
-            }*/
+
         }
 
         for(unsigned int i=overlay_begin; i < overlays.size(); i++) {
-            // TODO: support darkening overlays on top of overlays (i.e. a choice_overlay over a message_overlay)
             if(i == overlays.size()-1 && overlay_transition) {
                 renderer.push_color(glm::mix(glm::vec4(0.0), glm::vec4(1.0), dir_progress));
                 overlays[i]->render(renderer, this);
@@ -543,13 +535,13 @@ namespace app
         }
     }
 
-    void xmbshell::reload_background() {
+    void shell::reload_background() {
         if(config::CONFIG.backgroundType == config::config::background_type::image) {
             backgroundTexture = std::make_unique<texture>(device, allocator);
             loader->loadTexture(backgroundTexture.get(), config::CONFIG.backgroundImage);
         }
     }
-    void xmbshell::reload_button_icons() {
+    void shell::reload_button_icons() {
         auto controller_type = get_controller_type();
 
         for(std::underlying_type_t<action> i = std::to_underlying(action::none)+1; i < std::to_underlying(action::_length); i++) {
@@ -565,7 +557,7 @@ namespace app
             loader->loadTexture(buttonTextures[i].get(), icon_name);
         }
     }
-    std::string xmbshell::get_controller_type() const {
+    std::string shell::get_controller_type() const {
         auto type = config::CONFIG.controllerType;
         if(type == "auto") {
             if(win->controllers.empty()) {
@@ -590,7 +582,7 @@ namespace app
         return type;
     }
 
-    void xmbshell::tick() {
+    void shell::tick() {
         if(background_only) {
             return;
         }
@@ -623,7 +615,7 @@ namespace app
         }
     }
 
-    void xmbshell::dispatch(action action) {
+    void shell::dispatch(action action) {
         if(background_only) {
             return;
         }
@@ -645,7 +637,7 @@ namespace app
 
         handle(menu.on_action(action));
     }
-    void xmbshell::handle(result result) {
+    void shell::handle(result result) {
         if(result & result::error_rumble) {
             if(config::CONFIG.controllerRumble) {
                 for(const auto& [id, controller] : win->controllers) {
@@ -660,11 +652,11 @@ namespace app
         }
     }
 
-    void xmbshell::key_up(sdl::Keysym key)
+    void shell::key_up(sdl::Keysym key)
     {
         spdlog::trace("Key up: {}", key.sym);
     }
-    void xmbshell::key_down(sdl::Keysym key)
+    void shell::key_down(sdl::Keysym key)
     {
         spdlog::trace("Key down: {}", key.sym);
         switch(key.sym) {
@@ -695,19 +687,19 @@ namespace app
         }
     }
 
-    void xmbshell::add_controller(sdl::GameController* controller)
+    void shell::add_controller(sdl::GameController* controller)
     {
         if(config::CONFIG.controllerType == "auto") {
             reload_button_icons();
         }
     }
-    void xmbshell::remove_controller(sdl::GameController* controller)
+    void shell::remove_controller(sdl::GameController* controller)
     {
         if(config::CONFIG.controllerType == "auto") {
             reload_button_icons();
         }
     }
-    void xmbshell::button_down(sdl::GameController* controller, sdl::GameControllerButton button)
+    void shell::button_down(sdl::GameController* controller, sdl::GameControllerButton button)
     {
         spdlog::trace("Button down: {}", fmt::underlying(button));
         last_controller_button_input = std::make_tuple(controller, button);
@@ -731,12 +723,12 @@ namespace app
             dispatch(action::extra);
         }
     }
-    void xmbshell::button_up(sdl::GameController* controller, sdl::GameControllerButton button)
+    void shell::button_up(sdl::GameController* controller, sdl::GameControllerButton button)
     {
         spdlog::trace("Button up: {}", fmt::underlying(button));
         last_controller_button_input = std::nullopt;
     }
-    void xmbshell::axis_motion(sdl::GameController* controller, sdl::GameControllerAxis axis, int16_t value)
+    void shell::axis_motion(sdl::GameController* controller, sdl::GameControllerAxis axis, int16_t value)
     {
         spdlog::trace("Axis motion: {} {}", fmt::underlying(axis), value);
 

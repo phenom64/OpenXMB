@@ -14,13 +14,13 @@ module;
 #include <unistd.h>
 #endif
 
-export module xmbshell.app:text_viewer;
+export module shell.app:text_viewer;
 
 import dreamrender;
 import glm;
 import spdlog;
 import vulkan_hpp;
-import xmbshell.utils;
+import shell.utils;
 import :component;
 import :programs;
 
@@ -161,7 +161,7 @@ export class text_viewer : public component, public action_receiver, public joys
             calculate_offsets();
         }
 
-        void render(dreamrender::gui_renderer& renderer, class xmbshell* xmb) override {
+        void render(dreamrender::gui_renderer& renderer, class shell* xmb) override {
             constexpr float x = (1.0f - width) / 2;
             constexpr float y = (1.0f - height) / 2;
             const double offset_x = 0.01;

@@ -2,23 +2,23 @@ module;
 
 #include <cstdint>
 
-export module xmbshell.constants;
+export module shell.constants;
 
 export namespace constants
 {
     constexpr auto displayname = "XMB Shell";
-    constexpr auto name = "xmbshell";
+    constexpr auto name = "shell";
 
     constexpr uint32_t version = 1;
 
 #if defined(_WIN32)
-    constexpr auto asset_directory = "./xmbshell/";
+    constexpr auto asset_directory = "./shell/";
     constexpr auto locale_directory = "./locale/";
-    constexpr auto fallback_font = "./xmbshell/Ubuntu-R.ttf";
+    constexpr auto fallback_font = "./shell/Ubuntu-R.ttf";
 #else
-    constexpr auto asset_directory = "../share/xmbshell/";
+    constexpr auto asset_directory = "../share/shell/";
     constexpr auto locale_directory = "../share/locale/";
-    constexpr auto fallback_font = "../share/xmbshell/Ubuntu-R.ttf";
+    constexpr auto fallback_font = "../share/shell/Ubuntu-R.ttf";
 #endif
 
     constexpr auto fallback_datetime_format = "%m/%d %H:%M";

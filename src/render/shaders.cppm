@@ -1,6 +1,6 @@
 module;
 
-export module xmbshell.render:shaders;
+export module shell.render:shaders;
 
 import vulkan_hpp;
 

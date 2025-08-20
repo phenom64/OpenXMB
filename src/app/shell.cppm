@@ -11,10 +11,10 @@ module;
 #include <variant>
 #include <vector>
 
-export module xmbshell.app:main;
+export module shell.app:main;
 
-import xmbshell.render;
-import xmbshell.utils;
+import shell.render;
+import shell.utils;
 import dreamrender;
 import glm;
 import sdl2;
@@ -39,11 +39,11 @@ namespace app
     };
 
     using namespace dreamrender;
-    export class xmbshell : public phase, public input::keyboard_handler, public input::controller_handler
+    export class shell : public phase, public input::keyboard_handler, public input::controller_handler
     {
         public:
-            xmbshell(window* window);
-            ~xmbshell();
+            shell(window* window);
+            ~shell();
             void preload() override;
             void prepare(std::vector<vk::Image> swapchainImages, std::vector<vk::ImageView> swapchainViews) override;
             void render(int frame, vk::Semaphore imageAvailable, vk::Semaphore renderFinished, vk::Fence fence) override;

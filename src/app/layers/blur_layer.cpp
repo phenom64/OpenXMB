@@ -3,10 +3,9 @@ module;
 #include <array>
 #include <cmath>
 
-module xmbshell.app;
+module shell.app;
 import :blur_layer;
-
-import xmbshell.render;
+import shell.render;
 import dreamrender;
 import glm;
 import vulkan_hpp;
@@ -19,7 +18,7 @@ struct BlurConstants {
     int size = 20;
 };
 
-blur_layer::blur_layer(xmbshell* xmb) :
+blur_layer::blur_layer(shell* xmb) :
     srcTexture(xmb->device, xmb->allocator, xmb->win->swapchainExtent,
         vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferDst,
         vk::Format::eR16G16B16A16Sfloat, vk::SampleCountFlagBits::e1, false, vk::ImageAspectFlagBits::eColor),
@@ -67,7 +66,7 @@ blur_layer::blur_layer(xmbshell* xmb) :
     }
 }
 
-void blur_layer::render(dreamrender::gui_renderer& renderer, xmbshell* xmb) {
+void blur_layer::render(dreamrender::gui_renderer& renderer, shell* xmb) {
     auto cmd = renderer.get_command_buffer();
     int frame = renderer.get_frame();
     auto extent = xmb->win->swapchainExtent;

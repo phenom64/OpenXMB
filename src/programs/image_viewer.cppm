@@ -4,12 +4,12 @@ module;
 #include <filesystem>
 #include <future>
 
-export module xmbshell.app:image_viewer;
+export module shell.app:image_viewer;
 
 import dreamrender;
 import glm;
 import spdlog;
-import xmbshell.utils;
+import shell.utils;
 import :component;
 import :programs;
 import :base_viewer;
@@ -27,7 +27,7 @@ export class image_viewer : private base_viewer, public component, public action
         image_viewer(std::shared_ptr<dreamrender::texture> texture) : texture(std::move(texture)) {
         }
 
-        result tick(xmbshell*) override {
+        result tick(shell*) override {
             if(!texture->loaded) {
                 return result::success;
             }
@@ -38,7 +38,7 @@ export class image_viewer : private base_viewer, public component, public action
             return result::success;
         }
 
-        void render(dreamrender::gui_renderer& renderer, class xmbshell* xmb) override {
+        void render(dreamrender::gui_renderer& renderer, class shell* xmb) override {
             if(!texture->loaded) {
                 return;
             }

@@ -8,13 +8,10 @@
 
 import sdl2;
 import spdlog;
-import glibmm;
-import giomm;
 import dreamrender;
 import argparse;
-import xmbshell.app;
-import xmbshell.dbus;
-import xmbshell.config;
+import shell.app;
+import shell.config;
 
 #undef main
 int main(int argc, char *argv[])
@@ -64,15 +61,7 @@ int main(int argc, char *argv[])
         std::abort();
     });
 
-    Gio::init();
     setlocale(LC_ALL, "");
-    // bindtextdomain("xmbshell", config::CONFIG.locale_directory.string().c_str());
-    // textdomain("xmbshell");
-    Glib::RefPtr<Glib::MainLoop> loop;
-    std::thread main_loop_thread([&loop]() {
-        loop = Glib::MainLoop::create();
-        loop->run();
-    });
 
     config::CONFIG.load();
     spdlog::debug("Config loaded");
@@ -92,16 +81,13 @@ int main(int argc, char *argv[])
     dreamrender::window window{window_config};
     window.init();
 
-    auto* shell = new app::xmbshell(&window);
+    auto* shell = new app::shell(&window);
     if(program.get<bool>("--background-only")) {
         shell->set_background_only(true);
     }
     window.set_phase(shell, shell, shell);
 
     window.loop();
-
-    loop->quit();
-    main_loop_thread.join();
 
     return 0;
 }

@@ -4,7 +4,7 @@ module;
 #include <ranges>
 #include <string>
 
-module xmbshell.app;
+module shell.app;
 import :message_overlay;
 
 import dreamrender;
@@ -19,7 +19,7 @@ namespace app {
     {
     }
 
-    void message_overlay::render(dreamrender::gui_renderer& renderer, xmbshell* xmb) {
+    void message_overlay::render(dreamrender::gui_renderer& renderer, shell* xmb) {
         renderer.draw_rect(glm::vec2(0.0f, 0.15f), glm::vec2(1.0f, 2.0/renderer.frame_size.height), glm::vec4(0.7f, 0.7f, 0.7f, 1.0f));
         renderer.draw_rect(glm::vec2(0.0f, 0.85f), glm::vec2(1.0f, 2.0/renderer.frame_size.height), glm::vec4(0.7f, 0.7f, 0.7f, 1.0f));
 

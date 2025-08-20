@@ -3,13 +3,13 @@ module;
 #include <memory>
 #include <string>
 
-export module xmbshell.app:progress_overlay;
+export module shell.app:progress_overlay;
 
 import dreamrender;
 import sdl2;
 import vulkan_hpp;
 import vma;
-import xmbshell.utils;
+import shell.utils;
 import :component;
 
 namespace app {
@@ -34,8 +34,8 @@ export class progress_overlay : public component, public action_receiver {
     public:
         progress_overlay(std::string title, std::unique_ptr<progress_item>&& item, bool show_progress = true);
 
-        result tick(class xmbshell* xmb) override;
-        void render(dreamrender::gui_renderer& renderer, class xmbshell* xmb) override;
+        result tick(class shell* xmb) override;
+        void render(dreamrender::gui_renderer& renderer, class shell* xmb) override;
         result on_action(action action) override;
     private:
         std::string title;

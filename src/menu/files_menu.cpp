@@ -11,7 +11,7 @@ module;
 
 #include <unistd.h>
 
-module xmbshell.app;
+module shell.app;
 
 import :files_menu;
 import :menu_base;
@@ -20,8 +20,8 @@ import :message_overlay;
 import :choice_overlay;
 import :programs;
 
-import xmbshell.config;
-import xmbshell.utils;
+import shell.config;
+import shell.utils;
 import dreamrender;
 import glibmm;
 import giomm;
@@ -32,7 +32,7 @@ import i18n;
 namespace menu {
     using namespace mfk::i18n::literals;
 
-    files_menu::files_menu(std::string name, dreamrender::texture&& icon, app::xmbshell* xmb, std::filesystem::path path, dreamrender::resource_loader& loader)
+    files_menu::files_menu(std::string name, dreamrender::texture&& icon, app::shell* xmb, std::filesystem::path path, dreamrender::resource_loader& loader)
     : simple_menu(std::move(name), std::move(icon)), xmb(xmb), path(std::move(path)), loader(loader)
     {
 
@@ -200,8 +200,8 @@ namespace menu {
         reload();
     }
 
-    bool copy_file(app::xmbshell* xmb, const std::filesystem::path& src, const std::filesystem::path& dst);
-    bool cut_file(app::xmbshell* xmb, std::weak_ptr<void> exists, files_menu* ptr, const std::filesystem::path& src, const std::filesystem::path& dst);
+    bool copy_file(app::shell* xmb, const std::filesystem::path& src, const std::filesystem::path& dst);
+    bool cut_file(app::shell* xmb, std::weak_ptr<void> exists, files_menu* ptr, const std::filesystem::path& src, const std::filesystem::path& dst);
 
     result files_menu::activate(action action)
     {
@@ -297,7 +297,7 @@ namespace menu {
         return result::unsupported;
     }
 
-    bool copy_file(app::xmbshell* xmb, const std::filesystem::path& src, const std::filesystem::path& dst) {
+    bool copy_file(app::shell* xmb, const std::filesystem::path& src, const std::filesystem::path& dst) {
         std::filesystem::path p = dst;
         if(!std::filesystem::is_directory(p)) {
             spdlog::error("Target is not a directory: {}", p.string());
@@ -324,7 +324,7 @@ namespace menu {
         return false;
     }
 
-    bool cut_file(app::xmbshell* xmb, std::weak_ptr<void> exists, files_menu* ptr, const std::filesystem::path& src, const std::filesystem::path& dst) {
+    bool cut_file(app::shell* xmb, std::weak_ptr<void> exists, files_menu* ptr, const std::filesystem::path& src, const std::filesystem::path& dst) {
         std::filesystem::path p = dst;
         if(!std::filesystem::is_directory(p)) {
             spdlog::error("Target is not a directory: {}", p.string());

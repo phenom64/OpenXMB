@@ -6,7 +6,7 @@ module;
 #include <string>
 #include <unordered_set>
 
-export module xmbshell.app:applications_menu;
+export module shell.app:applications_menu;
 import :menu_base;
 import dreamrender;
 import glibmm;
@@ -14,7 +14,7 @@ import giomm;
 import spdlog;
 
 namespace app {
-    class xmbshell;
+    class shell;
 }
 
 export namespace menu {
@@ -57,7 +57,7 @@ export namespace menu {
 
     class applications_menu : public simple_menu {
         public:
-            applications_menu(std::string name, dreamrender::texture&& icon, app::xmbshell* xmb, dreamrender::resource_loader& loader, AppFilter filter = noFilter());
+            applications_menu(std::string name, dreamrender::texture&& icon, app::shell* xmb, dreamrender::resource_loader& loader, AppFilter filter = noFilter());
             ~applications_menu() override = default;
 
             result activate(action action) override;
@@ -67,7 +67,7 @@ export namespace menu {
             std::unique_ptr<action_menu_entry> create_action_menu_entry(Glib::RefPtr<Gio::AppInfo> app, bool hidden = false);
             result activate_app(Glib::RefPtr<Gio::AppInfo> app, action action);
 
-            app::xmbshell* xmb;
+            app::shell* xmb;
             dreamrender::resource_loader& loader;
 
             bool show_hidden = false;

@@ -1,4 +1,4 @@
 module;
 
-export module xmbshell.app;
+export module shell;
 export import :main;

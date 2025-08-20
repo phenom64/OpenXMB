@@ -1,0 +1,39 @@
+{
+  "_meta": {
+    "project": "OpenXMB",
+    "description": "Configuration file for the Syndromatic Open XcrossMediaBar desktop experience.",
+    "app_version": "0.1.0-beta",
+    "config_version": 1,
+    "author": "Kavish Krishnakumar / Syndromatic Limited Bharat Britannia",
+    "copyright": "™ & © 2025. Syndromatic Ltd. All rights reserved.",
+    "license": "GPLv3",
+    "website": "https://syndromatic.com",
+    "generated_at": "2025-08-20T00:00:00Z"
+  },
+    "shell": {
+        "background-color": "#1e1e1e",
+        "wave-color": "#ffffff",
+        "background-type": "wave",
+        "background-image": "",
+        "font-path": "default",
+        "date-time-format": "%a %d %b %H:%M",
+        "date-time-x-offset": 0.0,
+        "language": "auto",
+        "excluded-applications": [
+            "example-app-1.desktop",
+            "example-app-2.desktop"
+        ]
+    },
+    "controller": {
+        "rumble": true,
+        "analog-stick": true,
+        "type": "default"
+    },
+    "render": {
+        "sample-count": 4,
+        "max-fps": 100,
+        "vsync": true,
+        "show-fps": false,
+        "show-mem": false
+    }
+}

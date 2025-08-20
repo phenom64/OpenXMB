@@ -4,20 +4,20 @@ module;
 #include <memory>
 #include <vector>
 
-export module xmbshell.app:main_menu;
+export module shell.app:main_menu;
 
 import :menu_base;
 import dreamrender;
 import sdl2;
 import vulkan_hpp;
 import vma;
-import xmbshell.utils;
+import shell.utils;
 
 namespace app {
 
 class main_menu : public action_receiver {
     public:
-        main_menu(class xmbshell* shell);
+        main_menu(class shell* shell);
         void preload(vk::Device device, vma::Allocator allocator, dreamrender::resource_loader& loader);
         void render(dreamrender::gui_renderer& renderer);
 
@@ -25,7 +25,7 @@ class main_menu : public action_receiver {
     private:
         using time_point = std::chrono::time_point<std::chrono::system_clock>;
 
-        class xmbshell* shell;
+        class shell* shell;
 
         void render_crossbar(dreamrender::gui_renderer& renderer, time_point now);
         void render_submenu(dreamrender::gui_renderer& renderer, time_point now);

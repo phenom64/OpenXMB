@@ -3,13 +3,13 @@ module;
 #include <functional>
 #include <string>
 
-export module xmbshell.app:message_overlay;
+export module shell.app:message_overlay;
 
 import dreamrender;
 import sdl2;
 import vulkan_hpp;
 import vma;
-import xmbshell.utils;
+import shell.utils;
 import :component;
 
 namespace app {
@@ -21,7 +21,7 @@ export class message_overlay : public component, public action_receiver {
             bool cancelable = true, std::function<void()> cancel_callback = [](){}
         );
 
-        void render(dreamrender::gui_renderer& renderer, class xmbshell* xmb) override;
+        void render(dreamrender::gui_renderer& renderer, class shell* xmb) override;
         result on_action(action action) override;
     private:
         std::string title;

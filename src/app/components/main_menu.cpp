@@ -2,7 +2,7 @@ module;
 
 #include <chrono>
 
-module xmbshell.app;
+module shell.app;
 
 import sdl2;
 import spdlog;
@@ -12,7 +12,7 @@ import vulkan_hpp;
 import vma;
 import dreamrender;
 
-import xmbshell.config;
+import shell.config;
 import :menu_base;
 import :menu_utils;
 import :applications_menu;
@@ -24,7 +24,7 @@ using namespace mfk::i18n::literals;
 
 namespace app {
 
-main_menu::main_menu(xmbshell* shell) : shell(shell) {
+main_menu::main_menu(shell* shell) : shell(shell) {
 
 }
 

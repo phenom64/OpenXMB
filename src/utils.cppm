@@ -8,7 +8,7 @@ module;
 
 #include <glm/glm.hpp>
 
-export module xmbshell.utils;
+export module shell.utils;
 
 import giomm;
 
@@ -136,8 +136,8 @@ namespace utils {
     template<typename T>
     constexpr std::string_view get_typename() {
         std::string_view name = std::source_location::current().function_name();
-        name.remove_prefix(std::string_view::traits_type::length("std::string_view utils::get_typename()"));
-        name.remove_prefix(std::string_view::traits_type::length(" [T = "));
+        name.remove_prefix(std::string_view::traits_type::length("std::string_view utils::get_typename() "));
+        name.remove_prefix(std::string_view::traits_type::length("[T = "));
         name.remove_suffix(std::string_view::traits_type::length("]"));
         return name;
     }

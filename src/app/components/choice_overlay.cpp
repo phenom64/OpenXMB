@@ -6,7 +6,7 @@ module;
 #include <string>
 #include <vector>
 
-module xmbshell.app;
+module shell.app;
 import :choice_overlay;
 
 import dreamrender;
@@ -66,7 +66,7 @@ bool choice_overlay::select_relative(action dir) {
     return true;
 }
 
-void choice_overlay::render(dreamrender::gui_renderer& renderer, class xmbshell* xmb) {
+void choice_overlay::render(dreamrender::gui_renderer& renderer, class shell* xmb) {
     renderer.draw_quad(std::array{
         dreamrender::simple_renderer::vertex_data{{0.65f, 0.0f}, {0.1f, 0.1f, 0.1f, 1.0f}, {0.0f, 0.0f}},
         dreamrender::simple_renderer::vertex_data{{0.65f, 1.0f}, {0.1f, 0.1f, 0.1f, 1.0f}, {0.0f, 1.0f}},

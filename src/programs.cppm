@@ -6,7 +6,7 @@ module;
 #include <string>
 #include <vector>
 
-export module xmbshell.app:programs;
+export module shell.app:programs;
 
 import :component;
 import giomm;

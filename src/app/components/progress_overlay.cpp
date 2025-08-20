@@ -6,7 +6,7 @@ module;
 #include <string>
 #include <vector>
 
-module xmbshell.app;
+module shell.app;
 import :progress_overlay;
 
 import :message_overlay;
@@ -27,7 +27,7 @@ namespace app {
         }
     }
 
-    result progress_overlay::tick(xmbshell* xmb) {
+    result progress_overlay::tick(shell* xmb) {
         auto status = item->progress(progress, status_message);
         if(status == progress_item::status::error) {
             failed = true;
@@ -52,7 +52,7 @@ namespace app {
         return result::success;
     }
 
-    void progress_overlay::render(dreamrender::gui_renderer& renderer, xmbshell* xmb) {
+    void progress_overlay::render(dreamrender::gui_renderer& renderer, shell* xmb) {
         renderer.draw_rect(glm::vec2(0.0f, 0.15f), glm::vec2(1.0f, 2.0/renderer.frame_size.height), glm::vec4(0.7f, 0.7f, 0.7f, 1.0f));
         renderer.draw_rect(glm::vec2(0.0f, 0.85f), glm::vec2(1.0f, 2.0/renderer.frame_size.height), glm::vec4(0.7f, 0.7f, 0.7f, 1.0f));
 

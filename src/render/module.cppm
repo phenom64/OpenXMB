@@ -1,6 +1,6 @@
 module;
 
-export module xmbshell.render;
+export module shell.render;
 
 export import :wave_renderer;
 export import :shaders;

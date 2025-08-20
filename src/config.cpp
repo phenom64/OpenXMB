@@ -9,13 +9,11 @@ module;
 #include <map>
 #include <version>
 
-module xmbshell.config;
+module shell.config;
 
 import spdlog;
-import glibmm;
-import giomm;
 import vulkan_hpp;
-import xmbshell.constants;
+import shell.constants;
 
 namespace config {
 
@@ -55,10 +53,10 @@ void config::on_update(const Glib::ustring& key) {
 }
 
 void config::load() {
-    shellSettings = Gio::Settings::create("re.jcm.xmbos.xmbshell");
+    shellSettings = Gio::Settings::create("re.jcm.xmbos.shell");
     shellSettings->signal_changed().connect(sigc::mem_fun(*this, &config::on_update));
 
-    renderSettings = Gio::Settings::create("re.jcm.xmbos.xmbshell.render");
+    renderSettings = Gio::Settings::create("re.jcm.xmbos.shell.render");
     renderSettings->signal_changed().connect(sigc::mem_fun(*this, &config::on_update));
 
     reload();

@@ -1,6 +1,6 @@
 module;
 
-export module xmbshell.app:blur_layer;
+export module shell.app:blur_layer;
 
 import dreamrender;
 import vulkan_hpp;
@@ -10,9 +10,9 @@ namespace app {
 
 export class blur_layer : public component {
     public:
-        blur_layer(class xmbshell* xmb);
+        blur_layer(class shell* xmb);
 
-        void render(dreamrender::gui_renderer& renderer, class xmbshell* xmb) override;
+        void render(dreamrender::gui_renderer& renderer, class shell* xmb) override;
         [[nodiscard]] bool is_opaque() const override { return false; }
     private:
         dreamrender::texture srcTexture;
