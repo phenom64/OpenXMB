@@ -121,6 +121,15 @@ FetchContent_MakeAvailable(i18n++ argparse)
 pkg_check_modules(glibmm glibmm-2.68 REQUIRED IMPORTED_TARGET)
 pkg_check_modules(giomm giomm-2.68 REQUIRED IMPORTED_TARGET)
 
+find_path(GSETTINGS_SCHEMA_DIR_GLIB NAMES gschema.dtd PATHS ${glib_PREFIX}/share/glib-2.0/schemas)
+find_path(GSETTINGS_SCHEMA_DIR_GIO NAMES gschema.dtd PATHS ${giomm_PREFIX}/share/glib-2.0/schemas)
+
+# Collect all the schema XML files.
+file(GLOB GSETTINGS_SCHEMAS
+    "${GSETTINGS_SCHEMA_DIR_GLIB}/*.gschema.xml"
+    "${GSETTINGS_SCHEMA_DIR_GIO}/*.gschema.xml"
+)
+
 set(SDL_BUILDING_LIBRARY ON CACHE BOOL "" FORCE)
 find_package(SDL2 REQUIRED)
 find_package(SDL2_image REQUIRED)
@@ -259,8 +268,79 @@ target_include_directories(XMS PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/shaders)
 
 include(GNUInstallDirs)
 
-install(TARGETS XMS
-  RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}/"
-  ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}/"
-  LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}/"
-)
+# =============================================================================
+# --- Installation ---
+# =============================================================================
+include(GNUInstallDirs)
+
+# We rename the final executable to "XMS.bin". A launcher script named "XMS"
+# will be created to set up the environment and run this binary.
+set_target_properties(XMS PROPERTIES OUTPUT_NAME "XMS.bin")
+
+# On Unix platforms (macOS, Linux), handle all deployment steps.
+if(UNIX)
+    # On macOS, set the RPATH so the executable can find Homebrew libraries.
+    # This must be done BEFORE the install() command for the target.
+    if(APPLE)
+        find_package(Vulkan REQUIRED)
+        # Using @executable_path makes the application more portable by telling
+        # the dynamic linker to look for libraries relative to the executable's location.
+        # We also add the Vulkan library's actual directory as a fallback.
+        get_filename_component(VULKAN_LIB_DIR ${Vulkan_LIBRARIES} DIRECTORY)
+        set_target_properties(XMS PROPERTIES
+            INSTALL_RPATH "@executable_path/../lib;${VULKAN_LIB_DIR}"
+        )
+    endif()
+
+    # Install the main executable binary.
+    install(TARGETS XMS
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    )
+
+    # Define the installation path for the schemas.
+    set(SCHEMA_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/glib-2.0/schemas")
+
+    # Install the GSettings schemas from the libraries we linked against.
+    # The GSETTINGS_SCHEMA_DIR_GLIB and GSETTINGS_SCHEMA_DIR_GIO variables
+    # were already correctly determined earlier in the script.
+    if(GSETTINGS_SCHEMA_DIR_GLIB AND EXISTS "${GSETTINGS_SCHEMA_DIR_GLIB}")
+        install(
+            DIRECTORY "${GSETTINGS_SCHEMA_DIR_GLIB}/"
+            DESTINATION "${SCHEMA_INSTALL_DIR}"
+            FILES_MATCHING PATTERN "*.gschema.xml"
+        )
+    endif()
+
+    if(GSETTINGS_SCHEMA_DIR_GIO AND EXISTS "${GSETTINGS_SCHEMA_DIR_GIO}")
+        install(
+            DIRECTORY "${GSETTINGS_SCHEMA_DIR_GIO}/"
+            DESTINATION "${SCHEMA_INSTALL_DIR}"
+            FILES_MATCHING PATTERN "*.gschema.xml"
+        )
+    endif()
+
+    # After installation, run glib-compile-schemas to create the binary cache.
+    install(CODE "
+        message(STATUS \"Compiling GSettings schemas...\")
+        execute_process(
+            COMMAND glib-compile-schemas \"\${CMAKE_INSTALL_PREFIX}/${SCHEMA_INSTALL_DIR}\"
+            RESULT_VARIABLE res
+        )
+        if(NOT res EQUAL 0)
+            message(FATAL_ERROR \"Failed to compile GSettings schemas. Is glib installed correctly?\")
+        endif()
+    ")
+
+    # Configure our launcher script template and install it.
+    configure_file(
+        scripts/XMS.sh.in
+        ${CMAKE_CURRENT_BINARY_DIR}/XMS.sh
+        @ONLY
+    )
+    install(
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/XMS.sh
+        DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        RENAME "XMS"
+        PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ
+    )
+endif()
