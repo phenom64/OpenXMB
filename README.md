@@ -1,11 +1,9 @@
 # OpenXMB
 
-<p align="center">
+<p align="left">
   An open-source, cross-platform reimagining of the XrossMediaBar, built from the ground up with modern C++23, Vulkan, and SDL2.
 </p>
-<p align="center">
-  <img src="https://raw.githubusercontent.com/phenom64/OpenXMB/master/screenshot.png" alt="OpenXMB Screenshot" width="75%"/>
-</p>
+<a href="https://syndromatic.com"><img src="interfaceFX/GraphicsServer/SyndromaticOrb.png" alt="Syndromatic Logo" width="100"/></a>
 
 ## About The Project
 
