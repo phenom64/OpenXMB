@@ -59,9 +59,11 @@ if [ "$UNAME" = "Darwin" ]; then
     fi
 fi
 
-# Default assets dir (if not set) -> installed share
+# Default assets dir (if not set) -> prefer build-local share then installed share
 if [ -z "$XMB_ASSET_DIR" ]; then
-    if [ -d "$DIR/../share/shell" ]; then
+    if [ -d "$DIR/share/shell" ]; then
+        export XMB_ASSET_DIR="$DIR/share/shell"
+    elif [ -d "$DIR/../share/shell" ]; then
         export XMB_ASSET_DIR="$DIR/../share/shell"
     fi
 fi

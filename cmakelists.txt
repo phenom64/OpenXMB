@@ -10,12 +10,14 @@ cmake_policy(SET CMP0144 NEW)
 # ANSI color codes for terminal output
 string(ASCII 27 ESC)
 set(COLOR_RESET   "${ESC}[0m")
-set(COLOR_CYAN    "${ESC}[36m")
+set(COLOR_CYAN    "${ESC}[34m")
+set(COLOR_RED     "${ESC}[31m")
 set(COLOR_YELLOW  "${ESC}[33m")
+set(COLOR_GREEN   "${ESC}[32m")
 
 project(OpenXMB VERSION 1.0 LANGUAGES CXX)
 
-message(STATUS "${COLOR_CYAN}Starting OpenXMB Builder...${COLOR_RESET}")
+message(STATUS "${COLOR_GREEN}Starting OpenXMB Builder...${COLOR_RESET}")
 message(STATUS "${COLOR_YELLOW}TM & (C) 2025 Syndromatic Ltd Britannia, Syndromatic Ltd Bharat. All rights reserved.${COLOR_RESET}")
 
 # Platform Detection
@@ -42,7 +44,7 @@ elseif(UNIX)
 else()
   set(PLATFORM_NAME "Unknown")
 endif()
-message(STATUS "Running on ${PLATFORM_NAME}")
+message(STATUS "Running on ${COLOR_RED}${PLATFORM_NAME}${COLOR_RESET}")
 
 if(APPLE)
   list(APPEND CMAKE_PREFIX_PATH "/usr/local")
@@ -52,7 +54,7 @@ endif()
 if(NOT DEFINED BUILD_VERSION)
   set(BUILD_VERSION ${PROJECT_VERSION})
 endif()
-message(STATUS "Building version ${BUILD_VERSION}")
+message(STATUS "${COLOR_CYAN}Building version ${BUILD_VERSION}${COLOR_RESET}")
 
 # --- Feature Options ---
 option(ENABLE_BROWSER "Enable CEF-based browser module" OFF)
@@ -62,7 +64,35 @@ option(ENABLE_LIBRETRO "Enable libretro core host" OFF)
 set(HWACCEL "auto" CACHE STRING "Preferred hardware video decode backend")
 set_property(CACHE HWACCEL PROPERTY STRINGS auto off vaapi d3d11 videotoolbox)
 
-message(STATUS "Features: BROWSER=${ENABLE_BROWSER} VIDEO=${ENABLE_VIDEO_PLAYER} DISC=${ENABLE_DISC_MEDIA} LIBRETRO=${ENABLE_LIBRETRO} HWACCEL=${HWACCEL}")
+# Set color for ENABLE_BROWSER
+if(ENABLE_BROWSER)
+    set(BROWSER_COLOR "${COLOR_GREEN}")
+else()
+    set(BROWSER_COLOR "${COLOR_RED}")
+endif()
+
+# Set color for ENABLE_VIDEO_PLAYER
+if(ENABLE_VIDEO_PLAYER)
+    set(VIDEO_PLAYER_COLOR "${COLOR_GREEN}")
+else()
+    set(VIDEO_PLAYER_COLOR "${COLOR_RED}")
+endif()
+
+# Set color for ENABLE_DISC_MEDIA
+if(ENABLE_DISC_MEDIA)
+    set(DISC_MEDIA_COLOR "${COLOR_GREEN}")
+else()
+    set(DISC_MEDIA_COLOR "${COLOR_RED}")
+endif()
+
+# Set color for ENABLE_LIBRETRO
+if(ENABLE_LIBRETRO)
+    set(LIBRETRO_COLOR "${COLOR_GREEN}")
+else()
+    set(LIBRETRO_COLOR "${COLOR_RED}")
+endif()
+
+message(STATUS "${COLOR_YELLOW}Enabled features: ${COLOR_RESET}BROWSER=${BROWSER_COLOR}${ENABLE_BROWSER}${COLOR_RESET} VIDEO=${VIDEO_PLAYER_COLOR}${ENABLE_VIDEO_PLAYER}${COLOR_RESET} DISC=${DISC_MEDIA_COLOR}${ENABLE_DISC_MEDIA}${COLOR_RESET} LIBRETRO=${LIBRETRO_COLOR}${ENABLE_LIBRETRO}${COLOR_RESET} HWACCEL=${HWACCEL}${COLOR_RESET}")
 
 set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 set(CMAKE_CXX_STANDARD 23)
@@ -420,6 +450,94 @@ if(UNIX)
         RENAME "XMS"
         PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ
     )
+
+    # -------------------------------------------------------------------------
+    # Dev assets for running from the build tree (no install). We mirror a
+    # minimal asset set into ${CMAKE_CURRENT_BINARY_DIR}/share/shell
+    # so the launcher can find icons/sounds/fonts.
+    # -------------------------------------------------------------------------
+    set(_dev_shell_dir "${CMAKE_CURRENT_BINARY_DIR}/share/shell")
+    file(MAKE_DIRECTORY "${_dev_shell_dir}/icons")
+    file(MAKE_DIRECTORY "${_dev_shell_dir}/sounds")
+    # Font
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/TypefaceServer/Play-Regular.ttf")
+      configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/TypefaceServer/Play-Regular.ttf
+        ${_dev_shell_dir}/Play-Regular.ttf COPYONLY)
+    endif()
+    # Sounds
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.clicker.Opt.wav")
+      configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.clicker.Opt.wav
+        ${_dev_shell_dir}/sounds/ok.wav COPYONLY)
+    elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.ui.Confirm.wav")
+      configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.ui.Confirm.wav
+        ${_dev_shell_dir}/sounds/ok.wav COPYONLY)
+    endif()
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.startup.ogg")
+      configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.startup.ogg
+        ${_dev_shell_dir}/sounds/startup.ogg COPYONLY)
+    endif()
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.startup.GameBoot.wav")
+      configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.startup.GameBoot.wav
+        ${_dev_shell_dir}/sounds/startup.wav COPYONLY)
+    endif()
+    # Icons (map available HomeMenu and settings placeholders)
+    set(_icon_src_dir "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/GraphicsServer/HomeMenu")
+    if(EXISTS "${_icon_src_dir}/photo300.png")
+      configure_file(${_icon_src_dir}/photo300.png ${_dev_shell_dir}/icons/icon_category_photo.png COPYONLY)
+    endif()
+    if(EXISTS "${_icon_src_dir}/music300.png")
+      configure_file(${_icon_src_dir}/music300.png ${_dev_shell_dir}/icons/icon_category_music.png COPYONLY)
+    endif()
+    if(EXISTS "${_icon_src_dir}/movie300.png")
+      configure_file(${_icon_src_dir}/movie300.png ${_dev_shell_dir}/icons/icon_category_video.png COPYONLY)
+      configure_file(${_icon_src_dir}/movie300.png ${_dev_shell_dir}/icons/icon_category_tv.png COPYONLY)
+    endif()
+    if(EXISTS "${_icon_src_dir}/settings300.png")
+      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_category_settings.png COPYONLY)
+      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_personalization.png COPYONLY)
+      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_video.png COPYONLY)
+      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_input.png COPYONLY)
+      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_debug.png COPYONLY)
+      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_toggle-background-blur.png COPYONLY)
+      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_update.png COPYONLY)
+      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_reset.png COPYONLY)
+      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_bug.png COPYONLY)
+      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_licenses.png COPYONLY)
+      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_license.png COPYONLY)
+      # Specific settings entries used in menus
+      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_background-type.png COPYONLY)
+      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_language.png COPYONLY)
+      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_vsync.png COPYONLY)
+      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_sample-count.png COPYONLY)
+      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_max-fps.png COPYONLY)
+      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_controller-type.png COPYONLY)
+      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_controller-rumble.png COPYONLY)
+      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_controller-analog-stick.png COPYONLY)
+      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_show-fps.png COPYONLY)
+      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_show-mem.png COPYONLY)
+    endif()
+    if(EXISTS "${_icon_src_dir}/game300.png")
+      configure_file(${_icon_src_dir}/game300.png ${_dev_shell_dir}/icons/icon_category_game.png COPYONLY)
+      configure_file(${_icon_src_dir}/game300.png ${_dev_shell_dir}/icons/icon_category_application.png COPYONLY)
+    endif()
+    if(EXISTS "${_icon_src_dir}/network300.png")
+      configure_file(${_icon_src_dir}/network300.png ${_dev_shell_dir}/icons/icon_category_network.png COPYONLY)
+    endif()
+    if(EXISTS "${_icon_src_dir}/friends350.png")
+      configure_file(${_icon_src_dir}/friends350.png ${_dev_shell_dir}/icons/icon_category_users.png COPYONLY)
+      configure_file(${_icon_src_dir}/friends350.png ${_dev_shell_dir}/icons/icon_category_friends.png COPYONLY)
+    endif()
+    # Placeholder default button icons to avoid load errors
+    if(EXISTS "${_icon_src_dir}/settings300.png")
+      foreach(_b left right up down ok cancel options extra)
+        configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_button_default_${_b}.png COPYONLY)
+      endforeach()
+    endif()
 endif()
 
 # Optional external dependencies when flags are enabled (best-effort)

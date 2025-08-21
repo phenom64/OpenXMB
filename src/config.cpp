@@ -275,32 +275,43 @@ void config::setMaxFPS(double fps) {
 }
 
 void config::setFontPath(std::string path) {
+    // If the path is explicitly valid, use it
     if(std::filesystem::exists(path)) {
         fontPath = path;
-    } else {
-        spdlog::warn("Ignoring invalid font path: {}", path);
-#if defined(__APPLE__)
-        // Try a sensible macOS default to reduce friction on first run
-        const char* mac_candidates[] = {
-            "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
-            "/System/Library/Fonts/Supplemental/Arial.ttf",
-            "/Library/Fonts/Arial.ttf",
-        };
-        bool set = false;
-        for(const char* cand : mac_candidates) {
-            if(std::filesystem::exists(cand)) {
-                fontPath = cand;
-                set = true;
-                break;
-            }
-        }
-        if(!set) {
-            fontPath = fallback_font;
-        }
-#else
-        fontPath = fallback_font;
-#endif
+        return;
     }
+
+    // For "default" or any invalid value, prefer the packaged asset font
+    if(path == "default" || !std::filesystem::exists(path)) {
+        auto asset_default = asset_directory / "Play-Regular.ttf";
+        if(std::filesystem::exists(asset_default)) {
+            fontPath = asset_default;
+            return;
+        }
+    }
+
+    if(path != "default") {
+        spdlog::warn("Ignoring invalid font path: {}", path);
+    }
+
+#if defined(__APPLE__)
+    // Try sensible macOS defaults
+    const char* mac_candidates[] = {
+        "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
+        "/Library/Fonts/Arial.ttf",
+    };
+    for(const char* cand : mac_candidates) {
+        if(std::filesystem::exists(cand)) {
+            fontPath = cand;
+            return;
+        }
+    }
+    // Fallback to compiled-in default relative to exe dir
+    fontPath = fallback_font;
+#else
+    fontPath = fallback_font;
+#endif
 }
 
 void config::setBackgroundType(background_type type) {
