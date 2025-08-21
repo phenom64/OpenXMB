@@ -54,11 +54,24 @@ if(NOT DEFINED BUILD_VERSION)
 endif()
 message(STATUS "Building version ${BUILD_VERSION}")
 
+# --- Feature Options ---
+option(ENABLE_BROWSER "Enable CEF-based browser module" OFF)
+option(ENABLE_VIDEO_PLAYER "Enable FFmpeg video player" ON)
+option(ENABLE_DISC_MEDIA "Enable DVD/Blu-ray support" OFF)
+option(ENABLE_LIBRETRO "Enable libretro core host" OFF)
+set(HWACCEL "auto" CACHE STRING "Preferred hardware video decode backend")
+set_property(CACHE HWACCEL PROPERTY STRINGS auto off vaapi d3d11 videotoolbox)
+
+message(STATUS "Features: BROWSER=${ENABLE_BROWSER} VIDEO=${ENABLE_VIDEO_PLAYER} DISC=${ENABLE_DISC_MEDIA} LIBRETRO=${ENABLE_LIBRETRO} HWACCEL=${HWACCEL}")
+
 set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_options(-fPIC)
 add_compile_options(-Wno-nullability-completeness)
+
+# Propagate HWACCEL preference for conditional code
+add_compile_definitions(OPENXMB_HWACCEL_STR="${HWACCEL}")
 
 find_package(glm REQUIRED)
 find_package(Freetype REQUIRED)
@@ -181,12 +194,39 @@ set(XMS_MODULE_SOURCES
   src/programs/base_viewer.cppm
   src/programs/image_viewer.cppm
   src/programs/text_viewer.cppm
-  src/programs/video_player.cppm
   src/render/module.cppm
   src/render/shaders.cppm
   src/render/components/wave_renderer.cppm
   src/utils.cppm
 )
+
+if(ENABLE_VIDEO_PLAYER)
+  list(APPEND XMS_MODULE_SOURCES src/programs/video_player.cppm)
+  add_compile_definitions(OPENXMB_ENABLE_VIDEO_PLAYER=1)
+else()
+  add_compile_definitions(OPENXMB_ENABLE_VIDEO_PLAYER=0)
+endif()
+
+if(ENABLE_BROWSER)
+  list(APPEND XMS_MODULE_SOURCES src/modules/browser.cppm)
+  add_compile_definitions(OPENXMB_ENABLE_BROWSER=1)
+else()
+  add_compile_definitions(OPENXMB_ENABLE_BROWSER=0)
+endif()
+
+if(ENABLE_LIBRETRO)
+  list(APPEND XMS_MODULE_SOURCES src/modules/libretro.cppm)
+  add_compile_definitions(OPENXMB_ENABLE_LIBRETRO=1)
+else()
+  add_compile_definitions(OPENXMB_ENABLE_LIBRETRO=0)
+endif()
+
+if(ENABLE_DISC_MEDIA)
+  list(APPEND XMS_MODULE_SOURCES src/modules/disc.cppm)
+  add_compile_definitions(OPENXMB_ENABLE_DISC_MEDIA=1)
+else()
+  add_compile_definitions(OPENXMB_ENABLE_DISC_MEDIA=0)
+endif()
 set(XMS_SHADERS
   shaders/blur.comp
   shaders/wave.vert
@@ -283,6 +323,73 @@ if(UNIX)
         DESTINATION "${CMAKE_INSTALL_DATADIR}/OpenXMB"
     )
 
+    # Install assets from interfaceFX (icons, sounds, fonts) into share/shell
+    install(CODE [[
+      file(MAKE_DIRECTORY "${CMAKE_INSTALL_FULL_DATADIR}/shell/icons")
+      file(MAKE_DIRECTORY "${CMAKE_INSTALL_FULL_DATADIR}/shell/sounds")
+    ]])
+    # Fonts
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/TypefaceServer/Play-Regular.ttf
+            DESTINATION "${CMAKE_INSTALL_DATADIR}/shell" RENAME Play-Regular.ttf)
+    # Sounds (map confirm -> ok)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.ui.Confirm.wav")
+      install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.ui.Confirm.wav
+              DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/sounds" RENAME ok.wav)
+    endif()
+    # Category icons mapping (use existing as placeholders where needed)
+    set(_icon_src_dir "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/GraphicsServer/HomeMenu")
+    if(EXISTS "${_icon_src_dir}")
+      set(_map
+        photo300.png      icon_category_photo.png
+        music300.png      icon_category_music.png
+        movie300.png      icon_category_video.png
+        settings300.png   icon_category_settings.png
+        game300.png       icon_category_game.png
+        network300.png    icon_category_network.png
+        friends350.png    icon_category_friends.png
+      )
+      list(LENGTH _map _len)
+      math(EXPR _pairs "${_len}/2")
+      foreach(i RANGE 0 ${_pairs})
+      endforeach()
+      # Install each mapped icon
+      if(EXISTS "${_icon_src_dir}/photo300.png")
+        install(FILES "${_icon_src_dir}/photo300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_category_photo.png)
+      endif()
+      if(EXISTS "${_icon_src_dir}/music300.png")
+        install(FILES "${_icon_src_dir}/music300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_category_music.png)
+      endif()
+      if(EXISTS "${_icon_src_dir}/movie300.png")
+        install(FILES "${_icon_src_dir}/movie300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_category_video.png)
+        install(FILES "${_icon_src_dir}/movie300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_category_tv.png)
+      endif()
+      if(EXISTS "${_icon_src_dir}/settings300.png")
+        install(FILES "${_icon_src_dir}/settings300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_category_settings.png)
+        # Settings screen icons (reuse as placeholder)
+        install(FILES "${_icon_src_dir}/settings300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_settings_personalization.png)
+        install(FILES "${_icon_src_dir}/settings300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_settings_video.png)
+        install(FILES "${_icon_src_dir}/settings300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_settings_input.png)
+        install(FILES "${_icon_src_dir}/settings300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_settings_debug.png)
+        install(FILES "${_icon_src_dir}/settings300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_settings_toggle-background-blur.png)
+        install(FILES "${_icon_src_dir}/settings300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_settings_update.png)
+        install(FILES "${_icon_src_dir}/settings300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_settings_reset.png)
+        install(FILES "${_icon_src_dir}/settings300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_bug.png)
+        install(FILES "${_icon_src_dir}/settings300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_licenses.png)
+        install(FILES "${_icon_src_dir}/settings300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_license.png)
+      endif()
+      if(EXISTS "${_icon_src_dir}/game300.png")
+        install(FILES "${_icon_src_dir}/game300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_category_game.png)
+        install(FILES "${_icon_src_dir}/game300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_category_application.png)
+      endif()
+      if(EXISTS "${_icon_src_dir}/network300.png")
+        install(FILES "${_icon_src_dir}/network300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_category_network.png)
+      endif()
+      if(EXISTS "${_icon_src_dir}/friends350.png")
+        install(FILES "${_icon_src_dir}/friends350.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_category_users.png)
+        install(FILES "${_icon_src_dir}/friends350.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_category_friends.png)
+      endif()
+    endif()
+
     # Configure our launcher script template and install it.
     configure_file(
         scripts/XMS.sh.in
@@ -295,4 +402,23 @@ if(UNIX)
         RENAME "XMS"
         PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ
     )
+endif()
+
+# Optional external dependencies when flags are enabled (best-effort)
+if(ENABLE_DISC_MEDIA)
+  find_package(PkgConfig QUIET)
+  if(PkgConfig_FOUND)
+    pkg_check_modules(BLURAY libbluray QUIET)
+    pkg_check_modules(DVDREAD libdvdread QUIET)
+    pkg_check_modules(DVDNAV libdvdnav QUIET)
+    if(BLURAY_FOUND)
+      target_link_libraries(XMS PRIVATE PkgConfig::BLURAY)
+    endif()
+    if(DVDREAD_FOUND)
+      target_link_libraries(XMS PRIVATE PkgConfig::DVDREAD)
+    endif()
+    if(DVDNAV_FOUND)
+      target_link_libraries(XMS PRIVATE PkgConfig::DVDNAV)
+    endif()
+  endif()
 endif()

@@ -14,11 +14,11 @@ export namespace constants
 #if defined(_WIN32)
     constexpr auto asset_directory = "./shell/";
     constexpr auto locale_directory = "./locale/";
-    constexpr auto fallback_font = "./shell/Ubuntu-R.ttf";
+    constexpr auto fallback_font = "./shell/Play-Regular.ttf";
 #else
     constexpr auto asset_directory = "../share/shell/";
     constexpr auto locale_directory = "../share/locale/";
-    constexpr auto fallback_font = "../share/shell/Ubuntu-R.ttf";
+    constexpr auto fallback_font = "../share/shell/Play-Regular.ttf";
 #endif
 
     constexpr auto fallback_datetime_format = "%m/%d %H:%M";

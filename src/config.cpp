@@ -279,7 +279,27 @@ void config::setFontPath(std::string path) {
         fontPath = path;
     } else {
         spdlog::warn("Ignoring invalid font path: {}", path);
+#if defined(__APPLE__)
+        // Try a sensible macOS default to reduce friction on first run
+        const char* mac_candidates[] = {
+            "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+            "/System/Library/Fonts/Supplemental/Arial.ttf",
+            "/Library/Fonts/Arial.ttf",
+        };
+        bool set = false;
+        for(const char* cand : mac_candidates) {
+            if(std::filesystem::exists(cand)) {
+                fontPath = cand;
+                set = true;
+                break;
+            }
+        }
+        if(!set) {
+            fontPath = fallback_font;
+        }
+#else
         fontPath = fallback_font;
+#endif
     }
 }
 

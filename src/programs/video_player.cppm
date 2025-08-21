@@ -256,6 +256,21 @@ export class video_player : private base_viewer, public component, public action
         std::chrono::steady_clock::time_point start_time;
 };
 
+namespace {
+#if OPENXMB_ENABLE_VIDEO_PLAYER
+const inline register_program<video_player> video_player_program{
+    "video_player",
+    {
+        "video/mp4", "video/x-matroska", "video/x-msvideo",
+        "video/quicktime", "video/webm", "video/mpeg"
+    },
+    {
+        ".mp4", ".mkv", ".avi", ".mov", ".webm", ".mpg", ".mpeg"
+    }
+};
+#endif
+}
+
 void video_player::prerender(vk::CommandBuffer cmd, int frame, shell* xmb) {
     if(!loaded || state != play_state::playing) {
         return;
