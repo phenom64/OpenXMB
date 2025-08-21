@@ -161,6 +161,7 @@ set(XMS_SOURCES
   src/app/components/message_overlay.cpp
   src/app/components/news_display.cpp
   src/app/components/progress_overlay.cpp
+  src/app/components/startup_overlay.cpp
   src/app/layers/blur_layer.cpp
   src/menu/applications_menu.cpp
   src/menu/files_menu.cpp
@@ -181,6 +182,7 @@ set(XMS_MODULE_SOURCES
   src/app/components/message_overlay.cppm
   src/app/components/news_display.cppm
   src/app/components/progress_overlay.cppm
+  src/app/components/startup_overlay.cppm
   src/app/layers/blur_layer.cppm
   src/config.cppm
   src/constants.cppm
@@ -331,10 +333,24 @@ if(UNIX)
     # Fonts
     install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/TypefaceServer/Play-Regular.ttf
             DESTINATION "${CMAKE_INSTALL_DATADIR}/shell" RENAME Play-Regular.ttf)
-    # Sounds (map confirm -> ok)
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.ui.Confirm.wav")
+    # Sounds
+    # Use clicker sound for tick/OK feedback
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.clicker.Opt.wav")
+      install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.clicker.Opt.wav
+              DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/sounds" RENAME ok.wav)
+    elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.ui.Confirm.wav")
+      # Fallback to confirm if clicker is unavailable
       install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.ui.Confirm.wav
               DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/sounds" RENAME ok.wav)
+    endif()
+    # Startup jingle (used by startup overlay)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.startup.ogg")
+      install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.startup.ogg
+              DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/sounds" RENAME startup.ogg)
+    endif()
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.startup.GameBoot.wav")
+      install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.startup.GameBoot.wav
+              DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/sounds" RENAME startup.wav)
     endif()
     # Category icons mapping (use existing as placeholders where needed)
     set(_icon_src_dir "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/GraphicsServer/HomeMenu")
@@ -396,6 +412,8 @@ if(UNIX)
         ${CMAKE_CURRENT_BINARY_DIR}/XMS.sh
         @ONLY
     )
+    # Ensure the build-folder script is executable for direct use pre-install
+    execute_process(COMMAND ${CMAKE_COMMAND} -E chmod "+x" ${CMAKE_CURRENT_BINARY_DIR}/XMS.sh)
     install(
         FILES ${CMAKE_CURRENT_BINARY_DIR}/XMS.sh
         DESTINATION "${CMAKE_INSTALL_BINDIR}"

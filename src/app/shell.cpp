@@ -25,6 +25,7 @@ import sdl2;
 import openxmb.config;
 import openxmb.render;
 import openxmb.utils;
+import :startup_overlay;
 
 using namespace mfk::i18n::literals;
 
@@ -189,6 +190,9 @@ namespace app
         }
 
         reload_button_icons();
+
+        // Push startup splash overlay (plays jingle, fades text)
+        emplace_overlay<app::startup_overlay>();
     }
 
     void shell::prepare(std::vector<vk::Image> swapchainImages, std::vector<vk::ImageView> swapchainViews)

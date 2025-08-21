@@ -26,6 +26,7 @@ import :main_menu;
 import :message_overlay;
 import :news_display;
 import :progress_overlay;
+import :startup_overlay;
 
 namespace app
 {

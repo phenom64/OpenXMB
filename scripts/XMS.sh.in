@@ -3,7 +3,12 @@
 DIR=$(cd "$(dirname "$0")" && pwd)
 # Copy the config file if it doesn't exist, so the user has a default.
 if [ ! -f "config.json" ]; then
-    cp "../share/OpenXMB/config.json" "config.json"
+    if [ -f "../share/OpenXMB/config.json" ]; then
+        cp "../share/OpenXMB/config.json" "config.json"
+    elif [ -f "../config.json" ]; then
+        # Fallback to source tree default when running from build dir pre-install
+        cp "../config.json" "config.json"
+    fi
 fi
 
 # On macOS, help the Vulkan loader find MoltenVK if not configured.
