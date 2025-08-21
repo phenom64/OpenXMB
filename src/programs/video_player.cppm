@@ -14,7 +14,7 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
-export module shell.app:video_player;
+export module openxmb.app:video_player;
 
 import dreamrender;
 import glm;
@@ -22,13 +22,13 @@ import spdlog;
 import vulkan_hpp;
 import vma;
 import i18n;
-import shell.utils;
+import openxmb.utils;
 import :component;
 import :programs;
 import :message_overlay;
 import :base_viewer;
-import shell.app;
-import shell.render;
+import openxmb.app;
+import openxmb.render;
 
 namespace programs {
 
@@ -91,7 +91,7 @@ export class video_player : private base_viewer, public component, public action
                 ctx = load_future.get();
                 if(!ctx->codec_ctx) {
                     spdlog::error("Failed to load video");
-                    xmb->emplace_overlay<message_overlay>("Failed to open video"_(),
+                    xmb->emplace_overlay<app::message_overlay>("Failed to open video"_(),
                         ctx->error_message.empty() ? "Unknown error"_() : ctx->error_message,
                         std::vector<std::string>{"OK"_()});
                     return result::close;

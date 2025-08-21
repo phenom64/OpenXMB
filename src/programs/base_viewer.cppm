@@ -2,12 +2,12 @@ module;
 
 #include <cmath>
 
-export module shell.app:base_viewer;
+export module openxmb.app:base_viewer;
 
 import glm;
 import dreamrender;
 import vulkan_hpp;
-import shell.utils;
+import openxmb.utils;
 
 namespace programs {
 

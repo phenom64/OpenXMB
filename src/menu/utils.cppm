@@ -1,9 +1,11 @@
 module;
 
+#include <array>
 #include <filesystem>
 #include <memory>
+#include <string>
 
-export module shell.app:menu_utils;
+export module openxmb.app:menu_utils;
 import dreamrender;
 import :menu_base;
 

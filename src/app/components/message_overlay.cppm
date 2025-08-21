@@ -3,13 +3,13 @@ module;
 #include <functional>
 #include <string>
 
-export module shell.app:message_overlay;
+export module openxmb.app:message_overlay;
 
 import dreamrender;
 import sdl2;
 import vulkan_hpp;
 import vma;
-import shell.utils;
+import openxmb.utils;
 import :component;
 
 namespace app {

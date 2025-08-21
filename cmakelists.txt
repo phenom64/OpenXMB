@@ -157,6 +157,7 @@ set(XMS_SOURCES
   src/config.cpp
   src/main.cpp
   src/utils.cpp
+  src/programs.cpp
 )
 set(XMS_MODULE_SOURCES
   src/app/module.cppm

@@ -2,14 +2,15 @@ module;
 
 #include <filesystem>
 #include <functional>
+#include <iterator>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
-export module shell.app:programs;
+export module openxmb.app:programs;
 
 import :component;
-import giomm;
 
 namespace programs {
 
@@ -19,12 +20,26 @@ export struct open_info {
     std::function<std::unique_ptr<app::component>(std::filesystem::path, dreamrender::resource_loader&)> create;
 };
 
+// JSON-based file info structure to replace Gio::FileInfo
+export struct file_info {
+    std::string mime_type;
+    std::string content_type;
+    std::string name;
+    std::string display_name;
+    std::string icon_name;
+    std::string content_type_string;
+    std::string fast_content_type;
+    
+    file_info() = default;
+    file_info(const std::filesystem::path& path);
+};
+
 class program_registry {
     static std::unordered_multimap<std::string, open_info> programs_by_mimetype;
     static std::unordered_multimap<std::string, open_info> programs_by_file_extension;
 
     protected:
-        friend std::vector<open_info> get_open_infos(const std::filesystem::path& path, const Gio::FileInfo& info);
+        friend std::vector<open_info> get_open_infos(const std::filesystem::path& path, const file_info& info);
 
         void do_register_program_mime(std::string name, std::string mime_type, open_info info) {
             programs_by_mimetype.emplace(mime_type, info);
@@ -66,10 +81,10 @@ struct register_program : program_registry {
     }
 };
 
-export std::vector<open_info> get_open_infos(const std::filesystem::path& path, const Gio::FileInfo& info) {
+export std::vector<open_info> get_open_infos(const std::filesystem::path& path, const file_info& info) {
     std::vector<open_info> infos;
 
-    program_registry::get_program_mime(info.get_attribute_string("standard::fast-content-type"), std::back_inserter(infos));
+    program_registry::get_program_mime(info.fast_content_type, std::back_inserter(infos));
     program_registry::get_program_ext(path.extension().string(), std::back_inserter(infos));
 
     return infos;

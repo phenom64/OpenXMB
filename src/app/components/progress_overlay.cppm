@@ -3,13 +3,13 @@ module;
 #include <memory>
 #include <string>
 
-export module shell.app:progress_overlay;
+export module openxmb.app:progress_overlay;
 
 import dreamrender;
 import sdl2;
 import vulkan_hpp;
 import vma;
-import shell.utils;
+import openxmb.utils;
 import :component;
 
 namespace app {

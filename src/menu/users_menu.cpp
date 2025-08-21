@@ -1,125 +1,203 @@
 module;
 
-#include <cstdint>
+#include <algorithm>
+#include <functional>
 #include <filesystem>
+#include <fstream>
 #include <string>
 #include <vector>
-
+#include <pwd.h>
+#include <grp.h>
 #include <unistd.h>
 
-module shell.app;
+module openxmb.app;
 
 import :users_menu;
 import :menu_base;
-import :menu_utils;
 import :message_overlay;
-
-import shell.config;
+import :choice_overlay;
+import openxmb.utils;
 import dreamrender;
-import glibmm;
-import giomm;
-import sdl2;
 import spdlog;
 import i18n;
 
 namespace menu {
     using namespace mfk::i18n::literals;
 
-    users_menu::users_menu(std::string name, dreamrender::texture&& icon, app::shell* xmb, dreamrender::resource_loader& loader) : simple_menu(std::move(name), std::move(icon)) {
-        try {
-            login1 = Gio::DBus::Proxy::create_for_bus_sync(Gio::DBus::BusType::SYSTEM, "org.freedesktop.login1", "/org/freedesktop/login1", "org.freedesktop.login1.Manager");
-            accounts = Gio::DBus::Proxy::create_for_bus_sync(Gio::DBus::BusType::SYSTEM, "org.freedesktop.Accounts", "/org/freedesktop/Accounts", "org.freedesktop.Accounts");
-        } catch (const std::exception& e) {
-            spdlog::error("Failed to create DBus proxies: {}", static_cast<std::string>(e.what()));
-        }
-
-#if __linux__
-        if(accounts) try {
-            uint64_t my_uid = getuid();
-            Glib::Variant<std::vector<Glib::DBusObjectPathString>> users;
-            accounts->call_sync("ListCachedUsers", Glib::VariantContainerBase{}).get_child(users);
-            for(const auto& user_path : users.get()) {
-                auto user = Gio::DBus::Proxy::create_for_bus_sync(Gio::DBus::BusType::SYSTEM, "org.freedesktop.Accounts", user_path, "org.freedesktop.Accounts.User");
-                Glib::Variant<Glib::ustring> real_name, icon_file;
-                Glib::Variant<uint64_t> uid;
-                user->get_cached_property(real_name, "RealName");
-                user->get_cached_property(icon_file, "IconFile");
-                user->get_cached_property(uid, "Uid");
-
-                std::filesystem::path icon_file_path = static_cast<std::string>(icon_file.get());
-                std::error_code ec;
-                if(!std::filesystem::exists(icon_file_path, ec) || ec) {
-                    icon_file_path = config::CONFIG.asset_directory/"icons/icon_user.png";
+    user_info::user_info(const std::string& name) : username(name) {
+        struct passwd* pwd = getpwnam(name.c_str());
+        if (pwd) {
+            real_name = pwd->pw_gecos ? pwd->pw_gecos : name;
+            home_directory = pwd->pw_dir ? pwd->pw_dir : "";
+            shell = pwd->pw_shell ? pwd->pw_shell : "";
+            is_active = true;
+            
+            // Check if user is in admin group (wheel, sudo, admin)
+            is_admin = false;
+            if (initgroups(name.c_str(), pwd->pw_gid) == 0) {
+                if (getgrnam("wheel") && getgrnam("wheel")->gr_mem) {
+                    for (int i = 0; getgrnam("wheel")->gr_mem[i]; i++) {
+                        if (name == getgrnam("wheel")->gr_mem[i]) {
+                            is_admin = true;
+                            break;
+                        }
+                    }
                 }
-                auto entry = make_simple<simple_menu_entry>(real_name.get(), icon_file_path, loader);
+                if (getgrnam("sudo") && getgrnam("sudo")->gr_mem) {
+                    for (int i = 0; getgrnam("sudo")->gr_mem[i]; i++) {
+                        if (name == getgrnam("sudo")->gr_mem[i]) {
+                            is_admin = true;
+                            break;
+                        }
+                    }
+                }
+                if (getgrnam("admin") && getgrnam("admin")->gr_mem) {
+                    for (int i = 0; getgrnam("admin")->gr_mem[i]; i++) {
+                        if (name == getgrnam("admin")->gr_mem[i]) {
+                            is_admin = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        } else {
+            real_name = name;
+            home_directory = "";
+            shell = "";
+            is_active = false;
+            is_admin = false;
+        }
+    }
 
-                if(uid.get() == my_uid) { // the current user is always first
-                    entries.insert(entries.begin(), std::move(entry));
-                } else {
-                    entries.push_back(std::move(entry));
+    users_menu::users_menu(std::string name, dreamrender::texture&& icon, app::shell* xmb, dreamrender::resource_loader& loader)
+        : simple_menu(std::move(name), std::move(icon)), xmb(xmb), loader(loader)
+    {
+        reload();
+    }
+
+    std::vector<user_info> users_menu::scan_users() {
+        std::vector<user_info> user_list;
+        
+        try {
+            // Read /etc/passwd to get user list
+            std::ifstream passwd_file("/etc/passwd");
+            std::string line;
+            
+            while (std::getline(passwd_file, line)) {
+                size_t pos = line.find(':');
+                if (pos != std::string::npos) {
+                    std::string username = line.substr(0, pos);
+                    
+                    // Skip system users (UID < 1000 on most systems)
+                    struct passwd* pwd = getpwnam(username.c_str());
+                    if (pwd && pwd->pw_uid >= 1000) {
+                        user_info user(username);
+                        if (user.is_active) {
+                            user_list.push_back(user);
+                        }
+                    }
                 }
             }
         } catch (const std::exception& e) {
-            spdlog::error("Failed to get user list: {}", static_cast<std::string>(e.what()));
+            spdlog::warn("Error scanning users: {}", e.what());
         }
-#endif
+        
+        // Sort users by username
+        std::sort(user_list.begin(), user_list.end(), [](const user_info& a, const user_info& b) {
+            return a.username < b.username;
+        });
+        
+        return user_list;
+    }
 
-        entries.push_back(make_simple<action_menu_entry>("Quit"_(), config::CONFIG.asset_directory/"icons/icon_action_quit.png", loader, [xmb](){
-            xmb->emplace_overlay<app::message_overlay>("Quit"_(), "Do you really want to quit the application?"_(),
-                std::vector<std::string>{"Yes"_(), "No"_()}, [xmb](unsigned int choice){
-                    if(choice == 0) {
-                        sdl::Event event = {
-                            .quit = {
-                                .type = sdl::EventType::SDL_QUIT,
-                                .timestamp = sdl::GetTicks()
-                            }
-                        };
-                        sdl::PushEvent(&event);
+    void users_menu::reload() {
+        entries.clear();
+        users = scan_users();
+        
+        for (const auto& user : users) {
+            dreamrender::texture icon_texture(loader.getDevice(), loader.getAllocator());
+            
+            std::string display_name = user.username;
+            if (user.is_admin) {
+                display_name += " (Admin)";
+            }
+            
+            auto entry = std::make_unique<action_menu_entry>(
+                display_name, 
+                std::move(icon_texture),
+                std::function<result()>{}, 
+                [this, user](action a) { 
+                    return activate_user(user, a); 
+                }
+            );
+            
+            entries.push_back(std::move(entry));
+        }
+    }
+
+    result users_menu::activate_user(const user_info& user, action action) {
+        if (action == action::ok) {
+            // Show user information
+            std::string info = "Username: " + user.username + "\n";
+            info += "Real Name: " + user.real_name + "\n";
+            info += "Home Directory: " + user.home_directory + "\n";
+            info += "Shell: " + user.shell + "\n";
+            info += "Status: " + std::string(user.is_active ? "Active" : "Inactive") + "\n";
+            info += "Role: " + std::string(user.is_admin ? "Administrator" : "User");
+            
+            xmb->emplace_overlay<app::message_overlay>(
+                "User Information"_(),
+                info
+            );
+            return result::close;
+        } else if (action == action::options) {
+            // Show user options
+            std::vector<std::string> options = {
+                "View Information"_(),
+                "Switch User"_(),
+                "Change Password"_()
+            };
+            
+            xmb->emplace_overlay<app::choice_overlay>(
+                options, 0, [this, user](unsigned int index) {
+                    switch (index) {
+                        case 0: // View Information
+                            return activate_user(user, action::ok);
+                        case 1: // Switch User
+                            // This would require additional implementation
+                            xmb->emplace_overlay<app::message_overlay>(
+                                "Not Implemented"_(),
+                                "User switching is not yet implemented."_()
+                            );
+                            return result::close;
+                        case 2: // Change Password
+                            // This would require additional implementation
+                            xmb->emplace_overlay<app::message_overlay>(
+                                "Not Implemented"_(),
+                                "Password changing is not yet implemented."_()
+                            );
+                            return result::close;
+                        default:
+                            return result::unsupported;
                     }
                 }
             );
-            return result::success;
-        }));
-
-        if(login1) try {
-            if(Glib::Variant<Glib::ustring> v; login1->call_sync("CanPowerOff", Glib::VariantContainerBase{}).get_child(v), v.get() == "yes") {
-                entries.push_back(make_simple<action_menu_entry>("Power off"_(), config::CONFIG.asset_directory/"icons/icon_action_poweroff.png", loader, [this, xmb](){
-                    xmb->emplace_overlay<app::message_overlay>("Power off"_(), "Do you really want to power off the system?"_(),
-                        std::vector<std::string>{"Yes"_(), "No"_()}, [this](unsigned int choice){
-                            if(choice == 0) {
-                                login1->call_sync("PowerOff", Glib::VariantContainerBase::create_tuple(Glib::Variant<bool>::create(true)));
-                            }
-                        }
-                    );
-                    return result::success;
-                }));
-            }
-            if(Glib::Variant<Glib::ustring> v; login1->call_sync("CanReboot", Glib::VariantContainerBase{}).get_child(v), v.get() == "yes") {
-                entries.push_back(make_simple<action_menu_entry>("Reboot"_(), config::CONFIG.asset_directory/"icons/icon_action_reboot.png", loader, [this, xmb](){
-                    xmb->emplace_overlay<app::message_overlay>("Reboot"_(), "Do you really want to reboot the system?"_(),
-                        std::vector<std::string>{"Yes"_(), "No"_()}, [this](unsigned int choice){
-                            if(choice == 0) {
-                                login1->call_sync("Reboot", Glib::VariantContainerBase::create_tuple(Glib::Variant<bool>::create(true)));
-                            }
-                        }
-                    );
-                    return result::success;
-                }));
-            }
-            if(Glib::Variant<Glib::ustring> v; login1->call_sync("CanSuspend", Glib::VariantContainerBase{}).get_child(v), v.get() == "yes") {
-                entries.push_back(make_simple<action_menu_entry>("Suspend"_(), config::CONFIG.asset_directory/"icons/icon_action_suspend.png", loader, [this, xmb](){
-                    xmb->emplace_overlay<app::message_overlay>("Suspend"_(), "Do you really want to suspend the system?"_(),
-                        std::vector<std::string>{"Yes"_(), "No"_()}, [this](unsigned int choice){
-                            if(choice == 0) {
-                                login1->call_sync("Suspend", Glib::VariantContainerBase::create_tuple(Glib::Variant<bool>::create(true)));
-                            }
-                        }
-                    );
-                    return result::success;
-                }));
-            }
-        } catch (const std::exception& e) {
-            spdlog::error("Failed to get power management information: {}", static_cast<std::string>(e.what()));
+            return result::submenu;
         }
+        return result::unsupported;
     }
+
+    result users_menu::activate(action action) {
+        if (action == action::extra) {
+            reload();
+            return result::unsupported;
+        }
+        return simple_menu::activate(action);
+    }
+
+    void users_menu::get_button_actions(std::vector<std::pair<action, std::string>>& v) {
+        simple_menu::get_button_actions(v);
+        v.emplace_back(action::extra, "Refresh"_());
+    }
+
 }

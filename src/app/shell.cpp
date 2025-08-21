@@ -1,16 +1,19 @@
 module;
 
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <filesystem>
+#include <format>
 #include <memory>
 #include <ranges>
+#include <tuple>
 #include <utility>
 #include <vector>
 #include <version>
 
-module shell.app;
+module openxmb.app;
 
 import i18n;
 import spdlog;
@@ -19,9 +22,9 @@ import glm;
 import vulkan_hpp;
 import vma;
 import sdl2;
-import shell.config;
-import shell.render;
-import shell.utils;
+import openxmb.config;
+import openxmb.render;
+import openxmb.utils;
 
 using namespace mfk::i18n::literals;
 

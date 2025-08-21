@@ -5,13 +5,13 @@ module;
 #include <string>
 #include <vector>
 
-export module shell.app:choice_overlay;
+export module openxmb.app:choice_overlay;
 
 import dreamrender;
 import sdl2;
 import vulkan_hpp;
 import vma;
-import shell.utils;
+import openxmb.utils;
 import :component;
 
 namespace app {

@@ -1,5 +1,0 @@
-#!/bin/sh
-# Launcher script for OpenXMB
-DIR=$(cd "$(dirname "$0")" && pwd)
-export GSETTINGS_SCHEMA_DIR="$DIR/../share/glib-2.0/schemas"
-exec "$DIR/XMS.bin" "$@"

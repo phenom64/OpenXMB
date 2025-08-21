@@ -1,6 +1,6 @@
 module;
 
-export module shell.app:blur_layer;
+export module openxmb.app:blur_layer;
 
 import dreamrender;
 import vulkan_hpp;

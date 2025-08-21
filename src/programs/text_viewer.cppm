@@ -14,13 +14,13 @@ module;
 #include <unistd.h>
 #endif
 
-export module shell.app:text_viewer;
+export module openxmb.app:text_viewer;
 
 import dreamrender;
 import glm;
 import spdlog;
 import vulkan_hpp;
-import shell.utils;
+import openxmb.utils;
 import :component;
 import :programs;
 

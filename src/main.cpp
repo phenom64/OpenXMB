@@ -10,8 +10,8 @@ import sdl2;
 import spdlog;
 import dreamrender;
 import argparse;
-import shell.app;
-import shell.config;
+import openxmb.app;
+import openxmb.config;
 
 #undef main
 int main(int argc, char *argv[])

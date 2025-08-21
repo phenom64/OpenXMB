@@ -4,7 +4,7 @@ module;
 #include <cmath>
 #include <string_view>
 
-module shell.app;
+module openxmb.app;
 
 import dreamrender;
 import vulkan_hpp;

@@ -11,10 +11,10 @@ module;
 #include <variant>
 #include <vector>
 
-export module shell.app:main;
+export module openxmb.app:main;
 
-import shell.render;
-import shell.utils;
+import openxmb.render;
+import openxmb.utils;
 import dreamrender;
 import glm;
 import sdl2;

@@ -1,4 +1,4 @@
 module;
 
-export module shell;
+export module openxmb.app;
 export import :main;

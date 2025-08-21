@@ -2,7 +2,7 @@ module;
 
 #include <chrono>
 
-module shell.app;
+module openxmb.app;
 
 import sdl2;
 import spdlog;
@@ -12,7 +12,7 @@ import vulkan_hpp;
 import vma;
 import dreamrender;
 
-import shell.config;
+import openxmb.config;
 import :menu_base;
 import :menu_utils;
 import :applications_menu;
@@ -24,7 +24,7 @@ using namespace mfk::i18n::literals;
 
 namespace app {
 
-main_menu::main_menu(shell* shell) : shell(shell) {
+main_menu::main_menu(app::shell* xmb) : xmb(xmb) {
 
 }
 
@@ -33,17 +33,17 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, dreamrender
     using ::menu::make_simple_of;
 
     const auto& asset_directory = config::CONFIG.asset_directory;
-    menus.push_back(make_simple<menu::users_menu>("Users"_(), asset_directory/"icons/icon_category_users.png", loader, shell, loader));
-    menus.push_back(make_simple<menu::settings_menu>("Settings"_(), asset_directory/"icons/icon_category_settings.png", loader, shell, loader));
-    menus.push_back(make_simple<menu::files_menu>("Photo"_(), asset_directory/"icons/icon_category_photo.png", loader, shell,
-        Glib::get_user_special_dir(Glib::UserDirectory::PICTURES), loader));
-    menus.push_back(make_simple<menu::files_menu>("Music"_(), asset_directory/"icons/icon_category_music.png", loader, shell,
-        Glib::get_user_special_dir(Glib::UserDirectory::MUSIC), loader));
-    menus.push_back(make_simple<menu::files_menu>("Video"_(), asset_directory/"icons/icon_category_video.png", loader, shell,
-        Glib::get_user_special_dir(Glib::UserDirectory::VIDEOS), loader));
+    menus.push_back(make_simple<menu::users_menu>("Users"_(), asset_directory/"icons/icon_category_users.png", loader, xmb, loader));
+    menus.push_back(make_simple<menu::settings_menu>("Settings"_(), asset_directory/"icons/icon_category_settings.png", loader, xmb, loader));
+    menus.push_back(make_simple<menu::files_menu>("Photo"_(), asset_directory/"icons/icon_category_photo.png", loader, xmb,
+        config::CONFIG.picturesPath, loader));
+    menus.push_back(make_simple<menu::files_menu>("Music"_(), asset_directory/"icons/icon_category_music.png", loader, xmb,
+        config::CONFIG.musicPath, loader));
+    menus.push_back(make_simple<menu::files_menu>("Video"_(), asset_directory/"icons/icon_category_video.png", loader, xmb,
+        config::CONFIG.videosPath, loader));
     menus.push_back(make_simple_of<menu::menu>("TV"_(), asset_directory/"icons/icon_category_tv.png", loader));
-    menus.push_back(make_simple<menu::applications_menu>("Game"_(), asset_directory/"icons/icon_category_game.png", loader, shell, loader, ::menu::categoryFilter("Game")));
-    menus.push_back(make_simple<menu::applications_menu>("Application"_(), asset_directory/"icons/icon_category_application.png", loader, shell, loader));
+    menus.push_back(make_simple<menu::applications_menu>("Game"_(), asset_directory/"icons/icon_category_game.png", loader, xmb, loader, ::menu::categoryFilter("Game")));
+    menus.push_back(make_simple<menu::applications_menu>("Application"_(), asset_directory/"icons/icon_category_application.png", loader, xmb, loader));
     menus.push_back(make_simple_of<menu::menu>("Network"_(), asset_directory/"icons/icon_category_network.png", loader));
     menus.push_back(make_simple_of<menu::menu>("Friends"_(), asset_directory/"icons/icon_category_friends.png", loader));
 
@@ -221,7 +221,7 @@ void main_menu::render(dreamrender::gui_renderer& renderer) {
         render_submenu(renderer, now);
         current_submenu->get_button_actions(buttons);
     }
-    shell->render_controller_buttons(renderer, 0.5f, 0.9f, buttons);
+    xmb->render_controller_buttons(renderer, 0.5f, 0.9f, buttons);
 }
 
 void main_menu::render_crossbar(dreamrender::gui_renderer& renderer, time_point now) {

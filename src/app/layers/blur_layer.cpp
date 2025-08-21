@@ -3,9 +3,9 @@ module;
 #include <array>
 #include <cmath>
 
-module shell.app;
+module openxmb.app;
 import :blur_layer;
-import shell.render;
+import openxmb.render;
 import dreamrender;
 import glm;
 import vulkan_hpp;

@@ -2,11 +2,11 @@ module;
 
 #include <string>
 
-export module shell.app:settings_menu;
+export module openxmb.app:settings_menu;
 
 import spdlog;
 import dreamrender;
-import shell.config;
+import openxmb.config;
 import :menu_base;
 import :menu_utils;
 

@@ -1,18 +1,20 @@
 module;
 
+#include <array>
+#include <cstdint>
 #include <filesystem>
 #include <functional>
+#include <memory>
 #include <string>
+#include <type_traits>
 #include <vector>
 
-export module shell.app:files_menu;
+export module openxmb.app:files_menu;
 
 import spdlog;
-import glibmm;
-import giomm;
 import dreamrender;
-import shell.config;
-import shell.utils;
+import openxmb.config;
+import openxmb.utils;
 import :menu_base;
 import :menu_utils;
 
@@ -21,6 +23,21 @@ namespace app {
 }
 
 export namespace menu {
+
+// JSON-based file info structure to replace Gio::FileInfo
+struct file_info {
+    std::string name;
+    std::string display_name;
+    std::string content_type;
+    std::uint64_t size;
+    bool is_directory;
+    bool is_hidden;
+    bool is_symlink;
+    std::filesystem::file_time_type modification_time;
+    
+    file_info() = default;
+    file_info(const std::filesystem::directory_entry& entry);
+};
 
 class files_menu : public simple_menu {
     public:
@@ -44,30 +61,28 @@ class files_menu : public simple_menu {
 
         void get_button_actions(std::vector<std::pair<action, std::string>>& v) override;
 
-        static constexpr auto filter_all = [](const Gio::FileInfo&) { return true; };
-        static constexpr auto filter_visible = [](const Gio::FileInfo& info) {
-            return !info.is_hidden() && !info.is_hidden();
+        static constexpr auto filter_all = [](const file_info&) { return true; };
+        static constexpr auto filter_visible = [](const file_info& info) {
+            return !info.is_hidden;
         };
 
-        static constexpr auto sort_by_name = [](const Gio::FileInfo& a, const Gio::FileInfo& b) {
-            return a.get_display_name().compare(b.get_display_name()) < 0;
+        static constexpr auto sort_by_name = [](const file_info& a, const file_info& b) {
+            return a.display_name.compare(b.display_name) < 0;
         };
-        static constexpr auto sort_by_size = [](const Gio::FileInfo& a, const Gio::FileInfo& b) {
-            return a.get_size() < b.get_size();
+        static constexpr auto sort_by_size = [](const file_info& a, const file_info& b) {
+            return a.size < b.size;
         };
-        static constexpr auto sort_by_type = [](const Gio::FileInfo& a, const Gio::FileInfo& b) {
-            auto av = a.get_attribute_string("standard::fast-content-type");
-            auto bv = b.get_attribute_string("standard::fast-content-type");
-            return av.compare(bv) < 0;
+        static constexpr auto sort_by_type = [](const file_info& a, const file_info& b) {
+            return a.content_type.compare(b.content_type) < 0;
         };
 
-        using filter_entry_type = std::pair<std::string_view, std::add_pointer_t<bool(const Gio::FileInfo&)>>;
+        using filter_entry_type = std::pair<std::string_view, std::add_pointer_t<bool(const file_info&)>>;
         static constexpr std::array filters{
             filter_entry_type{"Normal", filter_visible},
             filter_entry_type{"All files", filter_all},
         };
 
-        using sort_entry_type = std::pair<std::string_view, std::add_pointer_t<bool(const Gio::FileInfo&, const Gio::FileInfo&)>>;
+        using sort_entry_type = std::pair<std::string_view, std::add_pointer_t<bool(const file_info& a, const file_info& b)>>;
         static constexpr std::array sorts{
             sort_entry_type{"Name", sort_by_name},
             sort_entry_type{"Size", sort_by_size},
@@ -76,6 +91,7 @@ class files_menu : public simple_menu {
     private:
         void reload();
         void resort();
+        result activate_file(const file_info& info, action action);
 
         app::shell* xmb;
         std::filesystem::path path;
@@ -83,13 +99,12 @@ class files_menu : public simple_menu {
 
         struct extra_data {
             std::filesystem::path path;
-            Glib::RefPtr<Gio::File> file;
-            Glib::RefPtr<Gio::FileInfo> info;
+            file_info info;
         };
         std::vector<extra_data> extra_data_entries;
 
-        std::function<bool(const Gio::FileInfo&)> filter = filter_visible;
-        std::function<bool(const Gio::FileInfo& a, const Gio::FileInfo& b)> sort = sort_by_name;
+        std::function<bool(const file_info&)> filter = filter_visible;
+        std::function<bool(const file_info& a, const file_info& b)> sort = sort_by_name;
 
         int selected_filter = 0;
         int selected_sort = 0;
@@ -98,7 +113,6 @@ class files_menu : public simple_menu {
         std::filesystem::path old_selected_item;
         // This is extremely hacky, but it works for now.
         std::shared_ptr<bool> exists_flag = std::make_shared<bool>(true);
-        friend bool cut_file(app::shell* xmb, std::weak_ptr<void> exists, files_menu* ptr, const std::filesystem::path& src, const std::filesystem::path& dst);
 };
 
 }

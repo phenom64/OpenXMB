@@ -2,7 +2,7 @@ module;
 
 #include <cstdint>
 
-export module shell.constants;
+export module openxmb.constants;
 
 export namespace constants
 {

@@ -1,6 +1,8 @@
 module;
 
+#include <algorithm>
 #include <array>
+#include <type_traits>
 #include <chrono>
 #include <filesystem>
 #include <format>
@@ -15,12 +17,13 @@ module;
 #include <sys/wait.h>
 #endif
 
-module shell.app;
+module openxmb.app;
 
 import spdlog;
 import i18n;
 import dreamrender;
-import shell.config;
+import openxmb.config;
+import vulkan_hpp;
 
 import :settings_menu;
 
@@ -153,14 +156,47 @@ namespace menu {
     }
 
     std::unique_ptr<action_menu_entry> entry_bool(dreamrender::resource_loader& loader, app::shell* xmb,
-        std::string name, std::string description, const std::string& schema, const std::string& key)
+        std::string name, std::string description, const std::string& /*schema*/, const std::string& key)
     {
-        return entry_base(loader, std::move(name), std::move(description), key, [xmb, key, schema](){
+        return entry_base(loader, std::move(name), std::move(description), key, [xmb, key](){
+            // Determine current value for this key
+            unsigned int current = 0;
+            if(key == "vsync") {
+                current = (config::CONFIG.preferredPresentMode == vk::PresentModeKHR::eFifoRelaxed) ? 1u : 0u;
+            } else if(key == "controller-rumble") {
+                current = config::CONFIG.controllerRumble ? 1u : 0u;
+            } else if(key == "controller-analog-stick") {
+                current = config::CONFIG.controllerAnalogStick ? 1u : 0u;
+            } else if(key == "show-fps") {
+                current = config::CONFIG.showFPS ? 1u : 0u;
+            } else if(key == "show-mem") {
+                current = config::CONFIG.showMemory ? 1u : 0u;
+            }
+
             xmb->emplace_overlay<app::choice_overlay>(
-                std::vector<std::string>{"Off"_(), "On"_()}, config::CONFIG.controllerRumble ? 1u : 0u,
-                [key, schema](unsigned int choice) {
-                    if(config::CONFIG.setVsync(choice == 1)) {
-                        config::CONFIG.save();
+                std::vector<std::string>{"Off"_(), "On"_()}, current,
+                [key](unsigned int choice) {
+                    bool on = (choice == 1);
+                    bool changed = false;
+                    if(key == "vsync") {
+                        auto desired = on ? vk::PresentModeKHR::eFifoRelaxed : vk::PresentModeKHR::eMailbox;
+                        changed = (config::CONFIG.preferredPresentMode != desired);
+                        config::CONFIG.preferredPresentMode = desired;
+                    } else if(key == "controller-rumble") {
+                        changed = (config::CONFIG.controllerRumble != on);
+                        config::CONFIG.controllerRumble = on;
+                    } else if(key == "controller-analog-stick") {
+                        changed = (config::CONFIG.controllerAnalogStick != on);
+                        config::CONFIG.controllerAnalogStick = on;
+                    } else if(key == "show-fps") {
+                        changed = (config::CONFIG.showFPS != on);
+                        config::CONFIG.showFPS = on;
+                    } else if(key == "show-mem") {
+                        changed = (config::CONFIG.showMemory != on);
+                        config::CONFIG.showMemory = on;
+                    }
+                    if(changed) {
+                        config::CONFIG.save_config();
                     }
                 }
             );
@@ -169,29 +205,68 @@ namespace menu {
     }
 
     std::unique_ptr<action_menu_entry> entry_int(dreamrender::resource_loader& loader, app::shell* xmb,
-        std::string name, std::string description, const std::string& schema, const std::string& key, int min, int max, int step = 1)
+        std::string name, std::string description, const std::string& /*schema*/, const std::string& key, int min, int max, int step = 1)
     {
-        return entry_base(loader, std::move(name), std::move(description), key, [xmb, key, schema, min, max, step](){
-            int value = 0;
+        return entry_base(loader, std::move(name), std::move(description), key, [xmb, key, min, max, step](){
             std::vector<std::string> choices;
             for(int i = min; i <= max; i += step) {
                 choices.push_back(std::to_string(i));
             }
-            int current_choice = 0;
+
+            unsigned int current_choice = 0;
+            if(key == "sample-count") {
+                int sc = 4;
+                switch(config::CONFIG.sampleCount) {
+                    case vk::SampleCountFlagBits::e1: sc = 1; break;
+                    case vk::SampleCountFlagBits::e2: sc = 2; break;
+                    case vk::SampleCountFlagBits::e4: sc = 4; break;
+                    case vk::SampleCountFlagBits::e8: sc = 8; break;
+                    case vk::SampleCountFlagBits::e16: sc = 16; break;
+                    case vk::SampleCountFlagBits::e32: sc = 32; break;
+                    case vk::SampleCountFlagBits::e64: sc = 64; break;
+                    default: sc = 4; break;
+                }
+                current_choice = static_cast<unsigned int>((sc - min) / step);
+            } else if(key == "max-fps") {
+                int fps = static_cast<int>(std::clamp(config::CONFIG.maxFPS, 0.0, 1000.0));
+                if(fps <= 0) fps = min; // treat unlimited as min for selection
+                current_choice = static_cast<unsigned int>((fps - min) / step);
+            }
+
             xmb->emplace_overlay<app::choice_overlay>(
-                choices, static_cast<unsigned int>(current_choice),
-                [key, schema, min, step](unsigned int choice) {
+                choices, current_choice,
+                [key, min, step](unsigned int choice) {
                     int value = static_cast<int>(choice)*step + min;
+                    if(key == "sample-count") {
+                        vk::SampleCountFlagBits sc = vk::SampleCountFlagBits::e4;
+                        switch(value) {
+                            case 1: sc = vk::SampleCountFlagBits::e1; break;
+                            case 2: sc = vk::SampleCountFlagBits::e2; break;
+                            case 4: sc = vk::SampleCountFlagBits::e4; break;
+                            case 8: sc = vk::SampleCountFlagBits::e8; break;
+                            case 16: sc = vk::SampleCountFlagBits::e16; break;
+                            case 32: sc = vk::SampleCountFlagBits::e32; break;
+                            case 64: sc = vk::SampleCountFlagBits::e64; break;
+                            default: sc = vk::SampleCountFlagBits::e4; break;
+                        }
+                        if(config::CONFIG.sampleCount != sc) {
+                            config::CONFIG.setSampleCount(sc);
+                            config::CONFIG.save_config();
+                        }
+                    } else if(key == "max-fps") {
+                        config::CONFIG.setMaxFPS(static_cast<double>(value));
+                        config::CONFIG.save_config();
+                    }
                 }
             );
             return result::success;
         });
     }
     std::unique_ptr<action_menu_entry> entry_int(dreamrender::resource_loader& loader, app::shell* xmb,
-        std::string name, std::string description, const std::string& schema, const std::string& key, std::ranges::range auto values)
+        std::string name, std::string description, const std::string& /*schema*/, const std::string& key, std::ranges::range auto values)
         requires std::is_integral_v<std::ranges::range_value_t<decltype(values)>>
     {
-        return entry_base(loader, std::move(name), std::move(description), key, [xmb, key, schema, values](){
+        return entry_base(loader, std::move(name), std::move(description), key, [xmb, key, values](){
             int value = 0;
             std::vector<std::string> choices;
             for(auto v : values) {
@@ -200,17 +275,33 @@ namespace menu {
             unsigned int current_choice = 0;
             xmb->emplace_overlay<app::choice_overlay>(
                 choices, current_choice,
-                [key, schema, values](unsigned int choice) {
+                [key, values](unsigned int choice) {
                     int value = *std::ranges::next(std::ranges::cbegin(values), choice);
+                    if(key == "sample-count") {
+                        vk::SampleCountFlagBits sc = vk::SampleCountFlagBits::e4;
+                        switch(value) {
+                            case 1: sc = vk::SampleCountFlagBits::e1; break;
+                            case 2: sc = vk::SampleCountFlagBits::e2; break;
+                            case 4: sc = vk::SampleCountFlagBits::e4; break;
+                            case 8: sc = vk::SampleCountFlagBits::e8; break;
+                            case 16: sc = vk::SampleCountFlagBits::e16; break;
+                            case 32: sc = vk::SampleCountFlagBits::e32; break;
+                            case 64: sc = vk::SampleCountFlagBits::e64; break;
+                        }
+                        if(config::CONFIG.sampleCount != sc) {
+                            config::CONFIG.setSampleCount(sc);
+                            config::CONFIG.save_config();
+                        }
+                    }
                 }
             );
             return result::success;
         });
     }
     std::unique_ptr<action_menu_entry> entry_enum(dreamrender::resource_loader& loader, app::shell* xmb,
-        std::string name, std::string description, const std::string& schema, const std::string& key, std::ranges::range auto values)
+        std::string name, std::string description, const std::string& /*schema*/, const std::string& key, std::ranges::range auto values)
     {
-        return entry_base(loader, std::move(name), std::move(description), key, [xmb, key, schema, values](){
+        return entry_base(loader, std::move(name), std::move(description), key, [xmb, key, values](){
             std::string value = "";
             std::vector<std::string> choices;
             std::vector<std::string> keys;
@@ -221,8 +312,19 @@ namespace menu {
             unsigned int current_choice = 0;
             xmb->emplace_overlay<app::choice_overlay>(
                 choices, current_choice,
-                [key, schema, keys](unsigned int choice) {
+                [key, keys](unsigned int choice) {
                     auto value = keys[choice];
+                    if(key == "background-type") {
+                        config::CONFIG.setBackgroundType(value);
+                        config::CONFIG.save_config();
+                    } else if(key == "language") {
+                        config::CONFIG.setLanguage(value);
+                        config::CONFIG.save_config();
+                    } else if(key == "controller-type") {
+                        // directly assign; setLanguage has a helper, but controllerType is a plain string
+                        config::CONFIG.controllerType = value;
+                        config::CONFIG.save_config();
+                    }
                 }
             );
             return result::success;
@@ -303,9 +405,9 @@ namespace menu {
         ));
         entries.push_back(make_simple<simple_menu>("Video Settings"_(), asset_dir/"icons/icon_settings_video.png", loader,
             std::array{
-                entry_bool(loader, xmb, "VSync"_(), "Avoid tearing and limit FPS to refresh rate of display"_(), "re.jcm.xmbos.shell.render", "vsync"),
-                entry_int(loader, xmb, "Sample Count"_(), "Number of samples used for Multisample Anti-Aliasing"_(), "re.jcm.xmbos.shell.render", "sample-count", std::array{1, 2, 4, 8, 16}),
-                entry_int(loader, xmb, "Max FPS"_(), "FPS limit used if VSync is disabled"_(), "re.jcm.xmbos.shell.render", "max-fps", 15, 200, 5),
+                entry_bool(loader, xmb, "VSync"_(), "Avoid tearing and limit FPS to refresh rate of display"_(), "re.jcm.xmbos.openxmb.render", "vsync"),
+                entry_int(loader, xmb, "Sample Count"_(), "Number of samples used for Multisample Anti-Aliasing"_(), "re.jcm.xmbos.openxmb.render", "sample-count", std::array{1, 2, 4, 8, 16}),
+                entry_int(loader, xmb, "Max FPS"_(), "FPS limit used if VSync is disabled"_(), "re.jcm.xmbos.openxmb.render", "max-fps", 15, 200, 5),
             }
         ));
         entries.push_back(make_simple<simple_menu>("Input Settings"_(), asset_dir/"icons/icon_settings_input.png", loader,
@@ -325,8 +427,8 @@ namespace menu {
         ));
         entries.push_back(make_simple<simple_menu>("Debug Settings"_(), asset_dir/"icons/icon_settings_debug.png", loader,
             std::array{
-                entry_bool(loader, xmb, "Show FPS"_(), "", "re.jcm.xmbos.shell.render", "show-fps"),
-                entry_bool(loader, xmb, "Show Memory Usage"_(), "", "re.jcm.xmbos.shell.render", "show-mem"),
+                entry_bool(loader, xmb, "Show FPS"_(), "", "re.jcm.xmbos.openxmb.render", "show-fps"),
+                entry_bool(loader, xmb, "Show Memory Usage"_(), "", "re.jcm.xmbos.openxmb.render", "show-mem"),
 #ifndef NDEBUG
                 make_simple<action_menu_entry>("Toggle Background Blur"_(), asset_dir/"icons/icon_settings_toggle-background-blur.png", loader, [xmb](){
                     spdlog::info("Toggling background blur");
@@ -357,9 +459,7 @@ namespace menu {
         entries.push_back(make_simple<action_menu_entry>("Reset all Settings to default"_(), asset_dir/"icons/icon_settings_reset.png", loader, [](){
             spdlog::info("Settings reset request from XMB");
             config::CONFIG.load();
-            if (config::CONFIG.save()) { 
-                 config::CONFIG.save();
-            }
+            config::CONFIG.save_config();
             return result::success;
         }));
 
@@ -388,7 +488,9 @@ namespace menu {
                         if(selection == 0) {
                             xmb->emplace_overlay<programs::text_viewer>("License for {}"_(name), license_text);
                         } else {
-                            Gio::AppInfo::launch_default_for_uri(std::string{url});
+                            // Use system command to open URL in default browser
+                            std::string command = "xdg-open " + std::string{url};
+                            system(command.c_str());
                         }
                         return result::success;
                     }

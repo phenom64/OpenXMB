@@ -1,16 +1,20 @@
 module;
 
+#include <algorithm>
+#include <array>
 #include <chrono>
 #include <filesystem>
 #include <future>
+#include <optional>
 #include <source_location>
+#include <string>
+#include <string_view>
+#include <type_traits>
 #include <utility>
 
 #include <glm/glm.hpp>
 
-export module shell.utils;
-
-import giomm;
+export module openxmb.utils;
 
 export enum class result {
     unsupported  = (1<<0),
@@ -70,7 +74,8 @@ export class mouse_receiver {
 
 export namespace utils
 {
-    std::optional<std::filesystem::path> resolve_icon(const Gio::Icon* icon);
+    // JSON-based icon resolution instead of Gio::Icon
+    std::optional<std::filesystem::path> resolve_icon_from_json(const std::string& icon_name);
 
     template<typename R>
     bool is_ready(std::future<R> const& f)

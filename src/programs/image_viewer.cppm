@@ -4,12 +4,12 @@ module;
 #include <filesystem>
 #include <future>
 
-export module shell.app:image_viewer;
+export module openxmb.app:image_viewer;
 
 import dreamrender;
 import glm;
 import spdlog;
-import shell.utils;
+import openxmb.utils;
 import :component;
 import :programs;
 import :base_viewer;

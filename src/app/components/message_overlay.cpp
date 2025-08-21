@@ -4,7 +4,7 @@ module;
 #include <ranges>
 #include <string>
 
-module shell.app;
+module openxmb.app;
 import :message_overlay;
 
 import dreamrender;

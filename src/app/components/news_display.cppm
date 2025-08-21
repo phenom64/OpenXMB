@@ -1,6 +1,6 @@
 module;
 
-export module shell.app:news_display;
+export module openxmb.app:news_display;
 
 import dreamrender;
 import vulkan_hpp;

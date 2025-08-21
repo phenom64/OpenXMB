@@ -6,7 +6,7 @@ module;
 #include <string>
 #include <vector>
 
-module shell.app;
+module openxmb.app;
 import :choice_overlay;
 
 import dreamrender;

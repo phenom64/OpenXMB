@@ -1,22 +1,24 @@
 module;
 
-#include <glm/vec3.hpp>
-
+#include <array>
 #include <chrono>
+#include <cstdlib>
 #include <filesystem>
-#include <map>
 #include <functional>
+#include <map>
 #include <unordered_set>
 #include <version>
+
+#include <glm/vec3.hpp>
 
 #ifdef _WIN32
 #include <libloaderapi.h>
 #endif
 
-export module shell.config;
+export module openxmb.config;
 
 import vulkan_hpp;
-import shell.constants;
+import openxmb.constants;
 
 export namespace config
 {
@@ -37,7 +39,7 @@ export namespace config
                 if (GetModuleFileNameA(nullptr, buffer.data(), MAX_PATH) == 0) {
                     throw std::runtime_error("Failed to get executable path");
                 }
-                return std::filesystem::path(std::string_view{buffer}).parent_path();
+                return std::string_view{buffer}.parent_path();
             }();
 #else
             std::filesystem::path exe_directory = std::filesystem::current_path(); // best guess for other platforms
@@ -74,6 +76,10 @@ export namespace config
             double                  dateTimeOffset = 0.0;
             std::string             language;
 
+            std::filesystem::path   picturesPath;
+            std::filesystem::path   musicPath;
+            std::filesystem::path   videosPath;
+
             std::unordered_set<std::string> excludedApplications;
 
             bool controllerRumble = true;
@@ -83,6 +89,7 @@ export namespace config
 
             void load();
             void reload();
+            void save_config();
             void addCallback(const std::string& key, std::function<void(const std::string&)> callback);
 
             void setSampleCount(vk::SampleCountFlagBits count);
@@ -102,9 +109,9 @@ export namespace config
 
             void excludeApplication(const std::string& application, bool exclude = true);
         private:
-            Glib::RefPtr<Gio::Settings> shellSettings, renderSettings;
             std::multimap<std::string, std::function<void(const std::string&)>> callbacks;
-            void on_update(const Glib::ustring& key);
+            void load_from_json();
+            void save_to_json();
     };
     inline class config CONFIG;
 }

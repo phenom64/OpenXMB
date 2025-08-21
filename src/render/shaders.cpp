@@ -3,7 +3,7 @@ module;
 #include <array>
 #include <cstdint>
 
-module shell.render;
+module openxmb.render;
 
 import dreamrender;
 import vulkan_hpp;

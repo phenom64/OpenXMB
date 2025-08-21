@@ -1,9 +1,9 @@
 module;
 
-export module shell.app:component;
+export module openxmb.app:component;
 
 import dreamrender;
-import shell.utils;
+import openxmb.utils;
 import vulkan_hpp;
 
 namespace app {
