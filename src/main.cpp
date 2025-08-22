@@ -1,5 +1,7 @@
 #include <iostream>
 #include <thread>
+#include <cstdlib>
+#include <string_view>
 
 #include <libintl.h>
 
@@ -11,6 +13,7 @@ import spdlog;
 import dreamrender;
 import argparse;
 import openxmb.app;
+import openxmb.debug;
 import openxmb.config;
 
 #undef main
@@ -36,6 +39,8 @@ int main(int argc, char *argv[])
         .help("Do not start in fullscreen mode");
     program.add_argument("--background-only").flag()
         .help("Only render the background");
+    program.add_argument("--interfacefx-debug").flag()
+        .help("Enable interface/UI graphics debug overlays (e.g., font atlas)");
 
     try {
         program.parse_args(argc, argv);
@@ -47,6 +52,19 @@ int main(int argc, char *argv[])
     }
 
     spdlog::info("Welcome to OpenXMB!");
+    // Initialize interface/FX debug mode from compile-time, env, or runtime flag
+#ifdef IFXDEBUG
+    openxmb::debug::interfacefx_debug = true;
+#endif
+    if(const char* e = std::getenv("OPENXMB_IFXDEBUG")) {
+        std::string_view sv{e};
+        if(sv == "1" || sv == "true" || sv == "on") {
+            openxmb::debug::interfacefx_debug = true;
+        }
+    }
+    if(program.get<bool>("--interfacefx-debug")) {
+        openxmb::debug::interfacefx_debug = true;
+    }
     std::set_terminate([]() {
         spdlog::critical("Uncaught exception");
 

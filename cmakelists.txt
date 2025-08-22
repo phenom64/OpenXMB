@@ -64,6 +64,9 @@ option(ENABLE_LIBRETRO "Enable libretro core host" OFF)
 set(HWACCEL "auto" CACHE STRING "Preferred hardware video decode backend")
 set_property(CACHE HWACCEL PROPERTY STRINGS auto off vaapi d3d11 videotoolbox)
 
+# Interface/FX debug overlays (fonts, UI visuals)
+option(INTERFACE_FX_DEBUG "Enable interface/UI graphics debug overlays" ON)
+
 # Set color for ENABLE_BROWSER
 if(ENABLE_BROWSER)
     set(BROWSER_COLOR "${COLOR_GREEN}")
@@ -92,7 +95,14 @@ else()
     set(LIBRETRO_COLOR "${COLOR_RED}")
 endif()
 
-message(STATUS "${COLOR_YELLOW}Enabled features: ${COLOR_RESET}BROWSER=${BROWSER_COLOR}${ENABLE_BROWSER}${COLOR_RESET} VIDEO=${VIDEO_PLAYER_COLOR}${ENABLE_VIDEO_PLAYER}${COLOR_RESET} DISC=${DISC_MEDIA_COLOR}${ENABLE_DISC_MEDIA}${COLOR_RESET} LIBRETRO=${LIBRETRO_COLOR}${ENABLE_LIBRETRO}${COLOR_RESET} HWACCEL=${HWACCEL}${COLOR_RESET}")
+# Set color for INTERFACE_FX_DEBUG
+if(INTERFACE_FX_DEBUG)
+    set(DEBUG_COLOR "${COLOR_GREEN}")
+else()
+    set(DEBUG_COLOR "${COLOR_RED}")
+endif()
+
+message(STATUS "${COLOR_YELLOW}Enabled features: ${COLOR_RESET}BROWSER=${BROWSER_COLOR}${ENABLE_BROWSER}${COLOR_RESET} VIDEO=${VIDEO_PLAYER_COLOR}${ENABLE_VIDEO_PLAYER}${COLOR_RESET} DISC=${DISC_MEDIA_COLOR}${ENABLE_DISC_MEDIA}${COLOR_RESET} LIBRETRO=${LIBRETRO_COLOR}${ENABLE_LIBRETRO}${COLOR_RESET} HWACCEL=${HWACCEL}${COLOR_RESET} DEBUG=${DEBUG_COLOR}${INTERFACE_FX_DEBUG}${COLOR_RESET}")
 
 set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 set(CMAKE_CXX_STANDARD 23)
@@ -126,15 +136,25 @@ if(APPLE)
 endif()
 
 # We are using our own stable, maintained fork of the rendering engine.
-# This version has a corrected build system that properly uses the latest
-# Vulkan-HPP, resolving all previous dependency and compilation issues.
+# Allow overriding the engine source with a local path for development.
 set(DREAMS_BUILD_WITH_POSIX_THREADS ON CACHE BOOL "" FORCE)
 
-FetchContent_Declare(dreamrender
-  GIT_REPOSITORY https://github.com/phenom64/AuroreEngine.git
-  GIT_TAG        master
-  OVERRIDE_FIND_PACKAGE
-)
+set(DREAMRENDER_LOCAL "" CACHE PATH "Path to local AuroreEngine checkout (optional)")
+if(DREAMRENDER_LOCAL)
+  message(STATUS "${COLOR_YELLOW}Using local AuroreEngine at ${COLOR_CYAN}${DREAMRENDER_LOCAL}${COLOR_RESET}")
+  add_subdirectory(${DREAMRENDER_LOCAL} ${CMAKE_CURRENT_BINARY_DIR}/_deps/dreamrender-build)
+else()
+  FetchContent_Declare(dreamrender
+    GIT_REPOSITORY https://github.com/phenom64/AuroreEngine.git
+    GIT_TAG        master
+    OVERRIDE_FIND_PACKAGE
+  )
+  FetchContent_GetProperties(dreamrender)
+  if(NOT dreamrender_POPULATED)
+    FetchContent_Populate(dreamrender)
+    add_subdirectory(${dreamrender_SOURCE_DIR} ${dreamrender_BINARY_DIR})
+  endif()
+endif()
 
 FetchContent_Declare(argparse
   GIT_REPOSITORY https://github.com/p-ranav/argparse.git
@@ -147,11 +167,6 @@ FetchContent_Declare(
   GIT_TAG        v3.12.0
 )
 
-FetchContent_GetProperties(dreamrender)
-if(NOT dreamrender_POPULATED)
-  FetchContent_Populate(dreamrender)
-  add_subdirectory(${dreamrender_SOURCE_DIR} ${dreamrender_BINARY_DIR})
-endif()
 
 set(DREAMS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(DREAMS_FIND_PACKAGES OFF CACHE BOOL "" FORCE)
@@ -231,6 +246,7 @@ set(XMS_MODULE_SOURCES
   src/render/components/wave_renderer.cppm
   src/utils.cppm
 )
+list(APPEND XMS_MODULE_SOURCES src/debug.cppm)
 
 if(ENABLE_VIDEO_PLAYER)
   list(APPEND XMS_MODULE_SOURCES src/programs/video_player.cppm)
@@ -317,6 +333,11 @@ foreach(shader ${XMS_SHADERS})
   dreams_add_shader(XMS ${shader})
 endforeach()
 target_include_directories(XMS PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/shaders)
+
+# Wire the interface/FX debug option to a preprocessor define usable in code
+if(INTERFACE_FX_DEBUG)
+  target_compile_definitions(XMS PRIVATE IFXDEBUG=1)
+endif()
 
 include(GNUInstallDirs)
 

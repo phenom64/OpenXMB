@@ -129,9 +129,10 @@ Before you begin, ensure you have the following tools installed:
 
 You can customize the build using the following CMake options:
 *   `-DENABLE_VIDEO_PLAYER=ON/OFF`: Enable the FFmpeg-based video player (Default: ON)
-*   `-DENABLE_BROWSER=ON/OFF`: Enable the CEF-based browser module (Default: OFF)
-*   `-DENABLE_DISC_MEDIA=ON/OFF`: Enable DVD/Blu-ray support (Default: OFF)
-*   `-DENABLE_LIBRETRO=ON/OFF`: Enable the libretro core host for emulation (Default: OFF)
+*   `-DENABLE_BROWSER=ON/OFF`: Enable the CEF-based browser module [ALPHA] (Default: OFF)
+*   `-DENABLE_DISC_MEDIA=ON/OFF`: Enable DVD/Blu-ray support [ALPHA] (Default: OFF)
+*   `-DENABLE_LIBRETRO=ON/OFF`: Enable the libretro core host for emulation [ALPHA] (Default: OFF)
+*   `-DINTERFACE_FX_DEBUG=ON/OFF`: Enable interface/UI graphics+text debug overlays (Default: ON)
 
 Example: `cmake -B build -DENABLE_BROWSER=ON`
 

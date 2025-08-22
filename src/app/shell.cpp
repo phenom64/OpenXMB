@@ -1,6 +1,7 @@
 module;
 
 #include <array>
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -24,6 +25,7 @@ import vma;
 import sdl2;
 import openxmb.config;
 import openxmb.render;
+import openxmb.debug;
 import openxmb.utils;
 import :startup_overlay;
 
@@ -441,6 +443,21 @@ namespace app
                 0.0f, 0.0f, static_cast<int>(win->swapchainExtent.width), static_cast<int>(win->swapchainExtent.height));
 
             gui_renderer ctx(commandBuffer, frame, shellRenderPass.get(), win->swapchainExtent, font_render.get(), image_render.get(), simple_render.get());
+            // Interface/FX debug overlays: draw font atlas for verification
+            if(openxmb::debug::interfacefx_debug) {
+                const dreamrender::texture* atlas = font_render->get_atlas();
+                if(atlas && atlas->loaded) {
+                    if(!openxmb::debug::interfacefx_debug_once_atlas_logged) {
+                        spdlog::info("[iFXDEBUG] Font atlas: {}x{}", atlas->width, atlas->height);
+                        openxmb::debug::interfacefx_debug_once_atlas_logged = true;
+                    }
+                    int dw = std::min(256, atlas->width);
+                    int dh = std::min(256, atlas->height);
+                    ctx.draw_image_sized(*atlas, 0.02f, 0.02f, dw, dh);
+                }
+                // Text probe: ensure font rendering path emits visible geometry
+                ctx.draw_text("iFX TEXT PROBE: The quick brown fox", 0.02f, 0.14f, 0.06f, glm::vec4(1.0f, 1.0f, 0.0f, 1.0f));
+            }
             if(!background_only) {
                 render_gui(ctx);
             }
