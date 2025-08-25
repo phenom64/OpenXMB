@@ -1,0 +1,294 @@
+# Hindi translations for OpenXMB package.
+# TM & (C) 2025 Syndromatic Ltd. सर्वाधिकार सुरक्षित।
+# This file is distributed under the same license as the OpenXMB package.
+
+msgid ""
+msgstr ""
+"Project-Id-Version: OpenXMB 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-08-25 00:00+0000\n"
+"PO-Revision-Date: 2025-08-25 00:00+0000\n"
+"Last-Translator: Syndromatic Ltd <hello@syndromatic.com>\n"
+"Language-Team: Hindi\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+# मुख्य श्रेणियाँ
+msgid "Users"
+msgstr "उपयोगकर्ता"
+
+msgid "Settings"
+msgstr "सेटिंग्स"
+
+msgid "Photo"
+msgstr "फ़ोटो"
+
+msgid "Music"
+msgstr "संगीत"
+
+msgid "Video"
+msgstr "वीडियो"
+
+msgid "TV"
+msgstr "टीवी"
+
+msgid "Game"
+msgstr "खेल"
+
+msgid "Application"
+msgstr "एप्लिकेशन"
+
+msgid "Network"
+msgstr "नेटवर्क"
+
+msgid "Friends"
+msgstr "दोस्त"
+
+# सामान्य
+msgid "OK"
+msgstr "ठीक"
+
+msgid "Yes"
+msgstr "हाँ"
+
+msgid "No"
+msgstr "नहीं"
+
+msgid "Off"
+msgstr "बंद"
+
+msgid "On"
+msgstr "चालू"
+
+# स्थिति/ओवरले
+msgid "Updating..."
+msgstr "अपडेट हो रहा है..."
+
+msgid "Update Available"
+msgstr "अपडेट उपलब्ध"
+
+msgid "Updating"
+msgstr "अपडेट कर रहा है"
+
+msgid "No updates available."
+msgstr "कोई अपडेट उपलब्ध नहीं।"
+
+msgid "Failed to check for updates."
+msgstr "अपडेट जाँचने में विफल।"
+
+msgid "An update is available. Would you like to install it?"
+msgstr "एक अपडेट उपलब्ध है। क्या आप इसे इंस्टॉल करना चाहते हैं?"
+
+# सेटिंग्स
+msgid "Personalization Settings"
+msgstr "पर्सनलाइज़ेशन सेटिंग्स"
+
+msgid "Background Type"
+msgstr "बैकग्राउंड प्रकार"
+
+msgid "Type of background to use"
+msgstr "उपयोग करने के लिए बैकग्राउंड का प्रकार"
+
+msgid "Animated Wave"
+msgstr "ऐनिमेटेड वेव"
+
+msgid "Static Color"
+msgstr "स्थिर रंग"
+
+msgid "Static Image"
+msgstr "स्थिर चित्र"
+
+msgid "Language"
+msgstr "भाषा"
+
+msgid "Preferred language for the shell"
+msgstr "शेल के लिए पसंदीदा भाषा"
+
+msgid "Use system language"
+msgstr "सिस्टम भाषा का उपयोग करें"
+
+msgid "English"
+msgstr "अंग्रेज़ी"
+
+msgid "German"
+msgstr "जर्मन"
+
+msgid "Polish"
+msgstr "पोलिश"
+
+msgid "Video Settings"
+msgstr "वीडियो सेटिंग्स"
+
+msgid "VSync"
+msgstr "VSync"
+
+msgid "Avoid tearing and limit FPS to refresh rate of display"
+msgstr "टियरिंग से बचें और FPS को डिस्प्ले रिफ्रेश रेट तक सीमित करें"
+
+msgid "Sample Count"
+msgstr "सैंपल संख्या"
+
+msgid "Number of samples used for Multisample Anti-Aliasing"
+msgstr "MSAA के लिए उपयोग किए गए सैंपलों की संख्या"
+
+msgid "Max FPS"
+msgstr "अधिकतम FPS"
+
+msgid "Input Settings"
+msgstr "इनपुट सेटिंग्स"
+
+msgid "Controller Type"
+msgstr "कंट्रोलर प्रकार"
+
+msgid "Type of connected controller and corresponding button prompts"
+msgstr "कनेक्टेड कंट्रोलर का प्रकार और संबंधित बटन संकेत"
+
+msgctxt "controllertype"
+msgid "None"
+msgstr "कोई नहीं"
+
+msgctxt "controllertype"
+msgid "Automatic"
+msgstr "स्वचालित"
+
+msgctxt "controllertype"
+msgid "Keyboard"
+msgstr "कीबोर्ड"
+
+msgctxt "controllertype"
+msgid "PlayStation"
+msgstr "प्लेस्टेशन"
+
+msgctxt "controllertype"
+msgid "Xbox"
+msgstr "एक्सबॉक्स"
+
+msgctxt "controllertype"
+msgid "Steam Controller / Steamdeck"
+msgstr "स्टीम कंट्रोलर / स्टीमडेक"
+
+msgctxt "controllertype"
+msgid "Ouya"
+msgstr "ओयूया"
+
+msgid "Controller Rumble"
+msgstr "कंट्रोलर वाइब्रेशन"
+
+msgid "Enable controller rumble as feedback for actions"
+msgstr "क्रियाओं के लिए फीडबैक के रूप में वाइब्रेशन सक्षम करें"
+
+msgid "Navigate Menus with Analog Stick"
+msgstr "एनालॉग स्टिक से मेनू नेविगेट करें"
+
+msgid "Allow navigating all menus using the analog stick in addition to the D-Pad"
+msgstr "डी-पैड के अलावा एनालॉग स्टिक से सभी मेनू नेविगेट करने दें"
+
+msgid "Debug Settings"
+msgstr "डिबग सेटिंग्स"
+
+msgid "Show FPS"
+msgstr "FPS दिखाएँ"
+
+msgid "Show Memory Usage"
+msgstr "मेमोरी उपयोग दिखाएँ"
+
+msgid "Toggle Background Blur"
+msgstr "बैकग्राउंड ब्लर टॉगल करें"
+
+msgid "Toggle Ingame Mode"
+msgstr "इन-गेम मोड टॉगल करें"
+
+msgid "Check for Updates"
+msgstr "अपडेट्स जाँचें"
+
+msgid "System Update"
+msgstr "सिस्टम अपडेट"
+
+msgid "Report bug"
+msgstr "बग रिपोर्ट करें"
+
+msgid "Reset all Settings to default"
+msgstr "सभी सेटिंग्स डिफ़ॉल्ट पर रीसेट करें"
+
+msgid "Open website in browser"
+msgstr "ब्राउज़र में वेबसाइट खोलें"
+
+msgid "View License Text"
+msgstr "लाइसेंस पाठ देखें"
+
+msgid "License for {}"
+msgstr "{} के लिए लाइसेंस"
+
+msgid "Licenses"
+msgstr "लाइसेंस"
+
+# उपयोगकर्ता मेनू
+msgid "Quit"
+msgstr "बंद करें"
+
+msgid "Do you really want to quit the application?"
+msgstr "क्या आप वाकई एप्लिकेशन बंद करना चाहते हैं?"
+
+msgid "Power off"
+msgstr "बंद करें"
+
+msgid "Do you really want to power off the system?"
+msgstr "क्या आप वाकई सिस्टम बंद करना चाहते हैं?"
+
+msgid "Reboot"
+msgstr "रीबूट"
+
+msgid "Do you really want to reboot the system?"
+msgstr "क्या आप वाकई सिस्टम रीबूट करना चाहते हैं?"
+
+# फ़ाइलें मेनू
+msgid "Options"
+msgstr "विकल्प"
+
+msgid "Sort and Filter"
+msgstr "सॉर्ट और फ़िल्टर"
+
+msgid "Copy"
+msgstr "कॉपी"
+
+msgid "Cut"
+msgstr "कट"
+
+msgid "Delete"
+msgstr "हटाएँ"
+
+msgid "Open"
+msgstr "खोलें"
+
+msgid "Open using external program"
+msgstr "बाहरी प्रोग्राम से खोलें"
+
+msgid "Refresh"
+msgstr "रिफ्रेश"
+
+msgid "Paste here"
+msgstr "यहाँ पेस्ट करें"
+
+msgid "Paste into this folder"
+msgstr "इस फ़ोल्डर में पेस्ट करें"
+
+msgid "Copy failed"
+msgstr "कॉपी विफल"
+
+msgid "Failed to copy file: {}"
+msgstr "फ़ाइल कॉपी नहीं हो सकी: {}"
+
+msgid "Move failed"
+msgstr "मूव विफल"
+
+msgid "Failed to move file: {}"
+msgstr "फ़ाइल मूव नहीं हो सकी: {}"
+
+msgid "No matching program found"
+msgstr "कोई मिलान करता प्रोग्राम नहीं मिला"
+
+msgid "No matching program found for file of type \"{}\": {}"
+msgstr "प्रकार \"{}\" की फ़ाइल के लिए कोई प्रोग्राम नहीं मिला: {}"

@@ -18,7 +18,7 @@
         "font-path": "default",
         "date-time-format": "%a %d %b %H:%M",
         "date-time-x-offset": 0.0,
-        "language": "auto",
+        "language": "en",
         "excluded-applications": [
             "example-app-1.desktop",
             "example-app-2.desktop"

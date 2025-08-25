@@ -15,6 +15,7 @@ import argparse;
 import openxmb.app;
 import openxmb.debug;
 import openxmb.config;
+import openxmb.constants;
 
 #undef main
 int main(int argc, char *argv[])
@@ -82,6 +83,12 @@ int main(int argc, char *argv[])
     setlocale(LC_ALL, "");
 
     config::CONFIG.load();
+    // Initialize gettext/i18n: bind domain to our locale directory and use UTF-8
+    // Note: even without compiled translations, gettext will fall back to the
+    // original strings, so text should still render in English.
+    bindtextdomain(constants::name, config::CONFIG.locale_directory.string().c_str());
+    bind_textdomain_codeset(constants::name, "UTF-8");
+    textdomain(constants::name);
     spdlog::debug("Config loaded");
 
     SDL_SetMainReady();

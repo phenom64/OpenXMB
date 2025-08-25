@@ -579,3 +579,36 @@ if(ENABLE_DISC_MEDIA)
     endif()
   endif()
 endif()
+# =============================================================================
+# --- i18n (gettext) locales ---
+# =============================================================================
+
+# Define locale install dir (default to share/locale on non-Windows)
+if(WIN32)
+  set(CMAKE_INSTALL_LOCALEDIR "/locale")
+else()
+  if(NOT DEFINED CMAKE_INSTALL_LOCALEDIR)
+    set(CMAKE_INSTALL_LOCALEDIR "${CMAKE_INSTALL_DATADIR}/locale")
+  endif()
+endif()
+
+# Read languages and compile .po -> .mo for development and install
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/po/LINGUAS")
+  file(STRINGS po/LINGUAS LINGUAS)
+  foreach(LING ${LINGUAS})
+    # Build binary catalog in build dir as <ling>.gmo
+    gettext_process_po_files(${LING} ALL PO_FILES po/${LING}.po)
+    # Install as "shell.mo" to match textdomain used by the app
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${LING}.gmo
+      DESTINATION ${CMAKE_INSTALL_LOCALEDIR}/${LING}/LC_MESSAGES/
+      RENAME shell.mo)
+    # For running from build tree: create locales/<ling>/LC_MESSAGES/shell.mo symlink
+    add_custom_target(openxmb-link-po-${LING} ALL
+      COMMAND
+        ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/locales/${LING}/LC_MESSAGES
+      COMMAND
+        ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_BINARY_DIR}/${LING}.gmo ${CMAKE_CURRENT_BINARY_DIR}/locales/${LING}/LC_MESSAGES/shell.mo
+      BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/locales/${LING}/LC_MESSAGES/shell.mo
+      VERBATIM)
+  endforeach()
+endif()

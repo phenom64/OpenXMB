@@ -1,0 +1,294 @@
+# French translations for OpenXMB package.
+# TM & (C) 2025 Syndromatic Ltd. Tous droits réservés.
+# This file is distributed under the same license as the OpenXMB package.
+
+msgid ""
+msgstr ""
+"Project-Id-Version: OpenXMB 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-08-25 00:00+0000\n"
+"PO-Revision-Date: 2025-08-25 00:00+0000\n"
+"Last-Translator: Syndromatic Ltd <hello@syndromatic.com>\n"
+"Language-Team: French\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+# Catégories principales
+msgid "Users"
+msgstr "Utilisateurs"
+
+msgid "Settings"
+msgstr "Paramètres"
+
+msgid "Photo"
+msgstr "Photo"
+
+msgid "Music"
+msgstr "Musique"
+
+msgid "Video"
+msgstr "Vidéo"
+
+msgid "TV"
+msgstr "TV"
+
+msgid "Game"
+msgstr "Jeux"
+
+msgid "Application"
+msgstr "Application"
+
+msgid "Network"
+msgstr "Réseau"
+
+msgid "Friends"
+msgstr "Amis"
+
+# Général
+msgid "OK"
+msgstr "OK"
+
+msgid "Yes"
+msgstr "Oui"
+
+msgid "No"
+msgstr "Non"
+
+msgid "Off"
+msgstr "Désactivé"
+
+msgid "On"
+msgstr "Activé"
+
+# Statut/Overlays
+msgid "Updating..."
+msgstr "Mise à jour..."
+
+msgid "Update Available"
+msgstr "Mise à jour disponible"
+
+msgid "Updating"
+msgstr "Mise à jour"
+
+msgid "No updates available."
+msgstr "Aucune mise à jour disponible."
+
+msgid "Failed to check for updates."
+msgstr "Échec de la vérification des mises à jour."
+
+msgid "An update is available. Would you like to install it?"
+msgstr "Une mise à jour est disponible. Voulez-vous l’installer ?"
+
+# Réglages
+msgid "Personalization Settings"
+msgstr "Personnalisation"
+
+msgid "Background Type"
+msgstr "Type d’arrière-plan"
+
+msgid "Type of background to use"
+msgstr "Type d’arrière-plan à utiliser"
+
+msgid "Animated Wave"
+msgstr "Vague animée"
+
+msgid "Static Color"
+msgstr "Couleur statique"
+
+msgid "Static Image"
+msgstr "Image statique"
+
+msgid "Language"
+msgstr "Langue"
+
+msgid "Preferred language for the shell"
+msgstr "Langue préférée pour l’interface"
+
+msgid "Use system language"
+msgstr "Utiliser la langue du système"
+
+msgid "English"
+msgstr "Anglais"
+
+msgid "German"
+msgstr "Allemand"
+
+msgid "Polish"
+msgstr "Polonais"
+
+msgid "Video Settings"
+msgstr "Paramètres vidéo"
+
+msgid "VSync"
+msgstr "VSync"
+
+msgid "Avoid tearing and limit FPS to refresh rate of display"
+msgstr "Éviter le tearing et limiter les FPS au taux de rafraîchissement"
+
+msgid "Sample Count"
+msgstr "Nombre d’échantillons"
+
+msgid "Number of samples used for Multisample Anti-Aliasing"
+msgstr "Nombre d’échantillons utilisés pour le MSAA"
+
+msgid "Max FPS"
+msgstr "FPS max"
+
+msgid "Input Settings"
+msgstr "Paramètres d’entrée"
+
+msgid "Controller Type"
+msgstr "Type de manette"
+
+msgid "Type of connected controller and corresponding button prompts"
+msgstr "Type de manette connectée et invites de boutons correspondantes"
+
+msgctxt "controllertype"
+msgid "None"
+msgstr "Aucun"
+
+msgctxt "controllertype"
+msgid "Automatic"
+msgstr "Automatique"
+
+msgctxt "controllertype"
+msgid "Keyboard"
+msgstr "Clavier"
+
+msgctxt "controllertype"
+msgid "PlayStation"
+msgstr "PlayStation"
+
+msgctxt "controllertype"
+msgid "Xbox"
+msgstr "Xbox"
+
+msgctxt "controllertype"
+msgid "Steam Controller / Steamdeck"
+msgstr "Steam Controller / Steamdeck"
+
+msgctxt "controllertype"
+msgid "Ouya"
+msgstr "Ouya"
+
+msgid "Controller Rumble"
+msgstr "Vibration de la manette"
+
+msgid "Enable controller rumble as feedback for actions"
+msgstr "Activer la vibration comme retour pour les actions"
+
+msgid "Navigate Menus with Analog Stick"
+msgstr "Naviguer dans les menus avec le stick analogique"
+
+msgid "Allow navigating all menus using the analog stick in addition to the D-Pad"
+msgstr "Permettre la navigation avec le stick analogique en plus de la croix"
+
+msgid "Debug Settings"
+msgstr "Paramètres de débogage"
+
+msgid "Show FPS"
+msgstr "Afficher les FPS"
+
+msgid "Show Memory Usage"
+msgstr "Afficher l’utilisation mémoire"
+
+msgid "Toggle Background Blur"
+msgstr "Basculer le flou d’arrière-plan"
+
+msgid "Toggle Ingame Mode"
+msgstr "Basculer le mode en jeu"
+
+msgid "Check for Updates"
+msgstr "Vérifier les mises à jour"
+
+msgid "System Update"
+msgstr "Mise à jour du système"
+
+msgid "Report bug"
+msgstr "Signaler un bug"
+
+msgid "Reset all Settings to default"
+msgstr "Réinitialiser tous les paramètres"
+
+msgid "Open website in browser"
+msgstr "Ouvrir le site dans le navigateur"
+
+msgid "View License Text"
+msgstr "Afficher le texte de la licence"
+
+msgid "License for {}"
+msgstr "Licence pour {}"
+
+msgid "Licenses"
+msgstr "Licences"
+
+# Utilisateurs
+msgid "Quit"
+msgstr "Quitter"
+
+msgid "Do you really want to quit the application?"
+msgstr "Voulez-vous vraiment quitter l’application ?"
+
+msgid "Power off"
+msgstr "Éteindre"
+
+msgid "Do you really want to power off the system?"
+msgstr "Voulez-vous vraiment éteindre le système ?"
+
+msgid "Reboot"
+msgstr "Redémarrer"
+
+msgid "Do you really want to reboot the system?"
+msgstr "Voulez-vous vraiment redémarrer le système ?"
+
+# Fichiers
+msgid "Options"
+msgstr "Options"
+
+msgid "Sort and Filter"
+msgstr "Trier et filtrer"
+
+msgid "Copy"
+msgstr "Copier"
+
+msgid "Cut"
+msgstr "Couper"
+
+msgid "Delete"
+msgstr "Supprimer"
+
+msgid "Open"
+msgstr "Ouvrir"
+
+msgid "Open using external program"
+msgstr "Ouvrir avec un programme externe"
+
+msgid "Refresh"
+msgstr "Rafraîchir"
+
+msgid "Paste here"
+msgstr "Coller ici"
+
+msgid "Paste into this folder"
+msgstr "Coller dans ce dossier"
+
+msgid "Copy failed"
+msgstr "Échec de la copie"
+
+msgid "Failed to copy file: {}"
+msgstr "Impossible de copier le fichier : {}"
+
+msgid "Move failed"
+msgstr "Échec du déplacement"
+
+msgid "Failed to move file: {}"
+msgstr "Impossible de déplacer le fichier : {}"
+
+msgid "No matching program found"
+msgstr "Aucun programme correspondant trouvé"
+
+msgid "No matching program found for file of type \"{}\": {}"
+msgstr "Aucun programme correspondant pour le type \"{}\" : {}"

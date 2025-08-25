@@ -1,0 +1,296 @@
+# Polish translations for OpenXMB package.
+# Original author: Cyndi, 2025. (ported from xmbshell)
+# TM & (C) 2025 Syndromatic Ltd. All rights reserved.
+# This file is distributed under the same license as the OpenXMB package.
+
+msgid ""
+msgstr ""
+"Project-Id-Version: OpenXMB 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-08-25 00:00+0000\n"
+"PO-Revision-Date: 2025-08-25 00:00+0000\n"
+"Last-Translator: Syndromatic Ltd <hello@syndromatic.com>\n"
+"Language-Team: Polish\n"
+"Language: pl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+# Kategorie główne
+msgid "Users"
+msgstr "Użytkownicy"
+
+msgid "Settings"
+msgstr "Ustawienia"
+
+msgid "Photo"
+msgstr "Zdjęcia"
+
+msgid "Music"
+msgstr "Muzyka"
+
+msgid "Video"
+msgstr "Wideo"
+
+msgid "TV"
+msgstr "TV"
+
+msgid "Game"
+msgstr "Gry"
+
+msgid "Application"
+msgstr "Aplikacje"
+
+msgid "Network"
+msgstr "Sieć"
+
+msgid "Friends"
+msgstr "Znajomi"
+
+# Ogólne
+msgid "OK"
+msgstr "OK"
+
+msgid "Yes"
+msgstr "Tak"
+
+msgid "No"
+msgstr "Nie"
+
+msgid "Off"
+msgstr "Wyłączone"
+
+msgid "On"
+msgstr "Włączone"
+
+# Status/Overlays
+msgid "Updating..."
+msgstr "Aktualizowanie..."
+
+msgid "Update Available"
+msgstr "Aktualizacja dostępna"
+
+msgid "Updating"
+msgstr "Aktualizacja"
+
+msgid "No updates available."
+msgstr "Brak dostępnych aktualizacji."
+
+msgid "Failed to check for updates."
+msgstr "Nie udało się sprawdzić aktualizacji."
+
+msgid "An update is available. Would you like to install it?"
+msgstr "Dostępna jest aktualizacja. Zainstalować ją?"
+
+# Ustawienia
+msgid "Personalization Settings"
+msgstr "Personalizacja"
+
+msgid "Background Type"
+msgstr "Typ tła"
+
+msgid "Type of background to use"
+msgstr "Rodzaj używanego tła"
+
+msgid "Animated Wave"
+msgstr "Animowana fala"
+
+msgid "Static Color"
+msgstr "Statyczny kolor"
+
+msgid "Static Image"
+msgstr "Statyczny obraz"
+
+msgid "Language"
+msgstr "Język"
+
+msgid "Preferred language for the shell"
+msgstr "Preferowany język powłoki"
+
+msgid "Use system language"
+msgstr "Użyj języka systemowego"
+
+msgid "English"
+msgstr "Angielski"
+
+msgid "German"
+msgstr "Niemiecki"
+
+msgid "Polish"
+msgstr "Polski"
+
+msgid "Video Settings"
+msgstr "Ustawienia wideo"
+
+msgid "VSync"
+msgstr "VSync"
+
+msgid "Avoid tearing and limit FPS to refresh rate of display"
+msgstr "Unikaj rozrywania i ogranicz FPS do częstotliwości odświeżania"
+
+msgid "Sample Count"
+msgstr "Liczba próbek"
+
+msgid "Number of samples used for Multisample Anti-Aliasing"
+msgstr "Liczba próbek dla MSAA"
+
+msgid "Max FPS"
+msgstr "Maks. FPS"
+
+msgid "Input Settings"
+msgstr "Ustawienia sterowania"
+
+msgid "Controller Type"
+msgstr "Typ kontrolera"
+
+msgid "Type of connected controller and corresponding button prompts"
+msgstr "Typ podłączonego kontrolera i odpowiednie podpowiedzi przycisków"
+
+msgctxt "controllertype"
+msgid "None"
+msgstr "Brak"
+
+msgctxt "controllertype"
+msgid "Automatic"
+msgstr "Automatyczny"
+
+msgctxt "controllertype"
+msgid "Keyboard"
+msgstr "Klawiatura"
+
+msgctxt "controllertype"
+msgid "PlayStation"
+msgstr "PlayStation"
+
+msgctxt "controllertype"
+msgid "Xbox"
+msgstr "Xbox"
+
+msgctxt "controllertype"
+msgid "Steam Controller / Steamdeck"
+msgstr "Steam Controller / Steamdeck"
+
+msgctxt "controllertype"
+msgid "Ouya"
+msgstr "Ouya"
+
+msgid "Controller Rumble"
+msgstr "Wibracje kontrolera"
+
+msgid "Enable controller rumble as feedback for actions"
+msgstr "Włącz wibracje jako informację zwrotną"
+
+msgid "Navigate Menus with Analog Stick"
+msgstr "Nawiguj po menu analogiem"
+
+msgid "Allow navigating all menus using the analog stick in addition to the D-Pad"
+msgstr "Pozwala nawigować po menu analogiem oprócz krzyżaka"
+
+msgid "Debug Settings"
+msgstr "Ustawienia debugowania"
+
+msgid "Show FPS"
+msgstr "Pokaż FPS"
+
+msgid "Show Memory Usage"
+msgstr "Pokaż użycie pamięci"
+
+msgid "Toggle Background Blur"
+msgstr "Przełącz rozmycie tła"
+
+msgid "Toggle Ingame Mode"
+msgstr "Przełącz tryb w grze"
+
+msgid "Check for Updates"
+msgstr "Sprawdź aktualizacje"
+
+msgid "System Update"
+msgstr "Aktualizacja systemu"
+
+msgid "Report bug"
+msgstr "Zgłoś błąd"
+
+msgid "Reset all Settings to default"
+msgstr "Przywróć wszystkie ustawienia"
+
+msgid "Open website in browser"
+msgstr "Otwórz stronę w przeglądarce"
+
+msgid "View License Text"
+msgstr "Zobacz tekst licencji"
+
+msgid "License for {}"
+msgstr "Licencja dla {}"
+
+msgid "Licenses"
+msgstr "Licencje"
+
+# Menu użytkowników
+msgid "Quit"
+msgstr "Zakończ"
+
+msgid "Do you really want to quit the application?"
+msgstr "Czy na pewno chcesz zakończyć aplikację?"
+
+msgid "Power off"
+msgstr "Wyłącz"
+
+msgid "Do you really want to power off the system?"
+msgstr "Czy na pewno chcesz wyłączyć system?"
+
+msgid "Reboot"
+msgstr "Uruchom ponownie"
+
+msgid "Do you really want to reboot the system?"
+msgstr "Czy na pewno chcesz uruchomić system ponownie?"
+
+# Menu plików
+msgid "Options"
+msgstr "Opcje"
+
+msgid "Sort and Filter"
+msgstr "Sortuj i filtruj"
+
+msgid "Copy"
+msgstr "Kopiuj"
+
+msgid "Cut"
+msgstr "Wytnij"
+
+msgid "Delete"
+msgstr "Usuń"
+
+msgid "Open"
+msgstr "Otwórz"
+
+msgid "Open using external program"
+msgstr "Otwórz w zewnętrznym programie"
+
+msgid "Refresh"
+msgstr "Odśwież"
+
+msgid "Paste here"
+msgstr "Wklej tutaj"
+
+msgid "Paste into this folder"
+msgstr "Wklej do tego folderu"
+
+msgid "Copy failed"
+msgstr "Kopiowanie nie powiodło się"
+
+msgid "Failed to copy file: {}"
+msgstr "Nie udało się skopiować pliku: {}"
+
+msgid "Move failed"
+msgstr "Przenoszenie nie powiodło się"
+
+msgid "Failed to move file: {}"
+msgstr "Nie udało się przenieść pliku: {}"
+
+msgid "No matching program found"
+msgstr "Nie znaleziono pasującego programu"
+
+msgid "No matching program found for file of type \"{}\": {}"
+msgstr "Nie znaleziono programu dla pliku typu \"{}\": {}"
+

@@ -1,0 +1,297 @@
+#
+# Original author: JCM <jcm@jcm.re>, 2025.
+#
+# TM & (C) 2025 Syndromatic Ltd. All rights reserved.
+# This file is distributed under the same license as the OpenXMB package.
+
+msgid ""
+msgstr ""
+"Project-Id-Version: OpenXMB 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-08-25 00:00+0000\n"
+"PO-Revision-Date: 2025-08-25 00:00+0000\n"
+"Last-Translator: Syndromatic Ltd <hello@syndromatic.com>\n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+# Main categories
+msgid "Users"
+msgstr "Users"
+
+msgid "Settings"
+msgstr "Settings"
+
+msgid "Photo"
+msgstr "Photo"
+
+msgid "Music"
+msgstr "Music"
+
+msgid "Video"
+msgstr "Video"
+
+msgid "TV"
+msgstr "TV"
+
+msgid "Game"
+msgstr "Game"
+
+msgid "Application"
+msgstr "Application"
+
+msgid "Network"
+msgstr "Network"
+
+msgid "Friends"
+msgstr "Friends"
+
+# Common UI
+msgid "OK"
+msgstr "OK"
+
+msgid "Yes"
+msgstr "Yes"
+
+msgid "No"
+msgstr "No"
+
+msgid "Off"
+msgstr "Off"
+
+msgid "On"
+msgstr "On"
+
+# Status and overlays
+msgid "Updating..."
+msgstr "Updating..."
+
+msgid "Update Available"
+msgstr "Update Available"
+
+msgid "Updating"
+msgstr "Updating"
+
+msgid "No updates available."
+msgstr "No updates available."
+
+msgid "Failed to check for updates."
+msgstr "Failed to check for updates."
+
+msgid "An update is available. Would you like to install it?"
+msgstr "An update is available. Would you like to install it?"
+
+# Settings
+msgid "Personalization Settings"
+msgstr "Personalization Settings"
+
+msgid "Background Type"
+msgstr "Background Type"
+
+msgid "Type of background to use"
+msgstr "Type of background to use"
+
+msgid "Animated Wave"
+msgstr "Animated Wave"
+
+msgid "Static Color"
+msgstr "Static Color"
+
+msgid "Static Image"
+msgstr "Static Image"
+
+msgid "Language"
+msgstr "Language"
+
+msgid "Preferred language for the shell"
+msgstr "Preferred language for the shell"
+
+msgid "Use system language"
+msgstr "Use system language"
+
+msgid "English"
+msgstr "English"
+
+msgid "German"
+msgstr "German"
+
+msgid "Polish"
+msgstr "Polish"
+
+msgid "Video Settings"
+msgstr "Video Settings"
+
+msgid "VSync"
+msgstr "VSync"
+
+msgid "Avoid tearing and limit FPS to refresh rate of display"
+msgstr "Avoid tearing and limit FPS to refresh rate of display"
+
+msgid "Sample Count"
+msgstr "Sample Count"
+
+msgid "Number of samples used for Multisample Anti-Aliasing"
+msgstr "Number of samples used for Multisample Anti-Aliasing"
+
+msgid "Max FPS"
+msgstr "Max FPS"
+
+msgid "Input Settings"
+msgstr "Input Settings"
+
+msgid "Controller Type"
+msgstr "Controller Type"
+
+msgid "Type of connected controller and corresponding button prompts"
+msgstr "Type of connected controller and corresponding button prompts"
+
+msgctxt "controllertype"
+msgid "None"
+msgstr "None"
+
+msgctxt "controllertype"
+msgid "Automatic"
+msgstr "Automatic"
+
+msgctxt "controllertype"
+msgid "Keyboard"
+msgstr "Keyboard"
+
+msgctxt "controllertype"
+msgid "PlayStation"
+msgstr "PlayStation"
+
+msgctxt "controllertype"
+msgid "Xbox"
+msgstr "Xbox"
+
+msgctxt "controllertype"
+msgid "Steam Controller / Steamdeck"
+msgstr "Steam Controller / Steamdeck"
+
+msgctxt "controllertype"
+msgid "Ouya"
+msgstr "Ouya"
+
+msgid "Controller Rumble"
+msgstr "Controller Rumble"
+
+msgid "Enable controller rumble as feedback for actions"
+msgstr "Enable controller rumble as feedback for actions"
+
+msgid "Navigate Menus with Analog Stick"
+msgstr "Navigate Menus with Analog Stick"
+
+msgid "Allow navigating all menus using the analog stick in addition to the D-Pad"
+msgstr "Allow navigating all menus using the analog stick in addition to the D-Pad"
+
+msgid "Debug Settings"
+msgstr "Debug Settings"
+
+msgid "Show FPS"
+msgstr "Show FPS"
+
+msgid "Show Memory Usage"
+msgstr "Show Memory Usage"
+
+msgid "Toggle Background Blur"
+msgstr "Toggle Background Blur"
+
+msgid "Toggle Ingame Mode"
+msgstr "Toggle Ingame Mode"
+
+msgid "Check for Updates"
+msgstr "Check for Updates"
+
+msgid "System Update"
+msgstr "System Update"
+
+msgid "Report bug"
+msgstr "Report bug"
+
+msgid "Reset all Settings to default"
+msgstr "Reset all Settings to default"
+
+msgid "Open website in browser"
+msgstr "Open website in browser"
+
+msgid "View License Text"
+msgstr "View License Text"
+
+msgid "License for {}"
+msgstr "License for {}"
+
+msgid "Licenses"
+msgstr "Licenses"
+
+# Users menu
+msgid "Quit"
+msgstr "Quit"
+
+msgid "Do you really want to quit the application?"
+msgstr "Do you really want to quit the application?"
+
+msgid "Power off"
+msgstr "Power off"
+
+msgid "Do you really want to power off the system?"
+msgstr "Do you really want to power off the system?"
+
+msgid "Reboot"
+msgstr "Reboot"
+
+msgid "Do you really want to reboot the system?"
+msgstr "Do you really want to reboot the system?"
+
+# Files menu
+msgid "Options"
+msgstr "Options"
+
+msgid "Sort and Filter"
+msgstr "Sort and Filter"
+
+msgid "Copy"
+msgstr "Copy"
+
+msgid "Cut"
+msgstr "Cut"
+
+msgid "Delete"
+msgstr "Delete"
+
+msgid "Open"
+msgstr "Open"
+
+msgid "Open using external program"
+msgstr "Open using external program"
+
+msgid "Refresh"
+msgstr "Refresh"
+
+msgid "Paste here"
+msgstr "Paste here"
+
+msgid "Paste into this folder"
+msgstr "Paste into this folder"
+
+msgid "Copy failed"
+msgstr "Copy failed"
+
+msgid "Failed to copy file: {}"
+msgstr "Failed to copy file: {}"
+
+msgid "Move failed"
+msgstr "Move failed"
+
+msgid "Failed to move file: {}"
+msgstr "Failed to move file: {}"
+
+msgid "No matching program found"
+msgstr "No matching program found"
+
+msgid "No matching program found for file of type \"{}\": {}"
+msgstr "No matching program found for file of type \"{}\": {}"
+

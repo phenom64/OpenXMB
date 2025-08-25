@@ -1,0 +1,297 @@
+#
+# Original author: JCM <jcm@jcm.re>, 2025.
+#
+# TM & (C) 2025 Syndromatic Ltd. Alle Rechte vorbehalten.
+# Diese Datei wird unter derselben Lizenz wie das OpenXMB-Paket verteilt.
+
+msgid ""
+msgstr ""
+"Project-Id-Version: OpenXMB 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-08-25 00:00+0000\n"
+"PO-Revision-Date: 2025-08-25 00:00+0000\n"
+"Last-Translator: Syndromatic Ltd <hello@syndromatic.com>\n"
+"Language-Team: German\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+# Hauptkategorien
+msgid "Users"
+msgstr "Nutzer"
+
+msgid "Settings"
+msgstr "Einstellungen"
+
+msgid "Photo"
+msgstr "Fotos"
+
+msgid "Music"
+msgstr "Musik"
+
+msgid "Video"
+msgstr "Videos"
+
+msgid "TV"
+msgstr "TV"
+
+msgid "Game"
+msgstr "Spiele"
+
+msgid "Application"
+msgstr "Anwendungen"
+
+msgid "Network"
+msgstr "Netzwerk"
+
+msgid "Friends"
+msgstr "Freunde"
+
+# Allgemein
+msgid "OK"
+msgstr "OK"
+
+msgid "Yes"
+msgstr "Ja"
+
+msgid "No"
+msgstr "Nein"
+
+msgid "Off"
+msgstr "Aus"
+
+msgid "On"
+msgstr "Ein"
+
+# Status/Overlays
+msgid "Updating..."
+msgstr "Aktualisierung läuft..."
+
+msgid "Update Available"
+msgstr "Aktualisierung verfügbar"
+
+msgid "Updating"
+msgstr "Aktualisierung"
+
+msgid "No updates available."
+msgstr "Keine Aktualisierungen verfügbar."
+
+msgid "Failed to check for updates."
+msgstr "Das Suchen nach Aktualisierungen ist fehlgeschlagen."
+
+msgid "An update is available. Would you like to install it?"
+msgstr "Eine Aktualisierung ist verfügbar. Möchten Sie diese installieren?"
+
+# Einstellungen
+msgid "Personalization Settings"
+msgstr "Personalisierung"
+
+msgid "Background Type"
+msgstr "Hintergrundtyp"
+
+msgid "Type of background to use"
+msgstr "Art des zu verwendenden Hintergrunds"
+
+msgid "Animated Wave"
+msgstr "Animierte Welle"
+
+msgid "Static Color"
+msgstr "Statische Farbe"
+
+msgid "Static Image"
+msgstr "Statisches Bild"
+
+msgid "Language"
+msgstr "Sprache"
+
+msgid "Preferred language for the shell"
+msgstr "Bevorzugte Sprache der Shell"
+
+msgid "Use system language"
+msgstr "Systemsprache verwenden"
+
+msgid "English"
+msgstr "Englisch"
+
+msgid "German"
+msgstr "Deutsch"
+
+msgid "Polish"
+msgstr "Polnisch"
+
+msgid "Video Settings"
+msgstr "Videoeinstellungen"
+
+msgid "VSync"
+msgstr "VSync"
+
+msgid "Avoid tearing and limit FPS to refresh rate of display"
+msgstr "Tearing vermeiden und FPS auf Bildwiederholrate des Displays begrenzen"
+
+msgid "Sample Count"
+msgstr "Anzahl der Samples"
+
+msgid "Number of samples used for Multisample Anti-Aliasing"
+msgstr "Anzahl der Samples für Multisample Anti-Aliasing"
+
+msgid "Max FPS"
+msgstr "Max. FPS"
+
+msgid "Input Settings"
+msgstr "Eingabeeinstellungen"
+
+msgid "Controller Type"
+msgstr "Controllertyp"
+
+msgid "Type of connected controller and corresponding button prompts"
+msgstr "Art des verbundenen Controllers und entsprechende Tastenanzeigen"
+
+msgctxt "controllertype"
+msgid "None"
+msgstr "Keine"
+
+msgctxt "controllertype"
+msgid "Automatic"
+msgstr "Automatisch"
+
+msgctxt "controllertype"
+msgid "Keyboard"
+msgstr "Tastatur"
+
+msgctxt "controllertype"
+msgid "PlayStation"
+msgstr "PlayStation"
+
+msgctxt "controllertype"
+msgid "Xbox"
+msgstr "Xbox"
+
+msgctxt "controllertype"
+msgid "Steam Controller / Steamdeck"
+msgstr "Steam Controller / Steamdeck"
+
+msgctxt "controllertype"
+msgid "Ouya"
+msgstr "Ouya"
+
+msgid "Controller Rumble"
+msgstr "Controller-Vibration"
+
+msgid "Enable controller rumble as feedback for actions"
+msgstr "Vibration als Feedback für Aktionen aktivieren"
+
+msgid "Navigate Menus with Analog Stick"
+msgstr "Menüs mit dem Analogstick steuern"
+
+msgid "Allow navigating all menus using the analog stick in addition to the D-Pad"
+msgstr "Alle Menüs zusätzlich zum Steuerkreuz mit dem Analogstick steuern"
+
+msgid "Debug Settings"
+msgstr "Debug-Einstellungen"
+
+msgid "Show FPS"
+msgstr "FPS anzeigen"
+
+msgid "Show Memory Usage"
+msgstr "Speicherauslastung anzeigen"
+
+msgid "Toggle Background Blur"
+msgstr "Hintergrundunschärfe umschalten"
+
+msgid "Toggle Ingame Mode"
+msgstr "Ingame-Modus umschalten"
+
+msgid "Check for Updates"
+msgstr "Nach Updates suchen"
+
+msgid "System Update"
+msgstr "Systemaktualisierung"
+
+msgid "Report bug"
+msgstr "Fehler melden"
+
+msgid "Reset all Settings to default"
+msgstr "Alle Einstellungen zurücksetzen"
+
+msgid "Open website in browser"
+msgstr "Website im Browser öffnen"
+
+msgid "View License Text"
+msgstr "Lizenztext anzeigen"
+
+msgid "License for {}"
+msgstr "Lizenz für {}"
+
+msgid "Licenses"
+msgstr "Lizenzen"
+
+# Benutzer-Menü
+msgid "Quit"
+msgstr "Beenden"
+
+msgid "Do you really want to quit the application?"
+msgstr "Möchten Sie die Anwendung wirklich beenden?"
+
+msgid "Power off"
+msgstr "Ausschalten"
+
+msgid "Do you really want to power off the system?"
+msgstr "Möchten Sie das System wirklich ausschalten?"
+
+msgid "Reboot"
+msgstr "Neustart"
+
+msgid "Do you really want to reboot the system?"
+msgstr "Möchten Sie das System wirklich neu starten?"
+
+# Dateien-Menü
+msgid "Options"
+msgstr "Optionen"
+
+msgid "Sort and Filter"
+msgstr "Sortieren und filtern"
+
+msgid "Copy"
+msgstr "Kopieren"
+
+msgid "Cut"
+msgstr "Ausschneiden"
+
+msgid "Delete"
+msgstr "Löschen"
+
+msgid "Open"
+msgstr "Öffnen"
+
+msgid "Open using external program"
+msgstr "Mit externem Programm öffnen"
+
+msgid "Refresh"
+msgstr "Aktualisieren"
+
+msgid "Paste here"
+msgstr "Hier einfügen"
+
+msgid "Paste into this folder"
+msgstr "In diesen Ordner einfügen"
+
+msgid "Copy failed"
+msgstr "Kopieren fehlgeschlagen"
+
+msgid "Failed to copy file: {}"
+msgstr "Die Datei konnte nicht kopiert werden: {}"
+
+msgid "Move failed"
+msgstr "Verschieben fehlgeschlagen"
+
+msgid "Failed to move file: {}"
+msgstr "Die Datei konnte nicht verschoben werden: {}"
+
+msgid "No matching program found"
+msgstr "Kein passendes Programm gefunden"
+
+msgid "No matching program found for file of type \"{}\": {}"
+msgstr "Kein passendes Programm für den Dateityp \"{}\" gefunden: {}"
+
