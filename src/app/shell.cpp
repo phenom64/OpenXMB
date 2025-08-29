@@ -14,6 +14,9 @@ module;
 #include <vector>
 #include <version>
 
+// gettext
+#include <libintl.h>
+
 module openxmb.app;
 
 import i18n;
@@ -24,6 +27,7 @@ import vulkan_hpp;
 import vma;
 import sdl2;
 import openxmb.config;
+import openxmb.constants;
 import openxmb.render;
 import openxmb.debug;
 import openxmb.utils;
@@ -166,6 +170,9 @@ namespace app
         config::CONFIG.addCallback("controller-type", [this](const std::string&){
             reload_button_icons();
         });
+        config::CONFIG.addCallback("language", [this](const std::string&){
+            reload_language();
+        });
         config::CONFIG.addCallback("vsync", [this](const std::string&){
             spdlog::info("VSync changed to {}", config::CONFIG.preferredPresentMode == vk::PresentModeKHR::eFifoRelaxed ? "on" : "off");
             win->config.preferredPresentMode = config::CONFIG.preferredPresentMode;
@@ -246,6 +253,34 @@ namespace app
         image_render->prepare(swapchainViews.size());
         simple_render->prepare(swapchainViews.size());
         wave_render->prepare(swapchainViews.size());
+    }
+
+    void shell::reload_language() {
+        // Apply LANGUAGE env and rebind gettext domain
+        try {
+            const std::string& lang = config::CONFIG.language;
+            if(lang.empty() || lang == "auto") {
+                // Let system locale decide
+#if __linux__ || defined(__APPLE__)
+                unsetenv("LANGUAGE");
+#endif
+            } else {
+#if __linux__ || defined(__APPLE__)
+                setenv("LANGUAGE", lang.c_str(), 1);
+#endif
+            }
+            setlocale(LC_ALL, "");
+            bindtextdomain(constants::name, config::CONFIG.locale_directory.string().c_str());
+            bind_textdomain_codeset(constants::name, "UTF-8");
+            textdomain(constants::name);
+            spdlog::info("Language set to '{}'; reloading menus", lang);
+
+            // Rebuild main menu to refresh translated strings
+            menu = app::main_menu(this);
+            menu.preload(device, allocator, *loader);
+        } catch(const std::exception& e) {
+            spdlog::error("reload_language failed: {}", e.what());
+        }
     }
 
     void shell::render(int frame, vk::Semaphore imageAvailable, vk::Semaphore renderFinished, vk::Fence fence)

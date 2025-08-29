@@ -62,6 +62,7 @@ namespace app
             void reload_background();
             void reload_fonts();
             void reload_button_icons();
+            void reload_language();
 
             void dispatch(action action);
             void handle(result result);

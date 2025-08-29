@@ -69,13 +69,12 @@ void startup_overlay::render(dreamrender::gui_renderer& renderer, app::shell*) {
   auto t = duration_cast<milliseconds>(std::chrono::system_clock::now() - start_time);
   float opacity = compute_opacity(t);
 
-  // Text: center on screen
+  // Text: center on screen (use renderer centering)
   const std::string text = "Syndromatic Engineering Bharat Britannia";
   const float size = 0.06f; // reasonable default
-  auto m = renderer.measure_text(text, size);
-  float x = 0.5f/renderer.aspect_ratio - m.x/2.0f;
-  float y = 0.5f - m.y/2.0f;
-  renderer.draw_text(text, x, y, size, glm::vec4(1.0f, 1.0f, 1.0f, std::clamp(opacity, 0.0f, 1.0f)), false, true);
+  float x = 0.5f/renderer.aspect_ratio;
+  float y = 0.5f;
+  renderer.draw_text(text, x, y, size, glm::vec4(1.0f, 1.0f, 1.0f, std::clamp(opacity, 0.0f, 1.0f)), true, true);
 }
 
 }

@@ -22,7 +22,10 @@ export class startup_overlay : public component {
 
     result tick(app::shell*) override;
     void render(dreamrender::gui_renderer& renderer, app::shell*) override;
-    [[nodiscard]] bool is_opaque() const override { return false; }
+    // Opaque so menus do not render behind the intro (PS3-like behavior)
+    [[nodiscard]] bool is_opaque() const override { return true; }
+    [[nodiscard]] bool do_fade_in() const override { return true; }
+    [[nodiscard]] bool do_fade_out() const override { return true; }
 
   private:
     using time_point = std::chrono::time_point<std::chrono::system_clock>;
@@ -31,4 +34,3 @@ export class startup_overlay : public component {
 };
 
 }
-

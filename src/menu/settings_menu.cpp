@@ -312,7 +312,7 @@ namespace menu {
             unsigned int current_choice = 0;
             xmb->emplace_overlay<app::choice_overlay>(
                 choices, current_choice,
-                [key, keys](unsigned int choice) {
+                [xmb, key, keys](unsigned int choice) {
                     auto value = keys[choice];
                     if(key == "background-type") {
                         config::CONFIG.setBackgroundType(value);
@@ -320,6 +320,8 @@ namespace menu {
                     } else if(key == "language") {
                         config::CONFIG.setLanguage(value);
                         config::CONFIG.save_config();
+                        // Apply immediately
+                        xmb->reload_language();
                     } else if(key == "controller-type") {
                         // directly assign; setLanguage has a helper, but controllerType is a plain string
                         config::CONFIG.controllerType = value;
@@ -351,9 +353,12 @@ namespace menu {
             #embed "_deps/spdlog-src/LICENSE"
         };
 #if __linux__
+#  if __has_include("_deps/sdbus-cpp-src/COPYING")
         constexpr char sdbus_cpp[] = {
             #embed "_deps/sdbus-cpp-src/COPYING"
         };
+#    define OPENXMB_HAVE_SDBUS_CPP 1
+#  endif
 #endif
 #if _WIN32
         constexpr char glibmm[] = {
@@ -400,6 +405,8 @@ namespace menu {
                     std::pair{"en", "English"_()},
                     std::pair{"de", "German"_()},
                     std::pair{"pl", "Polish"_()},
+                    std::pair{"fr", "French"_()},
+                    std::pair{"hi", "Hindi"_()},
                 }),
             }
         ));
@@ -466,7 +473,7 @@ namespace menu {
         std::array licenses = {
             // NOLINTBEGIN(*-array-to-pointer-decay)
             std::make_tuple<std::string_view, std::string_view, std::string_view>("i18n-cpp", "https://github.com/JnCrMx/i18n-cpp", std::string_view(licenses::i18n_cpp, sizeof(licenses::i18n_cpp))),
-#if __linux__
+#if __linux__ && defined(OPENXMB_HAVE_SDBUS_CPP)
             std::make_tuple<std::string_view, std::string_view, std::string_view>("sdbus-cpp", "https://github.com/Kistler-Group/sdbus-cpp", std::string_view(licenses::sdbus_cpp, sizeof(licenses::sdbus_cpp))),
 #endif
             std::make_tuple<std::string_view, std::string_view, std::string_view>("argparse", "https://github.com/p-ranav/argparse", std::string_view(licenses::argparse, sizeof(licenses::argparse))),
