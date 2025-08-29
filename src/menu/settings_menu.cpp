@@ -24,6 +24,7 @@ import i18n;
 import dreamrender;
 import openxmb.config;
 import vulkan_hpp;
+import glm;
 
 import :settings_menu;
 
@@ -393,13 +394,54 @@ namespace menu {
 
     settings_menu::settings_menu(std::string name, dreamrender::texture&& icon, app::shell* xmb, dreamrender::resource_loader& loader) : simple_menu(std::move(name), std::move(icon)) {
         const std::filesystem::path& asset_dir = config::CONFIG.asset_directory;
-        entries.push_back(make_simple<simple_menu>("Personalization Settings"_(), asset_dir/"icons/icon_settings_personalization.png", loader,
+        entries.push_back(make_simple<simple_menu>("Theme Settings"_(), asset_dir/"icons/icon_settings_personalization.png", loader,
             std::array{
+                // Background render mode still available here
                 entry_enum(loader, xmb, "Background Type"_(), "Type of background to use"_(), "re.jcm.xmbos.shell", "background-type", std::array{
                     std::pair{"wave", "Animated Wave"_()},
                     std::pair{"color", "Static Color"_()},
                     std::pair{"image", "Static Image"_()},
                 }),
+                // XMB colour (PS3 Original or custom palette)
+                make_simple<action_menu_entry>("Colour"_(), asset_dir/"icons/icon_settings_personalization.png", loader, [xmb]() {
+                    // Options list
+                    struct Item { const char* name; glm::vec3 rgb; bool isOriginal; };
+                    std::vector<Item> items = {
+                        {"Original", {}, true},
+                        {"Silver",   {0.75f, 0.75f, 0.80f}, false},
+                        {"Gold",     {0.90f, 0.80f, 0.35f}, false},
+                        {"Green",    {0.30f, 0.65f, 0.25f}, false},
+                        {"Pink",     {0.95f, 0.60f, 0.80f}, false},
+                        {"Dark Green",{0.15f, 0.50f, 0.20f}, false},
+                        {"Cyan",     {0.50f, 0.85f, 0.95f}, false},
+                        {"Blue",     {0.20f, 0.45f, 0.95f}, false},
+                        {"Navy",     {0.18f, 0.18f, 0.45f}, false},
+                        {"Purple",   {0.60f, 0.30f, 0.70f}, false},
+                        {"Orange",   {0.80f, 0.50f, 0.25f}, false},
+                        {"Red",      {0.90f, 0.25f, 0.25f}, false},
+                        {"Lavender", {0.70f, 0.60f, 0.90f}, false},
+                        {"Grey",     {0.60f, 0.60f, 0.65f}, false},
+                    };
+                    std::vector<std::string> labels; labels.reserve(items.size());
+                    for (auto& it : items) labels.emplace_back(it.name);
+                    unsigned int current = config::CONFIG.themeOriginalColour ? 0u : 1u; // rough default position
+                    xmb->emplace_overlay<app::choice_overlay>(labels, current, [items](unsigned int idx) {
+                        const auto& it = items[idx];
+                        if (it.isOriginal) {
+                            config::CONFIG.themeOriginalColour = true;
+                        } else {
+                            config::CONFIG.themeOriginalColour = false;
+                            config::CONFIG.setThemeCustomColour(it.rgb);
+                        }
+                        config::CONFIG.save_config();
+                    });
+                    return result::success;
+                }),
+            }
+        ));
+        // Keep Language settings under a simple System Settings group
+        entries.push_back(make_simple<simple_menu>("System Settings"_(), asset_dir/"icons/icon_settings_personalization.png", loader,
+            std::array{
                 entry_enum(loader, xmb, "Language"_(), "Preferred language for the shell"_(), "re.jcm.xmbos.shell", "language", std::array{
                     std::pair{"auto", "Use system language"_()},
                     std::pair{"en", "English"_()},

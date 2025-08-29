@@ -225,6 +225,7 @@ namespace app
 
             // transition duration constants
             constexpr static auto blur_background_transition_duration = std::chrono::milliseconds(500);
-            constexpr static auto overlay_transition_duration = std::chrono::milliseconds(100);
+            // Slightly longer fade, PS3-like but still snappy
+            constexpr static auto overlay_transition_duration = std::chrono::milliseconds(400);
     };
 }

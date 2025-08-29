@@ -16,6 +16,7 @@ module;
 
 // gettext
 #include <libintl.h>
+#include <ctime>
 
 module openxmb.app;
 
@@ -295,14 +296,24 @@ namespace app
             overlay->prerender(commandBuffer, frame, this);
         }
         {
+            // Compute PS3‑style theme colour (Original or custom) and time-of-day brightness
+            glm::vec3 themeColour = config::CONFIG.themeOriginalColour ? utils::xmb_dynamic_colour(std::chrono::system_clock::now())
+                                                                       : config::CONFIG.themeCustomColour;
+            {
+                std::time_t tnow = std::time(nullptr);
+                std::tm lt{}; 
+#if defined(_WIN32)
+                localtime_s(&lt, &tnow);
+#else
+                localtime_r(&tnow, &lt);
+#endif
+                float minuteFrac = static_cast<float>(lt.tm_min) / 60.0f;
+                float b = utils::xmb_hour_brightness(lt.tm_hour, minuteFrac);
+                themeColour *= b;
+            }
             vk::ClearValue color(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f});
             if(config::CONFIG.backgroundType == config::config::background_type::color) {
-                color = vk::ClearColorValue(std::array<float, 4>{
-                    config::CONFIG.backgroundColor.r,
-                    config::CONFIG.backgroundColor.g,
-                    config::CONFIG.backgroundColor.b,
-                    1.0f
-                });
+                color = vk::ClearColorValue(std::array<float, 4>{ themeColour.r, themeColour.g, themeColour.b, 1.0f });
             }
             if(ingame_mode) {
                 color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.5f});
@@ -318,7 +329,7 @@ namespace app
 
             if(!ingame_mode) {
                 if(config::CONFIG.backgroundType == config::config::background_type::wave) {
-                    wave_render->waveColor = config::CONFIG.waveColor;
+                    wave_render->waveColor = themeColour;
                     wave_render->render(commandBuffer, frame, backgroundRenderPass.get());
                 }
                 else if(config::CONFIG.backgroundType == config::config::background_type::image) {

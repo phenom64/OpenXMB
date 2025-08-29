@@ -73,7 +73,7 @@ void config::load_from_json() {
         
         // Load shell settings
         if (config.contains("shell")) {
-            auto& shell = config["shell"];
+            auto& shell = config["shell"]; 
             
             if (shell.contains("background-color")) {
                 setBackgroundColor(shell["background-color"].get<std::string>());
@@ -117,6 +117,14 @@ void config::load_from_json() {
 
             if (shell.contains("videos-path")) {
                 videosPath = shell["videos-path"].get<std::string>();
+            }
+            // Theme / colour scheme
+            if (shell.contains("theme-colour-mode")) {
+                std::string m = shell["theme-colour-mode"].get<std::string>();
+                themeOriginalColour = (m == "original");
+            }
+            if (shell.contains("theme-custom-colour")) {
+                setThemeCustomColour(shell["theme-custom-colour"].get<std::string>());
             }
             
             if (shell.contains("excluded-applications")) {
@@ -230,6 +238,14 @@ void config::save_to_json() {
             config["shell"]["excluded-applications"].push_back(app);
         }
         
+        // Theme/colour scheme
+        config["shell"]["theme-colour-mode"] = themeOriginalColour ? "original" : "custom";
+        config["shell"]["theme-custom-colour"] = "#" + 
+            std::format("{:02x}{:02x}{:02x}", 
+                static_cast<int>(themeCustomColour.r * 255),
+                static_cast<int>(themeCustomColour.g * 255),
+                static_cast<int>(themeCustomColour.b * 255));
+
         // Controller settings
         config["controller"]["rumble"] = controllerRumble;
         config["controller"]["analog-stick"] = controllerAnalogStick;
@@ -403,6 +419,33 @@ void config::setWaveColor(std::string_view hex) {
 
 void config::setWaveColor(const std::string& hex) {
     setWaveColor(std::string_view(hex));
+}
+
+void config::setThemeCustomColour(glm::vec3 color) {
+    themeCustomColour = color;
+}
+void config::setThemeCustomColour(std::string_view hex) {
+    if(hex.length() < 6) {
+        spdlog::error("Invalid hex color: {}", hex);
+        return;
+    }
+    try {
+        std::string hex_str(hex);
+        if (hex_str[0] == '#') hex_str = hex_str.substr(1);
+        if (hex_str.length() != 6) {
+            spdlog::error("Invalid hex color length: {}", hex_str);
+            return;
+        }
+        int r = std::stoi(hex_str.substr(0, 2), nullptr, 16);
+        int g = std::stoi(hex_str.substr(2, 2), nullptr, 16);
+        int b = std::stoi(hex_str.substr(4, 2), nullptr, 16);
+        themeCustomColour = glm::vec3(r/255.0f, g/255.0f, b/255.0f);
+    } catch(const std::exception& e) {
+        spdlog::error("Error parsing hex color {}: {}", hex, e.what());
+    }
+}
+void config::setThemeCustomColour(const std::string& hex) {
+    setThemeCustomColour(std::string_view(hex));
 }
 
 void config::setDateTimeFormat(const std::string& format) {

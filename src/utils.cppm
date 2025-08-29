@@ -99,6 +99,11 @@ export namespace utils
         return std::clamp(d, 0.0, 1.0);
     }
 
+    // PS3‑style dynamic XMB colour and brightness helpers
+    glm::vec3 xmb_month_colour(int monthIndex /*0=Jan*/);
+    float     xmb_hour_brightness(int hour /*0..23*/, float minuteFrac);
+    glm::vec3 xmb_dynamic_colour(std::chrono::system_clock::time_point now);
+
     template<typename T>
     class aligned_wrapper {
         public:

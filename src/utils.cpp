@@ -19,6 +19,7 @@ module;
 module openxmb.utils;
 
 import spdlog;
+import glm;
 
 namespace utils {
 
@@ -122,6 +123,70 @@ namespace utils {
         std::ostringstream oss;
         oss << std::fixed << std::setprecision(n) << d;
         return oss.str();
+    }
+
+    // Approximate PS3 palette — monthly anchor colours (sRGB 0..1)
+    static const glm::vec3 MONTH_COLOURS[12] = {
+        {0.95f, 0.90f, 0.65f}, // Jan  – pale yellow
+        {0.62f, 0.27f, 0.25f}, // Feb  – red/brown
+        {0.30f, 0.65f, 0.25f}, // Mar  – green
+        {0.95f, 0.60f, 0.80f}, // Apr  – pink
+        {0.60f, 0.80f, 0.35f}, // May  – light green
+        {0.70f, 0.60f, 0.90f}, // Jun  – purple
+        {0.50f, 0.85f, 0.95f}, // Jul  – cyan
+        {0.20f, 0.45f, 0.95f}, // Aug  – blue
+        {0.18f, 0.18f, 0.45f}, // Sep  – navy
+        {0.60f, 0.30f, 0.70f}, // Oct  – violet
+        {0.80f, 0.50f, 0.25f}, // Nov  – orange/brown
+        {0.90f, 0.25f, 0.25f}  // Dec  – red
+    };
+
+    glm::vec3 xmb_month_colour(int monthIndex)
+    {
+        monthIndex = (monthIndex % 12 + 12) % 12;
+        return MONTH_COLOURS[monthIndex];
+    }
+
+    float xmb_hour_brightness(int hour, float minuteFrac)
+    {
+        static const float B[24] = {
+            0.05f, 0.05f, 0.05f, 0.05f,
+            0.10f, 0.15f, 0.25f, 0.35f,
+            0.45f, 0.60f, 0.75f, 0.90f,
+            1.00f, 0.95f, 0.85f, 0.75f,
+            0.60f, 0.50f, 0.40f, 0.30f,
+            0.20f, 0.12f, 0.08f, 0.06f
+        };
+        int h0 = (hour % 24 + 24) % 24;
+        int h1 = (h0 + 1) % 24;
+        return B[h0] * (1.0f - minuteFrac) + B[h1] * minuteFrac;
+    }
+
+    glm::vec3 xmb_dynamic_colour(std::chrono::system_clock::time_point now)
+    {
+        using namespace std::chrono;
+        std::time_t t = system_clock::to_time_t(now);
+        std::tm lt{};
+#if defined(_WIN32)
+        localtime_s(&lt, &t);
+#else
+        localtime_r(&t, &lt);
+#endif
+        int month = lt.tm_mon;         // 0..11
+        int day = lt.tm_mday;          // 1..31
+
+        // Interpolate colour within the month towards the next month by day fraction
+        int daysInMonth;
+        switch(month) {
+            case 0: case 2: case 4: case 6: case 7: case 9: case 11: daysInMonth = 31; break;
+            case 3: case 5: case 8: case 10: daysInMonth = 30; break;
+            default: // Feb
+                { int y = lt.tm_year + 1900; bool leap = ((y%4==0 && y%100!=0) || (y%400==0)); daysInMonth = leap ? 29 : 28; }
+        }
+        float frac = std::clamp((day - 1) / float(daysInMonth), 0.0f, 1.0f);
+        glm::vec3 c0 = xmb_month_colour(month);
+        glm::vec3 c1 = xmb_month_colour((month + 1) % 12);
+        return glm::mix(c0, c1, frac);
     }
 }
 

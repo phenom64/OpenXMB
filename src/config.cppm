@@ -54,6 +54,11 @@ export namespace config
                 if(auto v = std::getenv("XMB_LOCALE_DIR"); v != nullptr) {
                     return std::filesystem::path(v);
                 }
+                // Prefer build-tree locales (CMake symlinks) when running from build dir
+                auto build_locales = exe_directory / "locales";
+                if(std::filesystem::exists(build_locales)) {
+                    return build_locales;
+                }
                 return exe_directory / std::string(constants::locale_directory);
             }();
             std::filesystem::path fallback_font = exe_directory / std::string(constants::fallback_font);
@@ -75,6 +80,11 @@ export namespace config
             std::string             dateTimeFormat = constants::fallback_datetime_format;
             double                  dateTimeOffset = 0.0;
             std::string             language;
+
+            // Theme/colour scheme (PS3‑style)
+            // When 'themeOriginalColour' is true, use dynamic month/day colour; otherwise use 'themeCustomColour'.
+            bool                    themeOriginalColour = true;
+            glm::vec3               themeCustomColour{0.65f, 0.30f, 0.65f};
 
             std::filesystem::path   picturesPath;
             std::filesystem::path   musicPath;
@@ -104,6 +114,9 @@ export namespace config
             void setWaveColor(glm::vec3 color);
             void setWaveColor(std::string_view hex);
             void setWaveColor(const std::string& hex);
+            void setThemeCustomColour(glm::vec3 color);
+            void setThemeCustomColour(std::string_view hex);
+            void setThemeCustomColour(const std::string& hex);
             void setDateTimeFormat(const std::string& format);
             void setLanguage(const std::string& lang);
 

@@ -122,16 +122,18 @@ modules:
       - HW accel selection (HWACCEL) and libass subtitles
 
   - id: browser_cef
-    repo: OpenXMB
-    status: planned (OFF by default)
-    tasks:
+  repo: OpenXMB
+  status: planned (OFF by default)
+  tasks:
       - CEF OSR integration, controller mapping, background policy
+      - See Plan: M7 below
 
   - id: disc_media
-    repo: OpenXMB
-    status: planned (OFF by default)
-    tasks:
+  repo: OpenXMB
+  status: planned (OFF by default)
+  tasks:
       - libdvdread/libdvdnav/libbluray glue; device monitor; demux URL for player
+      - See Plan: M6 below
 
   - id: libretro_host
     repo: OpenXMB
@@ -197,8 +199,39 @@ milestones:
     goal: File playback (software), then HW accel + subtitles
     status: present (software); planned (HW/subtitles)
   - id: M5_libretro_overlay
-    goal: Emulation with overlay
+  goal: Emulation with overlay
+  status: planned
+
+  - id: M6_disc_media
+    goal: Seamless CD/DVD/Blu‑ray playback within OpenXMB (PS3‑style)
     status: planned
+    plan:
+      detection:
+        - Poll `/dev/sr0` and common mount points; classify: Audio CD (FFmpeg cdda), DVD (VIDEO_TS), Blu‑ray (BDMV)
+        - Optional metadata via libbluray/libdvdread/libdvdnav when present
+      ui_integration:
+        - Inject dynamic entries at top of Music (Audio CD) and Video (DVD/BD):
+          * No Disc (disabled), Play Audio CD, Play DVD/Blu‑ray, or title when available
+      playback:
+        - Reuse FFmpeg player: open `cdda:/dev/sr0`, `dvd:`, `bluray:` or mounted main title
+        - Phase‑1 for Audio CD: play all (track list later)
+      build:
+        - Guarded by `ENABLE_DISC_MEDIA`; optional links to libbluray/libdvd*/pkg‑config
+
+  - id: M7_browser_cef
+    goal: Chromium Embedded Framework browser overlay with off‑screen rendering
+    status: planned
+    plan:
+      build:
+        - `ENABLE_BROWSER` toggles; build overlay only if CEF toolchain is provided
+      rendering:
+        - CEF OSR BGRA buffer → dreamrender texture via resource_loader (double‑buffered)
+      input:
+        - Map SDL keyboard/mouse/wheel; IME support after alpha
+      ui:
+        - Minimal overlay (URL bar optional), back/forward/reload/close
+      followups:
+        - Downloads, persistence, multi‑tabs, GPU accel toggles
   - id: M6_browser
     goal: CEF OSR integration
     status: planned
@@ -217,4 +250,3 @@ acceptance:
     - Emulated cores full-speed with overlay <80 ms open (later)
     - Browser background mode with FPS cap when RAM ≥ 4GB (later)
     - Disc entry appears when media present; plays if keys provided (later)
-
