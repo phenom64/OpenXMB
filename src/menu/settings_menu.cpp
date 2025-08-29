@@ -396,10 +396,11 @@ namespace menu {
         const std::filesystem::path& asset_dir = config::CONFIG.asset_directory;
         entries.push_back(make_simple<simple_menu>("Theme Settings"_(), asset_dir/"icons/icon_settings_personalization.png", loader,
             std::array{
-                // Background render mode still available here
+                // Background render mode
                 entry_enum(loader, xmb, "Background Type"_(), "Type of background to use"_(), "re.jcm.xmbos.shell", "background-type", std::array{
-                    std::pair{"wave", "Animated Wave"_()},
-                    std::pair{"color", "Static Color"_()},
+                    std::pair{"original", "Original (PS3)"_()},
+                    std::pair{"wave", "Classic"_()},
+                    std::pair{"color", "Static Colour"_()},
                     std::pair{"image", "Static Image"_()},
                 }),
                 // XMB colour (PS3 Original or custom palette)
@@ -423,9 +424,10 @@ namespace menu {
                         {"Grey",     {0.60f, 0.60f, 0.65f}, false},
                     };
                     std::vector<std::string> labels; labels.reserve(items.size());
-                    for (auto& it : items) labels.emplace_back(it.name);
+                    std::vector<glm::vec3> swatches; swatches.reserve(items.size());
+                    for (auto& it : items) { labels.emplace_back(it.name); swatches.emplace_back(it.rgb);}                    
                     unsigned int current = config::CONFIG.themeOriginalColour ? 0u : 1u; // rough default position
-                    xmb->emplace_overlay<app::choice_overlay>(labels, current, [items](unsigned int idx) {
+                    auto* overlay = xmb->emplace_overlay<app::choice_overlay>(labels, current, [items](unsigned int idx) {
                         const auto& it = items[idx];
                         if (it.isOriginal) {
                             config::CONFIG.themeOriginalColour = true;
@@ -435,6 +437,8 @@ namespace menu {
                         }
                         config::CONFIG.save_config();
                     });
+                    // Provide swatches for display
+                    overlay->set_colour_swatches(swatches);
                     return result::success;
                 }),
             }

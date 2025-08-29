@@ -219,6 +219,7 @@ void config::save_to_json() {
                 static_cast<int>(waveColor.b * 255));
         
         switch (backgroundType) {
+            case background_type::original: config["shell"]["background-type"] = "original"; break;
             case background_type::wave: config["shell"]["background-type"] = "wave"; break;
             case background_type::color: config["shell"]["background-type"] = "color"; break;
             case background_type::image: config["shell"]["background-type"] = "image"; break;
@@ -335,7 +336,9 @@ void config::setBackgroundType(background_type type) {
 }
 
 void config::setBackgroundType(std::string_view type) {
-    if(type == "wave") {
+    if(type == "original") {
+        backgroundType = background_type::original;
+    } else if(type == "wave") {
         backgroundType = background_type::wave;
     } else if(type == "color") {
         backgroundType = background_type::color;

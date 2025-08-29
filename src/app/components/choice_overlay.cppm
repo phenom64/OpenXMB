@@ -13,6 +13,7 @@ import vulkan_hpp;
 import vma;
 import openxmb.utils;
 import :component;
+import glm;
 
 namespace app {
 
@@ -22,6 +23,8 @@ export class choice_overlay : public component, public action_receiver {
             std::function<void(unsigned int)> confirm_callback = [](unsigned int){},
             std::function<void()> cancel_callback = [](){}
         );
+        // Optional colour swatches to display next to each choice (same length as choices or empty)
+        void set_colour_swatches(const std::vector<glm::vec3>& cols) { swatches = cols; }
 
         void render(dreamrender::gui_renderer& renderer, class shell* xmb) override;
         result on_action(action action) override;
@@ -43,6 +46,8 @@ export class choice_overlay : public component, public action_receiver {
         time_point last_selection_time = std::chrono::system_clock::now();
 
         constexpr static auto transition_duration = std::chrono::milliseconds(100);
+
+        std::vector<glm::vec3> swatches;
 };
 
 }

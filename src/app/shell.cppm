@@ -167,6 +167,7 @@ namespace app
             std::unique_ptr<image_renderer> image_render;
             std::unique_ptr<simple_renderer> simple_render;
             std::unique_ptr<render::wave_renderer> wave_render;
+            std::unique_ptr<render::original_renderer> original_render;
 
             vk::UniqueRenderPass backgroundRenderPass, shellRenderPass;
 

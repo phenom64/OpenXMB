@@ -19,4 +19,9 @@ namespace yuv420p {
     vk::UniqueShaderModule decode_comp(vk::Device device);
 }
 
+namespace original_bg {
+    vk::UniqueShaderModule vert(vk::Device device);
+    vk::UniqueShaderModule frag(vk::Device device);
+}
+
 }

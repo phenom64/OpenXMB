@@ -103,8 +103,15 @@ void choice_overlay::render(dreamrender::gui_renderer& renderer, class shell* xm
 
         double size = base_size*glm::mix(0.75, 1.0, partial_selection);
 
+        // Optional colour swatch square
+        float y = base_pos.y + offsetY + item_height*i;
+        if(i < swatches.size()) {
+            glm::vec3 c = swatches[i];
+            float sq = size*0.6f; // square size relative to text size
+            renderer.draw_rect(glm::vec2{base_pos.x - 0.03f/renderer.aspect_ratio, y - sq/2.0f}, glm::vec2{sq/renderer.aspect_ratio, sq}, glm::vec4(c, 1.0f));
+        }
         const std::string& entry = choices[i];
-        renderer.draw_text(entry, base_pos.x, base_pos.y + offsetY + item_height*i, size, glm::vec4(1, 1, 1, 1), false, true);
+        renderer.draw_text(entry, base_pos.x, y, size, glm::vec4(1, 1, 1, 1), false, true);
     }
 }
 

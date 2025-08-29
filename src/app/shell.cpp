@@ -59,6 +59,7 @@ namespace app
         image_render = std::make_unique<image_renderer>(device, win->swapchainExtent, win->gpuFeatures);
         simple_render = std::make_unique<simple_renderer>(device, allocator, win->swapchainExtent, win->gpuFeatures);
         wave_render = std::make_unique<render::wave_renderer>(device, allocator, win->swapchainExtent);
+        original_render = std::make_unique<render::original_renderer>(device, win->swapchainExtent);
 
         {
             std::array<vk::AttachmentDescription, 2> attachments = {
@@ -149,6 +150,7 @@ namespace app
         image_render->preload({backgroundRenderPass.get(), shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
         simple_render->preload({shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
         wave_render->preload({backgroundRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
+        original_render->preload({backgroundRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
 
         if(config::CONFIG.backgroundType == config::config::background_type::image) {
             backgroundTexture = std::make_unique<texture>(device, allocator);
@@ -254,6 +256,7 @@ namespace app
         image_render->prepare(swapchainViews.size());
         simple_render->prepare(swapchainViews.size());
         wave_render->prepare(swapchainViews.size());
+        original_render->prepare(swapchainViews.size());
     }
 
     void shell::reload_language() {
@@ -297,8 +300,9 @@ namespace app
         }
         {
             // Compute PS3‑style theme colour (Original or custom) and time-of-day brightness
-            glm::vec3 themeColour = config::CONFIG.themeOriginalColour ? utils::xmb_dynamic_colour(std::chrono::system_clock::now())
-                                                                       : config::CONFIG.themeCustomColour;
+            glm::vec3 baseThemeColour = config::CONFIG.themeOriginalColour ? utils::xmb_dynamic_colour(std::chrono::system_clock::now())
+                                                                          : config::CONFIG.themeCustomColour;
+            float brightness = 1.0f;
             {
                 std::time_t tnow = std::time(nullptr);
                 std::tm lt{}; 
@@ -308,12 +312,12 @@ namespace app
                 localtime_r(&tnow, &lt);
 #endif
                 float minuteFrac = static_cast<float>(lt.tm_min) / 60.0f;
-                float b = utils::xmb_hour_brightness(lt.tm_hour, minuteFrac);
-                themeColour *= b;
+                brightness = utils::xmb_hour_brightness(lt.tm_hour, minuteFrac);
             }
             vk::ClearValue color(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f});
             if(config::CONFIG.backgroundType == config::config::background_type::color) {
-                color = vk::ClearColorValue(std::array<float, 4>{ themeColour.r, themeColour.g, themeColour.b, 1.0f });
+                glm::vec3 c = baseThemeColour * brightness;
+                color = vk::ClearColorValue(std::array<float, 4>{ c.r, c.g, c.b, 1.0f });
             }
             if(ingame_mode) {
                 color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.5f});
@@ -328,8 +332,15 @@ namespace app
             commandBuffer.setScissor(0, scissor);
 
             if(!ingame_mode) {
-                if(config::CONFIG.backgroundType == config::config::background_type::wave) {
-                    wave_render->waveColor = themeColour;
+                if(config::CONFIG.backgroundType == config::config::background_type::original) {
+                    // Render gradient/dust background, with brightness, then the classic ribbon tinted by base colour (no brightness)
+                    float seconds = std::chrono::duration<float>(std::chrono::system_clock::now() - std::chrono::system_clock::time_point{}).count();
+                    original_render->render(commandBuffer, frame, backgroundRenderPass.get(), baseThemeColour, brightness, seconds);
+                    wave_render->waveColor = baseThemeColour;
+                    wave_render->render(commandBuffer, frame, backgroundRenderPass.get());
+                }
+                else if(config::CONFIG.backgroundType == config::config::background_type::wave) {
+                    wave_render->waveColor = baseThemeColour; // PS3 look: wave uses base, brightness on background only
                     wave_render->render(commandBuffer, frame, backgroundRenderPass.get());
                 }
                 else if(config::CONFIG.backgroundType == config::config::background_type::image) {

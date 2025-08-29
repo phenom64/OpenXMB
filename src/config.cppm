@@ -28,7 +28,7 @@ export namespace config
             config() = default;
 
             enum class background_type {
-                wave, color, image
+                original, wave, color, image
             };
 
 #if __linux__
@@ -66,14 +66,14 @@ export namespace config
             vk::PresentModeKHR      preferredPresentMode = vk::PresentModeKHR::eFifoRelaxed; //aka VSync
             vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e4; // aka Anti-aliasing
 
-            double                          maxFPS = 100;
+            double                          maxFPS = 60;
             std::chrono::duration<double>   frameTime = std::chrono::duration<double>(std::chrono::seconds(1))/maxFPS;
 
             bool showFPS    = false;
             bool showMemory = false;
 
             std::filesystem::path   fontPath;
-            background_type			backgroundType = background_type::wave;
+            background_type			backgroundType = background_type::original;
             glm::vec3               backgroundColor{};
             std::filesystem::path   backgroundImage;
             glm::vec3               waveColor{};

@@ -74,7 +74,8 @@ void startup_overlay::render(dreamrender::gui_renderer& renderer, app::shell*) {
   const float size = 0.06f; // reasonable default
   auto m = renderer.measure_text(text, size);
   const float right_margin = 0.08f; // ~8% screen margin feels close to PS3
-  float x = (1.0f/renderer.aspect_ratio) - right_margin - m.x;
+  // Coordinates are normalized 0..1; do not divide by aspect here
+  float x = 1.0f - right_margin - m.x;
   float y = 0.5f - m.y/2.0f;
   renderer.draw_text(text, x, y, size, glm::vec4(1.0f, 1.0f, 1.0f, std::clamp(opacity, 0.0f, 1.0f)));
 }

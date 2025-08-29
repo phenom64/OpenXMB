@@ -62,4 +62,22 @@ namespace yuv420p {
     }
 }
 
+namespace original_bg {
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wc23-extensions"
+    constexpr char vert_array[] = {
+    #embed "shaders/original.vert.spv"
+    };
+    constexpr char frag_array[] = {
+    #embed "shaders/original.frag.spv"
+    };
+    #pragma clang diagnostic pop
+
+    constexpr std::array vert_shader = dreamrender::convert<std::to_array(vert_array), uint32_t>();
+    constexpr std::array frag_shader = dreamrender::convert<std::to_array(frag_array), uint32_t>();
+
+    vk::UniqueShaderModule vert(vk::Device device) { return dreamrender::createShader(device, vert_shader); }
+    vk::UniqueShaderModule frag(vk::Device device) { return dreamrender::createShader(device, frag_shader); }
+}
+
 }
