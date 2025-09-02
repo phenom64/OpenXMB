@@ -14,7 +14,7 @@ The rendering backend is powered by [**AuroreEngine**](https://github.com/phenom
 ## Screenshots
 
 <p align="center">
-  <img src="interfaceFX/GraphicsServer/Screenshot 2025-08-29 190126.png" alt="OpenXMB main menu and settings" width="300"/>
+  <img src="interfaceFX/GraphicsServer/Screenshot 2025-09-02 203702.png" alt="OpenXMB main menu and settings" width="300"/>
   <img src="interfaceFX/GraphicsServer/Screenshot 2025-08-30 201458.png" alt="Dynamic XMB colour schemes" width="300"/>
 </p>
 
