@@ -160,19 +160,32 @@ The application looks for assets (icons, sounds, fonts) in a directory specified
 
 ## License
 
-Distributed under the GNU General Public License v3.0. See `LICENSE` for more information.
+OpenXMB is distributed under the **GNU General Public License v3.0 (GPLv3)**.  
+See the [LICENSE](LICENSE) file for the full text.
+
+A significant portion of the OpenXMB base is derived from **XMBShell**, and this is reflected in code taken from that project.  
+Many thanks to its author, **JCM**.
+
+All other original code is © 2025 Syndromatic and contributors, and licensed under GPLv3.  
+AuroreEngine components adapted from **dreamrender** remain under the MPL 2.0 license.
+
+---
 
 ## Acknowledgements
 
-*   **JCM** for the original [XMBshell](https://github.com/JnCrMx/XMBshell) project, which served as a key inspiration.
-*   The **AuroreEngine** project for the rendering backend.
-*   All the amazing open-source libraries that make OpenXMB possible, including:
-    *   SDL2
-    *   FFmpeg
-    *   Vulkan
-    *   spdlog
-    *   glm
-    *   Freetype
-    *   i18n-cpp
-    *   nlohmann/json
-    *   argparse
+OpenXMB incorporates work from several outstanding open-source projects:
+
+* **[XMBShell](https://github.com/JnCrMx/xmbshell)** – significant portions of OpenXMB are derived from XMBShell, originally created by JCM.  
+* **[RetroArch](https://github.com/libretro/RetroArch)** – portions of the codebase are reused for media and emulation functionality.  
+* **[dreamrender](https://github.com/JnCrMx/dreamrender)** – AuroreEngine, the rendering backend, is based on dreamrender.  
+
+And of course, thanks to the wider ecosystem, including:  
+* SDL2  
+* Vulkan  
+* FFmpeg  
+* Freetype  
+* glm  
+* spdlog  
+* i18n-cpp  
+* nlohmann/json  
+* argparse  
