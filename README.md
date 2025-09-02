@@ -13,6 +13,17 @@ The rendering backend is powered by [**AuroreEngine**](https://github.com/phenom
 
 A significant portion of OpenXMB is either derived from [**XMBShell by JCM**](github.com/JnCrMx/xmbshell) or based on ideas from it - this is explained in the Licenses and Acknowledgements sections below.
 
+## Screenshots
+
+<p align="center">
+  <img src="interfaceFX/GraphicsServer/Screenshot 2025-08-29 190126.png" alt="OpenXMB main menu and settings" width="300"/>
+  <img src="interfaceFX/GraphicsServer/Screenshot 2025-08-30 201458.png" alt="Dynamic XMB colour schemes" width="300"/>
+</p>
+
+<p align="center">
+  <em>Left: OpenXMB main menu & settings (pre-alpha) · Right: Dynamic XMB colour schemes adapting to time/month</em>
+</p>
+
 ## Features
 
 *   **Modern Tech Stack:** Built with C++23 modules, CMake, Vulkan for rendering (with MoltenVK on macOS), and SDL2 for windowing and input.
