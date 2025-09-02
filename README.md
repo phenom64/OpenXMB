@@ -11,8 +11,6 @@ This project is a modern interpretation of the iconic XrossMediaBar (XMB) interf
 
 The rendering backend is powered by [**AuroreEngine**](https://github.com/phenom64/AuroreEngine), a custom rendering library based on `dreamrender`. The entire application is built using C++23 modules for a clean and modern architecture.
 
-A significant portion of OpenXMB is either derived from [**XMBShell by JCM**](github.com/JnCrMx/xmbshell) or based on ideas from it - this is explained in the Licenses and Acknowledgements sections below.
-
 ## Screenshots
 
 <p align="center">
@@ -179,7 +177,7 @@ See the [LICENSE](LICENSE) file for the full text.
 A significant portion of the OpenXMB base is derived from **XMBShell**, and this is reflected in code taken from that project.  
 Many thanks to its author, **JCM**.
 
-All other original code is © 2025 Syndromatic and contributors, and licensed under GPLv3.  
+All other original code is © 2025 Syndromatic Ltd and contributors, and licensed under version 3 of the GNU General Public License.  
 AuroreEngine components adapted from **dreamrender** remain under the MPL 2.0 license.
 
 ---
