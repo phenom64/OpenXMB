@@ -195,6 +195,8 @@ namespace menu {
                 current = config::CONFIG.showFPS ? 1u : 0u;
             } else if(key == "show-mem") {
                 current = config::CONFIG.showMemory ? 1u : 0u;
+            } else if(key == "icon-glass-refraction") {
+                current = config::CONFIG.iconGlassRefraction ? 1u : 0u;
             }
 
             xmb->emplace_overlay<app::choice_overlay>(
@@ -215,10 +217,13 @@ namespace menu {
                     } else if(key == "show-fps") {
                         changed = (config::CONFIG.showFPS != on);
                         config::CONFIG.showFPS = on;
-                    } else if(key == "show-mem") {
-                        changed = (config::CONFIG.showMemory != on);
-                        config::CONFIG.showMemory = on;
-                    }
+            } else if(key == "show-mem") {
+                changed = (config::CONFIG.showMemory != on);
+                config::CONFIG.showMemory = on;
+            } else if(key == "icon-glass-refraction") {
+                changed = (config::CONFIG.iconGlassRefraction != on);
+                config::CONFIG.iconGlassRefraction = on;
+            }
                     if(changed) {
                         config::CONFIG.save_config();
                     }
@@ -484,6 +489,7 @@ namespace menu {
                 entry_bool(loader, xmb, "VSync"_(), "Avoid tearing and limit FPS to refresh rate of display"_(), "re.jcm.xmbos.openxmb.render", "vsync"),
                 entry_int(loader, xmb, "Sample Count"_(), "Number of samples used for Multisample Anti-Aliasing"_(), "re.jcm.xmbos.openxmb.render", "sample-count", std::array{1, 2, 4, 8, 16}),
                 entry_int(loader, xmb, "Max FPS"_(), "FPS limit used if VSync is disabled"_(), "re.jcm.xmbos.openxmb.render", "max-fps", 15, 200, 5),
+                entry_bool(loader, xmb, "Icon Glass Refraction"_(), "Apply liquid-glass effect to icons"_(), "re.jcm.xmbos.openxmb.render", "icon-glass-refraction"),
             }
         ));
         entries.push_back(make_simple<simple_menu>("Input Settings"_(), asset_dir/"icons/icon_settings_input.png", loader,

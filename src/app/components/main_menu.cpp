@@ -53,6 +53,7 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, dreamrender
     using ::menu::make_simple_of;
 
     const auto& asset_directory = config::CONFIG.asset_directory;
+    menus.reserve(10);
     menus.push_back(make_simple<menu::users_menu>("Users"_(), asset_directory/"icons/icon_category_users.png", loader, xmb, loader));
     menus.push_back(make_simple<menu::settings_menu>("Settings"_(), asset_directory/"icons/icon_category_settings.png", loader, xmb, loader));
     menus.push_back(make_simple<menu::files_menu>("Photo"_(), asset_directory/"icons/icon_category_photo.png", loader, xmb,
@@ -283,7 +284,11 @@ void main_menu::render_crossbar(dreamrender::gui_renderer& renderer, time_point 
         }
 
         auto& menu = menus[i];
-        renderer.draw_image_a(menu->get_icon(), x, base_pos.y, base_size, base_size);
+        if(config::CONFIG.iconGlassRefraction) {
+            renderer.draw_image_glass(menu->get_icon(), x, base_pos.y, base_size, base_size);
+        } else {
+            renderer.draw_image_a(menu->get_icon(), x, base_pos.y, base_size, base_size);
+        }
         if(i == selected) {
             renderer.draw_text(menu->get_name(), x+(base_size*0.5f)/renderer.aspect_ratio, base_pos.y+base_size, base_size*0.4f, glm::vec4(1, 1, 1, 1), true);
         }
@@ -318,7 +323,11 @@ void main_menu::render_crossbar(dreamrender::gui_renderer& renderer, time_point 
         }
         for(int i=selected_submenu-1; i >= 0 && y >= -base_size*0.65f; i--) {
             auto& submenu = menu->get_submenu(i);
-            renderer.draw_image_a(submenu.get_icon(), x+(base_size*0.2f)/renderer.aspect_ratio, y, base_size*0.6f, base_size*0.6f);
+            if(config::CONFIG.iconGlassRefraction) {
+                renderer.draw_image_glass(submenu.get_icon(), x+(base_size*0.2f)/renderer.aspect_ratio, y, base_size*0.6f, base_size*0.6f);
+            } else {
+                renderer.draw_image_a(submenu.get_icon(), x+(base_size*0.2f)/renderer.aspect_ratio, y, base_size*0.6f, base_size*0.6f);
+            }
             if(!in_submenu_now)
                 renderer.draw_text(submenu.get_name(), x+(base_size*1.5f)/renderer.aspect_ratio, y+(base_size*0.3f), base_size*0.4f, glm::vec4(0.7, 0.7, 0.7, 1), false, true);
             y -= base_size*0.65f;
@@ -337,7 +346,11 @@ void main_menu::render_crossbar(dreamrender::gui_renderer& renderer, time_point 
                 if(!in_submenu_now) {
                     double size = base_size*glm::mix(0.6, 1.2, partial_transition);
                 double text_size = base_size*glm::mix(0.4, 0.6, partial_transition);
-                    renderer.draw_image_a(submenu.get_icon(), x+(base_size*0.5f-size/2.0f)/renderer.aspect_ratio, y, size, size);
+                    if(config::CONFIG.iconGlassRefraction) {
+                        renderer.draw_image_glass(submenu.get_icon(), x+(base_size*0.5f-size/2.0f)/renderer.aspect_ratio, y, size, size);
+                    } else {
+                        renderer.draw_image_a(submenu.get_icon(), x+(base_size*0.5f-size/2.0f)/renderer.aspect_ratio, y, size, size);
+                    }
                     if(!in_submenu_now)
                         renderer.draw_text(submenu.get_name(), x+(base_size*1.5f)/renderer.aspect_ratio, y+size/2, text_size, glm::vec4(1, 1, 1, 1), false, true);
                 }
@@ -346,13 +359,21 @@ void main_menu::render_crossbar(dreamrender::gui_renderer& renderer, time_point 
             else if(i == last_selected_menu_item) {
                 double size = base_size*glm::mix(0.6, 1.2, 1.0f-partial_transition);
                 double text_size = base_size*glm::mix(0.4, 0.6, 1.0f-partial_transition);
-                renderer.draw_image_a(submenu.get_icon(), x+(0.05f-size/2.0f)/renderer.aspect_ratio, y, size, size);
+                if(config::CONFIG.iconGlassRefraction) {
+                    renderer.draw_image_glass(submenu.get_icon(), x+(0.05f-size/2.0f)/renderer.aspect_ratio, y, size, size);
+                } else {
+                    renderer.draw_image_a(submenu.get_icon(), x+(0.05f-size/2.0f)/renderer.aspect_ratio, y, size, size);
+                }
                 if(!in_submenu_now)
                     renderer.draw_text(submenu.get_name(), x+(base_size*1.5f)/renderer.aspect_ratio, y+size/2, text_size, glm::vec4(1, 1, 1, 1), false, true);
                 y += base_size*glm::mix(0.65f, 1.5f, 1.0f-partial_transition);
             }
             else {
-                renderer.draw_image_a(submenu.get_icon(), x+(base_size*0.2f)/renderer.aspect_ratio, y, base_size*0.6f, base_size*0.6f);
+                if(config::CONFIG.iconGlassRefraction) {
+                    renderer.draw_image_glass(submenu.get_icon(), x+(base_size*0.2f)/renderer.aspect_ratio, y, base_size*0.6f, base_size*0.6f);
+                } else {
+                    renderer.draw_image_a(submenu.get_icon(), x+(base_size*0.2f)/renderer.aspect_ratio, y, base_size*0.6f, base_size*0.6f);
+                }
                 if(!in_submenu_now)
                     renderer.draw_text(submenu.get_name(), x+(base_size*1.5f)/renderer.aspect_ratio, y+base_size*0.3f, base_size*0.4f, glm::vec4(0.7, 0.7, 0.7, 1), false, true);
                 y += base_size*0.65f;

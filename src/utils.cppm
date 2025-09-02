@@ -114,7 +114,11 @@ export namespace utils
     }
 
     using time_point = std::chrono::time_point<std::chrono::system_clock>;
-    constexpr double progress(time_point now, time_point start, std::chrono::duration<double> duration) {
+    // Generic progress helper over any clock type; computes clamped [0,1]
+    template<typename Clock>
+    constexpr double progress(std::chrono::time_point<Clock> now,
+                              std::chrono::time_point<Clock> start,
+                              std::chrono::duration<double> duration) {
         double d = std::chrono::duration<double>(now - start).count() / duration.count();
         return std::clamp(d, 0.0, 1.0);
     }

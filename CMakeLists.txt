@@ -46,6 +46,29 @@ else()
 endif()
 message(STATUS "Running on ${COLOR_RED}${PLATFORM_NAME}${COLOR_RESET}")
 
+# -----------------------------------------------------------------------------
+# Build-type defaults and global optimizations
+# -----------------------------------------------------------------------------
+# If user did not provide a build type, default to Release for better perf.
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo" "MinSizeRel")
+endif()
+
+# Optionally enable CPU-specific tuning (off by default for portability)
+option(OPENXMB_ENABLE_NATIVE_OPTIMIZATIONS "Enable -march=native or /arch:..." OFF)
+option(OPENXMB_ENABLE_FAST_MATH "Enable fast-math where safe" OFF)
+
+# Interprocedural optimization (LTO/IPO) for Release builds if supported
+include(CheckIPOSupported)
+check_ipo_supported(RESULT IPO_SUPPORTED OUTPUT IPO_ERROR)
+if(IPO_SUPPORTED)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO ON)
+else()
+  message(STATUS "${COLOR_YELLOW}IPO/LTO not supported: ${IPO_ERROR}${COLOR_RESET}")
+endif()
+
 if(APPLE)
   list(APPEND CMAKE_PREFIX_PATH "/usr/local")
   set(FFMPEG_ROOT "/usr/local/opt/ffmpeg")
@@ -65,7 +88,7 @@ set(HWACCEL "auto" CACHE STRING "Preferred hardware video decode backend")
 set_property(CACHE HWACCEL PROPERTY STRINGS auto off vaapi d3d11 videotoolbox)
 
 # Interface/FX debug overlays (fonts, UI visuals)
-option(INTERFACE_FX_DEBUG "Enable interface/UI graphics debug overlays" ON)
+option(INTERFACE_FX_DEBUG "Enable interface/UI graphics debug overlays" OFF)
 
 # Set color for ENABLE_BROWSER
 if(ENABLE_BROWSER)
@@ -290,6 +313,32 @@ target_sources(XMS PUBLIC
   FILE_SET CXX_MODULES
   BASE_DIRS src
   FILES ${XMS_MODULE_SOURCES}
+)
+
+# Extra optimization flags and definitions (safe-by-default)
+if(MSVC)
+  target_compile_options(XMS PRIVATE
+    $<$<CONFIG:Release>:/O2 /Oi /GL>
+    $<$<CONFIG:RelWithDebInfo>:/O2 /Oi>
+  )
+  # Link-time code generation in Release
+  target_link_options(XMS PRIVATE $<$<CONFIG:Release>:/LTCG>)
+else()
+  target_compile_options(XMS PRIVATE
+    $<$<CONFIG:Release>:-O3 -DNDEBUG>
+    $<$<CONFIG:RelWithDebInfo>:-O2>
+    $<$<AND:$<CONFIG:Release>,$<BOOL:${OPENXMB_ENABLE_FAST_MATH}>>:-ffast-math>
+    $<$<BOOL:${OPENXMB_ENABLE_NATIVE_OPTIMIZATIONS}>:-march=native>
+  )
+  # If IPO is not supported, attempt LTO flags in Release
+  if(NOT IPO_SUPPORTED)
+    target_link_options(XMS PRIVATE $<$<CONFIG:Release>:-flto>)
+  endif()
+endif()
+
+# Reduce logging overhead in Release by compiling out debug/trace
+target_compile_definitions(XMS PRIVATE
+  $<$<CONFIG:Release>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_INFO>
 )
 
 target_compile_options(XMS PRIVATE -pthread)

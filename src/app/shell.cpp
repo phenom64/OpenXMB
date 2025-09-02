@@ -312,7 +312,7 @@ namespace app
         tick();
 
         vk::CommandBuffer commandBuffer = commandBuffers[frame];
-        auto now = std::chrono::system_clock::now();
+        auto now = std::chrono::steady_clock::now();
 
         commandBuffer.begin(vk::CommandBufferBeginInfo());
         for(auto& overlay : std::views::reverse(overlays)) {
@@ -567,7 +567,7 @@ namespace app
             }
         }
 
-        auto now = std::chrono::system_clock::now();
+        auto now = std::chrono::steady_clock::now();
         // TODO: somehow fix this.... god this is gonna be a huge mess
         double overlay_progress = utils::progress(now, overlay_fade_time, overlay_transition_duration);
         double dir_progress = overlay_fade_direction == transition_direction::in ? overlay_progress : 1.0 - overlay_progress;
@@ -691,16 +691,16 @@ namespace app
 
         for(unsigned int i=0; i<2; i++) {
             if(last_controller_axis_input[i]) {
-                auto time_since_input = std::chrono::duration<double>(std::chrono::system_clock::now() - last_controller_axis_input_time[i]);
+                auto time_since_input = std::chrono::duration<double>(std::chrono::steady_clock::now() - last_controller_axis_input_time[i]);
                 if(time_since_input > controller_axis_input_duration) {
                     auto [controller, dir] = *last_controller_axis_input[i];
                     dispatch(dir);
-                    last_controller_axis_input_time[i] = std::chrono::system_clock::now();
+                    last_controller_axis_input_time[i] = std::chrono::steady_clock::now();
                 }
             }
         }
         if(last_controller_button_input) {
-            auto time_since_input = std::chrono::duration<double>(std::chrono::system_clock::now() - last_controller_button_input_time);
+            auto time_since_input = std::chrono::duration<double>(std::chrono::steady_clock::now() - last_controller_button_input_time);
             if(time_since_input > controller_button_input_duration) {
                 auto [controller, button] = *last_controller_button_input;
                 button_down(controller, button);
@@ -805,7 +805,7 @@ namespace app
     {
         spdlog::trace("Button down: {}", fmt::underlying(button));
         last_controller_button_input = std::make_tuple(controller, button);
-        last_controller_button_input_time = std::chrono::system_clock::now();
+        last_controller_button_input_time = std::chrono::steady_clock::now();
 
         if(button == sdl::GameControllerButtonValues::DPAD_LEFT) {
             dispatch(action::left);
@@ -881,7 +881,7 @@ namespace app
             unsigned int index = axis == sdl::GameControllerAxisValues::LEFTX ? 0 : 1;
             if(std::abs(value) < controller_axis_input_threshold) {
                 last_controller_axis_input[index] = std::nullopt;
-                last_controller_axis_input_time[index] = std::chrono::system_clock::now();
+                last_controller_axis_input_time[index] = std::chrono::steady_clock::now();
                 return;
             }
             action dir = axis == sdl::GameControllerAxisValues::LEFTX  ? (value > 0 ? action::right : action::left)
@@ -891,7 +891,7 @@ namespace app
             }
             dispatch(dir);
             last_controller_axis_input[index] = std::make_tuple(controller, dir);
-            last_controller_axis_input_time[index] = std::chrono::system_clock::now();
+            last_controller_axis_input_time[index] = std::chrono::steady_clock::now();
         }
     }
 }

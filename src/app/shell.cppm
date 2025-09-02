@@ -107,7 +107,11 @@ namespace app
                     auto icon = buttonTextures[std::to_underlying(action)].get();
                     float width = std::max(min_width, size_x/1.25f+renderer.measure_text(text, size).x);
                     if(action != action::none && icon) {
-                        renderer.draw_image(*icon, current_x, y, size/2.0, size/2.0);
+                        if(config::CONFIG.iconGlassRefraction) {
+                            renderer.draw_image_glass(*icon, current_x, y, size/2.0, size/2.0);
+                        } else {
+                            renderer.draw_image(*icon, current_x, y, size/2.0, size/2.0);
+                        }
                         renderer.draw_text(text, current_x+size_x/1.25f, y+size*0.033f, size);
                     }
                     current_x += width;
@@ -130,7 +134,7 @@ namespace app
             void set_blur_background(bool blur) {
                 if (blur == blur_background) return;
                 blur_background = blur;
-                last_blur_background_change = std::chrono::system_clock::now();
+                last_blur_background_change = std::chrono::steady_clock::now();
             }
             bool get_blur_background() const { return blur_background; }
 
@@ -140,9 +144,9 @@ namespace app
 
                 if(ptr->do_fade_in()) {
                     overlay_fade_direction = transition_direction::in;
-                    overlay_fade_time = std::chrono::system_clock::now();
+                    overlay_fade_time = std::chrono::steady_clock::now();
                 } else {
-                    overlay_fade_time = std::chrono::system_clock::now() - overlay_transition_duration;
+                    overlay_fade_time = std::chrono::steady_clock::now() - overlay_transition_duration;
                 }
 
                 return ptr;
@@ -155,9 +159,9 @@ namespace app
 
                 if(ptr->do_fade_in()) {
                     overlay_fade_direction = transition_direction::in;
-                    overlay_fade_time = std::chrono::system_clock::now();
+                    overlay_fade_time = std::chrono::steady_clock::now();
                 } else {
-                    overlay_fade_time = std::chrono::system_clock::now() - overlay_transition_duration;
+                    overlay_fade_time = std::chrono::steady_clock::now() - overlay_transition_duration;
                 }
 
                 return ptr;
@@ -166,10 +170,10 @@ namespace app
                 if(index >= overlays.size()) return;
                 if(index == overlays.size()-1 && overlays[index]->do_fade_out()) {
                     overlay_fade_direction = transition_direction::out;
-                    overlay_fade_time = std::chrono::system_clock::now();
+                    overlay_fade_time = std::chrono::steady_clock::now();
                     old_overlay = std::move(overlays[index]);
                 } else {
-                    overlay_fade_time = std::chrono::system_clock::now() - overlay_transition_duration;
+                    overlay_fade_time = std::chrono::steady_clock::now() - overlay_transition_duration;
                 }
                 overlays.erase(overlays.begin()+index);
             }
@@ -181,7 +185,8 @@ namespace app
         private:
             friend class blur_layer;
 
-            using time_point = std::chrono::time_point<std::chrono::system_clock>;
+            // Monotonic timing for input and fades
+            using time_point = std::chrono::time_point<std::chrono::steady_clock>;
 
             std::unique_ptr<font_renderer> font_render;
             std::unique_ptr<image_renderer> image_render;

@@ -21,6 +21,8 @@ module;
 #include <algorithm>
 #include <filesystem>
 #include <functional>
+#include <thread>
+#include <mutex>
 #include <map>
 #include <numeric>
 #include <string>
@@ -138,6 +140,117 @@ namespace menu {
         reload();
     }
 
+    unsigned int files_menu::get_submenus_count() const {
+        ensure_built();
+        return is_open ? entries.size() : 1;
+    }
+
+    menu::menu_entry& files_menu::get_submenu(unsigned int index) const {
+        ensure_built();
+        return *entries.at(index);
+    }
+
+    void files_menu::start_scan_async() {
+        // Cancel any in-flight scan by bumping generation
+        uint64_t gen = ++scan_generation;
+        scanning = true;
+        needs_rebuild = false;
+
+        // Show a placeholder while scanning
+        entries.clear();
+        extra_data_entries.clear();
+        {
+            dreamrender::texture icon_texture(loader.getDevice(), loader.getAllocator());
+            entries.push_back(std::make_unique<action_menu_entry>(
+                std::string{"Loading..."}, std::move(icon_texture), std::function<result()>{}
+            ));
+        }
+
+        // Launch background scan
+        std::thread([this, gen, p = path]() {
+            std::vector<file_info> file_infos;
+            try {
+                std::filesystem::directory_iterator it{p};
+                for (auto iter = it; iter != std::filesystem::end(it); ++iter) {
+                    const auto& entry = *iter;
+                    try {
+                        if (scan_generation.load() != gen) return; // superseded
+                        file_info info(entry);
+                        file_infos.push_back(std::move(info));
+                    } catch (const std::exception& e) {
+                        spdlog::warn("Error processing file {}: {}", entry.path().string(), e.what());
+                    }
+                }
+                if (scan_generation.load() != gen) return; // superseded
+                {
+                    std::lock_guard<std::mutex> lk(cache_mutex);
+                    last_scanned_path = p;
+                    cached_file_infos.swap(file_infos);
+                }
+                needs_rebuild = true;
+            } catch (const std::exception& e) {
+                spdlog::error("Error scanning directory {}: {}", p.string(), e.what());
+            }
+            scanning = false;
+        }).detach();
+    }
+
+    void files_menu::ensure_built() const {
+        if (needs_rebuild.load() && !scanning.load()) {
+            needs_rebuild = false;
+            // rebuild entries from cache
+            const_cast<files_menu*>(this)->entries.clear();
+            const_cast<files_menu*>(this)->extra_data_entries.clear();
+
+            std::vector<const file_info*> view;
+            {
+                std::lock_guard<std::mutex> lk(cache_mutex);
+                view.reserve(cached_file_infos.size());
+                for (const auto& info : cached_file_infos) {
+                    if (filter(info)) view.push_back(&info);
+                }
+            }
+            std::sort(view.begin(), view.end(), [this](const file_info* a, const file_info* b) {
+                bool result = sort(*a, *b);
+                return sort_descending ? !result : result;
+            });
+            for (const file_info* pinf : view) {
+                const auto& info = *pinf;
+                const_cast<files_menu*>(this)->extra_data_entries.push_back({path / info.name, info});
+
+                std::string icon_path;
+                std::string extension = std::filesystem::path(info.name).extension().string();
+                if (info.content_type.starts_with("image/") ||
+                    extension == ".png" || extension == ".jpg" || extension == ".jpeg" ||
+                    extension == ".bmp" || extension == ".gif") {
+                    icon_path = (path / info.name).string();
+                } else {
+                    if(auto r = utils::resolve_icon_from_json(info.content_type)) {
+                        icon_path = r->string();
+                    }
+                }
+
+                dreamrender::texture icon_texture(loader.getDevice(), loader.getAllocator());
+                auto entry = std::make_unique<action_menu_entry>(
+                    info.display_name,
+                    std::move(icon_texture),
+                    std::function<result()>{},
+                    [self = const_cast<files_menu*>(this), info](action a) { return self->activate_file(info, a); }
+                );
+                if(!icon_path.empty()) {
+                    try { loader.loadTexture(&entry->get_icon(), icon_path); }
+                    catch (const std::exception& e) { spdlog::debug("Failed to load icon for {}: {}", info.name, e.what()); }
+                }
+                const_cast<files_menu*>(this)->entries.push_back(std::move(entry));
+            }
+        }
+    }
+
+    void files_menu::stop_scan() {
+        ++scan_generation; // supersede any worker
+        scanning = false;
+    }
+
     void files_menu::reload() {
         if(selected_submenu < extra_data_entries.size()) {
             old_selected_item = extra_data_entries[selected_submenu].path;
@@ -146,40 +259,30 @@ namespace menu {
         entries.clear();
         extra_data_entries.clear();
 
-        try {
-            std::filesystem::directory_iterator it{path};
-            std::vector<file_info> file_infos;
-
-            for (const auto& entry : it) {
-                try {
-                    file_info info(entry);
-                    
-                    if(!filter(info)) {
-                        continue;
-                    }
-
-                    file_infos.push_back(info);
-                } catch (const std::exception& e) {
-                    spdlog::warn("Error processing file {}: {}", entry.path().string(), e.what());
-                }
+        auto rebuild_from_cache = [this]() {
+            // Filter view from cached infos
+            std::vector<const file_info*> view;
+            view.reserve(cached_file_infos.size());
+            for (const auto& info : cached_file_infos) {
+                if (filter(info)) view.push_back(&info);
             }
-
-            // Sort files
-            std::sort(file_infos.begin(), file_infos.end(), [this](const file_info& a, const file_info& b) {
-                bool result = sort(a, b);
+            // Sort view
+            std::sort(view.begin(), view.end(), [this](const file_info* a, const file_info* b) {
+                bool result = sort(*a, *b);
                 return sort_descending ? !result : result;
             });
 
             // Create menu entries
-            for (const auto& info : file_infos) {
+            for (const file_info* pinf : view) {
+                const auto& info = *pinf;
                 extra_data_entries.push_back({path / info.name, info});
-                
+
                 std::string icon_path;
                 std::string extension = std::filesystem::path(info.name).extension().string();
-                
+
                 // Try to find appropriate icon
-                if (info.content_type.starts_with("image/") || 
-                    extension == ".png" || extension == ".jpg" || extension == ".jpeg" || 
+                if (info.content_type.starts_with("image/") ||
+                    extension == ".png" || extension == ".jpg" || extension == ".jpeg" ||
                     extension == ".bmp" || extension == ".gif") {
                     icon_path = (path / info.name).string();
                 } else {
@@ -191,14 +294,14 @@ namespace menu {
 
                 dreamrender::texture icon_texture(loader.getDevice(), loader.getAllocator());
                 auto entry = std::make_unique<action_menu_entry>(
-                    info.display_name, 
+                    info.display_name,
                     std::move(icon_texture),
-                    std::function<result()>{}, 
-                    [this, info](action a) { 
-                        return activate_file(info, a); 
+                    std::function<result()>{},
+                    [this, info](action a) {
+                        return activate_file(info, a);
                     }
                 );
-                
+
                 if(!icon_path.empty()) {
                     try {
                         loader.loadTexture(&entry->get_icon(), icon_path);
@@ -206,8 +309,17 @@ namespace menu {
                         spdlog::debug("Failed to load icon for {}: {}", info.name, e.what());
                     }
                 }
-                
+
                 entries.push_back(std::move(entry));
+            }
+        };
+
+        try {
+            // Asynchronous rescan if path changed; otherwise rebuild from cached data
+            if (last_scanned_path != path) {
+                start_scan_async();
+            } else {
+                rebuild_from_cache();
             }
         } catch (const std::exception& e) {
             spdlog::error("Error reloading files menu: {}", e.what());
@@ -250,16 +362,16 @@ namespace menu {
         if(action == action::extra) {
             selected_filter = (selected_filter + 1) % filters.size();
             filter = filters[selected_filter].second;
-            reload();
+            resort();
             return result::unsupported;
         } else if(action == action::options) {
             selected_sort = (selected_sort + 1) % sorts.size();
             sort = sorts[selected_sort].second;
-            reload();
+            resort();
             return result::unsupported;
         } else if(action == action::cancel) {
             sort_descending = !sort_descending;
-            reload();
+            resort();
             return result::unsupported;
         }
         return simple_menu::activate(action);
@@ -279,7 +391,56 @@ namespace menu {
     }
 
     void files_menu::resort() {
-        reload();
+        // Rebuild entries from cached_file_infos without rescanning I/O
+        entries.clear();
+        extra_data_entries.clear();
+
+        // Delegate to reload()'s internal logic by simulating no path change
+        // but without touching last_scanned_path; replicate builder here
+        try {
+            // Filter view
+            std::vector<const file_info*> view;
+            view.reserve(cached_file_infos.size());
+            for (const auto& info : cached_file_infos) {
+                if (filter(info)) view.push_back(&info);
+            }
+            // Sort view
+            std::sort(view.begin(), view.end(), [this](const file_info* a, const file_info* b) {
+                bool result = sort(*a, *b);
+                return sort_descending ? !result : result;
+            });
+            // Create entries
+            for (const file_info* pinf : view) {
+                const auto& info = *pinf;
+                extra_data_entries.push_back({path / info.name, info});
+
+                std::string icon_path;
+                std::string extension = std::filesystem::path(info.name).extension().string();
+                if (info.content_type.starts_with("image/") ||
+                    extension == ".png" || extension == ".jpg" || extension == ".jpeg" ||
+                    extension == ".bmp" || extension == ".gif") {
+                    icon_path = (path / info.name).string();
+                } else {
+                    if(auto r = utils::resolve_icon_from_json(info.content_type)) {
+                        icon_path = r->string();
+                    }
+                }
+                dreamrender::texture icon_texture(loader.getDevice(), loader.getAllocator());
+                auto entry = std::make_unique<action_menu_entry>(
+                    info.display_name,
+                    std::move(icon_texture),
+                    std::function<result()>{},
+                    [this, info](action a) { return activate_file(info, a); }
+                );
+                if(!icon_path.empty()) {
+                    try { loader.loadTexture(&entry->get_icon(), icon_path); }
+                    catch (const std::exception& e) { spdlog::debug("Failed to load icon for {}: {}", info.name, e.what()); }
+                }
+                entries.push_back(std::move(entry));
+            }
+        } catch(const std::exception& e) {
+            spdlog::error("Error resorting files menu: {}", e.what());
+        }
     }
 
 }

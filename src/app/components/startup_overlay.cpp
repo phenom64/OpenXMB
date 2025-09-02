@@ -87,11 +87,10 @@ void startup_overlay::render(dreamrender::gui_renderer& renderer, app::shell*) {
   auto t = duration_cast<milliseconds>(std::chrono::system_clock::now() - start_time);
   float opacity = compute_opacity(t);
 
-  // Text: center on screen (use renderer centering)
+  // Text: right-align near screen edge
   const std::string text = "Syndromatic Engineering Bharat Britannia";
-  const float size = 0.06f; // reasonable default
+  const float size = 0.06f;
   auto m = renderer.measure_text(text, size);
-  // Work in X-units scaled by aspect (our GUI uses x in 0..1/aspect)
   const float right_margin_x = 0.08f / renderer.aspect_ratio; // 8% of width
   float x = (1.0f/renderer.aspect_ratio) - right_margin_x - m.x;
   float y = 0.5f - m.y/2.0f;

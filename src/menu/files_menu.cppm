@@ -27,8 +27,12 @@ module;
 #include <cstdint>
 #include <filesystem>
 #include <functional>
+#include <future>
 #include <memory>
+#include <mutex>
 #include <string>
+#include <thread>
+#include <atomic>
 #include <type_traits>
 #include <vector>
 
@@ -75,11 +79,12 @@ class files_menu : public simple_menu {
             }
             entries.clear();
             extra_data_entries.clear();
+            last_scanned_path.clear();
+            cached_file_infos.clear();
         }
 
-        unsigned int get_submenus_count() const override {
-            return is_open ? entries.size() : 1;
-        }
+        unsigned int get_submenus_count() const override;
+        menu_entry& get_submenu(unsigned int index) const override;
         result activate(action action) override;
 
         void get_button_actions(std::vector<std::pair<action, std::string>>& v) override;
@@ -112,6 +117,9 @@ class files_menu : public simple_menu {
             sort_entry_type{"Type", sort_by_type},
         };
     private:
+        void start_scan_async();
+        void ensure_built() const; // may rebuild view entries from cache lazily
+        void stop_scan();
         void reload();
         void resort();
         result activate_file(const file_info& info, action action);
@@ -136,6 +144,15 @@ class files_menu : public simple_menu {
         std::filesystem::path old_selected_item;
         // This is extremely hacky, but it works for now.
         std::shared_ptr<bool> exists_flag = std::make_shared<bool>(true);
+
+        // Cache last directory scan to avoid I/O on resort/filter changes
+        std::filesystem::path last_scanned_path;
+        mutable std::vector<file_info> cached_file_infos;
+        // Async scan machinery
+        mutable std::mutex cache_mutex;
+        mutable std::atomic<bool> scanning{false};
+        mutable std::atomic<bool> needs_rebuild{false};
+        mutable std::atomic<uint64_t> scan_generation{0};
 };
 
 }

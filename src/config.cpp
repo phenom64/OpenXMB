@@ -208,6 +208,9 @@ void config::load_from_json() {
             if (render.contains("show-mem")) {
                 showMemory = render["show-mem"].get<bool>();
             }
+            if (render.contains("icon-glass-refraction")) {
+                iconGlassRefraction = render["icon-glass-refraction"].get<bool>();
+            }
         }
         
         spdlog::info("Configuration loaded successfully");
@@ -276,6 +279,7 @@ void config::save_to_json() {
         config["render"]["vsync"] = (preferredPresentMode == vk::PresentModeKHR::eFifoRelaxed);
         config["render"]["show-fps"] = showFPS;
         config["render"]["show-mem"] = showMemory;
+        config["render"]["icon-glass-refraction"] = iconGlassRefraction;
         
         // Write to file
         std::ofstream config_file(config_path);
