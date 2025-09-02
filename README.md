@@ -1,7 +1,7 @@
 # OpenXMB
 
 <p align="left">
-  An open-source, cross-platform reimagining of the XrossMediaBar, built from the ground up with modern C++23, Vulkan, and SDL2.
+  An open-source, cross-platform reimagining of Sony's XrossMediaBar, built with modern C++23, Vulkan, and SDL2 for high performance and portable efficiency.
 </p>
 <a href="https://syndromatic.com"><img src="interfaceFX/GraphicsServer/SyndromaticOrb.png" alt="Syndromatic Logo" width="100"/></a>
 
@@ -9,7 +9,9 @@
 
 This project is a modern interpretation of the iconic XrossMediaBar (XMB) interface, famously used on the PlayStation 3 and other Sony devices. It is not a direct port, but a new implementation that leverages modern graphics APIs and C++ features to create a flexible and performant user interface for desktops and embedded systems.
 
-The rendering backend is powered by **AuroreEngine** ([github.com/phenom64/AuroreEngine](https://github.com/phenom64/AuroreEngine)), a custom rendering library based on `dreamrender`. The entire application is built using C++23 modules for a clean and modern architecture.
+The rendering backend is powered by [**AuroreEngine**](https://github.com/phenom64/AuroreEngine), a custom rendering library based on `dreamrender`. The entire application is built using C++23 modules for a clean and modern architecture.
+
+A significant portion of OpenXMB is either derived from [**XMBShell by JCM**](github.com/JnCrMx/xmbshell) or based on ideas from it - this is explained in the Licenses and Acknowledgements sections below.
 
 ## Features
 
