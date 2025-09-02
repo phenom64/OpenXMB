@@ -1,3 +1,21 @@
+/* This file is a part of the OpenXMB desktop experience project.
+ * Copyright (C) 2025 Syndromatic Ltd. All rights reserved
+ * Designed by Kavish Krishnakumar in Manchester.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 module;
 
 #include <algorithm>
@@ -73,9 +91,9 @@ void startup_overlay::render(dreamrender::gui_renderer& renderer, app::shell*) {
   const std::string text = "Syndromatic Engineering Bharat Britannia";
   const float size = 0.06f; // reasonable default
   auto m = renderer.measure_text(text, size);
-  const float right_margin = 0.08f; // ~8% screen margin feels close to PS3
-  // Coordinates are normalized 0..1; do not divide by aspect here
-  float x = 1.0f - right_margin - m.x;
+  // Work in X-units scaled by aspect (our GUI uses x in 0..1/aspect)
+  const float right_margin_x = 0.08f / renderer.aspect_ratio; // 8% of width
+  float x = (1.0f/renderer.aspect_ratio) - right_margin_x - m.x;
   float y = 0.5f - m.y/2.0f;
   renderer.draw_text(text, x, y, size, glm::vec4(1.0f, 1.0f, 1.0f, std::clamp(opacity, 0.0f, 1.0f)));
 }

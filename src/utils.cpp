@@ -1,3 +1,21 @@
+/* This file is a part of the OpenXMB desktop experience project.
+ * Copyright (C) 2025 Syndromatic Ltd. All rights reserved
+ * Designed by Kavish Krishnakumar in Manchester.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 module;
 
 #include <cstring>
@@ -183,10 +201,27 @@ namespace utils {
             default: // Feb
                 { int y = lt.tm_year + 1900; bool leap = ((y%4==0 && y%100!=0) || (y%400==0)); daysInMonth = leap ? 29 : 28; }
         }
-        float frac = std::clamp((day - 1) / float(daysInMonth), 0.0f, 1.0f);
-        glm::vec3 c0 = xmb_month_colour(month);
-        glm::vec3 c1 = xmb_month_colour((month + 1) % 12);
-        return glm::mix(c0, c1, frac);
+        // Temporal fade: major colour changes on the 15th and 24th with smooth easing
+        float r = (day - 1) / float(daysInMonth);
+        float a1 = 15.0f / daysInMonth; // first anchor (~15th)
+        float a2 = 24.0f / daysInMonth; // second anchor (~24th)
+        glm::vec3 cPrev = xmb_month_colour((month + 11) % 12);
+        glm::vec3 cCurr = xmb_month_colour(month);
+        glm::vec3 cNext = xmb_month_colour((month + 1) % 12);
+
+        auto ease = [](float x){ x = std::clamp(x,0.0f,1.0f); return x*x*(3.0f-2.0f*x); };
+        glm::vec3 c = cCurr;
+        if(r < a1) {
+            float t = ease(r / a1);
+            c = glm::mix(cPrev, cCurr, t);
+        } else if(r < a2) {
+            float t = ease((r - a1) / (a2 - a1));
+            c = glm::mix(cCurr, cCurr, t); // hold colour through middle third
+        } else {
+            float t = ease((r - a2) / (1.0f - a2));
+            c = glm::mix(cCurr, cNext, t);
+        }
+        return c;
     }
 }
 

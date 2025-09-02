@@ -1,3 +1,15 @@
+/*
+ * RetroArch - A frontend for libretro.
+ * Copyright (C) 2010-2014 Hans-Kristian Arntzen
+ * Copyright (C) 2011-2021 Daniel De Matteis
+ * (and other contributors, per upstream headers)
+ *
+ * Adapted for OpenXMB from:
+ *   gfx/drivers/vulkan_shaders/pipeline_ribbon.vert/.frag
+ *
+ * Licensed under GPLv3; see LICENSE and LICENSE.RetroArch.
+ */
+
 #version 450
 
 layout(push_constant) uniform UBO

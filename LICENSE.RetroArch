@@ -1,0 +1,11 @@
+The following files in OpenXMB are adapted from RetroArch (https://github.com/libretro/RetroArch)
+and are therefore covered by the RetroArch copyright:
+
+- shaders/wave.vert  (from: gfx/drivers/vulkan_shaders/pipeline_ribbon.vert)
+- shaders/wave.frag  (from: gfx/drivers/vulkan_shaders/pipeline_ribbon.frag)
+
+RetroArch - A frontend for libretro.
+Copyright (C) 2010-2014 Hans-Kristian Arntzen
+Copyright (C) 2011-2021 Daniel De Matteis
+(and other contributors, per upstream headers)
+Licensed under the GNU General Public License v3.0.

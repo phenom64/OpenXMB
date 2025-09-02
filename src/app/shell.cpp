@@ -1,3 +1,23 @@
+/* XMBShell, a console-like desktop shell
+ * Copyright (C) 2025 - JCM
+ *
+ * This file (or substantial portions of it) is derived from XMBShell:
+ *   https://github.com/JnCrMx/xmbshell
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 module;
 
 #include <array>
@@ -314,8 +334,9 @@ namespace app
                 float minuteFrac = static_cast<float>(lt.tm_min) / 60.0f;
                 brightness = utils::xmb_hour_brightness(lt.tm_hour, minuteFrac);
             }
+            // Always tint the background clear colour (for both Original and Classic)
             vk::ClearValue color(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f});
-            if(config::CONFIG.backgroundType == config::config::background_type::color) {
+            {
                 glm::vec3 c = baseThemeColour * brightness;
                 color = vk::ClearColorValue(std::array<float, 4>{ c.r, c.g, c.b, 1.0f });
             }

@@ -1,0 +1,102 @@
+#define R     iResolution.xy
+#define PI    3.14159265
+#define S     smoothstep
+#define PX(a) a / R.y
+
+// 2D rotation matrix
+mat2 Rot(float a) {
+    return mat2(cos(a), sin(-a),
+                sin(a), cos(a));
+}
+
+// SDF for a box
+float Box(vec2 p, vec2 b) {
+    vec2 d = abs(p) - b;
+    return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
+}
+
+// Circular blur for liquid-like warping
+vec4 LiquidGlass(sampler2D tex, vec2 uv, float direction, float quality, float size) {
+    vec2 radius = size / R;
+    vec4 color = texture(tex, uv);
+
+    for (float d = 0.0; d < PI; d += PI / direction) {
+        for (float i = 1.0 / quality; i <= 1.0; i += 1.0 / quality) {
+            color += texture(tex, uv + vec2(cos(d), sin(d)) * radius * i);
+        }
+    }
+
+    color /= quality * direction;
+    return color;
+}
+
+// Icon shape and light masks
+vec4 Icon(vec2 uv) {
+    float box = Box(uv, vec2(PX(50.)));
+
+    float boxShape = S(PX(1.5), 0.0, box - PX(50.));         // Main box shape
+    float boxDisp = S(PX(35.0), 0.0, box - PX(25.0));         // Displacement/warp mask
+    float boxLight = boxShape * S(0.0, PX(30.0), box - PX(40.0)); // Extra lighting
+
+    return vec4(boxShape, boxDisp, boxLight, 0.0);
+}
+
+// Strong dispersion: big RGB offset per channel
+vec3 DispersionSample(sampler2D tex, vec2 uv, vec2 center, float strength) {
+    vec2 offset = uv - center;
+
+    // Increase spread for visible separation
+    float rShift = 1.0 + 0.05 * strength;
+    float gShift = 1.0 + 0.08 * strength;
+    float bShift = 1.0 + 0.11 * strength;
+
+    vec2 rUV = center + offset * rShift;
+    vec2 gUV = center + offset * gShift;
+    vec2 bUV = center + offset * bShift;
+
+    float r = texture(tex, rUV).r;
+    float g = texture(tex, gUV).g;
+    float b = texture(tex, bUV).b;
+
+    return vec3(r, g, b);
+}
+
+void mainImage(out vec4 O, in vec2 I) {
+    vec2 uv = I / R;
+    vec2 st = (I - 0.5 * R) / R.y;
+
+    vec2 M = iMouse.z > 0.0 ? (iMouse.xy - 0.5 * R) / R.y : vec2(0.0);
+    vec4 icon = Icon(st - M);
+
+    float dist = length(st - M);
+    float radialWarp = mix(0.3, 1.0, S(0.0, 1.0, dist * 1.5));
+    float warpStrength = 0.5 + 0.5 * max(icon.y, radialWarp);
+
+    vec2 uvCenter = iMouse.xy / R;
+    vec2 uvOffset = uv - uvCenter;
+    vec2 warpedUV = uvCenter + uvOffset * warpStrength;
+
+    vec2 mixedUV = mix(uv, warpedUV, icon.y);
+
+    float blurSize = mix(6.0, 12.0, warpStrength);
+    vec3 blurred = LiquidGlass(iChannel0, mixedUV, 10.0, 10.0, blurSize).rgb;
+
+    // Always apply dispersion strongly when there's any warp
+    vec3 dispersion = DispersionSample(iChannel0, mixedUV, uvCenter, warpStrength * icon.y * 2.0);
+
+    // Full blend into dispersion to see the rainbow
+    vec3 warped = mix(blurred, dispersion, 0.8); // Feel free to bump this to 1.0 for pure rainbow
+
+    // Base texture
+    vec3 base = texture(iChannel0, uv).rgb * 0.8;
+
+    // Blend based on icon shape
+    vec3 mixColor = mix(base, 0.2 + warped * 0.7, icon.x);
+
+    mixColor += icon.z * 0.9;
+
+    float vignette = S(PX(80.0), 0.0, Box(st - M + vec2(0.0, PX(40.0)), vec2(PX(50.0))));
+    mixColor *= 1.0 - 0.2 * vignette;
+
+    O = vec4(mixColor, 1.0);
+}

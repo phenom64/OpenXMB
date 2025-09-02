@@ -1,0 +1,24 @@
+{
+	"folders": [
+		{
+			"path": "../../.."
+		},
+		{
+			"name": "AuroreEngine",
+			"path": "../../../../AuroreEngine"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"qqmlapplicationengine": "cpp",
+			"qfontdatabase": "cpp",
+			"array": "cpp",
+			"string": "cpp",
+			"string_view": "cpp",
+			"vector": "cpp",
+			"__split_buffer": "cpp",
+			"deque": "cpp",
+			"list": "cpp"
+		}
+	}
+}

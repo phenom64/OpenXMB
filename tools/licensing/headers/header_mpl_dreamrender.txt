@@ -1,0 +1,5 @@
+/*
+ * Based on dreamrender (https://github.com/JnCrMx/dreamrender)
+ * This file (or portions of it) remains under the Mozilla Public License 2.0.
+ * You can obtain a copy at https://www.mozilla.org/MPL/2.0/.
+ */

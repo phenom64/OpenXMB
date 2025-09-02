@@ -1,8 +1,32 @@
+/* XMBShell, a console-like desktop shell
+ * Copyright (C) 2025 - JCM
+ *
+ * This file (or substantial portions of it) is derived from XMBShell:
+ *   https://github.com/JnCrMx/xmbshell
+ *
+ * Modified by Syndromatic Ltd for OpenXMB.
+ * Portions Copyright (C) 2025 Syndromatic Ltd, Kavish Krishnakumar.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 module;
 
 #include <array>
 #include <chrono>
 #include <functional>
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -11,6 +35,8 @@ import :choice_overlay;
 
 import dreamrender;
 import glm;
+import openxmb.config;
+import openxmb.utils;
 import vulkan_hpp;
 import vma;
 
@@ -67,19 +93,21 @@ bool choice_overlay::select_relative(action dir) {
 }
 
 void choice_overlay::render(dreamrender::gui_renderer& renderer, class shell* xmb) {
+    // Sidebar gradient that adapts to the current theme colour (slightly lighter/darker)
+    glm::vec3 base = config::CONFIG.themeOriginalColour ? utils::xmb_dynamic_colour(std::chrono::system_clock::now())
+                                                        : config::CONFIG.themeCustomColour;
+    float minuteFrac = (std::chrono::duration<float>(std::chrono::system_clock::now().time_since_epoch()).count()/60.0f);
+    int hour = (int)std::fmod(std::chrono::duration<float>(std::chrono::system_clock::now().time_since_epoch()).count()/3600.0f, 24.0f);
+    float bright = utils::xmb_hour_brightness(hour, std::fmod(minuteFrac,1.0f));
+    base *= bright;
+    glm::vec4 leftCol  = glm::vec4(glm::clamp(base*1.10f, 0.0f, 1.0f), 1.0f);
+    glm::vec4 rightCol = glm::vec4(glm::clamp(base*0.35f, 0.0f, 1.0f), 0.0f);
     renderer.draw_quad(std::array{
-        dreamrender::simple_renderer::vertex_data{{0.65f, 0.0f}, {0.1f, 0.1f, 0.1f, 1.0f}, {0.0f, 0.0f}},
-        dreamrender::simple_renderer::vertex_data{{0.65f, 1.0f}, {0.1f, 0.1f, 0.1f, 1.0f}, {0.0f, 1.0f}},
-        dreamrender::simple_renderer::vertex_data{{0.90f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-        dreamrender::simple_renderer::vertex_data{{0.90f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
-    }, dreamrender::simple_renderer::params{
-        std::array{
-            glm::vec2{0.0f, 0.05f},
-            glm::vec2{0.0f, 0.0f},
-            glm::vec2{-0.1f, 0.1f},
-            glm::vec2{-0.1f, 0.1f},
-        }
-    });
+        dreamrender::simple_renderer::vertex_data{{0.65f, 0.0f}, leftCol,  {0.0f, 0.0f}},
+        dreamrender::simple_renderer::vertex_data{{0.65f, 1.0f}, leftCol,  {0.0f, 1.0f}},
+        dreamrender::simple_renderer::vertex_data{{0.90f, 0.0f}, rightCol, {1.0f, 0.0f}},
+        dreamrender::simple_renderer::vertex_data{{0.90f, 1.0f}, rightCol, {1.0f, 1.0f}},
+    }, dreamrender::simple_renderer::params{});
 
     auto now = std::chrono::system_clock::now();
     double selected = selection_index;
