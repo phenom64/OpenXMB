@@ -25,6 +25,7 @@ module;
 
 #include <functional>
 #include <string>
+#include <chrono>
 
 export module openxmb.app:message_overlay;
 
@@ -44,6 +45,7 @@ export class message_overlay : public component, public action_receiver {
             bool cancelable = true, std::function<void()> cancel_callback = [](){}
         );
 
+        [[nodiscard]] bool is_opaque() const override { return false; }
         void render(dreamrender::gui_renderer& renderer, class shell* xmb) override;
         result on_action(action action) override;
     private:
@@ -55,6 +57,8 @@ export class message_overlay : public component, public action_receiver {
         std::function<void()> cancel_callback;
 
         unsigned int selected = 0;
+        using time_point = std::chrono::time_point<std::chrono::steady_clock>;
+        time_point start_time { std::chrono::steady_clock::now() };
 };
 
 }

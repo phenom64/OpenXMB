@@ -26,6 +26,7 @@ module;
 #include <algorithm>
 #include <array>
 #include <type_traits>
+#include <limits>
 #include <chrono>
 #include <filesystem>
 #include <format>
@@ -331,16 +332,42 @@ namespace menu {
         std::string name, std::string description, const std::string& /*schema*/, const std::string& key, std::ranges::range auto values)
     {
         return entry_base(loader, std::move(name), std::move(description), key, [xmb, key, values](){
-            std::string value = "";
-            std::vector<std::string> choices;
+            std::vector<std::string> labels;
             std::vector<std::string> keys;
-            for(const auto& [key, name] : values) {
-                choices.push_back(name);
-                keys.push_back(key);
+            labels.reserve(std::ranges::distance(values));
+            keys.reserve(std::ranges::distance(values));
+            for(const auto& [k, n] : values) {
+                labels.push_back(n);
+                keys.push_back(k);
             }
-            unsigned int current_choice = 0;
+
+            // Determine current selection index from config
+            auto current_index = 0u;
+            auto resolve_current = [&]() -> std::string {
+                if(key == "background-type") {
+                    switch(config::CONFIG.backgroundType) {
+                        case config::config::background_type::original: return "original";
+                        case config::config::background_type::wave:     return "wave";
+                        case config::config::background_type::color:    return "color";
+                        case config::config::background_type::image:    return "image";
+                    }
+                } else if(key == "language") {
+                    return (config::CONFIG.language.empty() ? std::string{"auto"} : config::CONFIG.language);
+                } else if(key == "controller-type") {
+                    auto v = config::CONFIG.controllerType;
+                    return v.empty() ? std::string{"auto"} : v;
+                }
+                return std::string{};
+            };
+            const std::string current_value = resolve_current();
+            if(!current_value.empty()) {
+                for(size_t i=0; i<keys.size(); ++i) {
+                    if(keys[i] == current_value) { current_index = static_cast<unsigned int>(i); break; }
+                }
+            }
+
             xmb->emplace_overlay<app::choice_overlay>(
-                choices, current_choice,
+                labels, current_index,
                 [xmb, key, keys](unsigned int choice) {
                     auto value = keys[choice];
                     if(key == "background-type") {
@@ -349,10 +376,8 @@ namespace menu {
                     } else if(key == "language") {
                         config::CONFIG.setLanguage(value);
                         config::CONFIG.save_config();
-                        // Apply immediately
                         xmb->reload_language();
                     } else if(key == "controller-type") {
-                        // directly assign; setLanguage has a helper, but controllerType is a plain string
                         config::CONFIG.controllerType = value;
                         config::CONFIG.save_config();
                     }
@@ -454,7 +479,17 @@ namespace menu {
                     std::vector<std::string> labels; labels.reserve(items.size());
                     std::vector<glm::vec3> swatches; swatches.reserve(items.size());
                     for (auto& it : items) { labels.emplace_back(it.name); swatches.emplace_back(it.rgb);}                    
-                    unsigned int current = config::CONFIG.themeOriginalColour ? 0u : 1u; // rough default position
+                    unsigned int current = 0u;
+                    if (!config::CONFIG.themeOriginalColour) {
+                        // Find closest colour swatch to current custom colour
+                        auto target = config::CONFIG.themeCustomColour;
+                        float best = std::numeric_limits<float>::max();
+                        for (size_t i = 1; i < swatches.size(); ++i) { // skip index 0 (Original)
+                            auto delta = target - swatches[i];
+                            float d = delta.x*delta.x + delta.y*delta.y + delta.z*delta.z;
+                            if (d < best) { best = d; current = static_cast<unsigned int>(i); }
+                        }
+                    }
                     auto* overlay = xmb->emplace_overlay<app::choice_overlay>(labels, current, [items](unsigned int idx) {
                         const auto& it = items[idx];
                         if (it.isOriginal) {

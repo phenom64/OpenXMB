@@ -34,6 +34,7 @@ import :users_menu;
 import :menu_base;
 import :message_overlay;
 import :choice_overlay;
+import sdl2;
 import openxmb.utils;
 import dreamrender;
 import spdlog;
@@ -150,6 +151,32 @@ namespace menu {
             );
             
             entries.push_back(std::move(entry));
+        }
+
+        // Add Quit option (PS3-style behavior under Users column)
+        {
+            dreamrender::texture icon_texture(loader.getDevice(), loader.getAllocator());
+            auto quit_entry = std::make_unique<action_menu_entry>(
+                std::string{"Quit OpenXMB"_()},
+                std::move(icon_texture),
+                [this]() {
+                    // Confirm quit using a message overlay
+                    xmb->emplace_overlay<app::message_overlay>(
+                        "Quit OpenXMB"_(),
+                        "Do you want to quit OpenXMB?"_(),
+                        std::vector<std::string>{"Yes"_(), "No"_()},
+                        [](unsigned int idx) {
+                            if(idx == 0) {
+                                sdl::Event e{}; e.type = sdl::EventType::SDL_QUIT; sdl::PushEvent(&e);
+                            }
+                        },
+                        true
+                    );
+                    return result::submenu;
+                },
+                std::function<result(action)>{}
+            );
+            entries.push_back(std::move(quit_entry));
         }
     }
 

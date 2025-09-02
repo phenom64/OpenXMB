@@ -91,8 +91,9 @@ void startup_overlay::render(dreamrender::gui_renderer& renderer, app::shell*) {
   const std::string text = "Syndromatic Engineering Bharat Britannia";
   const float size = 0.06f;
   auto m = renderer.measure_text(text, size);
-  const float right_margin_x = 0.08f / renderer.aspect_ratio; // 8% of width
-  float x = (1.0f/renderer.aspect_ratio) - right_margin_x - m.x;
+  // Align to right edge of logical UI space (0..1 on X)
+  const float right_margin_x = 0.08f; // 8% of width
+  float x = 1.0f - right_margin_x - m.x;
   float y = 0.5f - m.y/2.0f;
   renderer.draw_text(text, x, y, size, glm::vec4(1.0f, 1.0f, 1.0f, std::clamp(opacity, 0.0f, 1.0f)));
 }

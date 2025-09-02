@@ -29,6 +29,7 @@ module;
 #include <format>
 #include <memory>
 #include <ranges>
+#include <optional>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -53,6 +54,7 @@ import openxmb.render;
 import openxmb.debug;
 import openxmb.utils;
 import :startup_overlay;
+import :message_overlay;
 
 using namespace mfk::i18n::literals;
 
@@ -287,13 +289,26 @@ namespace app
                 // Let system locale decide
 #if __linux__ || defined(__APPLE__)
                 unsetenv("LANGUAGE");
+                unsetenv("LC_MESSAGES");
+                unsetenv("LC_ALL");
 #endif
             } else {
 #if __linux__ || defined(__APPLE__)
                 setenv("LANGUAGE", lang.c_str(), 1);
+                // Be more explicit so gettext reloads catalogs reliably
+                setenv("LC_MESSAGES", lang.c_str(), 1);
+                setenv("LC_ALL", lang.c_str(), 1);
 #endif
             }
-            setlocale(LC_ALL, "");
+            // Reinitialize locale from environment or set to specific language
+            if(lang.empty() || lang == "auto") {
+                setlocale(LC_ALL, "");
+            } else {
+                // Try direct set first (may fail if locale not generated); fallback to env-driven
+                if(!setlocale(LC_ALL, lang.c_str())) {
+                    setlocale(LC_ALL, "");
+                }
+            }
             bindtextdomain(constants::name, config::CONFIG.locale_directory.string().c_str());
             bind_textdomain_codeset(constants::name, "UTF-8");
             textdomain(constants::name);
@@ -556,6 +571,7 @@ namespace app
         bool render_menu = true;
         unsigned int overlay_begin = 0;
         bool has_overlay = !overlays.empty();
+        bool top_is_message = has_overlay && (dynamic_cast<app::message_overlay*>(overlays.back().get()) != nullptr);
 
         if(has_overlay) {
             for(int i=static_cast<int>(overlays.size())-1; i >= 0; i--) {
@@ -574,9 +590,18 @@ namespace app
         bool overlay_transition = overlay_progress < 1.0;
         if(render_menu){
             if(overlay_transition || has_overlay) {
-                constexpr glm::vec4 factor{0.25f, 0.25f, 0.25f, 1.0f};
+                // Dim background UI; stronger dim for modal message overlays
+                const glm::vec4 factor = top_is_message ? glm::vec4(0.10f, 0.10f, 0.10f, 1.0f)
+                                                        : glm::vec4(0.25f, 0.25f, 0.25f, 1.0f);
                 renderer.push_color(glm::mix(glm::vec4(1.0), factor, dir_progress));
             }
+            // Quick zoom via gui_renderer helper so viewport/scissor are applied per draw
+            const bool pushed_zoom = has_overlay && top_is_message;
+            if(pushed_zoom) {
+                float scale = static_cast<float>(glm::mix(1.0, 0.85, dir_progress));
+                renderer.push_zoom(scale);
+            }
+            // Render the entire XMB UI (menu + time + news) within the zoom scope
             menu.render(renderer);
 
 #if __cpp_lib_chrono >= 201907L || defined(__GLIBCXX__)
@@ -595,6 +620,7 @@ namespace app
                 static_cast<float>(0.831770833f+config::CONFIG.dateTimeOffset), 0.086111111f, 0.021296296f*2.5f);
 
             news.render(renderer);
+            if(pushed_zoom) renderer.pop_zoom();
             if(overlay_transition || has_overlay) {
                 renderer.pop_color();
             }

@@ -117,6 +117,13 @@ msgstr "Angielski"
 msgid "German"
 msgstr "Niemiecki"
 
+# Quit option
+msgid "Quit OpenXMB"
+msgstr "Zamknij OpenXMB"
+
+msgid "Do you want to quit OpenXMB?"
+msgstr "Czy chcesz zamknąć OpenXMB?"
+
 msgid "Polish"
 msgstr "Polski"
 
@@ -293,4 +300,3 @@ msgstr "Nie znaleziono pasującego programu"
 
 msgid "No matching program found for file of type \"{}\": {}"
 msgstr "Nie znaleziono programu dla pliku typu \"{}\": {}"
-

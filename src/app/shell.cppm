@@ -149,6 +149,10 @@ namespace app
                     overlay_fade_time = std::chrono::steady_clock::now() - overlay_transition_duration;
                 }
 
+                // Auto-enable background blur for modal message overlays
+                if(dynamic_cast<app::message_overlay*>(ptr) != nullptr) {
+                    set_blur_background(true);
+                }
                 return ptr;
             }
             template<typename T, typename... Args>
@@ -164,6 +168,9 @@ namespace app
                     overlay_fade_time = std::chrono::steady_clock::now() - overlay_transition_duration;
                 }
 
+                if(dynamic_cast<app::message_overlay*>(ptr) != nullptr) {
+                    set_blur_background(true);
+                }
                 return ptr;
             }
             void remove_overlay(unsigned int index) {
@@ -176,6 +183,19 @@ namespace app
                     overlay_fade_time = std::chrono::steady_clock::now() - overlay_transition_duration;
                 }
                 overlays.erase(overlays.begin()+index);
+
+                // Disable blur when no more message overlays are present (including fading old_overlay)
+                auto has_msg = false;
+                for(auto& ov : overlays) {
+                    if(dynamic_cast<app::message_overlay*>(ov.get()) != nullptr) { has_msg = true; break; }
+                }
+                if(!has_msg) {
+                    if(old_overlay && dynamic_cast<app::message_overlay*>(old_overlay.get()) != nullptr && overlay_fade_direction == transition_direction::out) {
+                        // keep blur until fade-out completes
+                    } else {
+                        set_blur_background(false);
+                    }
+                }
             }
 
             void set_clipboard(clipboard&& clipboard) {

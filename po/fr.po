@@ -116,6 +116,13 @@ msgstr "Anglais"
 msgid "German"
 msgstr "Allemand"
 
+# Quit option
+msgid "Quit OpenXMB"
+msgstr "Quitter OpenXMB"
+
+msgid "Do you want to quit OpenXMB?"
+msgstr "Voulez-vous quitter OpenXMB ?"
+
 msgid "Polish"
 msgstr "Polonais"
 
