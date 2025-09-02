@@ -39,11 +39,25 @@ The rendering backend is powered by [**AuroreEngine**](https://github.com/phenom
 
 ### Prerequisites
 
-Before you begin, ensure you have the following tools installed:
-*   Git
-*   CMake (version 3.22 or newer)
-*   A C++23 compatible compiler (Clang 16+, GCC 13+, MSVC 19.34+)
-*   Ninja build system (recommended)
+Before you begin, ensure you have the following tools and libraries installed (versions are minimums unless stated):
+
+- Git
+- CMake 3.22+
+- Ninja build system
+- C++23-capable compiler:
+  - Linux: Clang 17+ (Clang 19 recommended) or GCC 13+
+  - macOS: Xcode 15 (Clang) + Vulkan SDK (MoltenVK)
+  - Windows: MSVC 19.34+
+- Vulkan 1.2 capable GPU + drivers (MoltenVK on macOS)
+- Libraries (names as found on Ubuntu 24.04-like distros):
+  - Vulkan headers and loader: `libvulkan-dev`, `vulkan-validationlayers-dev`
+  - SDL2 core + image + mixer: `libsdl2-dev`, `libsdl2-image-dev`, `libsdl2-mixer-dev`
+  - FFmpeg (if `ENABLE_VIDEO_PLAYER=ON`): `libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev`
+  - Freetype: `libfreetype-dev`
+  - glm: `libglm-dev`
+  - fmt: `libfmt-dev`
+  - gettext (i18n): `gettext`
+  - Optional (used by dependencies): `harfbuzz`, `spirv-tools`, `pkg-config`
 
 ### Build Instructions
 
@@ -63,10 +77,14 @@ Before you begin, ensure you have the following tools installed:
     cd OpenXMB
 
     # Configure the project
-    cmake -B build -G Ninja
+    cmake -S . -B build -G Ninja \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 \
+      # Optionally point to a local AuroreEngine checkout:
+      # -DDREAMRENDER_LOCAL=/path/to/AuroreEngine
 
     # Build the project
-    cmake --build build
+    cmake --build build -j $(sysctl -n hw.ncpu)
 
     # (Optional) Install the application
     # This will place the binary and assets in the specified directory.
@@ -93,10 +111,14 @@ Before you begin, ensure you have the following tools installed:
     cd OpenXMB
 
     # Configure the project
-    cmake -B build -G Ninja
+    cmake -S . -B build -G Ninja \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 \
+      # Optionally point to a local AuroreEngine checkout:
+      # -DDREAMRENDER_LOCAL=/path/to/AuroreEngine
 
     # Build the project
-    cmake --build build
+    cmake --build build -j $(nproc)
 
     # (Optional) Install the application system-wide
     sudo cmake --install build
@@ -127,10 +149,11 @@ Before you begin, ensure you have the following tools installed:
     cd OpenXMB
 
     # Configure the project, replacing [path to vcpkg] with your vcpkg directory
-    cmake -B build -G Ninja -DCMAKE_TOOLCHAIN_FILE=[path to vcpkg]/scripts/buildsystems/vcpkg.cmake
+    cmake -S . -B build -G Ninja -DCMAKE_TOOLCHAIN_FILE=[path to vcpkg]/scripts/buildsystems/vcpkg.cmake \
+      -DCMAKE_BUILD_TYPE=Release
 
     # Build the project
-    cmake --build build
+    cmake --build build -j %NUMBER_OF_PROCESSORS%
 
     # (Optional) Install the application
     cmake --install build --prefix "C:/OpenXMB"
@@ -147,6 +170,15 @@ You can customize the build using the following CMake options:
 
 Example: `cmake -B build -DENABLE_BROWSER=ON`
 
+Recommended one-liner (Linux/macOS):
+
+```bash
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 \
+  # -DDREAMRENDER_LOCAL=/path/to/AuroreEngine \
+  && ninja -C build -j $(nproc)
+```
+
 ## Configuration
 
 OpenXMB is configured using the `config.json` file. When you first run the application using the `XMS` launcher script, a default `config.json` will be created in your working directory. You can edit this file to change settings like:
@@ -161,13 +193,17 @@ The application looks for assets (icons, sounds, fonts) in a directory specified
 ## Roadmap
 
 *   **✅ M1: Scaffold:** App compiles & runs; static XMB; JSON config.
-*   **🚧 M2: Menus, Fonts, Icons:** Fully navigable XMB with text & icons.
+*   **✅ M2: Menus, Fonts, Icons:** Fully navigable XMB with text & icons; async file menu scanning; intro text alignment polish.
 *   ** M3: Audio & Music:** Background music playback, visualizer, and sound effects.
-*   **🚧 M4: Video Player:** File playback with software decoding is complete. Hardware acceleration and subtitles are next.
+*   **🚧 M4: Video Player:** File playback with GPU-accelerated YUV decoding; subtitle support next.
 *   ** M5: Libretro Overlay:** Emulation support via a libretro core host.
 *   ** M6: Web Browser:** Integration of a CEF-based browser.
 *   ** M7: Disc Media:** Support for DVD/Blu-ray playback.
-*   ** M8: Performance Pass:** Pipeline caching, optimized memory usage, and descriptor indexing review.
+*   **🚧 M8: Performance Pass:** Release/IPO defaults, steady-clock timing, async I/O; engine-side loader/pipeline tweaks; further descriptor/pool tuning planned.
+
+### Notes on AuroreEngine
+
+OpenXMB uses AuroreEngine as the rendering backend. By default, the build fetches it automatically. For development or local changes, you can point CMake to a local checkout with `-DDREAMRENDER_LOCAL=/path/to/AuroreEngine`.
 
 ## License
 
