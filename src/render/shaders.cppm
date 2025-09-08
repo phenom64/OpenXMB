@@ -42,4 +42,9 @@ namespace original_bg {
     vk::UniqueShaderModule frag(vk::Device device);
 }
 
+namespace original_particles {
+    vk::UniqueShaderModule vert(vk::Device device);
+    vk::UniqueShaderModule frag(vk::Device device);
+}
+
 }

@@ -397,8 +397,13 @@ void main_menu::render_submenu(dreamrender::gui_renderer& renderer, time_point n
     const auto& selected_menu = *menus[selected];
     const auto& selected_submenu = *current_submenu;
 
-    renderer.draw_image_a(selected_menu.get_icon(), base_pos.x, base_pos.y, 0.1f, 0.1f);
-    renderer.draw_image_a(selected_submenu.get_icon(), base_pos.x, base_pos.y+0.15f, 0.1f, 0.1f);
+    if(config::CONFIG.iconGlassRefraction) {
+        renderer.draw_image_glass(selected_menu.get_icon(), base_pos.x, base_pos.y, 0.1f, 0.1f);
+        renderer.draw_image_glass(selected_submenu.get_icon(), base_pos.x, base_pos.y+0.15f, 0.1f, 0.1f);
+    } else {
+        renderer.draw_image_a(selected_menu.get_icon(), base_pos.x, base_pos.y, 0.1f, 0.1f);
+        renderer.draw_image_a(selected_submenu.get_icon(), base_pos.x, base_pos.y+0.15f, 0.1f, 0.1f);
+    }
 
     if(!in_submenu)
         return;
@@ -426,7 +431,11 @@ void main_menu::render_submenu(dreamrender::gui_renderer& renderer, time_point n
                 continue;
 
             auto& entry = submenu->get_submenu(i);
-            renderer.draw_image_a(entry.get_icon(), base_pos.x + 0.1 + offset, y, size, size);
+            if(config::CONFIG.iconGlassRefraction) {
+                renderer.draw_image_glass(entry.get_icon(), base_pos.x + 0.1 + offset, y, size, size);
+            } else {
+                renderer.draw_image_a(entry.get_icon(), base_pos.x + 0.1 + offset, y, size, size);
+            }
             renderer.draw_text(entry.get_name(), base_pos.x + 0.2, y+size/2, size/2, glm::vec4(1, 1, 1, 1), false, true);
             if(i == selected) {
                 auto s = renderer.measure_text(entry.get_name(), size/2);

@@ -213,6 +213,7 @@ namespace app
             std::unique_ptr<simple_renderer> simple_render;
             std::unique_ptr<render::wave_renderer> wave_render;
             std::unique_ptr<render::original_renderer> original_render;
+            std::unique_ptr<render::particles_renderer> particles_render;
 
             vk::UniqueRenderPass backgroundRenderPass, shellRenderPass;
 
@@ -273,5 +274,8 @@ namespace app
             constexpr static auto blur_background_transition_duration = std::chrono::milliseconds(500);
             // Slightly longer fade, PS3-like but still snappy
             constexpr static auto overlay_transition_duration = std::chrono::milliseconds(400);
+
+            // Monotonic start time for shader time uniforms (avoid epoch-based float precision loss)
+            time_point shader_time_zero { std::chrono::steady_clock::now() };
     };
 }

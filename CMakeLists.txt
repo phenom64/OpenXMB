@@ -268,6 +268,7 @@ set(XMS_MODULE_SOURCES
   src/render/shaders.cppm
   src/render/components/wave_renderer.cppm
   src/render/components/original_renderer.cppm
+  src/render/components/original_particles.cppm
   src/utils.cppm
 )
 list(APPEND XMS_MODULE_SOURCES src/debug.cppm)
@@ -305,6 +306,8 @@ set(XMS_SHADERS
   shaders/wave.frag
   shaders/original.vert
   shaders/original.frag
+  shaders/original_particles.vert
+  shaders/original_particles.frag
   shaders/yuv420p_decode.comp
 )
 

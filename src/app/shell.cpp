@@ -82,6 +82,7 @@ namespace app
         simple_render = std::make_unique<simple_renderer>(device, allocator, win->swapchainExtent, win->gpuFeatures);
         wave_render = std::make_unique<render::wave_renderer>(device, allocator, win->swapchainExtent);
         original_render = std::make_unique<render::original_renderer>(device, win->swapchainExtent);
+        particles_render = std::make_unique<render::particles_renderer>(device, allocator, win->swapchainExtent);
 
         {
             std::array<vk::AttachmentDescription, 2> attachments = {
@@ -173,6 +174,7 @@ namespace app
         simple_render->preload({shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
         wave_render->preload({backgroundRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
         original_render->preload({backgroundRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
+        particles_render->preload({backgroundRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
 
         if(config::CONFIG.backgroundType == config::config::background_type::image) {
             backgroundTexture = std::make_unique<texture>(device, allocator);
@@ -279,6 +281,7 @@ namespace app
         simple_render->prepare(swapchainViews.size());
         wave_render->prepare(swapchainViews.size());
         original_render->prepare(swapchainViews.size());
+        particles_render->prepare(swapchainViews.size());
     }
 
     void shell::reload_language() {
@@ -369,11 +372,11 @@ namespace app
 
             if(!ingame_mode) {
                 if(config::CONFIG.backgroundType == config::config::background_type::original) {
-                    // Render gradient/dust background, with brightness, then the classic ribbon tinted by base colour (no brightness)
-                    float seconds = std::chrono::duration<float>(std::chrono::system_clock::now() - std::chrono::system_clock::time_point{}).count();
+                    // Render original-style background only (no retro wave renderer here)
+                    float seconds = std::chrono::duration<float>(std::chrono::steady_clock::now() - shader_time_zero).count();
                     original_render->render(commandBuffer, frame, backgroundRenderPass.get(), baseThemeColour, brightness, seconds);
-                    wave_render->waveColor = baseThemeColour;
-                    wave_render->render(commandBuffer, frame, backgroundRenderPass.get());
+                    // Particle pass on top (additive)
+                    particles_render->render(commandBuffer, frame, backgroundRenderPass.get(), baseThemeColour, brightness, seconds);
                 }
                 else if(config::CONFIG.backgroundType == config::config::background_type::wave) {
                     wave_render->waveColor = baseThemeColour; // PS3 look: wave uses base, brightness on background only
@@ -447,13 +450,64 @@ namespace app
             commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, blurPipeline.get());
             commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, blurPipelineLayout.get(), 0, {blurDescriptorSets[frame]}, {});
 
+            // Pass 1: horizontal blur into blurImageDst
             constants.axis = 0;
             commandBuffer.pushConstants(blurPipelineLayout.get(), vk::ShaderStageFlagBits::eCompute, 0, sizeof(BlurConstants), &constants);
             commandBuffer.dispatch(groupCountX, groupCountY, 1);
 
-            // TODO: THIS IS WRONG! We need to copy dst -> src with appropriate barriers (see blur_layer)
-            // But it kinda work, so I'll leave it for now
+            // Prepare to copy blurImageDst -> blurImageSrc (ping-pong)
+            commandBuffer.pipelineBarrier(
+                vk::PipelineStageFlagBits::eComputeShader, vk::PipelineStageFlagBits::eTransfer,
+                {}, {}, {},
+                {
+                    vk::ImageMemoryBarrier(
+                        vk::AccessFlagBits::eShaderWrite, vk::AccessFlagBits::eTransferRead,
+                        vk::ImageLayout::eGeneral, vk::ImageLayout::eTransferSrcOptimal,
+                        vk::QueueFamilyIgnored, vk::QueueFamilyIgnored,
+                        blurImageDst->image, vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1)
+                    ),
+                    vk::ImageMemoryBarrier(
+                        {}, vk::AccessFlagBits::eTransferWrite,
+                        vk::ImageLayout::eGeneral, vk::ImageLayout::eTransferDstOptimal,
+                        vk::QueueFamilyIgnored, vk::QueueFamilyIgnored,
+                        blurImageSrc->image, vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1)
+                    ),
+                }
+            );
+            // Copy into src for the second pass to read
+            vk::ImageCopy ic{};
+            ic.setSrcSubresource({vk::ImageAspectFlagBits::eColor, 0, 0, 1});
+            ic.setDstSubresource({vk::ImageAspectFlagBits::eColor, 0, 0, 1});
+            ic.setExtent(vk::Extent3D{
+                static_cast<uint32_t>(blurImageSrc->width),
+                static_cast<uint32_t>(blurImageSrc->height),
+                1u
+            });
+            commandBuffer.copyImage(blurImageDst->image, vk::ImageLayout::eTransferSrcOptimal,
+                                    blurImageSrc->image, vk::ImageLayout::eTransferDstOptimal,
+                                    ic);
 
+            // Prepare images for second compute pass (vertical): src=GENERAL (read), dst=GENERAL (write)
+            commandBuffer.pipelineBarrier(
+                vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eComputeShader,
+                {}, {}, {},
+                {
+                    vk::ImageMemoryBarrier(
+                        vk::AccessFlagBits::eTransferWrite, vk::AccessFlagBits::eShaderRead,
+                        vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eGeneral,
+                        vk::QueueFamilyIgnored, vk::QueueFamilyIgnored,
+                        blurImageSrc->image, vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1)
+                    ),
+                    vk::ImageMemoryBarrier(
+                        vk::AccessFlagBits::eTransferRead, vk::AccessFlagBits::eShaderWrite,
+                        vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::eGeneral,
+                        vk::QueueFamilyIgnored, vk::QueueFamilyIgnored,
+                        blurImageDst->image, vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1)
+                    ),
+                }
+            );
+
+            // Pass 2: vertical blur into blurImageDst
             constants.axis = 1;
             commandBuffer.pushConstants(blurPipelineLayout.get(), vk::ShaderStageFlagBits::eCompute, 0, sizeof(BlurConstants), &constants);
             commandBuffer.dispatch(groupCountX, groupCountY, 1);
@@ -588,15 +642,18 @@ namespace app
         double overlay_progress = utils::progress(now, overlay_fade_time, overlay_transition_duration);
         double dir_progress = overlay_fade_direction == transition_direction::in ? overlay_progress : 1.0 - overlay_progress;
         bool overlay_transition = overlay_progress < 1.0;
-        if(render_menu){
-            if(overlay_transition || has_overlay) {
-                // Dim background UI; stronger dim for modal message overlays
-                const glm::vec4 factor = top_is_message ? glm::vec4(0.10f, 0.10f, 0.10f, 1.0f)
-                                                        : glm::vec4(0.25f, 0.25f, 0.25f, 1.0f);
-                renderer.push_color(glm::mix(glm::vec4(1.0), factor, dir_progress));
+        // Consider fade-out of a message overlay (stored as old_overlay) as part of the transition too
+        bool fading_out_message = (!has_overlay && overlay_transition && old_overlay && (dynamic_cast<app::message_overlay*>(old_overlay.get()) != nullptr));
+        // If a message overlay is appearing/disappearing, still render menu during transition
+        bool allow_menu = render_menu || ((top_is_message || fading_out_message) && overlay_transition);
+        if(allow_menu){
+            if(overlay_transition || has_overlay || fading_out_message) {
+                // Fade UI to transparency: scale RGB and A together by (1 - progress)
+                float s = 1.0f - static_cast<float>(dir_progress);
+                renderer.push_color(glm::vec4(s, s, s, s));
             }
             // Quick zoom via gui_renderer helper so viewport/scissor are applied per draw
-            const bool pushed_zoom = has_overlay && top_is_message;
+            const bool pushed_zoom = (top_is_message || fading_out_message);
             if(pushed_zoom) {
                 float scale = static_cast<float>(glm::mix(1.0, 0.85, dir_progress));
                 renderer.push_zoom(scale);
@@ -621,7 +678,7 @@ namespace app
 
             news.render(renderer);
             if(pushed_zoom) renderer.pop_zoom();
-            if(overlay_transition || has_overlay) {
+            if(overlay_transition || has_overlay || fading_out_message) {
                 renderer.pop_color();
             }
 
@@ -636,11 +693,15 @@ namespace app
                 overlays[i]->render(renderer, this);
             }
         }
-        if(overlay_transition && overlay_fade_direction == transition_direction::out && old_overlay) {
-            renderer.push_color(glm::mix(glm::vec4(0.0), glm::vec4(1.0), dir_progress));
-            old_overlay->render(renderer, this);
-            renderer.pop_color();
+            if(overlay_transition && overlay_fade_direction == transition_direction::out && old_overlay) {
+                renderer.push_color(glm::mix(glm::vec4(0.0), glm::vec4(1.0), dir_progress));
+                old_overlay->render(renderer, this);
+                renderer.pop_color();
         } else if(old_overlay) {
+            // Fade-out finished; if it was a message overlay, drop background blur now
+            if(dynamic_cast<app::message_overlay*>(old_overlay.get()) != nullptr) {
+                set_blur_background(false);
+            }
             old_overlay.reset();
         }
 

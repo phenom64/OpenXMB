@@ -28,93 +28,91 @@ layout(push_constant) uniform PC {
     float brightness; // 0..1
 } pc;
 
-// Dave Hoskins hash and value noise
-float hash12(vec2 p)
-{
+// Dave Hoskins hash and value noise (needed by SDF)
+float hash12(vec2 p){
     uvec2 q = uvec2(ivec2(p)) * uvec2(1597334673U, 3812015801U);
-    uint n = (q.x ^ q.y) * 1597334673U; return float(n) * 2.328306437080797e-10;
+    uint n = (q.x ^ q.y) * 1597334673U;
+    return float(n) * 2.328306437080797e-10;
 }
-float value2d(vec2 p)
-{
+float value2d(vec2 p){
     vec2 pg=floor(p),pc=p-pg,k=vec2(0,1);
     pc*=pc*pc*(3.-2.*pc);
     return mix(
         mix(hash12(pg+k.xx),hash12(pg+k.yx),pc.x),
         mix(hash12(pg+k.xy),hash12(pg+k.yy),pc.x),
-        pc.y
-    );
+        pc.y);
 }
 
-float get_stars_rough(vec2 p)
-{
-    const float THRESHOLD = .99;
-    float s = smoothstep(THRESHOLD,1.,hash12(p));
-    if (s >= THRESHOLD)
-        s = pow((s-THRESHOLD)/(1.-THRESHOLD), 10.);
-    return s;
-}
-float get_stars(vec2 p, float a, float t)
-{
-    vec2 pg=floor(p), pc=p-pg, k=vec2(0,1);
-    pc *= pc*pc*(3.-2.*pc);
-    float s = mix(
-        mix(get_stars_rough(pg+k.xx), get_stars_rough(pg+k.yx), pc.x),
-        mix(get_stars_rough(pg+k.xy), get_stars_rough(pg+k.yy), pc.x), pc.y);
-    return smoothstep(a,a+t, s)*pow(value2d(p*.1 + t)*.5+.5,8.3);
+// Signed distance to the translucent wave (from Shadertoy reference)
+float sdf(vec3 p, float t){
+    p *= 2.0;
+    float o = 4.2*sin(0.05*p.x + t*0.25)
+            + 0.04*p.z
+            + sin(p.x*0.11 + t)
+            + 2.0*sin(p.z*0.20 + t)
+            + value2d(vec2(0.03,0.4)*p.xz + vec2(t*0.5,0.0));
+    return abs(dot(p, normalize(vec3(0.0,1.0,0.05))) + 2.5 + o*0.5);
 }
 
-// Signed distance to the wavy plane — ported from original
-float sdf(vec3 p, float t)
-{ 
-    p*=2.0;
-    float o = 4.2*sin(.05*p.x+t*.25)
-            + (.04*p.z)
-            + sin(p.x*.11+t)
-            + 2.0*sin(p.z*.2+t)
-            + value2d(vec2(.03,.4)*p.xz+vec2(t*.5,0));
-    return abs(dot(p,normalize(vec3(0,1,0.05)))+2.5+o*.5); 
-}
+// Enhanced sphere tracing; returns (alpha, glow)
+vec2 raymarch(vec3 o, vec3 d, float t){
+    const float MIN_DIST = 0.13;
+    const float MAX_DIST = 40.0;
+    const int   MAX_STEPS= 100;
+    const int   MAX_DRAWS= 40;
 
-vec2 raymarch(vec3 o, vec3 d, float t)
-{
-    const float MIN_DIST=.13; const float MAX_DIST=40.0; const int MAX_STEPS=80; 
-    float dist=0.0, prev=0.0, a=0.0, g=MAX_DIST; bool hit=false; float omega=1.2; float sl=0.0;
-    for (int i=0;i<MAX_STEPS;i++)
-    {
-        vec3 p=o+d*dist;
-        float ndt=sdf(p,t);
-        if (abs(prev)+abs(ndt) < sl){ sl -= omega*sl; omega=1.0; }
-        else sl = ndt*omega;
-        prev=ndt; dist+=sl;
-        g = (dist > 10.0) ? min(g,abs(prev)) : g;
-        if ((dist+=prev)>=MAX_DIST) break;
-        if (prev<MIN_DIST){ if(!hit){ a=.01; hit=true; }
-            float ed=2.0*max(.03,abs(ndt)); a += .0135; dist += ed; }
+    float dist=0.0, prev=0.0, a=0.0;
+    float g = MAX_DIST; // glow accumulator
+    float sl=0.0;       // step length
+    float omega = 1.2;  // step relaxation
+    float emin = 0.03;  // epsilon min
+    float ed = emin;    // dynamic epsilon
+    int   draws = 0;
+    bool  hit = false;
+
+    for(int i=0;i<MAX_STEPS;i++){
+        vec3 p = o + d*dist;
+        float ndt = sdf(p, t);
+        if(abs(prev)+abs(ndt) < sl){ sl -= omega*sl; omega = 1.0; }
+        else                        sl = ndt*omega;
+        prev = ndt; dist += sl;
+
+        if(dist > 10.0) g = min(g, abs(prev));
+        if((dist += prev) >= MAX_DIST) break;
+        if(prev < MIN_DIST){
+            if(draws++ > MAX_DRAWS) break;
+            float f = smoothstep(0.09, 0.11, (p.z*0.9)/100.0);
+            if(!hit){ a = 0.01; hit = true; }
+            ed = 2.0*max(emin, abs(ndt));
+            a += 0.0135 * f;
+            dist += ed; // prevent re-sampling same spot
+        }
     }
-    g /= 3.0; return vec2(a, max(1.0-g,0.0));
+    g /= 3.0;
+    return vec2(a, max(1.0 - g, 0.0));
 }
 
 void main(){
-    vec2 ires = pc.resolution; vec2 U = vUV * ires; vec2 uv=U/ires; float t=pc.time;
-    vec3 o=vec3(0), d=vec3((U-0.5*ires)/ires.y, 1);
-    vec2 mg = raymarch(o,d,t); float m = mg.x;
+    vec2 ires = pc.resolution; vec2 U = vUV * ires; vec2 uv = U/ires; float t = pc.time;
+    vec3 o = vec3(0.0);
+    vec3 d = vec3((U - 0.5*ires)/ires.y, 1.0);
+    // Layer the ribbon with slight spatial/temporal offsets to emulate multiple bands
+    vec2 rm0 = raymarch(o, d, t);
+    vec2 rm1 = raymarch(o + vec3(0.0, 0.08, 0.0), d, t*0.97 + 0.15);
+    vec2 rm2 = raymarch(o + vec3(0.0, -0.06, 0.0), d, t*1.05 - 0.12);
+    float m = clamp(rm0.x*1.0 + rm1.x*0.65 + rm2.x*0.50, 0.0, 1.0);
+    float glow = clamp(max(max(rm0.y, rm1.y*0.8), rm2.y*0.7), 0.0, 1.0);
 
-    // Reddish 4‑point gradient, tinted by user colour
-    vec3 tint = pc.tint.rgb; // Pure tint; no hue bias
-    vec3 g0 = mix(vec3(.7,.2,.2), vec3(.4,.1,.1), uv.x);
-    vec3 g1 = mix(vec3(.45,.1,.1),vec3(.8,.3,.5), uv.x);
+    // Reddish 4‑point gradient, tinted by user colour, then blend to white by wave alpha
+    vec3 tint = pc.tint.rgb;
+    vec3 g0 = mix(vec3(0.7,0.2,0.2), vec3(0.4,0.1,0.1), uv.x);
+    vec3 g1 = mix(vec3(0.45,0.1,0.1), vec3(0.8,0.3,0.5), uv.x);
     vec3 c = mix(g0, g1, uv.y) * tint;
-    c = mix(c, vec3(1.0), m); // blend to white by ribbon alpha
+    // Blend to white by ribbon alpha, and boost a bit with glow
+    float w = clamp(m + glow * 0.85, 0.0, 1.0);
+    c = mix(c, vec3(1.0), w);
 
-    // Dust sampled at three depths
-    vec2 ar = vec2(ires.x/ires.y,1.0);
-    vec2 pp = uv*2000.0*ar;
-    float dust = 0.0;
-    dust += get_stars(.1*pp+t*vec2(20.0,-10.1), .11, .71)*4.0;
-    dust += get_stars(.2*pp+t*vec2(30.0,-10.1), .10, .31)*5.0;
-    dust += get_stars(.32*pp+t*vec2(40.0,-10.1), .10, .91)*2.0;
-    c += dust*0.075;
-
+    // No dust here — the particle renderer draws drifting dust in a separate pipeline.
     c *= pc.brightness;
-    FragColor = vec4(c,1.0);
+    FragColor = vec4(c, 1.0);
 }

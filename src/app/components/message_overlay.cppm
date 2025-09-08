@@ -44,8 +44,11 @@ export class message_overlay : public component, public action_receiver {
             std::function<void(unsigned int)> confirm_callback = [](unsigned int){},
             bool cancelable = true, std::function<void()> cancel_callback = [](){}
         );
-
-        [[nodiscard]] bool is_opaque() const override { return false; }
+        // Make message overlays opaque so underlying UI is hidden while active
+        [[nodiscard]] bool is_opaque() const override { return true; }
+        // Enable fade-in/out transitions so shell can animate background zoom/dim
+        [[nodiscard]] bool do_fade_in() const override { return true; }
+        [[nodiscard]] bool do_fade_out() const override { return true; }
         void render(dreamrender::gui_renderer& renderer, class shell* xmb) override;
         result on_action(action action) override;
     private:
