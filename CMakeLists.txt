@@ -302,6 +302,8 @@ else()
 endif()
 set(XMS_SHADERS
   shaders/blur.comp
+  shaders/downsample.comp
+  shaders/upsample.comp
   shaders/wave.vert
   shaders/wave.frag
   shaders/original.vert
@@ -449,6 +451,17 @@ if(UNIX)
       install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.ui.Confirm.wav
               DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/sounds" RENAME ok.wav)
     endif()
+    # Additional UI sounds (copied as-is if present)
+    set(_snd_dir "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer")
+    foreach(_snd IN ITEMS
+        NSE.questionMark.wav NSE.questionMark.ogg
+        NSE.ui.Confirm.wav   NSE.ui.Confirm.ogg
+        NSE.ui.Cancel.wav    NSE.ui.Cancel.ogg
+        NSE.clicker.Cancel.wav NSE.clicker.Cancel.ogg)
+      if(EXISTS "${_snd_dir}/${_snd}")
+        install(FILES "${_snd_dir}/${_snd}" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/sounds")
+      endif()
+    endforeach()
     # Startup jingle (used by startup overlay)
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.startup.ogg")
       install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.startup.ogg
@@ -511,6 +524,35 @@ if(UNIX)
         install(FILES "${_icon_src_dir}/friends350.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_category_friends.png)
       endif()
     endif()
+
+    # Also copy the sounds into the build tree for run-in-place during development
+    set(_build_sounds_dir "${CMAKE_CURRENT_BINARY_DIR}/share/shell/sounds")
+    add_custom_command(TARGET XMS POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E make_directory "${_build_sounds_dir}")
+    # ok.wav already handled via install; mirror to build tree if present
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.clicker.Opt.wav")
+      add_custom_command(TARGET XMS POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.clicker.Opt.wav"
+                "${_build_sounds_dir}/ok.wav")
+    elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.ui.Confirm.wav")
+      add_custom_command(TARGET XMS POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.ui.Confirm.wav"
+                "${_build_sounds_dir}/ok.wav")
+    endif()
+    foreach(_snd IN ITEMS
+        NSE.questionMark.wav NSE.questionMark.ogg
+        NSE.ui.Confirm.wav   NSE.ui.Confirm.ogg
+        NSE.ui.Cancel.wav    NSE.ui.Cancel.ogg
+        NSE.clicker.Cancel.wav NSE.clicker.Cancel.ogg)
+      if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/${_snd}")
+        add_custom_command(TARGET XMS POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                  "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/${_snd}"
+                  "${_build_sounds_dir}/${_snd}")
+      endif()
+    endforeach()
 
     # Configure our launcher script template and install it.
     configure_file(

@@ -176,13 +176,10 @@ namespace menu {
         std::string name, std::string description, const std::string& key,
         std::function<result()> callback)
     {
-        // Prefer a specific icon if it exists; otherwise fall back to a common settings icon.
-        namespace fs = std::filesystem;
-        fs::path icons_dir = config::CONFIG.asset_directory / "icons";
-        fs::path candidate = icons_dir / std::format("icon_settings_{}.png", key);
-        fs::path fallback = icons_dir / "icon_settings_personalization.png";
-        fs::path chosen = fs::exists(candidate) ? candidate : fallback;
-        return make_simple<action_menu_entry>(std::move(name), std::move(chosen), loader, callback, std::function<result(action)>{}, std::move(description));
+        // Use the specific icon. Glass refraction (if enabled) is applied at draw time.
+        std::string filename = std::format("icon_settings_{}.png", key);
+        return make_simple<action_menu_entry>(std::move(name), config::CONFIG.asset_directory/"icons"/filename,
+                                              loader, callback, std::function<result(action)>{}, std::move(description));
     }
 
     std::unique_ptr<action_menu_entry> entry_bool(dreamrender::resource_loader& loader, app::shell* xmb,
@@ -551,7 +548,6 @@ namespace menu {
             std::array{
                 entry_bool(loader, xmb, "Show FPS"_(), "", "re.jcm.xmbos.openxmb.render", "show-fps"),
                 entry_bool(loader, xmb, "Show Memory Usage"_(), "", "re.jcm.xmbos.openxmb.render", "show-mem"),
-#ifndef NDEBUG
                 make_simple<action_menu_entry>("Toggle Background Blur"_(), asset_dir/"icons/icon_settings_toggle-background-blur.png", loader, [xmb](){
                     spdlog::info("Toggling background blur");
                     xmb->set_blur_background(!xmb->get_blur_background());
@@ -562,7 +558,6 @@ namespace menu {
                     xmb->set_ingame_mode(!xmb->get_ingame_mode());
                     return result::success;
                 }),
-#endif
             }
         ));
 #if __linux__

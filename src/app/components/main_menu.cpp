@@ -21,6 +21,7 @@
 module;
 
 #include <chrono>
+#include <cmath>
 
 module openxmb.app;
 
@@ -86,7 +87,7 @@ result main_menu::on_action(action action) {
         case action::extra:
             return activate_current(action) ? result::success : result::unsupported | result::error_rumble;
         case action::cancel:
-            return back() ? result::success : result::unsupported | result::error_rumble;
+            return back() ? (result::success | result::back_sound) : result::unsupported | result::error_rumble;
         default:
             return result::unsupported;
     }
@@ -290,7 +291,8 @@ void main_menu::render_crossbar(dreamrender::gui_renderer& renderer, time_point 
             renderer.draw_image_a(menu->get_icon(), x, base_pos.y, base_size, base_size);
         }
         if(i == selected) {
-            renderer.draw_text(menu->get_name(), x+(base_size*0.5f)/renderer.aspect_ratio, base_pos.y+base_size, base_size*0.4f, glm::vec4(1, 1, 1, 1), true);
+    // PS3 behavior: no glow on category label; center it under the icon
+    renderer.draw_text(menu->get_name(), x+(base_size*0.5f)/renderer.aspect_ratio, base_pos.y+base_size, base_size*0.4f, glm::vec4(1, 1, 1, 1), true);
         }
         x += (base_size*1.5f)/renderer.aspect_ratio;
     }
@@ -352,7 +354,25 @@ void main_menu::render_crossbar(dreamrender::gui_renderer& renderer, time_point 
                         renderer.draw_image_a(submenu.get_icon(), x+(base_size*0.5f-size/2.0f)/renderer.aspect_ratio, y, size, size);
                     }
                     if(!in_submenu_now)
-                        renderer.draw_text(submenu.get_name(), x+(base_size*1.5f)/renderer.aspect_ratio, y+size/2, text_size, glm::vec4(1, 1, 1, 1), false, true);
+                        {
+                            // Consistent glow with message overlay (two rings + pulse)
+                            auto t = submenu.get_name();
+                            float tx = x+(base_size*1.5f)/renderer.aspect_ratio;
+                            float ty = y+size/2;
+                            float ts = text_size;
+                            using clock = std::chrono::steady_clock;
+                            static clock::time_point t0 = clock::now();
+                            float pulse = 0.5f + 0.5f*std::sin(std::chrono::duration<float>(clock::now()-t0).count()*3.6f);
+                            float px = 1.3f / static_cast<float>(renderer.frame_size.width);
+                            float py = 1.3f / static_cast<float>(renderer.frame_size.height);
+                            glm::vec4 g1(1.0f,1.0f,1.0f,0.09f*(0.6f+0.4f*pulse));
+                            glm::vec4 g2(1.0f,1.0f,1.0f,0.05f*(0.6f+0.4f*pulse));
+                            const glm::vec2 ring1[8]={{px,0},{-px,0},{0,py},{0,-py},{px,py},{-px,py},{px,-py},{-px,-py}};
+                            for(auto o:ring1) renderer.draw_text(t, tx+o.x, ty+o.y, ts, g1, false, true);
+                            const glm::vec2 ring2[8]={{2*px,0},{-2*px,0},{0,2*py},{0,-2*py},{2*px,2*py},{-2*px,2*py},{2*px,-2*py},{-2*px,-2*py}};
+                            for(auto o:ring2) renderer.draw_text(t, tx+o.x, ty+o.y, ts, g2, false, true);
+                            renderer.draw_text(t, tx, ty, ts, glm::vec4(1, 1, 1, 1), false, true);
+                        }
                 }
                 y += base_size*glm::mix(0.65f, 1.5f, partial_transition);
             }
@@ -365,6 +385,7 @@ void main_menu::render_crossbar(dreamrender::gui_renderer& renderer, time_point 
                     renderer.draw_image_a(submenu.get_icon(), x+(0.05f-size/2.0f)/renderer.aspect_ratio, y, size, size);
                 }
                 if(!in_submenu_now)
+                    // Non-selected submenu entries: no glow, just text
                     renderer.draw_text(submenu.get_name(), x+(base_size*1.5f)/renderer.aspect_ratio, y+size/2, text_size, glm::vec4(1, 1, 1, 1), false, true);
                 y += base_size*glm::mix(0.65f, 1.5f, 1.0f-partial_transition);
             }

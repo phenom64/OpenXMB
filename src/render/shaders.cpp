@@ -48,6 +48,36 @@ namespace blur {
     }
 }
 
+namespace downsample {
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wc23-extensions"
+    constexpr char comp_array[] = {
+    #embed "shaders/downsample.comp.spv"
+    };
+    #pragma clang diagnostic pop
+
+    constexpr std::array comp_shader = dreamrender::convert<std::to_array(comp_array), uint32_t>();
+
+    vk::UniqueShaderModule comp(vk::Device device) {
+        return dreamrender::createShader(device, comp_shader);
+    }
+}
+
+namespace upsample {
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wc23-extensions"
+    constexpr char comp_array[] = {
+    #embed "shaders/upsample.comp.spv"
+    };
+    #pragma clang diagnostic pop
+
+    constexpr std::array comp_shader = dreamrender::convert<std::to_array(comp_array), uint32_t>();
+
+    vk::UniqueShaderModule comp(vk::Device device) {
+        return dreamrender::createShader(device, comp_shader);
+    }
+}
+
 namespace wave_renderer {
     #pragma clang diagnostic push
     #pragma clang diagnostic ignored "-Wc23-extensions"

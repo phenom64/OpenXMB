@@ -22,6 +22,8 @@ module;
 
 #include <array>
 #include <cmath>
+#include <chrono>
+#include <algorithm>
 
 module openxmb.app;
 import :blur_layer;
@@ -108,11 +110,15 @@ void blur_layer::render(dreamrender::gui_renderer& renderer, shell* xmb) {
                 srcTexture.image, vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1)
             ),
         });
+    // Blit allows format conversion and matches usage (swapchain -> R16G16B16A16)
     cmd.blitImage(xmb->swapchainImages[frame], vk::ImageLayout::eTransferSrcOptimal,
         srcTexture.image, vk::ImageLayout::eTransferDstOptimal,
-        vk::ImageBlit(vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1),
+        vk::ImageBlit(
+            vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1),
             {vk::Offset3D(0, 0, 0), vk::Offset3D(static_cast<int>(extent.width), static_cast<int>(extent.height), 1)},
-            vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1), {vk::Offset3D(0, 0, 0), vk::Offset3D(srcTexture.width, srcTexture.height, 1)}),
+            vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1),
+            {vk::Offset3D(0, 0, 0), vk::Offset3D(srcTexture.width, srcTexture.height, 1)}
+        ),
         vk::Filter::eLinear);
 
     cmd.pipelineBarrier(
@@ -135,8 +141,24 @@ void blur_layer::render(dreamrender::gui_renderer& renderer, shell* xmb) {
     int groupCountX = static_cast<int>(std::ceil(srcTexture.width/16.0));
     int groupCountY = static_cast<int>(std::ceil(srcTexture.height/16.0));
 
+    // Smoothly animate blur radius when toggling blur_background
     BlurConstants constants{};
-    constants.size = static_cast<int>(20); // TODO: smooth transition
+    {
+        using clock = std::chrono::steady_clock;
+        auto now = clock::now();
+        auto elapsed = now - xmb->last_blur_background_change;
+        double dur_sec = std::chrono::duration<double>(shell::blur_background_transition_duration).count();
+        double t_sec = std::chrono::duration<double>(elapsed).count();
+        double p = std::clamp(t_sec / std::max(dur_sec, 1e-6), 0.0, 1.0);
+        // Ramp up when enabling blur, ramp down when disabling
+        double strength = xmb->blur_background ? p : (1.0 - p);
+        // Base radius scaled to resolution for consistent look across displays
+        double base_px_1080 = 20.0; // radius at 1080p
+        double scale = static_cast<double>(extent.height) / 1080.0;
+        int radius = static_cast<int>(std::round(base_px_1080 * scale * strength));
+        // Clamp to a sane maximum to avoid excessive work on large displays
+        constants.size = std::clamp(radius, 0, 64);
+    }
     cmd.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline.get());
     cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout.get(), 0, {descriptorSet}, {});
 

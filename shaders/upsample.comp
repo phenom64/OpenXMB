@@ -1,0 +1,36 @@
+/* OpenXMB upsample compute (manual bilinear from half-res) */
+#version 450
+
+layout (local_size_x = 16, local_size_y = 16) in;
+layout (binding = 0, rgba16) uniform readonly image2D inputImage;   // low-res
+layout (binding = 1, rgba16) uniform writeonly image2D outputImage;  // high-res
+
+vec4 loadClamped(ivec2 p, ivec2 size) {
+    p = clamp(p, ivec2(0), size - ivec2(1));
+    return imageLoad(inputImage, p);
+}
+
+void main(){
+    ivec2 inSize  = imageSize(inputImage);
+    ivec2 outSize = imageSize(outputImage);
+
+    ivec2 gid = ivec2(gl_GlobalInvocationID.xy);
+    if(gid.x >= outSize.x || gid.y >= outSize.y) return;
+
+    // Map output pixel center to input continuous coords
+    vec2 uv = (vec2(gid) + vec2(0.5)) * (vec2(inSize) / vec2(outSize)) - vec2(0.5);
+    ivec2 p = ivec2(floor(uv));
+    vec2 f = fract(uv);
+
+    vec4 c00 = loadClamped(p + ivec2(0,0), inSize);
+    vec4 c10 = loadClamped(p + ivec2(1,0), inSize);
+    vec4 c01 = loadClamped(p + ivec2(0,1), inSize);
+    vec4 c11 = loadClamped(p + ivec2(1,1), inSize);
+
+    vec4 cx0 = mix(c00, c10, f.x);
+    vec4 cx1 = mix(c01, c11, f.x);
+    vec4 c   = mix(cx0, cx1, f.y);
+
+    imageStore(outputImage, gid, c);
+}
+

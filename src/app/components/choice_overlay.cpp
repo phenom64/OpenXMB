@@ -56,12 +56,12 @@ result choice_overlay::on_action(action action) {
             if(cancel_callback) {
                 cancel_callback();
             }
-            return result::close;
+            return result::close | result::back_sound;
         case action::ok:
             if(confirm_callback) {
                 confirm_callback(selection_index);
             }
-            return result::close;
+            return result::close | result::confirm_sound;
         case action::up:
             return select_relative(action::up) ? result::success | result::ok_sound : result::unsupported | result::error_rumble;
         case action::down:

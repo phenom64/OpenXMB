@@ -28,6 +28,14 @@ namespace blur {
     vk::UniqueShaderModule comp(vk::Device device);
 }
 
+namespace downsample {
+    vk::UniqueShaderModule comp(vk::Device device);
+}
+
+namespace upsample {
+    vk::UniqueShaderModule comp(vk::Device device);
+}
+
 namespace wave_renderer {
     vk::UniqueShaderModule vert(vk::Device device);
     vk::UniqueShaderModule frag(vk::Device device);

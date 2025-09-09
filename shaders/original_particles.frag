@@ -18,7 +18,7 @@ void main(){
     float r = length(vLocal*2.0);             // 0 at center, ~1 at edges
     float a = smoothstep(1.0, 0.0, r);        // soft edge
     a = a*a;                                  // steeper core
-    vec3 c = pc.tint.rgb * 0.6 + vec3(0.4);   // brighten slightly
+    // Subtle tint; avoid stark white specks
+    vec3 c = mix(pc.tint.rgb, vec3(1.0), 0.25);
     FragColor = vec4(c, a * vAlpha);
 }
-

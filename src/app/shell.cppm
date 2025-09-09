@@ -149,9 +149,12 @@ namespace app
                     overlay_fade_time = std::chrono::steady_clock::now() - overlay_transition_duration;
                 }
 
-                // Auto-enable background blur for modal message overlays
+                // Auto-enable background blur for modal message overlays + play question sound
                 if(dynamic_cast<app::message_overlay*>(ptr) != nullptr) {
                     set_blur_background(true);
+                    if(question_sound && sdl::mix::PlayChannel(-1, question_sound.get(), 0) == -1) {
+                        spdlog::debug("PlayChannel(question): {}", sdl::mix::GetError());
+                    }
                 }
                 return ptr;
             }
@@ -170,6 +173,9 @@ namespace app
 
                 if(dynamic_cast<app::message_overlay*>(ptr) != nullptr) {
                     set_blur_background(true);
+                    if(question_sound && sdl::mix::PlayChannel(-1, question_sound.get(), 0) == -1) {
+                        spdlog::debug("PlayChannel(question): {}", sdl::mix::GetError());
+                    }
                 }
                 return ptr;
             }
@@ -218,16 +224,24 @@ namespace app
             vk::UniqueRenderPass backgroundRenderPass, shellRenderPass;
 
             std::vector<vk::UniqueFramebuffer> backgroundFramebuffers;
+            // Per-frame resolve target for background (offscreen, avoids reusing swapchain mid-frame)
+            std::vector<std::unique_ptr<texture>> backgroundResolve;
 
             vk::UniqueDescriptorSetLayout blurDescriptorSetLayout;
             vk::UniqueDescriptorPool blurDescriptorPool;
             std::vector<vk::DescriptorSet> blurDescriptorSets;
             vk::UniquePipelineLayout blurPipelineLayout;
             vk::UniquePipeline blurPipeline;
+            vk::UniquePipeline downsamplePipeline;
+            vk::UniquePipeline upsamplePipeline;
 
             std::unique_ptr<texture> renderImage;
             std::unique_ptr<texture> blurImageSrc;
             std::unique_ptr<texture> blurImageDst;
+            std::unique_ptr<texture> blurHalfSrc;
+            std::unique_ptr<texture> blurHalfDst;
+            std::unique_ptr<texture> blurQuarterSrc;
+            std::unique_ptr<texture> blurQuarterDst;
 
             std::vector<vk::Image> swapchainImages;
             std::vector<vk::UniqueFramebuffer> framebuffers;
@@ -236,8 +250,21 @@ namespace app
             main_menu menu{this};
             news_display news{this};
             std::array<std::unique_ptr<texture>, std::to_underlying(action::_length)> buttonTextures;
+            // Extra descriptor pool and sets for downsample/upsample chain
+            vk::UniqueDescriptorPool blurExtraDescriptorPool;
+            vk::DescriptorSet downsampleSet;
+            vk::DescriptorSet halfBlurSet;
+            vk::DescriptorSet upsampleSet;
+            // Quarter-res chain
+            vk::DescriptorSet downsample2Set; // half -> quarter
+            vk::DescriptorSet quarterBlurSet; // quarter -> quarter
+            vk::DescriptorSet upsample2Set;   // quarter -> half
 
             sdl::mix::unique_chunk ok_sound;
+            sdl::mix::unique_chunk question_sound;
+            sdl::mix::unique_chunk confirm_sound;
+            sdl::mix::unique_chunk cancel_sound;
+            sdl::mix::unique_chunk back_sound;
 
             bool fixed_components_loaded = false;
             void preload_fixed_components();

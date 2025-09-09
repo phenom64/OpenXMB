@@ -88,31 +88,40 @@ namespace app {
             const auto& choice = choices[i];
             glm::vec2 size = renderer.measure_text(choice, 0.05f);
             if(i == selected) {
-                // Glow dimensions follow the text tightly (pill shape)
-                constexpr float height_scale = 0.72f; // thinner than text height
-                glm::vec2 gsize = {size.x, size.y*height_scale};
-                glm::vec2 center = {x + size.x/2.0f, 0.62f};
-                glm::vec2 pos = {center.x - gsize.x/2.0f, center.y - gsize.y/2.0f};
-
-                // Two‑layer glow: wide faint halo + tighter core
-                float a1 = 0.05f + 0.05f * pulse;
-                float a2 = 0.09f + 0.07f * pulse;
-
-                auto draw_glow = [&](glm::vec2 p, glm::vec2 s, float alpha){
-                    dreamrender::simple_renderer::params params = {
-                        .blur = {
-                            glm::vec2{-0.02f, 0.18f}/static_cast<float>(renderer.aspect_ratio), glm::vec2{-0.02f, 0.18f}/static_cast<float>(renderer.aspect_ratio),
-                            glm::vec2{-0.10f, 0.35f}, glm::vec2{-0.10f, 0.35f}
-                        },
-                        .border_radius = {0.50f, 0.50f, 0.50f, 0.50f},
-                        .aspect_ratio = static_cast<float>((s.x/s.y) * renderer.aspect_ratio)
-                    };
-                    renderer.draw_rect(p, s, glm::vec4(1.0f, 1.0f, 1.0f, alpha), params);
+                // Glyph‑shaped glow: render offset copies in a small ring around the text baseline
+                float px = 1.5f / static_cast<float>(renderer.frame_size.width);  // ~1.5 pixels
+                float py = 1.5f / static_cast<float>(renderer.frame_size.height);
+                // Slightly brighter core; smooth fade via multiple rings
+                glm::vec4 glow1 = glm::vec4(1.0f, 1.0f, 1.0f, 0.11f * (0.6f + 0.4f*pulse));
+                glm::vec4 glow2 = glm::vec4(1.0f, 1.0f, 1.0f, 0.07f * (0.6f + 0.4f*pulse));
+                glm::vec4 glow3 = glm::vec4(1.0f, 1.0f, 1.0f, 0.04f * (0.6f + 0.4f*pulse));
+                // Center of the text at base size
+                float cx = x + size.x * 0.5f;
+                float baseY = 0.62f;
+                // Eight-directional offsets (diamond + corners)
+                const glm::vec2 offs[12] = {
+                    { px,  0}, {-px,  0}, {0,  py}, { 0, -py},
+                    { px, py}, {-px, py}, {px, -py}, {-px, -py},
+                    {2*px, 0}, {-2*px, 0}, {0, 2*py}, {0, -2*py}
                 };
-                // Outer halo (slightly larger)
-                draw_glow(pos - glm::vec2(0.010f/renderer.aspect_ratio, 0.006f), gsize + glm::vec2(0.020f/renderer.aspect_ratio, 0.012f), a1);
-                // Core glow
-                draw_glow(pos, gsize, a2);
+                for(const auto& o : offs) {
+                    renderer.draw_text(choice, cx - size.x*0.5f + o.x, baseY + o.y, 0.05f, glow1, false, true);
+                }
+                // Larger radius, lower alpha
+                const glm::vec2 offs2[8] = {
+                    { 2*px,  0}, {-2*px,  0}, {0,  2*py}, { 0, -2*py},
+                    { 2*px, 2*py}, {-2*px, 2*py}, {2*px, -2*py}, {-2*px, -2*py}
+                };
+                for(const auto& o : offs2) {
+                    renderer.draw_text(choice, cx - size.x*0.5f + o.x, baseY + o.y, 0.05f, glow2, false, true);
+                }
+                const glm::vec2 offs3[8] = {
+                    { 3*px,  0}, {-3*px,  0}, {0,  3*py}, { 0, -3*py},
+                    { 3*px, 3*py}, {-3*px, 3*py}, {3*px, -3*py}, {-3*px, -3*py}
+                };
+                for(const auto& o : offs3) {
+                    renderer.draw_text(choice, cx - size.x*0.5f + o.x, baseY + o.y, 0.05f, glow3, false, true);
+                }
             }
             renderer.draw_text(choice, x, 0.62f, 0.05f, glm::vec4(1.0), false, true);
             x += size.x + gap;
@@ -132,14 +141,14 @@ namespace app {
                     if(cancel_callback) {
                         cancel_callback();
                     }
-                    return result::success | result::close;
+                    return result::success | result::close | result::cancel_sound;
                 }
                 return result::unsupported;
             case action::ok:
                 if(confirm_callback) {
                     confirm_callback(selected);
                 }
-                return result::success | result::close;
+                return result::success | result::close | result::confirm_sound;
             case action::left:
                 if(selected > 0) {
                     selected--;

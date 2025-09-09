@@ -44,8 +44,12 @@ export enum class result {
     submenu	     = (1<<3),
     close        = (1<<4),
 
-    ok_sound     = (1<<5),
-    error_rumble = (1<<6),
+    ok_sound       = (1<<5),
+    error_rumble   = (1<<6),
+    confirm_sound  = (1<<7),
+    cancel_sound   = (1<<8),
+    back_sound     = (1<<9),
+    question_sound = (1<<10),
 };
 export inline result operator|(result a, result b) {
     return static_cast<result>(static_cast<int>(a) | static_cast<int>(b));

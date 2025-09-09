@@ -103,11 +103,14 @@ void main(){
     float m = clamp(rm0.x*1.0 + rm1.x*0.65 + rm2.x*0.50, 0.0, 1.0);
     float glow = clamp(max(max(rm0.y, rm1.y*0.8), rm2.y*0.7), 0.0, 1.0);
 
-    // Reddish 4‑point gradient, tinted by user colour, then blend to white by wave alpha
+    // Theme-driven gradient: derive two tones from tint and blend by position
     vec3 tint = pc.tint.rgb;
-    vec3 g0 = mix(vec3(0.7,0.2,0.2), vec3(0.4,0.1,0.1), uv.x);
-    vec3 g1 = mix(vec3(0.45,0.1,0.1), vec3(0.8,0.3,0.5), uv.x);
-    vec3 c = mix(g0, g1, uv.y) * tint;
+    vec3 baseDark  = clamp(tint * vec3(0.35, 0.35, 0.35), 0.0, 1.0);
+    vec3 baseMid   = clamp(tint * vec3(0.55, 0.55, 0.55), 0.0, 1.0);
+    vec3 baseLight = clamp(tint * vec3(0.85, 0.85, 0.85), 0.0, 1.0);
+    vec3 g0 = mix(baseDark, baseMid,   smoothstep(0.0, 1.0, uv.x));
+    vec3 g1 = mix(baseMid,  baseLight, smoothstep(0.0, 1.0, uv.x));
+    vec3 c = mix(g0, g1, smoothstep(0.0, 1.0, uv.y));
     // Blend to white by ribbon alpha, and boost a bit with glow
     float w = clamp(m + glow * 0.85, 0.0, 1.0);
     c = mix(c, vec3(1.0), w);

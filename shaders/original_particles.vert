@@ -44,7 +44,7 @@ void main(){
     vec2 drift;
     drift.x = value2d(s + vec2(0.0, t)) - 0.5;
     drift.y = value2d(s + vec2(37.13, t*1.2)) - 0.5;
-    drift *= 0.35; // magnitude in NDC-ish scale
+    drift *= 0.18; // reduce magnitude to avoid chaotic motion
 
     // Base position from seed (uniform in screen), then drift
     vec2 p = inSeed * pc.resolution;              // pixels
@@ -55,11 +55,11 @@ void main(){
     vec2 U = p; // pixels
     vec3 q0 = vec3((U - 0.5*pc.resolution)/pc.resolution.y, 0.0);
     float dfield = sdf(q0);
-    float waveBias = smoothstep(0.9, 0.0, dfield); // high near ribbon
+    float waveBias = smoothstep(0.85, 0.0, dfield); // stronger emphasis near ribbon
 
     // Sprite size: scale with brightness, a touch of noise, and wave bias
     float n = value2d(s + vec2(123.7, 913.1));
-    float px = mix(1.5, 3.5, n) * (0.5 + 0.5*pc.brightness) * mix(0.6, 1.75, waveBias);
+    float px = mix(1.0, 2.4, n) * (0.5 + 0.5*pc.brightness) * mix(0.5, 1.5, waveBias);
     vec2 halfSize = vec2(px/pc.resolution.y);     // keep aspect-independent
 
     // Expand the unit quad about the center
@@ -68,5 +68,5 @@ void main(){
 
     vLocal = inPos;
     // Alpha prefers particles near the ribbon and scales with brightness
-    vAlpha = mix(0.15, 0.95, n) * pc.brightness * mix(0.25, 1.0, waveBias);
+    vAlpha = mix(0.10, 0.65, n) * pc.brightness * pow(waveBias, 2.0);
 }
