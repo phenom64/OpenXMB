@@ -1,5 +1,6 @@
 # C++ objects and libs
 /build/
+/dist/
 /out/
 CMakeUserPresets.json
 .DS_Store

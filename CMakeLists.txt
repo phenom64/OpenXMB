@@ -18,7 +18,7 @@ set(COLOR_RED     "${ESC}[31m")
 set(COLOR_YELLOW  "${ESC}[33m")
 set(COLOR_GREEN   "${ESC}[32m")
 
-project(OpenXMB VERSION 1.0 LANGUAGES CXX)
+project(OpenXMB VERSION 0.1.0 LANGUAGES CXX)
 
 message(STATUS "${COLOR_GREEN}Starting OpenXMB Builder...${COLOR_RESET}")
 message(STATUS "${COLOR_YELLOW}™ & © 2025-2026 Syndromatic Ltd Britannia, Syndromatic Ltd Bharat. All rights reserved.${COLOR_RESET}")
@@ -178,7 +178,7 @@ add_compile_definitions(OPENXMB_HWACCEL_STR="${HWACCEL}")
 
 find_package(glm REQUIRED)
 find_package(Freetype REQUIRED)
-find_package(Gettext REQUIRED)
+find_package(Gettext QUIET)
 find_package(Intl REQUIRED)
 find_package(fmt REQUIRED)
 find_package(PkgConfig QUIET)
@@ -251,7 +251,7 @@ if(DREAMRENDER_LOCAL)
 else()
   FetchContent_Declare(dreamrender
     GIT_REPOSITORY https://github.com/phenom64/AuroreEngine.git
-    GIT_TAG        6e53f7ec9ac1fa8b42f15a5a7e79d5c437b9cdb0
+    GIT_TAG        a55db74aab697a7642e439ebf0fa9222f40683ff
     OVERRIDE_FIND_PACKAGE
   )
   FetchContent_GetProperties(dreamrender)
@@ -814,7 +814,7 @@ else()
 endif()
 
 # Read languages and compile .po -> .mo for development and install
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/po/LINGUAS")
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/po/LINGUAS" AND GETTEXT_FOUND)
   file(STRINGS po/LINGUAS LINGUAS)
   foreach(LING ${LINGUAS})
     # Build binary catalog in build dir as <ling>.gmo
@@ -845,4 +845,6 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/po/LINGUAS")
         VERBATIM)
     endif()
   endforeach()
+elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/po/LINGUAS")
+  message(STATUS "${COLOR_YELLOW}Gettext tools not found; skipping compiled locale catalogs.${COLOR_RESET}")
 endif()
