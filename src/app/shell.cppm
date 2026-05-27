@@ -31,6 +31,8 @@ module;
 #include <variant>
 #include <vector>
 
+#include <glm/vec2.hpp>
+
 export module openxmb.app:main;
 
 import openxmb.render;
@@ -84,18 +86,27 @@ namespace app
             void reload_button_icons();
             void reload_language();
 
-            void dispatch(action action);
+            void dispatch(const event& event);
+            template<typename T, typename... Args>
+            void dispatch(action action, Args&&... args) {
+                dispatch(event{action, T{std::forward<Args>(args)...}});
+            }
+            void dispatch(action action) {
+                dispatch(event{action, std::monostate{}});
+            }
             void handle(result result);
 
             std::string get_controller_type() const;
             void render_controller_buttons(gui_renderer& renderer, float x, float y, std::ranges::range auto buttons) {
-                constexpr float min_width = 0.2f;
+                constexpr float min_width = 0.15f;
                 constexpr float size = 0.05f;
+                constexpr float spacing_scale = 1.0f / 1.25f;
                 float size_x = static_cast<float>(size/renderer.aspect_ratio);
+                float space_x = size_x * spacing_scale;
                 float total_width = 0.0f;
                 float last_width = 0.0f;
                 for (const auto& [action, text] : buttons) {
-                    last_width = size_x/1.25f+renderer.measure_text(text, size).x;
+                    last_width = space_x + renderer.measure_text(text, size).x;
                     total_width += std::max(min_width, last_width);
                 }
                 if(last_width < min_width) {
@@ -105,14 +116,14 @@ namespace app
                 float current_x = x - total_width/2;
                 for (const auto& [action, text] : buttons) {
                     auto icon = buttonTextures[std::to_underlying(action)].get();
-                    float width = std::max(min_width, size_x/1.25f+renderer.measure_text(text, size).x);
+                    float width = std::max(min_width, space_x + renderer.measure_text(text, size).x);
                     if(action != action::none && icon) {
                         if(config::CONFIG.iconGlassRefraction) {
                             renderer.draw_image_glass(*icon, current_x, y, size/2.0, size/2.0);
                         } else {
                             renderer.draw_image(*icon, current_x, y, size/2.0, size/2.0);
                         }
-                        renderer.draw_text(text, current_x+size_x/1.25f, y+size*0.033f, size);
+                        renderer.draw_text(text, current_x+space_x, y+size*0.033f, size);
                     }
                     current_x += width;
                 }
@@ -219,52 +230,64 @@ namespace app
             std::unique_ptr<simple_renderer> simple_render;
             std::unique_ptr<render::wave_renderer> wave_render;
             std::unique_ptr<render::original_renderer> original_render;
-            std::unique_ptr<render::particles_renderer> particles_render;
 
             vk::UniqueRenderPass backgroundRenderPass, shellRenderPass;
 
-            std::vector<vk::UniqueFramebuffer> backgroundFramebuffers;
             // Per-frame resolve target for background (offscreen, avoids reusing swapchain mid-frame)
             std::vector<std::unique_ptr<texture>> backgroundResolve;
+            std::vector<vk::UniqueFramebuffer> backgroundFramebuffers;
 
             vk::UniqueDescriptorSetLayout blurDescriptorSetLayout;
-            vk::UniqueDescriptorPool blurDescriptorPool;
-            std::vector<vk::DescriptorSet> blurDescriptorSets;
             vk::UniquePipelineLayout blurPipelineLayout;
             vk::UniquePipeline blurPipeline;
             vk::UniquePipeline downsamplePipeline;
             vk::UniquePipeline upsamplePipeline;
 
-            std::unique_ptr<texture> renderImage;
-            std::unique_ptr<texture> blurImageSrc;
-            std::unique_ptr<texture> blurImageDst;
-            std::unique_ptr<texture> blurHalfSrc;
-            std::unique_ptr<texture> blurHalfDst;
-            std::unique_ptr<texture> blurQuarterSrc;
-            std::unique_ptr<texture> blurQuarterDst;
+            struct blur_frame_resources {
+                std::unique_ptr<texture> fullSrc;
+                std::unique_ptr<texture> fullDst;
+                std::unique_ptr<texture> halfSrc;
+                std::unique_ptr<texture> halfDst;
+                std::unique_ptr<texture> quarterSrc;
+                std::unique_ptr<texture> quarterDst;
+
+                vk::DescriptorSet downsampleSet{};
+                vk::DescriptorSet halfBlurSet{};
+                vk::DescriptorSet upsampleSet{};
+                vk::DescriptorSet downsample2Set{};
+                vk::DescriptorSet quarterBlurSet{};
+                vk::DescriptorSet upsample2Set{};
+            };
 
             std::vector<vk::Image> swapchainImages;
+            std::vector<std::unique_ptr<texture>> renderImages;
+            std::vector<blur_frame_resources> blurFrames;
             std::vector<vk::UniqueFramebuffer> framebuffers;
+            vk::UniqueDescriptorPool blurDescriptorPool;
+            std::vector<vk::DescriptorSet> blurDescriptorSets;
+            // Extra descriptor pool for downsample/upsample chain
+            vk::UniqueDescriptorPool blurExtraDescriptorPool;
 
             std::unique_ptr<texture> backgroundTexture;
             main_menu menu{this};
             news_display news{this};
             std::array<std::unique_ptr<texture>, std::to_underlying(action::_length)> buttonTextures;
-            // Extra descriptor pool and sets for downsample/upsample chain
-            vk::UniqueDescriptorPool blurExtraDescriptorPool;
-            vk::DescriptorSet downsampleSet;
-            vk::DescriptorSet halfBlurSet;
-            vk::DescriptorSet upsampleSet;
-            // Quarter-res chain
-            vk::DescriptorSet downsample2Set; // half -> quarter
-            vk::DescriptorSet quarterBlurSet; // quarter -> quarter
-            vk::DescriptorSet upsample2Set;   // quarter -> half
+            std::unique_ptr<texture> cursorTexture;
 
             sdl::mix::unique_chunk ok_sound;
             sdl::mix::unique_chunk question_sound;
             sdl::mix::unique_chunk confirm_sound;
             sdl::mix::unique_chunk cancel_sound;
             sdl::mix::unique_chunk back_sound;
+
+            glm::vec2 cursor_position{0.5f, 0.5f};
+            glm::vec2 cursor_joystick_delta{0.0f, 0.0f};
+            glm::ivec2 last_mouse_position{0, 0};
+            std::uint32_t last_mouse_buttons = 0;
+            bool mouse_state_initialized = false;
+            void poll_mouse();
+            void tick_cursor();
+            bool handle_cursor(const event& event);
 
             bool fixed_components_loaded = false;
             void preload_fixed_components();

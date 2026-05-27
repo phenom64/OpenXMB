@@ -23,7 +23,8 @@ layout(location = 0) out vec3 vEC;
 // Taken from https://github.com/libretro/RetroArch/blob/master/gfx/drivers/vulkan_shaders/pipeline_ribbon.vert
 float xmb_noise2(vec3 x)
 {
-    return cos(x.z * 4.0) * cos((x.z + (constants.time / 10.0)) + x.x);
+    float t = constants.time * 0.82;
+    return cos(x.z * 3.4) * cos((x.z + (t / 12.0)) + x.x * 0.92);
 }
 
 float iqhash(float n)
@@ -50,20 +51,21 @@ float _noise(vec3 x)
 
 void main()
 {
-    vec3 v = vec3(VertexCoord.x, 0.0, VertexCoord.y);
+    float t = constants.time * 0.82;
+    vec3 v = vec3(VertexCoord.x * 1.08, 0.0, VertexCoord.y * 0.92);
 //	vec3 v = vec3(0, 0, 0);
     vec3 v2 = v;
     vec3 v3 = v;
     vec3 param = v2;
-    v.y = xmb_noise2(param) / 8.0;
-    v3.x -= (constants.time / 5.0);
-    v3.x /= 4.0;
-    v3.z -= (constants.time / 10.0);
-    v3.y -= (constants.time / 100.0);
-    vec3 param_1 = v3 * 7.0;
-    v.z -= (_noise(param_1) / 15.0);
-    vec3 param_2 = v3 * 7.0;
-    v.y -= (((_noise(param_2) / 15.0) + (cos((v.x * 2.0) - (constants.time / 2.0)) / 5.0)) - 0.300000011920928955078125);
+    v.y = xmb_noise2(param) / 10.5;
+    v3.x -= (t / 6.4);
+    v3.x /= 5.2;
+    v3.z -= (t / 12.0);
+    v3.y -= (t / 110.0);
+    vec3 param_1 = v3 * 6.2;
+    v.z -= (_noise(param_1) / 18.0);
+    vec3 param_2 = v3 * 6.2;
+    v.y -= (((_noise(param_2) / 20.0) + (cos((v.x * 1.65) - (t / 2.8)) / 8.5)) - 0.245);
     vEC = v;
     gl_Position = vec4(v, 1.0);
 }

@@ -1,3 +1,21 @@
+/* This file is a part of the OpenXMB desktop experience project.
+ * Copyright (C) 2025-2026 Syndromatic Ltd. All rights reserved
+ * Designed by Kavish Krishnakumar in Manchester.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 // Original background particles (vertex)
 #version 450
 
@@ -29,22 +47,22 @@ float value2d(vec2 p){
 // sampled at a z=0 slice. Used to bias particle density/size near the wave.
 float sdf(vec3 q){
     q *= 2.0;
-    float o = 4.2*sin(0.05*q.x + pc.time*0.25)
-            + 0.04*q.z
-            + sin(q.x*0.11 + pc.time)
-            + 2.0*sin(q.z*0.20 + pc.time)
-            + value2d(vec2(0.03,0.4)*q.xz + vec2(pc.time*0.5,0.0));
+    float ripple = (0.04*q.z)
+                 * sin(q.x*0.11 + pc.time)
+                 * (2.0*sin(q.z*0.20 + pc.time))
+                 * value2d(vec2(0.03,0.4)*q.xz + vec2(pc.time*0.5,0.0));
+    float o = 4.2*sin(0.05*q.x + pc.time*0.25) + ripple;
     return abs(dot(q, normalize(vec3(0.0,1.0,0.05))) + 2.5 + o*0.5);
 }
 
 void main(){
     // Smooth, non-teleport drift: sample value noise along time-varying lines
-    float t = pc.time * 0.05;
+    float t = pc.time * 0.038;
     vec2 s = inSeed*64.0; // domain scale
     vec2 drift;
     drift.x = value2d(s + vec2(0.0, t)) - 0.5;
     drift.y = value2d(s + vec2(37.13, t*1.2)) - 0.5;
-    drift *= 0.18; // reduce magnitude to avoid chaotic motion
+    drift *= 0.15; // reduce magnitude to avoid chaotic motion
 
     // Base position from seed (uniform in screen), then drift
     vec2 p = inSeed * pc.resolution;              // pixels
@@ -55,11 +73,13 @@ void main(){
     vec2 U = p; // pixels
     vec3 q0 = vec3((U - 0.5*pc.resolution)/pc.resolution.y, 0.0);
     float dfield = sdf(q0);
-    float waveBias = smoothstep(0.85, 0.0, dfield); // stronger emphasis near ribbon
+    float waveBias = smoothstep(0.82, 0.0, dfield); // stronger emphasis near ribbon
+    float edgeBias = pow(0.74 + 0.26*cos((p.x / pc.resolution.x) * 6.2831853), 1.7);
 
     // Sprite size: scale with brightness, a touch of noise, and wave bias
     float n = value2d(s + vec2(123.7, 913.1));
-    float px = mix(1.0, 2.4, n) * (0.5 + 0.5*pc.brightness) * mix(0.5, 1.5, waveBias);
+    float shimmer = mix(0.82, 1.10, value2d(s*0.45 + vec2(pc.time*0.09, -pc.time*0.04)));
+    float px = mix(0.75, 1.90, n) * (0.45 + 0.55*pc.brightness) * mix(0.75, 1.42, waveBias) * shimmer;
     vec2 halfSize = vec2(px/pc.resolution.y);     // keep aspect-independent
 
     // Expand the unit quad about the center
@@ -67,6 +87,7 @@ void main(){
     gl_Position = vec4(pos, 0.0, 1.0);
 
     vLocal = inPos;
-    // Alpha prefers particles near the ribbon and scales with brightness
-    vAlpha = mix(0.10, 0.65, n) * pc.brightness * pow(waveBias, 2.0);
+    // Alpha prefers particles near the ribbon while keeping a faint PS3-style dust floor.
+    float lane = mix(0.12, 1.0, smoothstep(0.02, 0.72, waveBias));
+    vAlpha = clamp(mix(0.030, 0.42, n) * pc.brightness * lane * edgeBias, 0.0, 0.48);
 }

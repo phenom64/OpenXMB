@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  configure-smoke:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-14
+    env:
+      CC: clang
+      CXX: clang++
+      CMAKE_BUILD_PARALLEL_LEVEL: 2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Ubuntu dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang-18 \
+            clang-tools-18 \
+            cmake \
+            gettext \
+            libavcodec-dev \
+            libavformat-dev \
+            libavutil-dev \
+            libfmt-dev \
+            libfreetype-dev \
+            libglm-dev \
+            libsdl2-dev \
+            libsdl2-image-dev \
+            libsdl2-mixer-dev \
+            libswresample-dev \
+            libswscale-dev \
+            libvulkan-dev \
+            ninja-build \
+            pkg-config \
+            glslang-tools \
+            spirv-tools \
+            vulkan-utility-libraries-dev
+          echo "CC=clang-18" >> "$GITHUB_ENV"
+          echo "CXX=clang++-18" >> "$GITHUB_ENV"
+
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS'
+        run: |
+          brew install \
+            cmake \
+            ffmpeg \
+            fmt \
+            freetype \
+            gettext \
+            glm \
+            llvm \
+            glslang \
+            molten-vk \
+            ninja \
+            pkg-config \
+            sdl2 \
+            sdl2_image \
+            sdl2_mixer \
+            vulkan-loader
+          echo "$(brew --prefix gettext)/bin" >> "$GITHUB_PATH"
+          echo "$(brew --prefix llvm)/bin" >> "$GITHUB_PATH"
+          echo "CC=$(brew --prefix llvm)/bin/clang" >> "$GITHUB_ENV"
+          echo "CXX=$(brew --prefix llvm)/bin/clang++" >> "$GITHUB_ENV"
+          echo "CMAKE_PREFIX_PATH=$(brew --prefix gettext);${CMAKE_PREFIX_PATH:-}" >> "$GITHUB_ENV"
+
+      - name: Configure smoke
+        env:
+          OPENXMB_SMOKE_CONFIGURE_ONLY: 1
+        run: scripts/headless-smoke.sh

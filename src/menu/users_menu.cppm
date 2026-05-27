@@ -1,5 +1,5 @@
 /* This file is a part of the OpenXMB desktop experience project.
- * Copyright (C) 2025 Syndromatic Ltd. All rights reserved
+ * Copyright (C) 2025-2026 Syndromatic Ltd. All rights reserved
  * Designed by Kavish Krishnakumar in Manchester.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -18,6 +18,7 @@
 
 module;
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -38,6 +39,8 @@ struct user_info {
     std::string real_name;
     std::string home_directory;
     std::string shell;
+    std::uint64_t uid;
+    std::uint64_t gid;
     bool is_active;
     bool is_admin;
     

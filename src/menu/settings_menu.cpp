@@ -28,6 +28,7 @@ module;
 #include <type_traits>
 #include <limits>
 #include <chrono>
+#include <cmath>
 #include <filesystem>
 #include <format>
 #include <functional>
@@ -200,6 +201,12 @@ namespace menu {
                 current = config::CONFIG.showMemory ? 1u : 0u;
             } else if(key == "icon-glass-refraction") {
                 current = config::CONFIG.iconGlassRefraction ? 1u : 0u;
+            } else if(key == "hide-login1-options") {
+                current = config::CONFIG.hideLogin1Options ? 1u : 0u;
+            } else if(key == "hide-power-options") {
+                current = config::CONFIG.hidePowerOptions ? 1u : 0u;
+            } else if(key == "autostart") {
+                current = config::CONFIG.autostart ? 1u : 0u;
             }
 
             xmb->emplace_overlay<app::choice_overlay>(
@@ -210,23 +217,32 @@ namespace menu {
                     if(key == "vsync") {
                         auto desired = on ? vk::PresentModeKHR::eFifoRelaxed : vk::PresentModeKHR::eMailbox;
                         changed = (config::CONFIG.preferredPresentMode != desired);
-                        config::CONFIG.preferredPresentMode = desired;
+                        config::CONFIG.setVSync(on);
                     } else if(key == "controller-rumble") {
                         changed = (config::CONFIG.controllerRumble != on);
-                        config::CONFIG.controllerRumble = on;
+                        config::CONFIG.setControllerRumble(on);
                     } else if(key == "controller-analog-stick") {
                         changed = (config::CONFIG.controllerAnalogStick != on);
-                        config::CONFIG.controllerAnalogStick = on;
+                        config::CONFIG.setControllerAnalogStick(on);
                     } else if(key == "show-fps") {
                         changed = (config::CONFIG.showFPS != on);
-                        config::CONFIG.showFPS = on;
-            } else if(key == "show-mem") {
-                changed = (config::CONFIG.showMemory != on);
-                config::CONFIG.showMemory = on;
-            } else if(key == "icon-glass-refraction") {
-                changed = (config::CONFIG.iconGlassRefraction != on);
-                config::CONFIG.iconGlassRefraction = on;
-            }
+                        config::CONFIG.setShowFPS(on);
+                    } else if(key == "show-mem") {
+                        changed = (config::CONFIG.showMemory != on);
+                        config::CONFIG.setShowMemory(on);
+                    } else if(key == "icon-glass-refraction") {
+                        changed = (config::CONFIG.iconGlassRefraction != on);
+                        config::CONFIG.setIconGlassRefraction(on);
+                    } else if(key == "hide-login1-options") {
+                        changed = (config::CONFIG.hideLogin1Options != on);
+                        config::CONFIG.setHideLogin1Options(on);
+                    } else if(key == "hide-power-options") {
+                        changed = (config::CONFIG.hidePowerOptions != on);
+                        config::CONFIG.setHidePowerOptions(on);
+                    } else if(key == "autostart") {
+                        changed = (config::CONFIG.autostart != on);
+                        config::CONFIG.setAutostart(on);
+                    }
                     if(changed) {
                         config::CONFIG.save_config();
                     }
@@ -263,6 +279,10 @@ namespace menu {
                 int fps = static_cast<int>(std::clamp(config::CONFIG.maxFPS, 0.0, 1000.0));
                 if(fps <= 0) fps = min; // treat unlimited as min for selection
                 current_choice = static_cast<unsigned int>((fps - min) / step);
+            } else if(key == "controller-cursor-speed") {
+                int speed_percent = static_cast<int>(std::round(config::CONFIG.controllerCursorSpeed * 100.0));
+                speed_percent = std::clamp(speed_percent, min, max);
+                current_choice = static_cast<unsigned int>((speed_percent - min) / step);
             }
 
             xmb->emplace_overlay<app::choice_overlay>(
@@ -288,6 +308,12 @@ namespace menu {
                     } else if(key == "max-fps") {
                         config::CONFIG.setMaxFPS(static_cast<double>(value));
                         config::CONFIG.save_config();
+                    } else if(key == "controller-cursor-speed") {
+                        double speed = static_cast<double>(value) / 100.0;
+                        if(std::abs(config::CONFIG.controllerCursorSpeed - speed) > 0.001) {
+                            config::CONFIG.setControllerCursorSpeed(speed);
+                            config::CONFIG.save_config();
+                        }
                     }
                 }
             );
@@ -355,6 +381,8 @@ namespace menu {
                     }
                 } else if(key == "language") {
                     return (config::CONFIG.language.empty() ? std::string{"auto"} : config::CONFIG.language);
+                } else if(key == "date-time-format") {
+                    return config::CONFIG.dateTimeFormat;
                 } else if(key == "controller-type") {
                     auto v = config::CONFIG.controllerType;
                     return v.empty() ? std::string{"auto"} : v;
@@ -370,7 +398,7 @@ namespace menu {
 
             xmb->emplace_overlay<app::choice_overlay>(
                 labels, current_index,
-                [xmb, key, keys](unsigned int choice) {
+                [key, keys](unsigned int choice) {
                     auto value = keys[choice];
                     if(key == "background-type") {
                         config::CONFIG.setBackgroundType(value);
@@ -378,9 +406,11 @@ namespace menu {
                     } else if(key == "language") {
                         config::CONFIG.setLanguage(value);
                         config::CONFIG.save_config();
-                        xmb->reload_language();
+                    } else if(key == "date-time-format") {
+                        config::CONFIG.setDateTimeFormat(value);
+                        config::CONFIG.save_config();
                     } else if(key == "controller-type") {
-                        config::CONFIG.controllerType = value;
+                        config::CONFIG.setControllerType(value);
                         config::CONFIG.save_config();
                     }
                 }
@@ -495,9 +525,9 @@ namespace menu {
                     auto* overlay = xmb->emplace_overlay<app::choice_overlay>(labels, current, [items](unsigned int idx) {
                         const auto& it = items[idx];
                         if (it.isOriginal) {
-                            config::CONFIG.themeOriginalColour = true;
+                            config::CONFIG.setThemeOriginalColour(true);
                         } else {
-                            config::CONFIG.themeOriginalColour = false;
+                            config::CONFIG.setThemeOriginalColour(false);
                             config::CONFIG.setThemeCustomColour(it.rgb);
                         }
                         config::CONFIG.save_config();
@@ -519,6 +549,15 @@ namespace menu {
                     std::pair{"fr", "French"_()},
                     std::pair{"hi", "Hindi"_()},
                 }),
+                entry_enum(loader, xmb, "Date/Time Format"_(), "Clock format shown by the shell"_(), "re.jcm.xmbos.shell", "date-time-format", std::array{
+                    std::pair{"%a %d %b %H:%M", "%a %d %b %H:%M"},
+                    std::pair{"%d/%m/%Y %H:%M", "%d/%m/%Y %H:%M"},
+                    std::pair{"%m/%d/%Y %I:%M %p", "%m/%d/%Y %I:%M %p"},
+                    std::pair{"%H:%M", "%H:%M"},
+                }),
+                entry_bool(loader, xmb, "Autostart"_(), "Save startup preference for future platform integration"_(), "re.jcm.xmbos.shell", "autostart"),
+                entry_bool(loader, xmb, "Hide Power Options"_(), "Hide shutdown and reboot entries where supported"_(), "re.jcm.xmbos.shell", "hide-power-options"),
+                entry_bool(loader, xmb, "Hide Login1 Options"_(), "Hide systemd login1 actions where supported"_(), "re.jcm.xmbos.shell", "hide-login1-options"),
             }
         ));
         entries.push_back(make_simple<simple_menu>("Video Settings"_(), asset_dir/"icons/icon_settings_video.png", loader,
@@ -542,6 +581,7 @@ namespace menu {
                 }),
                 entry_bool(loader, xmb, "Controller Rumble"_(), "Enable controller rumble as feedback for actions"_(), "re.jcm.xmbos.shell", "controller-rumble"),
                 entry_bool(loader, xmb, "Navigate Menus with Analog Stick"_(), "Allow navigating all menus using the analog stick in addition to the D-Pad"_(), "re.jcm.xmbos.shell", "controller-analog-stick"),
+                entry_int(loader, xmb, "Controller Cursor Speed (%)"_(), "Pointer movement multiplier for controller cursor input"_(), "re.jcm.xmbos.shell", "controller-cursor-speed", 25, 200, 25),
             }
         ));
         entries.push_back(make_simple<simple_menu>("Debug Settings"_(), asset_dir/"icons/icon_settings_debug.png", loader,

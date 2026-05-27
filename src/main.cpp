@@ -1,5 +1,5 @@
 /* This file is a part of the OpenXMB desktop experience project.
- * Copyright (C) 2025 Syndromatic Ltd. All rights reserved
+ * Copyright (C) 2025-2026 Syndromatic Ltd. All rights reserved
  * Designed by Kavish Krishnakumar in Manchester.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,9 +19,24 @@
 #include <iostream>
 #include <thread>
 #include <cstdlib>
+#include <cstdio>
+#include <filesystem>
+#include <memory>
 #include <string_view>
+#include <vector>
 
 #include <libintl.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
+
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#include <spdlog/sinks/msvc_sink.h>
+#endif
 
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
@@ -35,6 +50,61 @@ import openxmb.debug;
 import openxmb.config;
 import openxmb.constants;
 
+#ifdef _WIN32
+namespace {
+std::filesystem::path openxmb_log_path()
+{
+    const char* base = std::getenv("LOCALAPPDATA");
+    if(!base || !*base) {
+        base = std::getenv("APPDATA");
+    }
+    auto dir = base && *base
+        ? std::filesystem::path(base) / "OpenXMB" / "logs"
+        : std::filesystem::temp_directory_path() / "OpenXMB" / "logs";
+    std::filesystem::create_directories(dir);
+    return dir / "openxmb.log";
+}
+
+void initialize_windows_logging()
+{
+    try {
+        std::vector<spdlog::sink_ptr> sinks;
+        sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
+        sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(openxmb_log_path().string(), true));
+        sinks.push_back(std::make_shared<spdlog::sinks::msvc_sink_mt>());
+
+        auto logger = std::make_shared<spdlog::logger>("OpenXMB", sinks.begin(), sinks.end());
+        logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] %v");
+        spdlog::set_default_logger(logger);
+    } catch(const std::exception& e) {
+        OutputDebugStringA(("OpenXMB failed to initialize file logging: " + std::string(e.what()) + "\n").c_str());
+    }
+}
+
+LONG WINAPI log_windows_exception(EXCEPTION_POINTERS* exception_info)
+{
+    if(exception_info && exception_info->ExceptionRecord) {
+        char buffer[256]{};
+        std::snprintf(buffer, sizeof(buffer),
+            "Unhandled Windows exception 0x%08lX at %p\n",
+            static_cast<unsigned long>(exception_info->ExceptionRecord->ExceptionCode),
+            exception_info->ExceptionRecord->ExceptionAddress);
+        OutputDebugStringA(buffer);
+        spdlog::critical(
+            "Unhandled Windows exception 0x{:08X} at {}",
+            exception_info->ExceptionRecord->ExceptionCode,
+            exception_info->ExceptionRecord->ExceptionAddress
+        );
+    } else {
+        OutputDebugStringA("Unhandled Windows exception\n");
+        spdlog::critical("Unhandled Windows exception");
+    }
+    spdlog::default_logger()->flush();
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+}
+#endif
+
 #undef main
 int main(int argc, char *argv[])
 {
@@ -42,6 +112,13 @@ int main(int argc, char *argv[])
     spdlog::set_level(spdlog::level::trace);
 #endif
     spdlog::cfg::load_env_levels();
+#ifdef _WIN32
+    initialize_windows_logging();
+    SetUnhandledExceptionFilter(log_windows_exception);
+#endif
+    spdlog::flush_on(spdlog::level::err);
+    spdlog::cfg::load_env_levels();
+    spdlog::cfg::load_argv_levels(argc, argv);
 
     argparse::ArgumentParser program("OpenXMB");
     program.add_argument("--width")
@@ -95,6 +172,7 @@ int main(int argc, char *argv[])
             spdlog::critical("Unknown exception");
         }
 
+        spdlog::default_logger()->flush();
         std::abort();
     });
 
@@ -124,13 +202,17 @@ int main(int argc, char *argv[])
     dreamrender::window window{window_config};
     window.init();
 
+    spdlog::debug("Creating OpenXMB shell phase");
     auto* shell = new app::shell(&window);
     if(program.get<bool>("--background-only")) {
         shell->set_background_only(true);
     }
+    spdlog::debug("Installing OpenXMB shell phase");
     window.set_phase(shell, shell, shell);
 
+    spdlog::debug("Entering OpenXMB main loop");
     window.loop();
+    spdlog::debug("OpenXMB main loop exited");
 
     return 0;
 }

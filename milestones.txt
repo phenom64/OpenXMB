@@ -26,8 +26,8 @@ current_state:
   config: JSON (config.json). No YAML configs are in use.
   menus: settings_menu, applications_menu (Linux .desktop), users_menu (POSIX), files_menu
   programs: text_viewer, image_viewer, video_player (FFmpeg + YUV compute path)
-  assets: loaded via XMB_ASSET_DIR; local package WIP
-  i18n: i18n++ integrated; locales not fully packaged yet
+  assets: packaged into share/shell for build-tree and installed runs; XMB_ASSET_DIR override supported
+  i18n: i18n++ integrated; locales staged in build tree and installed under share/locale
 
 proposed_build_flags:
   - name: ENABLE_BROWSER
@@ -46,11 +46,19 @@ proposed_build_flags:
     type: BOOL
     default: OFF
     desc: Build libretro host module (planned)
+  - name: INTERFACE_FX_DEBUG
+    type: BOOL
+    default: OFF
+    desc: Compile interface/UI graphics debug overlays
   - name: HWACCEL
     type: STRING
     default: auto
     enum: [auto, off, vaapi, d3d11, videotoolbox]
     desc: Preferred hardware video decode backend (planned)
+  - name: OPENXMB_APPLE_PREFIXES
+    type: STRING
+    default: auto-detect /opt/homebrew and /usr/local when present
+    desc: Additional macOS dependency prefixes; avoids hard-coded SDK paths
 
 runtime_config:
   files:
@@ -70,6 +78,9 @@ file_layout:
     - src/constants.cppm      # paths, defaults, names
     - shaders/                # SPIR-V inputs embedded at build
     - scripts/XMS.sh.in       # launcher (sets VK_ICD on macOS, copies config)
+    - scripts/headless-smoke.sh # configures, builds, installs to stage, verifies release resources
+    - CMakePresets.json       # default/dev/ci configure and build presets
+    - .github/workflows/ci.yml # Linux/macOS configure smoke
     - config.json             # default runtime config (installed to share/OpenXMB)
   AuroreEngine (dreamrender):
     - Vulkan device/swapchain, renderers (GUI/image/font), helpers
@@ -90,7 +101,7 @@ modules:
     status: present
     summary: PS3-like crossbar + submenus (settings, files, apps, users)
     tasks_next:
-      - Package icon set locally; remove hard XMB_ASSET_DIR requirement
+      - Replace placeholder category/settings assets with final theme artwork
       - Add metadata panels (title/subtitle/details)
       - Optional data-driven layout (JSON) and hot-reload
 
@@ -122,18 +133,18 @@ modules:
       - HW accel selection (HWACCEL) and libass subtitles
 
   - id: browser_cef
-  repo: OpenXMB
-  status: planned (OFF by default)
-  tasks:
+    repo: OpenXMB
+    status: planned (OFF by default)
+    tasks:
       - CEF OSR integration, controller mapping, background policy
-      - See Plan: M7 below
+      - See Plan: M6 below
 
   - id: disc_media
-  repo: OpenXMB
-  status: planned (OFF by default)
-  tasks:
+    repo: OpenXMB
+    status: planned (OFF by default)
+    tasks:
       - libdvdread/libdvdnav/libbluray glue; device monitor; demux URL for player
-      - See Plan: M6 below
+      - See Plan: M7 below
 
   - id: libretro_host
     repo: OpenXMB
@@ -187,10 +198,9 @@ milestones:
     notes: macOS requires MoltenVK ICD; launcher now auto-detects common paths
   - id: M2_menu_fonts_icons
     goal: Navigable XMB with text & icons
-    status: wip
+    status: done (placeholder asset polish continues)
     issues:
-      - Package icons in share/shell; fallback to XMB_ASSET_DIR removed
-      - Font picker + fallback in UI (macOS default applied if unset)
+      - Replace placeholder icons with final theme artwork
       - Metadata panel wiring
   - id: M3_audio_music_visualizer
     goal: Music playback + visualizer + ducking
@@ -202,7 +212,22 @@ milestones:
   goal: Emulation with overlay
   status: planned
 
-  - id: M6_disc_media
+  - id: M6_browser_cef
+    goal: Chromium Embedded Framework browser overlay with off‑screen rendering
+    status: planned
+    plan:
+      build:
+        - `ENABLE_BROWSER` toggles; build overlay only if CEF toolchain is provided
+      rendering:
+        - CEF OSR BGRA buffer → dreamrender texture via resource_loader (double‑buffered)
+      input:
+        - Map SDL keyboard/mouse/wheel; IME support after alpha
+      ui:
+        - Minimal overlay (URL bar optional), back/forward/reload/close
+      followups:
+        - Downloads, persistence, multi‑tabs, GPU accel toggles
+
+  - id: M7_disc_media
     goal: Seamless CD/DVD/Blu‑ray playback within OpenXMB (PS3‑style)
     status: planned
     plan:
@@ -217,30 +242,14 @@ milestones:
         - Phase‑1 for Audio CD: play all (track list later)
       build:
         - Guarded by `ENABLE_DISC_MEDIA`; optional links to libbluray/libdvd*/pkg‑config
-
-  - id: M7_browser_cef
-    goal: Chromium Embedded Framework browser overlay with off‑screen rendering
-    status: planned
-    plan:
-      build:
-        - `ENABLE_BROWSER` toggles; build overlay only if CEF toolchain is provided
-      rendering:
-        - CEF OSR BGRA buffer → dreamrender texture via resource_loader (double‑buffered)
-      input:
-        - Map SDL keyboard/mouse/wheel; IME support after alpha
-      ui:
-        - Minimal overlay (URL bar optional), back/forward/reload/close
-      followups:
-        - Downloads, persistence, multi‑tabs, GPU accel toggles
-  - id: M6_browser
-    goal: CEF OSR integration
-    status: planned
-  - id: M7_disc_media
-    goal: Disc detect + DVD/BD glue
-    status: planned
   - id: M8_perf_pass
-    goal: Pipeline cache, upload ring, descriptor indexing review
-    status: planned
+    goal: Release hygiene, pipeline cache, upload ring, descriptor indexing review
+    status: wip
+    done:
+      - CMake presets for default/dev/ci
+      - Linux/macOS configure smoke workflow
+      - Staged install smoke script
+      - Packaged config, shell assets, launcher, and locale paths
 
 acceptance:
   baseline:

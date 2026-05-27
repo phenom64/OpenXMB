@@ -1,5 +1,5 @@
 /* This file is a part of the OpenXMB desktop experience project.
- * Copyright (C) 2025 Syndromatic Ltd. All rights reserved
+ * Copyright (C) 2025-2026 Syndromatic Ltd. All rights reserved
  * Designed by Kavish Krishnakumar in Manchester.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -18,9 +18,11 @@
 
 module;
 
+#include <array>
 #include <cassert>
 #include <filesystem>
 #include <future>
+#include <string_view>
 #include <vector>
 
 extern "C" {
@@ -53,7 +55,7 @@ namespace programs {
 using namespace app;
 using namespace mfk::i18n::literals;
 
-export class video_player : private base_viewer, public component, public action_receiver, public joystick_receiver, public mouse_receiver {
+export class video_player : private base_viewer, public component, public action_receiver, public event_receiver, public joystick_receiver, public mouse_receiver {
     constexpr static auto preferred_format = AV_PIX_FMT_RGBA;
     public:
         video_player(std::filesystem::path path, dreamrender::resource_loader& loader) :
@@ -62,7 +64,8 @@ export class video_player : private base_viewer, public component, public action
             load_future = std::async(std::launch::async, [this, &loader] -> std::unique_ptr<video_decoding_context> {
                 auto ctx = std::make_unique<video_decoding_context>();
                 try {
-                    if (avformat_open_input(&ctx->format_ctx, this->path.c_str(), nullptr, nullptr) != 0) {
+                    const auto input_path = this->path.string();
+                    if (avformat_open_input(&ctx->format_ctx, input_path.c_str(), nullptr, nullptr) != 0) {
                         throw std::runtime_error("Could not open input file");
                     }
                     if (avformat_find_stream_info(ctx->format_ctx, nullptr) < 0) {
@@ -98,6 +101,15 @@ export class video_player : private base_viewer, public component, public action
         ~video_player() {
             if(loaded) {
                 device.waitIdle();
+            }
+            if(decode_packet) {
+                av_packet_free(&decode_packet);
+            }
+            if(video_frame) {
+                av_frame_free(&video_frame);
+            }
+            if(rgba_frame) {
+                av_frame_free(&rgba_frame);
             }
         }
 
@@ -148,13 +160,39 @@ export class video_player : private base_viewer, public component, public action
                 unsigned int staging_count = xmb->get_window()->swapchainImageCount;
                 staging_buffers.resize(staging_count);
                 staging_buffer_allocations.resize(staging_count);
-                vk::DeviceSize staging_size = image_width * image_height * 4;
+                rgba_buffer_size = av_image_get_buffer_size(preferred_format, ctx->codec_ctx->width, ctx->codec_ctx->height, 1);
+                if(rgba_buffer_size <= 0) {
+                    xmb->emplace_overlay<app::message_overlay>("Failed to open video"_(),
+                        "Could not allocate video frame buffer"_(),
+                        std::vector<std::string>{"OK"_()});
+                    return result::close;
+                }
+                vk::DeviceSize staging_size = static_cast<vk::DeviceSize>(rgba_buffer_size);
                 spdlog::debug("Allocating {} staging buffers of size {}", staging_count, staging_size);
 
                 vk::BufferCreateInfo buffer_info({}, staging_size, vk::BufferUsageFlagBits::eTransferSrc, vk::SharingMode::eExclusive);
                 vma::AllocationCreateInfo alloc_info({}, vma::MemoryUsage::eCpuToGpu);
                 for(unsigned int i = 0; i < staging_count; ++i) {
                     std::tie(staging_buffers[i], staging_buffer_allocations[i]) = allocator.createBufferUnique(buffer_info, alloc_info);
+                }
+
+                decode_packet = av_packet_alloc();
+                video_frame = av_frame_alloc();
+                rgba_frame = av_frame_alloc();
+                if(!decode_packet || !video_frame || !rgba_frame) {
+                    xmb->emplace_overlay<app::message_overlay>("Failed to open video"_(),
+                        "Could not allocate decoder frames"_(),
+                        std::vector<std::string>{"OK"_()});
+                    return result::close;
+                }
+                rgba_frame_buffer.resize(static_cast<std::size_t>(rgba_buffer_size));
+                if(av_image_fill_arrays(rgba_frame->data, rgba_frame->linesize, rgba_frame_buffer.data(),
+                    preferred_format, ctx->codec_ctx->width, ctx->codec_ctx->height, 1) < 0)
+                {
+                    xmb->emplace_overlay<app::message_overlay>("Failed to open video"_(),
+                        "Could not initialize video frame buffer"_(),
+                        std::vector<std::string>{"OK"_()});
+                    return result::close;
                 }
 
                 if(yuv_conversion) {
@@ -221,6 +259,16 @@ export class video_player : private base_viewer, public component, public action
             return base_viewer::on_mouse_move(x, y);
         }
 
+        result on_event(const event& event) override {
+            if(auto* d = event.get<events::joystick_axis>()) {
+                return base_viewer::on_joystick(static_cast<unsigned int>(d->index), d->x, d->y);
+            }
+            if(auto* d = event.get<events::mouse_move>()) {
+                return base_viewer::on_mouse_move(d->x, d->y);
+            }
+            return on_action(event.action);
+        }
+
         [[nodiscard]] bool is_opaque() const override {
             return loaded;
         }
@@ -263,6 +311,11 @@ export class video_player : private base_viewer, public component, public action
 
         std::vector<vma::UniqueBuffer> staging_buffers;
         std::vector<vma::UniqueAllocation> staging_buffer_allocations;
+        AVPacket* decode_packet = nullptr;
+        AVFrame* video_frame = nullptr;
+        AVFrame* rgba_frame = nullptr;
+        std::vector<uint8_t> rgba_frame_buffer;
+        int rgba_buffer_size = 0;
 
         enum class play_state {
             loading,
@@ -294,9 +347,15 @@ void video_player::prerender(vk::CommandBuffer cmd, int frame, shell* xmb) {
         return;
     }
 
-    AVPacket* pkt = av_packet_alloc();
-    AVFrame* videoFrame = av_frame_alloc();
-    AVFrame* rgbFrame = av_frame_alloc();
+    if(!decode_packet || !video_frame || !rgba_frame) {
+        return;
+    }
+
+    AVPacket* pkt = decode_packet;
+    AVFrame* videoFrame = video_frame;
+    AVFrame* rgbFrame = rgba_frame;
+    av_packet_unref(pkt);
+    av_frame_unref(videoFrame);
 
     try {
         while (av_read_frame(ctx->format_ctx, pkt) >= 0) {
@@ -333,19 +392,17 @@ void video_player::prerender(vk::CommandBuffer cmd, int frame, shell* xmb) {
                         ctx->codec_ctx->width, ctx->codec_ctx->height, preferred_format,
                         SWS_BILINEAR, nullptr, nullptr, nullptr
                     );
+                    if(!ctx->sws_ctx) {
+                        spdlog::warn("Failed to create video scaler");
+                        av_frame_unref(videoFrame);
+                        av_packet_unref(pkt);
+                        break;
+                    }
                 }
-
-                int rgb_buffer_size = av_image_get_buffer_size(preferred_format, ctx->codec_ctx->width, ctx->codec_ctx->height, 32);
-                vk::BufferCreateInfo rgb_buffer_info({}, rgb_buffer_size, vk::BufferUsageFlagBits::eTransferSrc);
-                vma::AllocationCreateInfo alloc_info({}, vma::MemoryUsage::eCpuToGpu);
-                auto [rgb_buffer, rgb_alloc] = allocator.createBufferUnique(rgb_buffer_info, alloc_info);
-                auto* buffer = (uint8_t*)av_malloc(rgb_buffer_size * sizeof(uint8_t));
-                av_image_fill_arrays(rgbFrame->data, rgbFrame->linesize, buffer, preferred_format, ctx->codec_ctx->width, ctx->codec_ctx->height, 1);
 
                 sws_scale(ctx->sws_ctx, (const uint8_t* const*)videoFrame->data, videoFrame->linesize, 0, ctx->codec_ctx->height, rgbFrame->data, rgbFrame->linesize);
 
-                allocator.copyMemoryToAllocation(rgbFrame->data[0], staging_buffer_allocations[frame].get(), 0, rgb_buffer_size);
-                av_free(buffer);
+                allocator.copyMemoryToAllocation(rgbFrame->data[0], staging_buffer_allocations[frame].get(), 0, rgba_buffer_size);
 
                 cmd.pipelineBarrier(
                     vk::PipelineStageFlagBits::eFragmentShader, vk::PipelineStageFlagBits::eTransfer,
@@ -378,15 +435,20 @@ void video_player::prerender(vk::CommandBuffer cmd, int frame, shell* xmb) {
     } catch (...) {
         // handle exceptions
     }
-    av_frame_free(&rgbFrame);
-    av_frame_free(&videoFrame);
-    av_packet_free(&pkt);
 }
 
 void video_player::render(dreamrender::gui_renderer& renderer, class shell* xmb) {
     if(!loaded) {
         return;
     }
+
+    render_controller_buttons(xmb, renderer, 0.5f, 0.95f, std::array{
+        std::pair{action::ok, state == play_state::playing ? std::string_view{"Pause"} : std::string_view{"Play"}},
+        std::pair{action::up, std::string_view{"Zoom In"}},
+        std::pair{action::down, std::string_view{"Zoom Out"}},
+        std::pair{action::extra, std::string_view{"Reset"}},
+        std::pair{action::cancel, std::string_view{"Close"}},
+    });
 
     constexpr float size = 0.8;
     base_viewer::render(decoded_view.get(), size, renderer);
@@ -397,13 +459,13 @@ void video_player::render(dreamrender::gui_renderer& renderer, class shell* xmb)
 
         simple_renderer::params border_radius{{}, {0.5f, 0.5f, 0.5f, 0.5f}};
         simple_renderer::params blur{std::array{glm::vec2{0.0f, 0.0f}, glm::vec2{0.0f, 0.0f}, glm::vec2{0.0f, 0.5f}, glm::vec2{0.0f, 0.5f}}, {0.5f, 0.5f, 0.5f, 0.5f}};
-        renderer.draw_rect(glm::vec2(0.1f, 0.95f), glm::vec2(0.8f, 0.01f), glm::vec4(0.2f, 0.2f, 0.2f, 1.0f), border_radius);
-        renderer.draw_rect(glm::vec2(0.1f, 0.95f), glm::vec2(0.8f, 0.01f), glm::vec4(0.1f, 0.1f, 0.1f, 1.0f), blur);
+        renderer.draw_rect(glm::vec2(0.1f, 0.9125f), glm::vec2(0.8f, 0.01f), glm::vec4(0.2f, 0.2f, 0.2f, 1.0f), border_radius);
+        renderer.draw_rect(glm::vec2(0.1f, 0.9125f), glm::vec2(0.8f, 0.01f), glm::vec4(0.1f, 0.1f, 0.1f, 1.0f), blur);
 
         constexpr glm::vec2 padding = glm::vec2{0.001f, 0.001f};
-        renderer.draw_rect(glm::vec2(0.1f, 0.95f)+padding, glm::vec2(progress*0.8f, 0.01f)-2.0f*padding,
+        renderer.draw_rect(glm::vec2(0.1f, 0.9125f)+padding, glm::vec2(progress*0.8f, 0.01f)-2.0f*padding,
             glm::vec4(0x83/255.0f, 0x8d/255.0f, 0x22/255.0f, 1.0f), border_radius);
-        renderer.draw_rect(glm::vec2(0.1f, 0.95f)+padding, glm::vec2(progress*0.8f, 0.01f)-2.0f*padding,
+        renderer.draw_rect(glm::vec2(0.1f, 0.9125f)+padding, glm::vec2(progress*0.8f, 0.01f)-2.0f*padding,
             glm::vec4(1.0f, 1.0f, 1.0f, 0.1f), blur);
     }
 }

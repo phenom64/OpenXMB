@@ -1,15 +1,15 @@
 {
-  "_meta": {
-    "project": "OpenXMB",
-    "description": "Configuration file for the Syndromatic Open XcrossMediaBar desktop experience.",
-    "app_version": "0.1.0-beta",
-    "config_version": 1,
-    "author": "Kavish Krishnakumar / Syndromatic Limited Bharat Britannia",
-    "copyright": "™ & © 2025. Syndromatic Ltd. All rights reserved.",
-    "license": "GPLv3",
-    "website": "https://syndromatic.com",
-    "generated_at": "2025-08-20T00:00:00Z"
-  },
+    "_meta": {
+        "project": "OpenXMB",
+        "description": "Configuration file for the Syndromatic Open XcrossMediaBar desktop experience.",
+        "app_version": "0.1.0-beta",
+        "config_version": 2,
+        "author": "Kavish Krishnakumar / Syndromatic Limited Bharat Britannia",
+        "copyright": "™ & © 2025-2026. Syndromatic Ltd. All rights reserved.",
+        "license": "GPLv3",
+        "website": "https://syndromatic.com",
+        "generated_at": "2025-08-20T00:00:00Z"
+    },
     "shell": {
         "background-color": "#1e1e1e",
         "wave-color": "#ffffff",
@@ -19,21 +19,59 @@
         "date-time-format": "%a %d %b %H:%M",
         "date-time-x-offset": 0.0,
         "language": "en",
+        "pictures-path": "~/Pictures",
+        "music-path": "~/Music",
+        "videos-path": "~/Videos",
+        "hide-login1-options": false,
+        "hide-power-options": false,
+        "autostart": false,
         "excluded-applications": [
             "example-app-1.desktop",
             "example-app-2.desktop"
+        ],
+        "theme-colour-mode": "original",
+        "theme-custom-colour": "#a64da6",
+        "theme-month-colours": [
+            "#f2e6a6",
+            "#9e4540",
+            "#4da640",
+            "#f299cc",
+            "#99cc59",
+            "#b399e6",
+            "#80d9f2",
+            "#3373f2",
+            "#2e2e73",
+            "#994db3",
+            "#cc8040",
+            "#e64040"
+        ],
+        "theme-month-time-colours": [
+            ["#0c0c08", "#0c0c08", "#0c0c08", "#0c0c08", "#181711", "#242319", "#3d3a2a", "#55513a", "#6d684b", "#918a64", "#b6ad7d", "#dacf95", "#f2e6a6", "#e6db9e", "#cec48d", "#b6ad7d", "#918a64", "#797353", "#615c42", "#494532", "#302e21", "#1d1c14", "#13120d", "#0f0e0a"],
+            ["#080303", "#080303", "#080303", "#080303", "#100706", "#180a0a", "#281110", "#371816", "#471f1d", "#5f2926", "#773430", "#8e3e3a", "#9e4540", "#96423d", "#863b36", "#773430", "#5f2926", "#4f2320", "#3f1c1a", "#2f1513", "#200e0d", "#130808", "#0d0605", "#090404"],
+            ["#040803", "#040803", "#040803", "#040803", "#081106", "#0c190a", "#132a10", "#1b3a16", "#234b1d", "#2e6426", "#3a7d30", "#45953a", "#4da640", "#499e3d", "#418d36", "#3a7d30", "#2e6426", "#275320", "#1f421a", "#173213", "#0f210d", "#091408", "#060d05", "#050a04"],
+            ["#0c080a", "#0c080a", "#0c080a", "#0c080a", "#180f14", "#24171f", "#3d2633", "#553647", "#6d455c", "#915c7a", "#b67399", "#da8ab8", "#f299cc", "#e691c2", "#ce82ad", "#b67399", "#915c7a", "#794d66", "#613d52", "#492e3d", "#301f29", "#1d1218", "#130c10", "#0f090c"],
+            ["#080a04", "#080a04", "#080a04", "#080a04", "#0f1409", "#171f0d", "#263316", "#36471f", "#455c28", "#5c7a35", "#739943", "#8ab850", "#99cc59", "#91c255", "#82ad4c", "#739943", "#5c7a35", "#4d662d", "#3d5224", "#2e3d1b", "#1f2912", "#12180b", "#0c1007", "#090c05"],
+            ["#09080c", "#09080c", "#09080c", "#09080c", "#120f17", "#1b1723", "#2d263a", "#3f3651", "#514568", "#6b5c8a", "#8673ad", "#a18acf", "#b399e6", "#aa91db", "#9882c4", "#8673ad", "#6b5c8a", "#5a4d73", "#483d5c", "#362e45", "#241f2e", "#15121c", "#0e0c12", "#0b090e"],
+            ["#060b0c", "#060b0c", "#060b0c", "#060b0c", "#0d1618", "#132124", "#20363d", "#2d4c55", "#3a626d", "#4d8291", "#60a3b6", "#73c3da", "#80d9f2", "#7acee6", "#6db8ce", "#60a3b6", "#4d8291", "#406d79", "#335761", "#264149", "#1a2b30", "#0f1a1d", "#0a1113", "#080d0f"],
+            ["#03060c", "#03060c", "#03060c", "#03060c", "#050c18", "#081124", "#0d1d3d", "#122855", "#17346d", "#1f4591", "#2656b6", "#2e68da", "#3373f2", "#306de6", "#2b62ce", "#2656b6", "#1f4591", "#1a3a79", "#142e61", "#0f2349", "#0a1730", "#060e1d", "#040913", "#03070f"],
+            ["#020206", "#020206", "#020206", "#020206", "#05050c", "#070711", "#0c0c1d", "#101028", "#151534", "#1c1c45", "#232356", "#292968", "#2e2e73", "#2c2c6d", "#272762", "#232356", "#1c1c45", "#17173a", "#12122e", "#0e0e23", "#090917", "#06060e", "#040409", "#030307"],
+            ["#080409", "#080409", "#080409", "#080409", "#0f0812", "#170c1b", "#26132d", "#361b3f", "#452351", "#5c2e6b", "#733a86", "#8a45a1", "#994db3", "#9149aa", "#824198", "#733a86", "#5c2e6b", "#4d275a", "#3d1f48", "#2e1736", "#1f0f24", "#120915", "#0c060e", "#09050b"],
+            ["#0a0603", "#0a0603", "#0a0603", "#0a0603", "#140d06", "#1f130a", "#332010", "#472d16", "#5c3a1d", "#7a4d26", "#996030", "#b8733a", "#cc8040", "#c27a3d", "#ad6d36", "#996030", "#7a4d26", "#664020", "#52331a", "#3d2613", "#291a0d", "#180f08", "#100a05", "#0c0804"],
+            ["#0c0303", "#0c0303", "#0c0303", "#0c0303", "#170606", "#230a0a", "#3a1010", "#511616", "#681d1d", "#8a2626", "#ad3030", "#cf3a3a", "#e64040", "#db3d3d", "#c43636", "#ad3030", "#8a2626", "#732020", "#5c1a1a", "#451313", "#2e0d0d", "#1c0808", "#120505", "#0e0404"]
         ]
     },
     "controller": {
         "rumble": true,
         "analog-stick": true,
-        "type": "default"
+        "cursor-speed": 1.0,
+        "type": "auto"
     },
     "render": {
         "sample-count": 4,
         "max-fps": 100,
         "vsync": true,
         "show-fps": false,
-        "show-mem": false
+        "show-mem": false,
+        "icon-glass-refraction": false
     }
 }

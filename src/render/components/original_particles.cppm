@@ -1,5 +1,5 @@
 /* This file is a part of the OpenXMB desktop experience project.
- * Copyright (C) 2025 Syndromatic Ltd. All rights reserved
+ * Copyright (C) 2025-2026 Syndromatic Ltd. All rights reserved
  * Designed by Kavish Krishnakumar in Manchester.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,6 +21,7 @@ module;
 #include <array>
 #include <cstdint>
 #include <random>
+#include <tuple>
 #include <vector>
 
 export module openxmb.render:particles_renderer;
@@ -59,11 +60,13 @@ export class particles_renderer {
         vk::BufferCreateInfo({}, quad.size()*sizeof(quad[0]), vk::BufferUsageFlagBits::eVertexBuffer),
         vma::AllocationCreateInfo({}, vma::MemoryUsage::eCpuToGpu));
       allocator.copyMemoryToAllocation(quad.data(), quadVBAlloc.get(), 0, quad.size()*sizeof(quad[0]));
+      allocator.flushAllocation(quadVBAlloc.get(), 0, quad.size()*sizeof(quad[0]));
 
       std::tie(indexBuffer, indexAlloc) = allocator.createBufferUnique(
         vk::BufferCreateInfo({}, idx.size()*sizeof(idx[0]), vk::BufferUsageFlagBits::eIndexBuffer),
         vma::AllocationCreateInfo({}, vma::MemoryUsage::eCpuToGpu));
       allocator.copyMemoryToAllocation(idx.data(), indexAlloc.get(), 0, idx.size()*sizeof(idx[0]));
+      allocator.flushAllocation(indexAlloc.get(), 0, idx.size()*sizeof(idx[0]));
 
       // Instance buffer: per-particle 2D seeds in [0,1)
       std::vector<glm::vec2> seeds(kParticles);
@@ -74,6 +77,7 @@ export class particles_renderer {
         vk::BufferCreateInfo({}, seeds.size()*sizeof(seeds[0]), vk::BufferUsageFlagBits::eVertexBuffer),
         vma::AllocationCreateInfo({}, vma::MemoryUsage::eCpuToGpu));
       allocator.copyMemoryToAllocation(seeds.data(), instanceVBAlloc.get(), 0, seeds.size()*sizeof(seeds[0]));
+      allocator.flushAllocation(instanceVBAlloc.get(), 0, seeds.size()*sizeof(seeds[0]));
 
       // Pipeline layout: push-constants only
       vk::PushConstantRange range(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, sizeof(Push));

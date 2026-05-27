@@ -20,6 +20,7 @@
 
 module;
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 

@@ -1,5 +1,5 @@
 /* This file is a part of the OpenXMB desktop experience project.
- * Copyright (C) 2025 Syndromatic Ltd. All rights reserved
+ * Copyright (C) 2025-2026 Syndromatic Ltd. All rights reserved
  * Designed by Kavish Krishnakumar in Manchester.
  *
  * This program is free software: you can redistribute it and/or modify

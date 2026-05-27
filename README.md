@@ -42,32 +42,41 @@ The rendering backend is powered by [**AuroreEngine**](https://github.com/phenom
 Before you begin, ensure you have the following tools and libraries installed (versions are minimums unless stated):
 
 - Git
-- CMake 3.22+
+- CMake 3.28+
 - Ninja build system
 - C++23-capable compiler:
   - Linux: Clang 17+ (Clang 19 recommended) or GCC 13+
-  - macOS: Xcode 15 (Clang) + Vulkan SDK (MoltenVK)
-  - Windows: MSVC 19.34+
+  - macOS: Homebrew LLVM/Clang with `clang-scan-deps` + Vulkan loader/MoltenVK packages
+  - Windows: LLVM/Clang with `clang-scan-deps` (MSVC support is blocked by the current `#embed` shader/resource path)
 - Vulkan 1.2 capable GPU + drivers (MoltenVK on macOS)
 - Libraries (names as found on Ubuntu 24.04-like distros):
-  - Vulkan headers and loader: `libvulkan-dev`, `vulkan-validationlayers-dev`
+  - Vulkan headers and loader: `libvulkan-dev`, `vulkan-utility-libraries-dev`
   - SDL2 core + image + mixer: `libsdl2-dev`, `libsdl2-image-dev`, `libsdl2-mixer-dev`
   - FFmpeg (if `ENABLE_VIDEO_PLAYER=ON`): `libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev`
   - Freetype: `libfreetype-dev`
   - glm: `libglm-dev`
   - fmt: `libfmt-dev`
   - gettext (i18n): `gettext`
-  - Optional (used by dependencies): `harfbuzz`, `spirv-tools`, `pkg-config`
+- Optional (used by dependencies): `harfbuzz`, `glslang-tools`, `spirv-tools`, `pkg-config`
 
 ### Build Instructions
+
+The default preset builds a Release configuration with optional alpha modules disabled:
+
+```bash
+cmake --preset default
+cmake --build --preset default
+```
+
+For editor/debug work, use `cmake --preset dev && cmake --build --preset dev`.
 
 #### macOS
 
 1.  **Install Dependencies (via Homebrew):**
     ```bash
-    brew install cmake ninja pkg-config ffmpeg sdl2 sdl2_image sdl2_mixer gettext fmt freetype glm
-    # Install the Vulkan SDK, which includes MoltenVK
-    brew install vulkan-sdk
+    brew install cmake ninja pkg-config llvm ffmpeg sdl2 sdl2_image sdl2_mixer gettext fmt freetype glm
+    # Install Vulkan loader, shader tools, and MoltenVK
+    brew install vulkan-loader glslang molten-vk
     ```
 
 2.  **Build OpenXMB:**
@@ -76,19 +85,14 @@ Before you begin, ensure you have the following tools and libraries installed (v
     git clone https://github.com/phenom64/OpenXMB.git
     cd OpenXMB
 
-    # Configure the project
-    cmake -S . -B build -G Ninja \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 \
-      # Optionally point to a local AuroreEngine checkout:
-      # -DDREAMRENDER_LOCAL=/path/to/AuroreEngine
-
-    # Build the project
-    cmake --build build -j $(sysctl -n hw.ncpu)
+    # Configure and build the project
+    LLVM_PREFIX=$(brew --prefix llvm)
+    CC="$LLVM_PREFIX/bin/clang" CXX="$LLVM_PREFIX/bin/clang++" cmake --preset default
+    cmake --build --preset default
 
     # (Optional) Install the application
     # This will place the binary and assets in the specified directory.
-    cmake --install build --prefix "/Applications/OpenXMB"
+    cmake --install build/default --prefix "/Applications/OpenXMB"
     ```
     The launcher script will automatically try to locate the `MoltenVK_icd.json` file required for Vulkan to work on macOS.
 
@@ -98,7 +102,7 @@ Before you begin, ensure you have the following tools and libraries installed (v
     ```bash
     sudo apt update
     sudo apt install build-essential git cmake ninja-build pkg-config \
-        libvulkan-dev vulkan-validationlayers-dev spirv-tools \
+        clang-18 clang-tools-18 libvulkan-dev vulkan-utility-libraries-dev glslang-tools spirv-tools \
         libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev \
         libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev \
         libglm-dev libfreetype-dev gettext libfmt-dev
@@ -110,27 +114,22 @@ Before you begin, ensure you have the following tools and libraries installed (v
     git clone https://github.com/phenom64/OpenXMB.git
     cd OpenXMB
 
-    # Configure the project
-    cmake -S . -B build -G Ninja \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 \
-      # Optionally point to a local AuroreEngine checkout:
-      # -DDREAMRENDER_LOCAL=/path/to/AuroreEngine
-
-    # Build the project
-    cmake --build build -j $(nproc)
+    # Configure and build the project
+    CC=clang-18 CXX=clang++-18 cmake --preset default
+    cmake --build --preset default
 
     # (Optional) Install the application system-wide
-    sudo cmake --install build
+    sudo cmake --install build/default
     ```
 
 #### Windows
 
 1.  **Install Dependencies:**
-    *   **Visual Studio 2022:** Install with the "Desktop development with C++" workload.
-    *   **Git, CMake, Ninja:** Install these tools and ensure they are in your system's PATH.
+    *   **LLVM/Clang:** Install LLVM and ensure `clang++` and `clang-scan-deps` are in your PATH. The current Windows build uses Clang/Ninja because the shader/resource embedding path is not MSVC-compatible yet.
+    *   **Visual Studio 2022 Build Tools:** Install the "Desktop development with C++" workload for the Windows SDK, linker/runtime pieces, and platform libraries.
+    *   **Git, CMake 3.28+, Ninja:** Install these tools and ensure they are in your PATH.
     *   **Vulkan SDK:** Download and install from the [LunarG website](https://vulkan.lunarg.com/).
-    *   **vcpkg:** Use vcpkg to install the remaining dependencies.
+    *   **vcpkg:** Set `VCPKG_ROOT` to your vcpkg checkout. The manifest and presets require SDL2's Vulkan feature; if installing dependencies explicitly, use:
       ```powershell
       # Clone and set up vcpkg
       git clone https://github.com/microsoft/vcpkg.git
@@ -139,7 +138,7 @@ Before you begin, ensure you have the following tools and libraries installed (v
       ./vcpkg integrate install
 
       # Install dependencies
-      ./vcpkg install sdl2 sdl2-image sdl2-mixer ffmpeg freetype glm fmt gettext --triplet x64-windows
+      ./vcpkg install "sdl2[vulkan]" sdl2-image sdl2-mixer ffmpeg freetype glm fmt gettext harfbuzz pkgconf --triplet x64-windows
       ```
 
 2.  **Build OpenXMB:**
@@ -148,16 +147,17 @@ Before you begin, ensure you have the following tools and libraries installed (v
     git clone https://github.com/phenom64/OpenXMB.git
     cd OpenXMB
 
-    # Configure the project, replacing [path to vcpkg] with your vcpkg directory
-    cmake -S . -B build -G Ninja -DCMAKE_TOOLCHAIN_FILE=[path to vcpkg]/scripts/buildsystems/vcpkg.cmake \
-      -DCMAKE_BUILD_TYPE=Release
+    # Point the preset at vcpkg
+    $env:VCPKG_ROOT = "<path-to-vcpkg>"
+    cmake --preset windows-vcpkg
 
     # Build the project
-    cmake --build build -j %NUMBER_OF_PROCESSORS%
+    cmake --build --preset windows-vcpkg
 
     # (Optional) Install the application
-    cmake --install build --prefix "C:/OpenXMB"
+    cmake --install build/windows-vcpkg --prefix "C:/OpenXMB"
     ```
+    When developing OpenXMB and AuroreEngine together, use `windows-local-aurore` or pass `-DDREAMRENDER_LOCAL=<path-to-AuroreEngine>` so OpenXMB builds against your local engine checkout.
 
 ### Build Options
 
@@ -166,44 +166,51 @@ You can customize the build using the following CMake options:
 *   `-DENABLE_BROWSER=ON/OFF`: Enable the CEF-based browser module [ALPHA] (Default: OFF)
 *   `-DENABLE_DISC_MEDIA=ON/OFF`: Enable DVD/Blu-ray support [ALPHA] (Default: OFF)
 *   `-DENABLE_LIBRETRO=ON/OFF`: Enable the libretro core host for emulation [ALPHA] (Default: OFF)
-*   `-DINTERFACE_FX_DEBUG=ON/OFF`: Enable interface/UI graphics+text debug overlays (Default: ON)
+*   `-DINTERFACE_FX_DEBUG=ON/OFF`: Enable interface/UI graphics+text debug overlays (Default: OFF)
+*   `-DOPENXMB_APPLE_PREFIXES=/path/a;/path/b`: Add macOS package-manager prefixes if dependencies are not in the usual Homebrew locations.
 
 Example: `cmake -B build -DENABLE_BROWSER=ON`
 
-Recommended one-liner (Linux/macOS):
+Recommended one-liner after selecting the compiler for Linux/macOS:
 
 ```bash
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 \
-  # -DDREAMRENDER_LOCAL=/path/to/AuroreEngine \
-  && ninja -C build -j $(nproc)
+cmake --preset default && cmake --build --preset default
 ```
+
+For CI or packaging checks, run the headless staged-install smoke script:
+
+```bash
+scripts/headless-smoke.sh
+```
+
+It configures, builds, installs into `build/ci/stage`, and verifies the launcher, binary, default config, font, representative icons, and OK sound were staged.
+On Windows, use the `windows-vcpkg` preset and verify both a windowed launch and an app-local install layout.
 
 ## Configuration
 
-OpenXMB is configured using the `config.json` file. When you first run the application using the `XMS` launcher script, a default `config.json` will be created in your working directory. You can edit this file to change settings like:
+OpenXMB is configured using the `config.json` file. At runtime it checks `OPENXMB_CONFIG` first, then `config.json` beside the executable, and finally a per-user config location such as `%LOCALAPPDATA%/OpenXMB/config.json` on Windows. You can edit this file to change settings like:
 
 *   Background colors and type (`wave`, `color`, `image`)
 *   Fonts and date/time display
 *   Controller settings
 *   Render quality (VSync, MSAA, FPS limit)
 
-The application looks for assets (icons, sounds, fonts) in a directory specified by the `XMB_ASSET_DIR` environment variable. If not set, it defaults to the `share/shell` directory relative to the executable.
+The Unix launcher sets `XMB_ASSET_DIR` and `XMB_LOCALE_DIR` when they are not already provided. Windows build-tree and install runs use an app-local layout beside `XMS.bin.exe`, with `shell` for assets and `locales` for gettext catalogs.
 
 ## Roadmap
 
 *   **✅ M1: Scaffold:** App compiles & runs; static XMB; JSON config.
-*   **✅ M2: Menus, Fonts, Icons:** Fully navigable XMB with text & icons; async file menu scanning; intro text alignment polish.
-*   ** M3: Audio & Music:** Background music playback, visualizer, and sound effects.
+*   **✅ M2: Menus, Fonts, Icons:** Fully navigable XMB with text & icons; async file menu scanning; local placeholder assets packaged for build/install runs.
+*   **🚧 M3: Audio & Music:** UI sound effects are wired; background music playback and visualizer remain planned.
 *   **🚧 M4: Video Player:** File playback with GPU-accelerated YUV decoding; subtitle support next.
 *   ** M5: Libretro Overlay:** Emulation support via a libretro core host.
 *   ** M6: Web Browser:** Integration of a CEF-based browser.
 *   ** M7: Disc Media:** Support for DVD/Blu-ray playback.
-*   **🚧 M8: Performance Pass:** Release/IPO defaults, steady-clock timing, async I/O; engine-side loader/pipeline tweaks; further descriptor/pool tuning planned.
+*   **🚧 M8: Performance/Release Pass:** Release/IPO defaults, presets, staged install smoke, CI matrix, steady-clock timing, async I/O; engine-side loader/pipeline tweaks and further descriptor/pool tuning planned.
 
 ### Notes on AuroreEngine
 
-OpenXMB uses AuroreEngine as the rendering backend. By default, the build fetches it automatically. For development or local changes, you can point CMake to a local checkout with `-DDREAMRENDER_LOCAL=/path/to/AuroreEngine`.
+OpenXMB uses AuroreEngine as the rendering backend. By default, the build fetches it automatically. For development or local changes, use the `windows-local-aurore` preset on Windows or point CMake to a local checkout with `-DDREAMRENDER_LOCAL=/path/to/AuroreEngine`.
 
 ## License
 
@@ -213,7 +220,7 @@ See the [LICENSE](LICENSE) file for the full text.
 A significant portion of the OpenXMB base is derived from **XMBShell**, and this is reflected in code taken from that project.  
 Many thanks to its author, **JCM**.
 
-All other original code is © 2025 Syndromatic Ltd and contributors, and licensed under version 3 of the GNU General Public License.  
+All other original code is © 2025-2026 Syndromatic Ltd and contributors, and licensed under version 3 of the GNU General Public License.
 AuroreEngine components adapted from **dreamrender** remain under the MPL 2.0 license.
 
 ---

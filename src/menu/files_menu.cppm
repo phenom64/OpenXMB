@@ -74,13 +74,17 @@ class files_menu : public simple_menu {
         void on_open() override;
         void on_close() override {
             simple_menu::on_close();
+            stop_scan();
             if(selected_submenu < extra_data_entries.size()) {
                 old_selected_item = extra_data_entries[selected_submenu].path;
             }
             entries.clear();
             extra_data_entries.clear();
-            last_scanned_path.clear();
-            cached_file_infos.clear();
+            {
+                std::lock_guard<std::mutex> lk(cache_mutex);
+                last_scanned_path.clear();
+                cached_file_infos.clear();
+            }
         }
 
         unsigned int get_submenus_count() const override;
@@ -122,7 +126,11 @@ class files_menu : public simple_menu {
         void stop_scan();
         void reload();
         void resort();
+        void rebuild_entries_from_cache();
+        void show_sort_filter_options();
         result activate_file(const file_info& info, action action);
+        result open_file(const file_info& info);
+        void show_file_information(const file_info& info, const std::filesystem::path& file_path);
 
         app::shell* xmb;
         std::filesystem::path path;

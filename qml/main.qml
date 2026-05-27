@@ -1,6 +1,6 @@
 // qml/main.qml
 //
-// TM & (C) 2025 Syndromatic Ltd. All rights reserved.
+// ™ & © 2025-2026 Syndromatic Ltd. All rights reserved.
 // Designed by Kavish Krishnakumar in Manchester.
 //
 // This file is part of the OpenXMB project, licensed under GPLv3.

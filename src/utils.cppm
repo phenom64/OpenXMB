@@ -128,9 +128,16 @@ export namespace utils
     }
 
     // PS3‑style dynamic XMB colour and brightness helpers
+    struct xmb_resolved_theme_colour {
+        glm::vec3 base_colour{};
+        float brightness = 1.0f;
+        glm::vec3 shaded_colour{};
+    };
+
     glm::vec3 xmb_month_colour(int monthIndex /*0=Jan*/);
     float     xmb_hour_brightness(int hour /*0..23*/, float minuteFrac);
     glm::vec3 xmb_dynamic_colour(std::chrono::system_clock::time_point now);
+    xmb_resolved_theme_colour xmb_resolve_theme_colour(std::chrono::system_clock::time_point now);
 
     template<typename T>
     class aligned_wrapper {
@@ -174,9 +181,13 @@ namespace utils {
     template<typename T>
     constexpr std::string_view get_typename() {
         std::string_view name = std::source_location::current().function_name();
-        name.remove_prefix(std::string_view::traits_type::length("std::string_view utils::get_typename() "));
-        name.remove_prefix(std::string_view::traits_type::length("[T = "));
-        name.remove_suffix(std::string_view::traits_type::length("]"));
+        constexpr std::string_view marker = "T = ";
+        if(auto start = name.find(marker); start != std::string_view::npos) {
+            name.remove_prefix(start + marker.size());
+            if(auto end = name.find_first_of(";]"); end != std::string_view::npos) {
+                name = name.substr(0, end);
+            }
+        }
         return name;
     }
 
@@ -186,15 +197,31 @@ namespace utils {
         return std::source_location::current().function_name();
     }
 
+    constexpr std::string_view trim_enum_value(std::string_view value) {
+        while(!value.empty() && value.front() == ' ') {
+            value.remove_prefix(1);
+        }
+        if(value.empty() || value.front() == '(') {
+            return {};
+        }
+        if(auto scope = value.rfind("::"); scope != std::string_view::npos) {
+            value.remove_prefix(scope + 2);
+        }
+        return value;
+    }
+
     template<size_t N>
-    constexpr std::array<std::string_view, N> parse_enum_list(std::string_view sv, size_t prefix = 0) {
+    constexpr std::array<std::string_view, N> parse_enum_list(std::string_view sv) {
         std::array<std::string_view, N> array;
-        size_t p = prefix + 2;
+        size_t p = 0;
         for(size_t i = 0; i<N; i++) {
             size_t np = sv.find(",", p);
-            auto name = sv.substr(p, np-p);
-            array[i] = name;
-            p = np + prefix + 2 + 2;
+            auto value = np == std::string_view::npos ? sv.substr(p) : sv.substr(p, np-p);
+            array[i] = trim_enum_value(value);
+            if(np == std::string_view::npos) {
+                break;
+            }
+            p = np + 1;
         }
         return array;
     }
@@ -203,8 +230,13 @@ namespace utils {
     template<typename Enum, auto... values>
     constexpr std::string_view get_enum_values_str(std::index_sequence<values...>) {
         auto sv = get_enum_values_impl<static_cast<Enum>(values)...>();
-        sv.remove_prefix(std::string_view::traits_type::length("std::string_view utils::get_enum_values_impl() [values = <"));
-        sv.remove_suffix(std::string_view::traits_type::length(">]"));
+        constexpr std::string_view marker = "values = <";
+        if(auto start = sv.find(marker); start != std::string_view::npos) {
+            sv.remove_prefix(start + marker.size());
+        }
+        if(auto end = sv.rfind(">]"); end != std::string_view::npos) {
+            sv = sv.substr(0, end);
+        }
 
         return sv;
     }
@@ -212,7 +244,7 @@ namespace utils {
     template<typename Enum, size_t N = 256>
     constexpr std::array<std::string_view, N> get_enum_values() {
         constexpr auto sv = get_enum_values_str<Enum>(std::make_index_sequence<N>());
-        return parse_enum_list<N>(sv, get_typename<Enum>().size());
+        return parse_enum_list<N>(sv);
     }
 
     export template<typename Enum, size_t N = 256>

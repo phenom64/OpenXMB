@@ -22,6 +22,7 @@ module;
 
 #include <chrono>
 #include <cstdint>
+#include <tuple>
 #include <vector>
 
 export module openxmb.render:wave_renderer;
@@ -80,7 +81,7 @@ export class wave_renderer {
     public:
         static constexpr int grid_quality = 128;
         glm::vec3 waveColor = {0.5, 0.5, 0.5};
-        float speed = 1.0;
+        float speed = 0.78f;
 
         wave_renderer(vk::Device device, vma::Allocator allocator, vk::Extent2D frameSize) : device(device), allocator(allocator), frameSize(frameSize),
             aspectRatio(static_cast<double>(frameSize.width)/frameSize.height) {}
@@ -103,6 +104,7 @@ export class wave_renderer {
                         vma::AllocationCreateInfo({}, vma::MemoryUsage::eCpuToGpu));
 
                     allocator.copyMemoryToAllocation(vertices.data(), vertexAllocation.get(), 0, vertices.size()*sizeof(glm::vec3));
+                    allocator.flushAllocation(vertexAllocation.get(), 0, vertices.size()*sizeof(glm::vec3));
                 }
                 {
                     std::tie(indexBuffer, indexAllocation) = allocator.createBufferUnique(
@@ -110,6 +112,7 @@ export class wave_renderer {
                         vma::AllocationCreateInfo({}, vma::MemoryUsage::eCpuToGpu));
 
                     allocator.copyMemoryToAllocation(indices.data(), indexAllocation.get(), 0, indices.size()*sizeof(uint16_t));
+                    allocator.flushAllocation(indexAllocation.get(), 0, indices.size()*sizeof(uint16_t));
                 }
             }
             {
@@ -158,11 +161,14 @@ export class wave_renderer {
         void finish(int frame) {}
 
         void render(vk::CommandBuffer cmd, int frame, vk::RenderPass renderPass) {
+            auto it = pipelines.find(renderPass);
+            if(it == pipelines.end()) return;
+
             auto time = std::chrono::high_resolution_clock::now() - startTime;
             auto seconds = std::chrono::duration_cast<std::chrono::seconds>(time);
             auto partialSeconds = std::chrono::duration<float>(time-seconds);
 
-            cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipelines[renderPass].get());
+            cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, it->second.get());
 
             push_constants push{
                 .color=glm::vec4(waveColor, 1.0),
