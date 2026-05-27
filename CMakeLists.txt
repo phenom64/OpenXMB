@@ -209,7 +209,7 @@ if(DREAMRENDER_LOCAL)
 else()
   FetchContent_Declare(dreamrender
     GIT_REPOSITORY https://github.com/phenom64/AuroreEngine.git
-    GIT_TAG        7353d81fbbf34c51ffb1db070104ca8636082ea1
+    GIT_TAG        6e53f7ec9ac1fa8b42f15a5a7e79d5c437b9cdb0
     OVERRIDE_FIND_PACKAGE
   )
   FetchContent_GetProperties(dreamrender)
