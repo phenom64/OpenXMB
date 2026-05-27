@@ -30,6 +30,8 @@ module;
 #include <memory>
 #include <ranges>
 #include <optional>
+#include <span>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -38,6 +40,9 @@ module;
 // gettext
 #include <libintl.h>
 #include <ctime>
+#include <SDL2/SDL_mouse.h>
+
+#include <glm/vec2.hpp>
 
 module openxmb.app;
 
@@ -60,10 +65,53 @@ using namespace mfk::i18n::literals;
 
 namespace app
 {
+    namespace {
+        events::logical_controller_button to_logical_button(sdl::GameControllerButton button)
+        {
+            return static_cast<events::logical_controller_button>(std::to_underlying(button));
+        }
+
+        events::logical_mouse_button to_logical_mouse_button(int button)
+        {
+            switch(button) {
+                case SDL_BUTTON_LEFT:
+                    return events::logical_mouse_button::left;
+                case SDL_BUTTON_MIDDLE:
+                    return events::logical_mouse_button::middle;
+                case SDL_BUTTON_RIGHT:
+                    return events::logical_mouse_button::right;
+                case SDL_BUTTON_X1:
+                    return events::logical_mouse_button::x1;
+                case SDL_BUTTON_X2:
+                    return events::logical_mouse_button::x2;
+                default:
+                    return events::logical_mouse_button::left;
+            }
+        }
+
+        std::filesystem::path existing_asset_or_fallback(std::filesystem::path path, std::filesystem::path fallback)
+        {
+            std::error_code ec;
+            if(std::filesystem::exists(path, ec) && !ec) {
+                return path;
+            }
+            ec.clear();
+            if(std::filesystem::exists(fallback, ec) && !ec) {
+                return fallback;
+            }
+            return path;
+        }
+    }
+
     struct BlurConstants {
         int axis = 0;
         int size = 20;
     };
+
+    void component::render_controller_buttons(app::shell* xmb, dreamrender::gui_renderer& renderer, float x, float y, std::span<const std::pair<::action, std::string_view>> buttons) const
+    {
+        xmb->render_controller_buttons(renderer, x, y, buttons);
+    }
 
     shell::shell(window* window) : phase(window)
     {
@@ -173,33 +221,33 @@ namespace app
             debugName(device, renderImage->image, "Shell Render Image");
 
             blurImageSrc = std::make_unique<texture>(device, allocator,
-                win->swapchainExtent, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
+                win->swapchainExtent, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
                 vk::Format::eR16G16B16A16Sfloat, vk::SampleCountFlagBits::e1, false, vk::ImageAspectFlagBits::eColor);
             debugName(device, blurImageSrc->image, "Blur Image Source");
 
             blurImageDst = std::make_unique<texture>(device, allocator,
-                win->swapchainExtent, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
+                win->swapchainExtent, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
                 vk::Format::eR16G16B16A16Sfloat, vk::SampleCountFlagBits::e1, false, vk::ImageAspectFlagBits::eColor);
             debugName(device, blurImageDst->image, "Blur Image Destination");
 
             // Half/quarter-resolution ping-pong images for downsampled blur
             vk::Extent2D halfExtent{ std::max(1u, win->swapchainExtent.width/2u), std::max(1u, win->swapchainExtent.height/2u) };
             blurHalfSrc = std::make_unique<texture>(device, allocator,
-                halfExtent, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled,
+                halfExtent, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
                 vk::Format::eR16G16B16A16Sfloat, vk::SampleCountFlagBits::e1, false, vk::ImageAspectFlagBits::eColor);
             debugName(device, blurHalfSrc->image, "Blur Half Source");
             blurHalfDst = std::make_unique<texture>(device, allocator,
-                halfExtent, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled,
+                halfExtent, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
                 vk::Format::eR16G16B16A16Sfloat, vk::SampleCountFlagBits::e1, false, vk::ImageAspectFlagBits::eColor);
             debugName(device, blurHalfDst->image, "Blur Half Destination");
 
             vk::Extent2D quarterExtent{ std::max(1u, halfExtent.width/2u), std::max(1u, halfExtent.height/2u) };
             blurQuarterSrc = std::make_unique<texture>(device, allocator,
-                quarterExtent, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled,
+                quarterExtent, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
                 vk::Format::eR16G16B16A16Sfloat, vk::SampleCountFlagBits::e1, false, vk::ImageAspectFlagBits::eColor);
             debugName(device, blurQuarterSrc->image, "Blur Quarter Source");
             blurQuarterDst = std::make_unique<texture>(device, allocator,
-                quarterExtent, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled,
+                quarterExtent, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
                 vk::Format::eR16G16B16A16Sfloat, vk::SampleCountFlagBits::e1, false, vk::ImageAspectFlagBits::eColor);
             debugName(device, blurQuarterDst->image, "Blur Quarter Destination");
         }
@@ -276,6 +324,11 @@ namespace app
         load_sound_multi(back_sound,     {"NSE.clicker.Cancel.wav","NSE.clicker.Cancel.ogg"});
 
         reload_button_icons();
+
+        cursorTexture = std::make_unique<texture>(device, allocator);
+        loader->loadTexture(cursorTexture.get(), existing_asset_or_fallback(
+            config::CONFIG.asset_directory/"icons/icon_cursor.png",
+            config::CONFIG.asset_directory/"icons/icon_category_settings.png"));
 
         // Push startup splash overlay (plays jingle, fades text)
         emplace_overlay<app::startup_overlay>();
@@ -508,7 +561,10 @@ namespace app
             commandBuffer.endRenderPass();
         }
         double blur_background_progress = utils::progress(now, last_blur_background_change, blur_background_transition_duration);
-        if(blur_background || blur_background_progress < 1.0) {
+        const bool use_blur_background = blur_background || blur_background_progress < 1.0;
+        vk::ImageView compositedBackgroundView = backgroundResolve[frame]->imageView.get();
+        if(use_blur_background) {
+            compositedBackgroundView = blurImageDst->imageView.get();
             commandBuffer.pipelineBarrier(
                 vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader,
                 vk::PipelineStageFlagBits::eTransfer,
@@ -655,20 +711,20 @@ namespace app
                 int halfX = static_cast<int>(std::ceil(blurHalfSrc->width/16.0));
                 int halfY = static_cast<int>(std::ceil(blurHalfSrc->height/16.0));
 
-                // Ensure half images are in GENERAL layout
+                // Ensure half images are in GENERAL layout before their first storage use.
                 commandBuffer.pipelineBarrier(
                     vk::PipelineStageFlagBits::eComputeShader, vk::PipelineStageFlagBits::eComputeShader,
                     {}, {}, {},
                     {
                         vk::ImageMemoryBarrier(
                             {}, vk::AccessFlagBits::eShaderWrite,
-                            vk::ImageLayout::eGeneral, vk::ImageLayout::eGeneral,
+                            vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
                             vk::QueueFamilyIgnored, vk::QueueFamilyIgnored,
                             blurHalfSrc->image, vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1)
                         ),
                         vk::ImageMemoryBarrier(
                             {}, vk::AccessFlagBits::eShaderWrite,
-                            vk::ImageLayout::eGeneral, vk::ImageLayout::eGeneral,
+                            vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
                             vk::QueueFamilyIgnored, vk::QueueFamilyIgnored,
                             blurHalfDst->image, vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1)
                         )
@@ -811,6 +867,37 @@ namespace app
                 int qX = static_cast<int>(std::ceil(blurQuarterSrc->width/16.0));
                 int qY = static_cast<int>(std::ceil(blurQuarterSrc->height/16.0));
 
+                commandBuffer.pipelineBarrier(
+                    vk::PipelineStageFlagBits::eComputeShader, vk::PipelineStageFlagBits::eComputeShader,
+                    {}, {}, {},
+                    {
+                        vk::ImageMemoryBarrier(
+                            {}, vk::AccessFlagBits::eShaderWrite,
+                            vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
+                            vk::QueueFamilyIgnored, vk::QueueFamilyIgnored,
+                            blurHalfSrc->image, vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor,0,1,0,1)
+                        ),
+                        vk::ImageMemoryBarrier(
+                            {}, vk::AccessFlagBits::eShaderWrite,
+                            vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
+                            vk::QueueFamilyIgnored, vk::QueueFamilyIgnored,
+                            blurHalfDst->image, vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor,0,1,0,1)
+                        ),
+                        vk::ImageMemoryBarrier(
+                            {}, vk::AccessFlagBits::eShaderWrite,
+                            vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
+                            vk::QueueFamilyIgnored, vk::QueueFamilyIgnored,
+                            blurQuarterSrc->image, vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor,0,1,0,1)
+                        ),
+                        vk::ImageMemoryBarrier(
+                            {}, vk::AccessFlagBits::eShaderWrite,
+                            vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
+                            vk::QueueFamilyIgnored, vk::QueueFamilyIgnored,
+                            blurQuarterDst->image, vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor,0,1,0,1)
+                        )
+                    }
+                );
+
                 // A: downsample full->half
                 commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, downsamplePipeline.get());
                 commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, blurPipelineLayout.get(), 0, {downsampleSet}, {});
@@ -931,6 +1018,25 @@ namespace app
                 commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, blurPipelineLayout.get(), 0, {upsample2Set}, {});
                 commandBuffer.dispatch(halfX, halfY, 1);
 
+                commandBuffer.pipelineBarrier(
+                    vk::PipelineStageFlagBits::eComputeShader, vk::PipelineStageFlagBits::eComputeShader,
+                    {}, {}, {},
+                    {
+                        vk::ImageMemoryBarrier(
+                            vk::AccessFlagBits::eShaderWrite, vk::AccessFlagBits::eShaderRead,
+                            vk::ImageLayout::eGeneral, vk::ImageLayout::eGeneral,
+                            vk::QueueFamilyIgnored, vk::QueueFamilyIgnored,
+                            blurHalfDst->image, vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor,0,1,0,1)
+                        ),
+                        vk::ImageMemoryBarrier(
+                            {}, vk::AccessFlagBits::eShaderWrite,
+                            vk::ImageLayout::eGeneral, vk::ImageLayout::eGeneral,
+                            vk::QueueFamilyIgnored, vk::QueueFamilyIgnored,
+                            blurImageDst->image, vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor,0,1,0,1)
+                        )
+                    }
+                );
+
                 // G: upsample half -> full into blurImageDst
                 int fullX = static_cast<int>(std::ceil(blurImageDst->width/16.0));
                 int fullY = static_cast<int>(std::ceil(blurImageDst->height/16.0));
@@ -953,66 +1059,6 @@ namespace app
                 );
             }
         }
-        else {
-            commandBuffer.pipelineBarrier(
-                vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader,
-                vk::PipelineStageFlagBits::eTransfer,
-                {}, {}, {},
-                {
-                    vk::ImageMemoryBarrier(
-                        vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead,
-                        vk::AccessFlagBits::eTransferRead,
-                        vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eTransferSrcOptimal,
-                        vk::QueueFamilyIgnored, vk::QueueFamilyIgnored,
-                        backgroundResolve[frame]->image, vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1)
-                    ),
-                    vk::ImageMemoryBarrier(
-                        {}, vk::AccessFlagBits::eTransferWrite,
-                        vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal,
-                        vk::QueueFamilyIgnored, vk::QueueFamilyIgnored,
-                        blurImageDst->image, vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1)
-                    ),
-                }
-            );
-
-            // No blur case: copy swapchain into blurImageDst to sample without extra filtering
-            {
-                vk::ImageBlit blit{
-                    vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1),
-                    { vk::Offset3D{0,0,0}, vk::Offset3D{static_cast<int>(win->swapchainExtent.width), static_cast<int>(win->swapchainExtent.height), 1} },
-                    vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1),
-                    { vk::Offset3D{0,0,0}, vk::Offset3D{static_cast<int>(blurImageDst->width), static_cast<int>(blurImageDst->height), 1} }
-                };
-                commandBuffer.blitImage(backgroundResolve[frame]->image, vk::ImageLayout::eTransferSrcOptimal,
-                                        blurImageDst->image, vk::ImageLayout::eTransferDstOptimal,
-                                        blit, vk::Filter::eLinear);
-            }
-
-            commandBuffer.pipelineBarrier(
-                vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader,
-                {}, {}, {},
-                {
-                    vk::ImageMemoryBarrier(
-                        vk::AccessFlagBits::eTransferWrite, vk::AccessFlagBits::eShaderRead,
-                        vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
-                        vk::QueueFamilyIgnored, vk::QueueFamilyIgnored,
-                        blurImageDst->image, vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1)
-                    ),
-                }
-            );
-            /*commandBuffer.pipelineBarrier(
-                vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                {}, {}, {},
-                {
-                    vk::ImageMemoryBarrier(
-                        vk::AccessFlagBits::eTransferRead, vk::AccessFlagBits::eColorAttachmentWrite,
-                        vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::eColorAttachmentOptimal,
-                        VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
-                        swapchainImages[frame], vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1)
-                    ),
-                }
-            );*/
-        }
         {
             vk::ClearValue color(std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f});
             // No manual transition needed; attachment initial/final layouts handle swapchain transitions in render pass
@@ -1023,7 +1069,7 @@ namespace app
             commandBuffer.setViewport(0, viewport);
             commandBuffer.setScissor(0, scissor);
 
-            image_render->renderImageSized(commandBuffer, frame, shellRenderPass.get(), blurImageDst->imageView.get(),
+            image_render->renderImageSized(commandBuffer, frame, shellRenderPass.get(), compositedBackgroundView,
                 0.0f, 0.0f, static_cast<int>(win->swapchainExtent.width), static_cast<int>(win->swapchainExtent.height));
 
             gui_renderer ctx(commandBuffer, frame, shellRenderPass.get(), win->swapchainExtent, font_render.get(), image_render.get(), simple_render.get());
@@ -1121,6 +1167,7 @@ namespace app
 
         }
 
+        bool enable_cursor = false;
         for(unsigned int i=overlay_begin; i < overlays.size(); i++) {
             if(i == overlays.size()-1 && overlay_transition) {
                 renderer.push_color(glm::mix(glm::vec4(0.0), glm::vec4(1.0), dir_progress));
@@ -1129,17 +1176,35 @@ namespace app
             } else {
                 overlays[i]->render(renderer, this);
             }
+            enable_cursor = overlays[i]->enable_cursor();
         }
-            if(overlay_transition && overlay_fade_direction == transition_direction::out && old_overlay) {
-                renderer.push_color(glm::mix(glm::vec4(0.0), glm::vec4(1.0), dir_progress));
-                old_overlay->render(renderer, this);
-                renderer.pop_color();
+        if(overlay_transition && overlay_fade_direction == transition_direction::out && old_overlay) {
+            renderer.push_color(glm::mix(glm::vec4(0.0), glm::vec4(1.0), dir_progress));
+            old_overlay->render(renderer, this);
+            renderer.pop_color();
         } else if(old_overlay) {
             // Fade-out finished; if it was a message overlay, drop background blur now
             if(dynamic_cast<app::message_overlay*>(old_overlay.get()) != nullptr) {
                 set_blur_background(false);
             }
             old_overlay.reset();
+        }
+
+        if(enable_cursor) {
+            constexpr float cursor_size = 0.05f;
+            if(cursorTexture && cursorTexture->loaded) {
+                renderer.draw_image(*cursorTexture,
+                    cursor_position.x - (cursor_size/2.0f)/renderer.aspect_ratio,
+                    cursor_position.y - cursor_size/2.0f,
+                    cursor_size, cursor_size);
+            } else {
+                renderer.draw_rect(glm::vec2{
+                        cursor_position.x - (cursor_size/6.0f)/renderer.aspect_ratio,
+                        cursor_position.y - cursor_size/6.0f
+                    },
+                    glm::vec2{(cursor_size/3.0f)/renderer.aspect_ratio, cursor_size/3.0f},
+                    glm::vec4{1.0f, 1.0f, 1.0f, 0.85f});
+            }
         }
 
         float debug_y = 0.0;
@@ -1178,9 +1243,10 @@ namespace app
 
             std::string_view name = utils::enum_name(a);
             std::filesystem::path icon_name = config::CONFIG.asset_directory / "icons" / std::format("icon_button_{}_{}.png", controller_type, name);
+            std::filesystem::path fallback_icon = config::CONFIG.asset_directory / "icons" / std::format("icon_button_default_{}.png", name);
 
             buttonTextures[i] = std::make_unique<texture>(device, allocator);
-            loader->loadTexture(buttonTextures[i].get(), icon_name);
+            loader->loadTexture(buttonTextures[i].get(), existing_asset_or_fallback(std::move(icon_name), std::move(fallback_icon)));
         }
     }
     std::string shell::get_controller_type() const {
@@ -1218,7 +1284,9 @@ namespace app
                 auto time_since_input = std::chrono::duration<double>(std::chrono::steady_clock::now() - last_controller_axis_input_time[i]);
                 if(time_since_input > controller_axis_input_duration) {
                     auto [controller, dir] = *last_controller_axis_input[i];
-                    dispatch(dir);
+                    dispatch<events::joystick_axis>(dir, i,
+                        controller_axis_position[i].x,
+                        controller_axis_position[i].y);
                     last_controller_axis_input_time[i] = std::chrono::steady_clock::now();
                 }
             }
@@ -1239,30 +1307,149 @@ namespace app
             }
             handle(res);
         }
+        poll_mouse();
+        tick_cursor();
     }
 
-    void shell::dispatch(action action) {
+    void shell::dispatch(const event& event) {
         if(background_only) {
             return;
         }
 
         for(int i=static_cast<int>(overlays.size())-1; i >= 0; i--) {
             auto& e = overlays[i];
-            if(auto* recv = dynamic_cast<action_receiver*>(e.get())) {
-                result res = recv->on_action(action);
+            if(e->enable_cursor() && handle_cursor(event)) {
+                return;
+            }
+
+            result res = result::unsupported;
+            if(auto* recv = dynamic_cast<event_receiver*>(e.get())) {
+                res = recv->on_event(event);
+            } else if(auto* recv = dynamic_cast<action_receiver*>(e.get())) {
+                res = recv->on_action(event.action);
+            }
+
+            if(res == result::unsupported) {
+                if(auto* d = event.get<events::joystick_axis>()) {
+                    if(auto* recv = dynamic_cast<joystick_receiver*>(e.get())) {
+                        res = recv->on_joystick(static_cast<unsigned int>(d->index), d->x, d->y);
+                    }
+                } else if(auto* d = event.get<events::mouse_move>()) {
+                    if(auto* recv = dynamic_cast<mouse_receiver*>(e.get())) {
+                        res = recv->on_mouse_move(d->x, d->y);
+                    }
+                } else if(auto* d = event.get<events::mouse_scroll>()) {
+                    if(auto* recv = dynamic_cast<mouse_receiver*>(e.get())) {
+                        res = recv->on_mouse_scroll(d->x);
+                    }
+                }
+            }
+
+            if(res != result::unsupported) {
                 if(res & result::close) {
                     remove_overlay(i);
                     i--;
                 }
                 handle(res);
-                if(res != result::unsupported) {
-                    return;
-                }
+                return;
             }
         }
 
-        handle(menu.on_action(action));
+        handle(menu.on_action(event.action));
     }
+
+    void shell::poll_mouse()
+    {
+        int x = 0;
+        int y = 0;
+        std::uint32_t buttons = SDL_GetMouseState(&x, &y);
+        glm::ivec2 position{x, y};
+
+        const float width = static_cast<float>(std::max(1u, win->swapchainExtent.width));
+        const float height = static_cast<float>(std::max(1u, win->swapchainExtent.height));
+        const glm::vec2 normalized{
+            glm::clamp(static_cast<float>(position.x) / width, 0.0f, 1.0f),
+            glm::clamp(static_cast<float>(position.y) / height, 0.0f, 1.0f)
+        };
+
+        glm::ivec2 relative{0, 0};
+        if(mouse_state_initialized) {
+            relative = position - last_mouse_position;
+        }
+
+        if(!mouse_state_initialized || position != last_mouse_position) {
+            dispatch(event{
+                action::none,
+                events::mouse_move{
+                    normalized.x,
+                    normalized.y,
+                    static_cast<float>(relative.x) / width,
+                    static_cast<float>(relative.y) / height
+                }
+            });
+        }
+
+        for(int button = SDL_BUTTON_LEFT; button <= SDL_BUTTON_X2; ++button) {
+            const std::uint32_t mask = SDL_BUTTON(button);
+            const bool was_down = (last_mouse_buttons & mask) != 0;
+            const bool is_down = (buttons & mask) != 0;
+            if(is_down && !was_down) {
+                dispatch(event{
+                    action::none,
+                    events::mouse_button_down{to_logical_mouse_button(button)}
+                });
+            } else if(!is_down && was_down) {
+                dispatch(event{
+                    action::none,
+                    events::mouse_button_up{to_logical_mouse_button(button)}
+                });
+            }
+        }
+
+        last_mouse_position = position;
+        last_mouse_buttons = buttons;
+        mouse_state_initialized = true;
+    }
+
+    void shell::tick_cursor()
+    {
+        const bool cursor_enabled = std::ranges::any_of(overlays, [](const auto& overlay) {
+            return overlay->enable_cursor();
+        });
+        if(!cursor_enabled) {
+            cursor_joystick_delta = glm::vec2{0.0f, 0.0f};
+            return;
+        }
+        if(cursor_joystick_delta.x == 0.0f && cursor_joystick_delta.y == 0.0f) {
+            return;
+        }
+        cursor_position = glm::clamp(cursor_position + cursor_joystick_delta, glm::vec2{0.0f}, glm::vec2{1.0f});
+        dispatch<events::cursor_move>(action::none, cursor_position.x, cursor_position.y);
+    }
+
+    bool shell::handle_cursor(const event& event)
+    {
+        if(auto* d = event.get<events::mouse_move>()) {
+            cursor_position = glm::vec2{d->x, d->y};
+            dispatch<events::cursor_move>(action::none, cursor_position.x, cursor_position.y);
+            return true;
+        }
+        if(auto* d = event.get<events::joystick_axis>()) {
+            if(d->index == events::logical_joystick_index::right) {
+                constexpr float controller_cursor_speed = 1.0f;
+                cursor_joystick_delta = (glm::vec2{d->x, d->y} / 100.0f) * controller_cursor_speed;
+                if(std::abs(d->x) < 0.1f) {
+                    cursor_joystick_delta.x = 0.0f;
+                }
+                if(std::abs(d->y) < 0.1f) {
+                    cursor_joystick_delta.y = 0.0f;
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
     void shell::handle(result result) {
         if(result & result::error_rumble) {
             if(config::CONFIG.controllerRumble) {
@@ -1296,34 +1483,41 @@ namespace app
     void shell::key_up(sdl::Keysym key)
     {
         spdlog::trace("Key up: {}", key.sym);
+        dispatch(event{
+            action::none,
+            events::key_up{static_cast<unsigned int>(std::to_underlying(key.scancode))}
+        });
     }
     void shell::key_down(sdl::Keysym key)
     {
         spdlog::trace("Key down: {}", key.sym);
         switch(key.sym) {
-            case SDLK_LEFT:
-                dispatch(action::left);
+            case sdl::KeyCode::SDLK_LEFT:
+                dispatch(event{action::left, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
                 break;
-            case SDLK_RIGHT:
-                dispatch(action::right);
+            case sdl::KeyCode::SDLK_RIGHT:
+                dispatch(event{action::right, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
                 break;
-            case SDLK_UP:
-                dispatch(action::up);
+            case sdl::KeyCode::SDLK_UP:
+                dispatch(event{action::up, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
                 break;
-            case SDLK_DOWN:
-                dispatch(action::down);
+            case sdl::KeyCode::SDLK_DOWN:
+                dispatch(event{action::down, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
                 break;
-            case SDLK_RETURN:
-                dispatch(action::ok);
+            case sdl::KeyCode::SDLK_RETURN:
+                dispatch(event{action::ok, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
                 break;
-            case SDLK_ESCAPE:
-                dispatch(action::cancel);
+            case sdl::KeyCode::SDLK_ESCAPE:
+                dispatch(event{action::cancel, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
                 break;
-            case SDLK_TAB:
-                dispatch(action::options);
+            case sdl::KeyCode::SDLK_TAB:
+                dispatch(event{action::options, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
                 break;
-            case SDLK_CAPSLOCK:
-                dispatch(action::extra);
+            case sdl::KeyCode::SDLK_CAPSLOCK:
+                dispatch(event{action::extra, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
+                break;
+            default:
+                dispatch(event{action::none, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
                 break;
         }
     }
@@ -1347,27 +1541,30 @@ namespace app
         last_controller_button_input_time = std::chrono::steady_clock::now();
 
         if(button == sdl::GameControllerButtonValues::DPAD_LEFT) {
-            dispatch(action::left);
+            dispatch(event{action::left, events::controller_button_down{to_logical_button(button)}});
         } else if(button == sdl::GameControllerButtonValues::DPAD_RIGHT) {
-            dispatch(action::right);
+            dispatch(event{action::right, events::controller_button_down{to_logical_button(button)}});
         } else if(button == sdl::GameControllerButtonValues::DPAD_UP) {
-            dispatch(action::up);
+            dispatch(event{action::up, events::controller_button_down{to_logical_button(button)}});
         } else if(button == sdl::GameControllerButtonValues::DPAD_DOWN) {
-            dispatch(action::down);
+            dispatch(event{action::down, events::controller_button_down{to_logical_button(button)}});
         } else if(button == sdl::GameControllerButtonValues::A) {
-            dispatch(action::ok);
+            dispatch(event{action::ok, events::controller_button_down{to_logical_button(button)}});
         } else if(button == sdl::GameControllerButtonValues::B) {
-            dispatch(action::cancel);
+            dispatch(event{action::cancel, events::controller_button_down{to_logical_button(button)}});
         } else if(button == sdl::GameControllerButtonValues::Y) {
-            dispatch(action::options);
+            dispatch(event{action::options, events::controller_button_down{to_logical_button(button)}});
         } else if(button == sdl::GameControllerButtonValues::X) {
-            dispatch(action::extra);
+            dispatch(event{action::extra, events::controller_button_down{to_logical_button(button)}});
+        } else {
+            dispatch(event{action::none, events::controller_button_down{to_logical_button(button)}});
         }
     }
     void shell::button_up(sdl::GameController* controller, sdl::GameControllerButton button)
     {
         spdlog::trace("Button up: {}", fmt::underlying(button));
         last_controller_button_input = std::nullopt;
+        dispatch(event{action::none, events::controller_button_up{to_logical_button(button)}});
     }
     void shell::axis_motion(sdl::GameController* controller, sdl::GameControllerAxis axis, int16_t value)
     {
@@ -1395,24 +1592,15 @@ namespace app
             default:
                 break;
         }
-        for(int i=static_cast<int>(overlays.size())-1; i >= 0; i--) {
-            auto& e = overlays[i];
-            if(auto* recv = dynamic_cast<joystick_receiver*>(e.get())) {
-                result res = recv->on_joystick(stick_index,
-                    controller_axis_position[stick_index].x,
-                    controller_axis_position[stick_index].y);
-                if(res & result::close) {
-                    remove_overlay(i);
-                    i--;
-                }
-                handle(res);
-                if(res != result::unsupported) {
-                    return;
-                }
-            }
-        }
+
+        const auto default_dispatch = [&]() {
+            dispatch<events::joystick_axis>(action::none, stick_index,
+                controller_axis_position[stick_index].x,
+                controller_axis_position[stick_index].y);
+        };
 
         if(!config::CONFIG.controllerAnalogStick) {
+            default_dispatch();
             return;
         }
 
@@ -1421,16 +1609,22 @@ namespace app
             if(std::abs(value) < controller_axis_input_threshold) {
                 last_controller_axis_input[index] = std::nullopt;
                 last_controller_axis_input_time[index] = std::chrono::steady_clock::now();
+                default_dispatch();
                 return;
             }
             action dir = axis == sdl::GameControllerAxisValues::LEFTX  ? (value > 0 ? action::right : action::left)
                 : (value > 0 ? action::down : action::up);
             if(last_controller_axis_input[index] && std::get<1>(*last_controller_axis_input[index]) == dir) {
+                default_dispatch();
                 return;
             }
-            dispatch(dir);
+            dispatch<events::joystick_axis>(dir, index,
+                controller_axis_position[index].x,
+                controller_axis_position[index].y);
             last_controller_axis_input[index] = std::make_tuple(controller, dir);
             last_controller_axis_input_time[index] = std::chrono::steady_clock::now();
+        } else {
+            default_dispatch();
         }
     }
 }

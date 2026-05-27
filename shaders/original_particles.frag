@@ -16,9 +16,10 @@ layout(push_constant) uniform PC {
 void main(){
     // Soft circular falloff
     float r = length(vLocal*2.0);             // 0 at center, ~1 at edges
-    float a = smoothstep(1.0, 0.0, r);        // soft edge
-    a = a*a;                                  // steeper core
+    float halo = smoothstep(1.0, 0.0, r);     // soft edge
+    float core = smoothstep(0.34, 0.0, r);    // tiny bright center
+    float a = halo*halo*0.70 + core*0.30;
     // Subtle tint; avoid stark white specks
-    vec3 c = mix(pc.tint.rgb, vec3(1.0), 0.25);
+    vec3 c = mix(pc.tint.rgb, vec3(1.0), 0.38);
     FragColor = vec4(c, a * vAlpha);
 }

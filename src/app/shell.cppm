@@ -31,6 +31,8 @@ module;
 #include <variant>
 #include <vector>
 
+#include <glm/vec2.hpp>
+
 export module openxmb.app:main;
 
 import openxmb.render;
@@ -84,18 +86,27 @@ namespace app
             void reload_button_icons();
             void reload_language();
 
-            void dispatch(action action);
+            void dispatch(const event& event);
+            template<typename T, typename... Args>
+            void dispatch(action action, Args&&... args) {
+                dispatch(event{action, T{std::forward<Args>(args)...}});
+            }
+            void dispatch(action action) {
+                dispatch(event{action, std::monostate{}});
+            }
             void handle(result result);
 
             std::string get_controller_type() const;
             void render_controller_buttons(gui_renderer& renderer, float x, float y, std::ranges::range auto buttons) {
-                constexpr float min_width = 0.2f;
+                constexpr float min_width = 0.15f;
                 constexpr float size = 0.05f;
+                constexpr float spacing_scale = 1.0f / 1.25f;
                 float size_x = static_cast<float>(size/renderer.aspect_ratio);
+                float space_x = size_x * spacing_scale;
                 float total_width = 0.0f;
                 float last_width = 0.0f;
                 for (const auto& [action, text] : buttons) {
-                    last_width = size_x/1.25f+renderer.measure_text(text, size).x;
+                    last_width = space_x + renderer.measure_text(text, size).x;
                     total_width += std::max(min_width, last_width);
                 }
                 if(last_width < min_width) {
@@ -105,14 +116,14 @@ namespace app
                 float current_x = x - total_width/2;
                 for (const auto& [action, text] : buttons) {
                     auto icon = buttonTextures[std::to_underlying(action)].get();
-                    float width = std::max(min_width, size_x/1.25f+renderer.measure_text(text, size).x);
+                    float width = std::max(min_width, space_x + renderer.measure_text(text, size).x);
                     if(action != action::none && icon) {
                         if(config::CONFIG.iconGlassRefraction) {
                             renderer.draw_image_glass(*icon, current_x, y, size/2.0, size/2.0);
                         } else {
                             renderer.draw_image(*icon, current_x, y, size/2.0, size/2.0);
                         }
-                        renderer.draw_text(text, current_x+size_x/1.25f, y+size*0.033f, size);
+                        renderer.draw_text(text, current_x+space_x, y+size*0.033f, size);
                     }
                     current_x += width;
                 }
@@ -250,6 +261,7 @@ namespace app
             main_menu menu{this};
             news_display news{this};
             std::array<std::unique_ptr<texture>, std::to_underlying(action::_length)> buttonTextures;
+            std::unique_ptr<texture> cursorTexture;
             // Extra descriptor pool and sets for downsample/upsample chain
             vk::UniqueDescriptorPool blurExtraDescriptorPool;
             vk::DescriptorSet downsampleSet;
@@ -265,6 +277,15 @@ namespace app
             sdl::mix::unique_chunk confirm_sound;
             sdl::mix::unique_chunk cancel_sound;
             sdl::mix::unique_chunk back_sound;
+
+            glm::vec2 cursor_position{0.5f, 0.5f};
+            glm::vec2 cursor_joystick_delta{0.0f, 0.0f};
+            glm::ivec2 last_mouse_position{0, 0};
+            std::uint32_t last_mouse_buttons = 0;
+            bool mouse_state_initialized = false;
+            void poll_mouse();
+            void tick_cursor();
+            bool handle_cursor(const event& event);
 
             bool fixed_components_loaded = false;
             void preload_fixed_components();

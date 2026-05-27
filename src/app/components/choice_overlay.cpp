@@ -23,11 +23,13 @@
 
 module;
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <functional>
 #include <cmath>
 #include <string>
+#include <utility>
 #include <vector>
 
 module openxmb.app;
@@ -44,10 +46,15 @@ namespace app {
 
 choice_overlay::choice_overlay(std::vector<std::string> choices, unsigned int selection_index,
     std::function<void(unsigned int)> confirm_callback, std::function<void()> cancel_callback)
-    : choices{std::move(choices)}, selection_index(selection_index), last_selection_index{selection_index},
-      confirm_callback{confirm_callback}, cancel_callback{cancel_callback}
+    : choices{std::move(choices)}, confirm_callback{std::move(confirm_callback)}, cancel_callback{std::move(cancel_callback)}
 {
-
+    if(this->choices.empty()) {
+        this->selection_index = 0;
+        this->last_selection_index = 0;
+    } else {
+        this->selection_index = std::min<unsigned int>(selection_index, static_cast<unsigned int>(this->choices.size() - 1));
+        this->last_selection_index = this->selection_index;
+    }
 }
 
 result choice_overlay::on_action(action action) {
@@ -58,6 +65,9 @@ result choice_overlay::on_action(action action) {
             }
             return result::close | result::back_sound;
         case action::ok:
+            if(choices.empty()) {
+                return result::unsupported | result::error_rumble;
+            }
             if(confirm_callback) {
                 confirm_callback(selection_index);
             }
@@ -72,6 +82,10 @@ result choice_overlay::on_action(action action) {
 }
 
 bool choice_overlay::select_relative(action dir) {
+    if(choices.empty()) {
+        return false;
+    }
+
     if(dir == action::up) {
         if(selection_index <= 0) {
             return false;
@@ -93,6 +107,8 @@ bool choice_overlay::select_relative(action dir) {
 }
 
 void choice_overlay::render(dreamrender::gui_renderer& renderer, class shell* xmb) {
+    (void)xmb;
+
     // Sidebar gradient that adapts to the current theme colour (slightly lighter/darker)
     glm::vec3 base = config::CONFIG.themeOriginalColour ? utils::xmb_dynamic_colour(std::chrono::system_clock::now())
                                                         : config::CONFIG.themeCustomColour;
@@ -113,33 +129,44 @@ void choice_overlay::render(dreamrender::gui_renderer& renderer, class shell* xm
     double selected = selection_index;
     auto time_since_transition = std::chrono::duration<double>(now - last_selection_time);
     if(time_since_transition < transition_duration) {
-        selected = last_selection_index + (selected - last_selection_index) *
-            time_since_transition / transition_duration;
+        double p = std::clamp(time_since_transition / transition_duration, 0.0, 1.0);
+        p = p * p * (3.0 - 2.0 * p);
+        selected = last_selection_index + (selected - last_selection_index) * p;
     }
 
-    constexpr double base_size = 0.075;
-    constexpr double item_height = 0.05;
+    const bool compact = choices.size() > 8;
+    const double base_size = compact ? 0.058 : 0.070;
+    const double item_height = compact ? 0.046 : 0.058;
     constexpr glm::vec2 base_pos = {0.675f, 0.425f};
 
     double offsetY = -selected*item_height;
 
-    for(int i=0; i<choices.size(); i++) {
-        double partial_selection = 0.0;
-        if(i == selected) {
-            partial_selection = std::clamp(time_since_transition / transition_duration, 0.0, 1.0);
-        }
+    for(size_t i=0; i<choices.size(); i++) {
+        double focus = 1.0 - std::clamp(std::abs(static_cast<double>(i) - selected), 0.0, 1.0);
+        focus = focus * focus * (3.0 - 2.0 * focus);
 
-        double size = base_size*glm::mix(0.75, 1.0, partial_selection);
+        double size = base_size * glm::mix(0.74, 1.0, focus);
+        float alpha = static_cast<float>(glm::mix(0.58, 1.0, focus));
 
         // Optional colour swatch square
         float y = base_pos.y + offsetY + item_height*i;
         if(i < swatches.size()) {
             glm::vec3 c = swatches[i];
             float sq = size*0.6f; // square size relative to text size
-            renderer.draw_rect(glm::vec2{base_pos.x - 0.03f/renderer.aspect_ratio, y - sq/2.0f}, glm::vec2{sq/renderer.aspect_ratio, sq}, glm::vec4(c, 1.0f));
+            glm::vec2 swatch_pos{base_pos.x - 0.032f/static_cast<float>(renderer.aspect_ratio), y - sq/2.0f};
+            glm::vec2 swatch_size{sq/static_cast<float>(renderer.aspect_ratio), sq};
+            renderer.draw_rect(swatch_pos - glm::vec2{0.0015f, 0.0015f}, swatch_size + glm::vec2{0.003f, 0.003f}, glm::vec4(0.0f, 0.0f, 0.0f, 0.34f));
+            renderer.draw_rect(swatch_pos, swatch_size, glm::vec4(c, alpha));
         }
         const std::string& entry = choices[i];
-        renderer.draw_text(entry, base_pos.x, y, size, glm::vec4(1, 1, 1, 1), false, true);
+        if(focus > 0.02) {
+            float px = 1.2f / static_cast<float>(renderer.frame_size.width);
+            float py = 1.2f / static_cast<float>(renderer.frame_size.height);
+            glm::vec4 glow(1.0f, 1.0f, 1.0f, static_cast<float>(0.12 * focus));
+            renderer.draw_text(entry, base_pos.x + px, y + py, size, glow, false, true);
+            renderer.draw_text(entry, base_pos.x - px, y - py, size, glow * 0.65f, false, true);
+        }
+        renderer.draw_text(entry, base_pos.x, y, size, glm::vec4(1, 1, 1, alpha), false, true);
     }
 }
 

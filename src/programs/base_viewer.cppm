@@ -83,7 +83,7 @@ export class base_viewer {
         }
 
         result on_joystick(unsigned int index, float x, float y) {
-            if(index == 1) {
+            if(index == 0) {
                 move_delta_pos = -glm::vec2(x, y)/25.0f;
                 if(std::abs(x) < 0.1f) {
                     move_delta_pos.x = 0.0f;

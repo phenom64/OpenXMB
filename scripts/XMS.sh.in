@@ -3,20 +3,37 @@
 DIR=$(cd "$(dirname "$0")" && pwd)
 # Copy the config file if it doesn't exist, so the user has a default.
 if [ ! -f "config.json" ]; then
-    if [ -f "../share/OpenXMB/config.json" ]; then
-        cp "../share/OpenXMB/config.json" "config.json"
-    elif [ -f "../config.json" ]; then
-        # Fallback to source tree default when running from build dir pre-install
-        cp "../config.json" "config.json"
-    fi
+    for DEFAULT_CONFIG in \
+        "$DIR/../share/OpenXMB/config.json" \
+        "$DIR/share/OpenXMB/config.json" \
+        "$DIR/../config.json"; do
+        if [ -f "$DEFAULT_CONFIG" ]; then
+            cp "$DEFAULT_CONFIG" "config.json"
+            break
+        fi
+    done
 fi
 
 # On macOS, help the Vulkan loader find MoltenVK if not configured.
 UNAME=$(uname -s 2>/dev/null)
 if [ "$UNAME" = "Darwin" ]; then
     if [ -z "$VK_ICD_FILENAMES" ]; then
+        if command -v brew >/dev/null 2>&1; then
+            for FORMULA in molten-vk vulkan-sdk; do
+                OPT_PREFIX=$(brew --prefix "$FORMULA" 2>/dev/null || true)
+                if [ -n "$OPT_PREFIX" ]; then
+                    for CAND in \
+                        "$OPT_PREFIX/share/vulkan/icd.d/MoltenVK_icd.json" \
+                        "$OPT_PREFIX/etc/vulkan/icd.d/MoltenVK_icd.json"; do
+                        [ -f "$CAND" ] && { export VK_ICD_FILENAMES="$CAND"; break; }
+                    done
+                fi
+                [ -n "$VK_ICD_FILENAMES" ] && break
+            done
+        fi
         # Common Homebrew prefixes
-        for PREFIX in "/opt/homebrew" "/usr/local"; do
+        for PREFIX in "${HOMEBREW_PREFIX:-}" "/opt/homebrew" "/usr/local"; do
+            [ -n "$PREFIX" ] || continue
             CAND="$PREFIX/share/vulkan/icd.d/MoltenVK_icd.json"
             if [ -f "$CAND" ]; then
                 export VK_ICD_FILENAMES="$CAND"
@@ -25,7 +42,8 @@ if [ "$UNAME" = "Darwin" ]; then
         done
         # Also check etc paths used by Homebrew
         if [ -z "$VK_ICD_FILENAMES" ]; then
-            for PREFIX in "/opt/homebrew" "/usr/local"; do
+            for PREFIX in "${HOMEBREW_PREFIX:-}" "/opt/homebrew" "/usr/local"; do
+                [ -n "$PREFIX" ] || continue
                 CAND="$PREFIX/etc/vulkan/icd.d/MoltenVK_icd.json"
                 if [ -f "$CAND" ]; then
                     export VK_ICD_FILENAMES="$CAND"
@@ -48,14 +66,6 @@ if [ "$UNAME" = "Darwin" ]; then
                 [ -f "$C" ] && { export VK_ICD_FILENAMES="$C"; break; }
             done
         fi
-        # Last hint: Homebrew opt path (if linked)
-        if [ -z "$VK_ICD_FILENAMES" ] && command -v brew >/dev/null 2>&1; then
-            OPT_PREFIX=$(brew --prefix molten-vk 2>/dev/null || true)
-            if [ -n "$OPT_PREFIX" ]; then
-                CAND="$OPT_PREFIX/share/vulkan/icd.d/MoltenVK_icd.json"
-                [ -f "$CAND" ] && export VK_ICD_FILENAMES="$CAND"
-            fi
-        fi
     fi
 fi
 
@@ -67,4 +77,13 @@ if [ -z "$XMB_ASSET_DIR" ]; then
         export XMB_ASSET_DIR="$DIR/../share/shell"
     fi
 fi
+
+if [ -z "$XMB_LOCALE_DIR" ]; then
+    if [ -d "$DIR/locales" ]; then
+        export XMB_LOCALE_DIR="$DIR/locales"
+    elif [ -d "$DIR/../share/locale" ]; then
+        export XMB_LOCALE_DIR="$DIR/../share/locale"
+    fi
+fi
+
 exec "$DIR/XMS.bin" "$@"

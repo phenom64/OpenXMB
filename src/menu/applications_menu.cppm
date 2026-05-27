@@ -45,8 +45,10 @@ struct app_info {
     std::string exec;
     std::string icon;
     std::string categories;
+    std::filesystem::path desktop_file;
     bool terminal;
     bool hidden;
+    bool no_display;
     
     app_info() = default;
     app_info(const std::filesystem::path& desktop_file);

@@ -26,6 +26,7 @@ module;
 #include <functional>
 #include <string>
 #include <chrono>
+#include <vector>
 
 export module openxmb.app:message_overlay;
 

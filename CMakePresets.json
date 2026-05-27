@@ -1,0 +1,61 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 22,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "default",
+      "displayName": "Release",
+      "description": "Portable Release build with optional alpha modules disabled.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/default",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "ENABLE_BROWSER": "OFF",
+        "ENABLE_VIDEO_PLAYER": "ON",
+        "ENABLE_DISC_MEDIA": "OFF",
+        "ENABLE_LIBRETRO": "OFF",
+        "INTERFACE_FX_DEBUG": "OFF"
+      }
+    },
+    {
+      "name": "dev",
+      "displayName": "Developer Debug",
+      "description": "Debug build with compile commands for editor tooling.",
+      "inherits": "default",
+      "binaryDir": "${sourceDir}/build/dev",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "ci",
+      "displayName": "CI Release",
+      "description": "Release configuration used by scripts/headless-smoke.sh.",
+      "inherits": "default",
+      "binaryDir": "${sourceDir}/build/ci",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "default",
+      "configurePreset": "default"
+    },
+    {
+      "name": "dev",
+      "configurePreset": "dev"
+    },
+    {
+      "name": "ci",
+      "configurePreset": "ci"
+    }
+  ]
+}

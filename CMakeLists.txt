@@ -59,6 +59,26 @@ endif()
 option(OPENXMB_ENABLE_NATIVE_OPTIMIZATIONS "Enable -march=native or /arch:..." OFF)
 option(OPENXMB_ENABLE_FAST_MATH "Enable fast-math where safe" OFF)
 
+set(OPENXMB_APPLE_PREFIXES "" CACHE STRING "Additional macOS dependency prefixes, separated by semicolons")
+set(OPENXMB_APPLE_INCLUDE_DIRS "")
+if(APPLE)
+  set(_openxmb_apple_prefix_candidates ${OPENXMB_APPLE_PREFIXES})
+  if(NOT _openxmb_apple_prefix_candidates)
+    set(_openxmb_apple_prefix_candidates "/opt/homebrew" "/usr/local")
+  endif()
+  foreach(_prefix IN LISTS _openxmb_apple_prefix_candidates)
+    if(IS_DIRECTORY "${_prefix}")
+      list(APPEND CMAKE_PREFIX_PATH "${_prefix}")
+      if(IS_DIRECTORY "${_prefix}/opt/ffmpeg")
+        list(APPEND CMAKE_PREFIX_PATH "${_prefix}/opt/ffmpeg")
+      endif()
+      if(IS_DIRECTORY "${_prefix}/include")
+        list(APPEND OPENXMB_APPLE_INCLUDE_DIRS "${_prefix}/include")
+      endif()
+    endif()
+  endforeach()
+endif()
+
 # Interprocedural optimization (LTO/IPO) for Release builds if supported
 include(CheckIPOSupported)
 check_ipo_supported(RESULT IPO_SUPPORTED OUTPUT IPO_ERROR)
@@ -69,11 +89,6 @@ else()
   message(STATUS "${COLOR_YELLOW}IPO/LTO not supported: ${IPO_ERROR}${COLOR_RESET}")
 endif()
 
-if(APPLE)
-  list(APPEND CMAKE_PREFIX_PATH "/usr/local")
-  set(FFMPEG_ROOT "/usr/local/opt/ffmpeg")
-  add_compile_options(-isysroot "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk")
-endif()
 if(NOT DEFINED BUILD_VERSION)
   set(BUILD_VERSION ${PROJECT_VERSION})
 endif()
@@ -143,6 +158,33 @@ find_package(Gettext REQUIRED)
 find_package(fmt REQUIRED)
 pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET libavcodec libavformat libavutil libswscale libswresample)
 
+set(SDL_BUILDING_LIBRARY ON CACHE BOOL "" FORCE)
+find_package(SDL2 REQUIRED)
+find_package(SDL2_image REQUIRED)
+find_package(SDL2_mixer REQUIRED)
+
+function(openxmb_append_sdl2_parent_include target_name)
+  if(NOT TARGET ${target_name})
+    return()
+  endif()
+  get_target_property(_openxmb_sdl2_target_includes ${target_name} INTERFACE_INCLUDE_DIRECTORIES)
+  if(NOT _openxmb_sdl2_target_includes)
+    return()
+  endif()
+  foreach(_sdl2_include_dir IN LISTS _openxmb_sdl2_target_includes)
+    if(IS_ABSOLUTE "${_sdl2_include_dir}")
+      get_filename_component(_sdl2_include_parent "${_sdl2_include_dir}" DIRECTORY)
+      if(IS_DIRECTORY "${_sdl2_include_parent}/SDL2")
+        set_property(TARGET ${target_name} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${_sdl2_include_parent}")
+      endif()
+    endif()
+  endforeach()
+endfunction()
+
+openxmb_append_sdl2_parent_include(SDL2::SDL2)
+openxmb_append_sdl2_parent_include(SDL2_image::SDL2_image)
+openxmb_append_sdl2_parent_include(SDL2_mixer::SDL2_mixer)
+
 include(FetchContent)
 
 if(APPLE)
@@ -154,13 +196,11 @@ FetchContent_Declare(i18n++
   GIT_TAG        trunk    #trunk = master branch
 )
 
-if(APPLE)
-  include_directories(/usr/local/include)
-endif()
-
 # We are using our own stable, maintained fork of the rendering engine.
 # Allow overriding the engine source with a local path for development.
 set(DREAMS_BUILD_WITH_POSIX_THREADS ON CACHE BOOL "" FORCE)
+set(DREAMS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(DREAMS_FIND_PACKAGES ON CACHE BOOL "Allow AuroreEngine to create required package targets" FORCE)
 
 set(DREAMRENDER_LOCAL "" CACHE PATH "Path to local AuroreEngine checkout (optional)")
 if(DREAMRENDER_LOCAL)
@@ -169,7 +209,7 @@ if(DREAMRENDER_LOCAL)
 else()
   FetchContent_Declare(dreamrender
     GIT_REPOSITORY https://github.com/phenom64/AuroreEngine.git
-    GIT_TAG        master
+    GIT_TAG        7353d81fbbf34c51ffb1db070104ca8636082ea1
     OVERRIDE_FIND_PACKAGE
   )
   FetchContent_GetProperties(dreamrender)
@@ -179,6 +219,15 @@ else()
   endif()
 endif()
 
+if(TARGET SDL2::SDL2 AND TARGET dreams_sdl2Module)
+  get_target_property(_openxmb_sdl2_includes SDL2::SDL2 INTERFACE_INCLUDE_DIRECTORIES)
+  foreach(_sdl2_include_dir IN LISTS _openxmb_sdl2_includes)
+    get_filename_component(_sdl2_include_parent "${_sdl2_include_dir}" DIRECTORY)
+    if(EXISTS "${_sdl2_include_parent}/SDL2/SDL.h")
+      target_include_directories(dreams_sdl2Module PUBLIC "${_sdl2_include_parent}")
+    endif()
+  endforeach()
+endif()
 FetchContent_Declare(argparse
   GIT_REPOSITORY https://github.com/p-ranav/argparse.git
   GIT_TAG        v3.1
@@ -191,9 +240,6 @@ FetchContent_Declare(
 )
 
 
-set(DREAMS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(DREAMS_FIND_PACKAGES OFF CACHE BOOL "" FORCE)
-
 # For i18n++, we disable the optional tools (plugin, merge tool) and tests
 # by setting these cache variables before FetchContent makes the project available.
 # prevents it from needing dependencies like Clang and fmt blah blah etc.
@@ -204,11 +250,6 @@ set(BUILD_TESTING OFF CACHE BOOL "Disable i18n++ tests" FORCE)
 # make both dependencies available. CMake will use the options we just set
 # when it configures i18n++.
 FetchContent_MakeAvailable(i18n++ argparse nlohmann_json)
-
-set(SDL_BUILDING_LIBRARY ON CACHE BOOL "" FORCE)
-find_package(SDL2 REQUIRED)
-find_package(SDL2_image REQUIRED)
-find_package(SDL2_mixer REQUIRED)
 
 add_library(i18nModule STATIC)
 target_sources(i18nModule PUBLIC FILE_SET CXX_MODULES FILES third_party/i18n.cppm)
@@ -350,7 +391,7 @@ target_compile_options(XMS PRIVATE -pthread)
 
 target_include_directories(XMS PRIVATE include/ ${FFMPEG_INCLUDE_DIRS} ${nlohmann_json_SOURCE_DIR}/include)
 if(APPLE)
-  target_include_directories(XMS PRIVATE ${Vulkan_INCLUDE_DIRS})
+  target_include_directories(XMS PRIVATE ${Vulkan_INCLUDE_DIRS} ${OPENXMB_APPLE_INCLUDE_DIRS})
 endif()
 
 target_compile_options(XMS PRIVATE --embed-dir=${CMAKE_CURRENT_BINARY_DIR}/shaders)
@@ -396,8 +437,6 @@ if(INTERFACE_FX_DEBUG)
   target_compile_definitions(XMS PRIVATE IFXDEBUG=1)
 endif()
 
-include(GNUInstallDirs)
-
 # =============================================================================
 # --- Installation ---
 # =============================================================================
@@ -406,6 +445,83 @@ include(GNUInstallDirs)
 # We rename the final executable to "XMS.bin". A launcher script named "XMS"
 # will be created to set up the environment and run this binary.
 set_target_properties(XMS PROPERTIES OUTPUT_NAME "XMS.bin")
+
+set(OPENXMB_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/OpenXMB")
+set(OPENXMB_SHELL_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/shell")
+set(OPENXMB_ICON_ASSET_MAP
+  photo300.png    icon_category_photo.png
+  music300.png    icon_category_music.png
+  movie300.png    icon_category_video.png
+  movie300.png    icon_category_tv.png
+  settings300.png icon_category_settings.png
+  settings300.png icon_settings_personalization.png
+  settings300.png icon_settings_video.png
+  settings300.png icon_settings_input.png
+  settings300.png icon_settings_debug.png
+  settings300.png icon_settings_toggle-background-blur.png
+  settings300.png icon_settings-toggle-ingame-mode.png
+  settings300.png icon_settings_update.png
+  settings300.png icon_settings_reset.png
+  settings300.png icon_bug.png
+  settings300.png icon_licenses.png
+  settings300.png icon_license.png
+  settings300.png icon_settings_background-type.png
+  settings300.png icon_settings_language.png
+  settings300.png icon_settings_vsync.png
+  settings300.png icon_settings_sample-count.png
+  settings300.png icon_settings_max-fps.png
+  settings300.png icon_settings_icon-glass-refraction.png
+  settings300.png icon_settings_controller-type.png
+  settings300.png icon_settings_controller-rumble.png
+  settings300.png icon_settings_controller-analog-stick.png
+  settings300.png icon_settings_show-fps.png
+  settings300.png icon_settings_show-mem.png
+  game300.png     icon_category_game.png
+  game300.png     icon_category_application.png
+  network300.png  icon_category_network.png
+  friends350.png  icon_category_users.png
+  friends350.png  icon_category_friends.png
+)
+set(OPENXMB_SOUND_ASSETS
+  NSE.questionMark.wav
+  NSE.questionMark.ogg
+  NSE.ui.Confirm.wav
+  NSE.ui.Confirm.ogg
+  NSE.ui.Cancel.wav
+  NSE.ui.Cancel.ogg
+  NSE.clicker.Cancel.wav
+  NSE.clicker.Cancel.ogg
+)
+set(OPENXMB_PLACEHOLDER_ICON_ASSETS
+  icon_action_lock.png
+  icon_action_logout.png
+  icon_action_poweroff.png
+  icon_action_quit.png
+  icon_action_reboot.png
+  icon_action_suspend.png
+  icon_cursor.png
+  icon_files_file.png
+  icon_files_folder.png
+  icon_settings_autostart.png
+  icon_settings_controller-cursor-speed.png
+  icon_settings_date-time-format.png
+  icon_settings_hide-login1-options.png
+  icon_settings_hide-power-options.png
+)
+set(OPENXMB_BUTTON_ICON_TYPES default keyboard playstation xbox steam ouya)
+set(OPENXMB_BUTTON_ICON_ACTIONS left right up down ok cancel options extra)
+
+function(openxmb_install_file_if_exists source destination)
+  if(EXISTS "${source}")
+    install(FILES "${source}" DESTINATION "${destination}" ${ARGN})
+  endif()
+endfunction()
+
+function(openxmb_configure_copy_if_exists source destination)
+  if(EXISTS "${source}")
+    configure_file("${source}" "${destination}" COPYONLY)
+  endif()
+endfunction()
 
 # On Unix platforms (macOS, Linux), handle all deployment steps.
 if(UNIX)
@@ -430,128 +546,53 @@ if(UNIX)
     # Install the default config.json so the launcher script can copy it on first run.
     install(
         FILES ${CMAKE_CURRENT_SOURCE_DIR}/config.json
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/OpenXMB"
+        DESTINATION "${OPENXMB_CONFIG_INSTALL_DIR}"
     )
 
     # Install assets from interfaceFX (icons, sounds, fonts) into share/shell
-    install(CODE [[
-      file(MAKE_DIRECTORY "${CMAKE_INSTALL_FULL_DATADIR}/shell/icons")
-      file(MAKE_DIRECTORY "${CMAKE_INSTALL_FULL_DATADIR}/shell/sounds")
-    ]])
+    install(CODE "
+      file(MAKE_DIRECTORY \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${OPENXMB_SHELL_INSTALL_DIR}/icons\")
+      file(MAKE_DIRECTORY \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${OPENXMB_SHELL_INSTALL_DIR}/sounds\")
+    ")
     # Fonts
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/TypefaceServer/Play-Regular.ttf
-            DESTINATION "${CMAKE_INSTALL_DATADIR}/shell" RENAME Play-Regular.ttf)
+    openxmb_install_file_if_exists(
+        "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/TypefaceServer/Play-Regular.ttf"
+        "${OPENXMB_SHELL_INSTALL_DIR}"
+        RENAME Play-Regular.ttf
+    )
     # Sounds
     # Use clicker sound for tick/OK feedback
+    set(_snd_dir "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer")
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.clicker.Opt.wav")
-      install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.clicker.Opt.wav
-              DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/sounds" RENAME ok.wav)
+      openxmb_install_file_if_exists("${_snd_dir}/NSE.clicker.Opt.wav" "${OPENXMB_SHELL_INSTALL_DIR}/sounds" RENAME ok.wav)
     elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.ui.Confirm.wav")
       # Fallback to confirm if clicker is unavailable
-      install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.ui.Confirm.wav
-              DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/sounds" RENAME ok.wav)
+      openxmb_install_file_if_exists("${_snd_dir}/NSE.ui.Confirm.wav" "${OPENXMB_SHELL_INSTALL_DIR}/sounds" RENAME ok.wav)
     endif()
     # Additional UI sounds (copied as-is if present)
-    set(_snd_dir "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer")
-    foreach(_snd IN ITEMS
-        NSE.questionMark.wav NSE.questionMark.ogg
-        NSE.ui.Confirm.wav   NSE.ui.Confirm.ogg
-        NSE.ui.Cancel.wav    NSE.ui.Cancel.ogg
-        NSE.clicker.Cancel.wav NSE.clicker.Cancel.ogg)
-      if(EXISTS "${_snd_dir}/${_snd}")
-        install(FILES "${_snd_dir}/${_snd}" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/sounds")
-      endif()
+    foreach(_snd IN LISTS OPENXMB_SOUND_ASSETS)
+      openxmb_install_file_if_exists("${_snd_dir}/${_snd}" "${OPENXMB_SHELL_INSTALL_DIR}/sounds")
     endforeach()
     # Startup jingle (used by startup overlay)
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.startup.ogg")
-      install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.startup.ogg
-              DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/sounds" RENAME startup.ogg)
-    endif()
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.startup.GameBoot.wav")
-      install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.startup.GameBoot.wav
-              DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/sounds" RENAME startup.wav)
-    endif()
+    openxmb_install_file_if_exists("${_snd_dir}/NSE.startup.ogg" "${OPENXMB_SHELL_INSTALL_DIR}/sounds" RENAME startup.ogg)
+    openxmb_install_file_if_exists("${_snd_dir}/NSE.startup.GameBoot.wav" "${OPENXMB_SHELL_INSTALL_DIR}/sounds" RENAME startup.wav)
     # Category icons mapping (use existing as placeholders where needed)
     set(_icon_src_dir "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/GraphicsServer/HomeMenu")
-    if(EXISTS "${_icon_src_dir}")
-      set(_map
-        photo300.png      icon_category_photo.png
-        music300.png      icon_category_music.png
-        movie300.png      icon_category_video.png
-        settings300.png   icon_category_settings.png
-        game300.png       icon_category_game.png
-        network300.png    icon_category_network.png
-        friends350.png    icon_category_friends.png
-      )
-      list(LENGTH _map _len)
-      math(EXPR _pairs "${_len}/2")
-      foreach(i RANGE 0 ${_pairs})
+    list(LENGTH OPENXMB_ICON_ASSET_MAP _icon_map_len)
+    math(EXPR _icon_map_last "${_icon_map_len} - 1")
+    foreach(_icon_index RANGE 0 ${_icon_map_last} 2)
+      math(EXPR _icon_name_index "${_icon_index} + 1")
+      list(GET OPENXMB_ICON_ASSET_MAP ${_icon_index} _icon_source)
+      list(GET OPENXMB_ICON_ASSET_MAP ${_icon_name_index} _icon_name)
+      openxmb_install_file_if_exists("${_icon_src_dir}/${_icon_source}" "${OPENXMB_SHELL_INSTALL_DIR}/icons" RENAME "${_icon_name}")
+    endforeach()
+    foreach(_icon_name IN LISTS OPENXMB_PLACEHOLDER_ICON_ASSETS)
+      openxmb_install_file_if_exists("${_icon_src_dir}/settings300.png" "${OPENXMB_SHELL_INSTALL_DIR}/icons" RENAME "${_icon_name}")
+    endforeach()
+    foreach(_type IN LISTS OPENXMB_BUTTON_ICON_TYPES)
+      foreach(_action IN LISTS OPENXMB_BUTTON_ICON_ACTIONS)
+        openxmb_install_file_if_exists("${_icon_src_dir}/settings300.png" "${OPENXMB_SHELL_INSTALL_DIR}/icons" RENAME "icon_button_${_type}_${_action}.png")
       endforeach()
-      # Install each mapped icon
-      if(EXISTS "${_icon_src_dir}/photo300.png")
-        install(FILES "${_icon_src_dir}/photo300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_category_photo.png)
-      endif()
-      if(EXISTS "${_icon_src_dir}/music300.png")
-        install(FILES "${_icon_src_dir}/music300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_category_music.png)
-      endif()
-      if(EXISTS "${_icon_src_dir}/movie300.png")
-        install(FILES "${_icon_src_dir}/movie300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_category_video.png)
-        install(FILES "${_icon_src_dir}/movie300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_category_tv.png)
-      endif()
-      if(EXISTS "${_icon_src_dir}/settings300.png")
-        install(FILES "${_icon_src_dir}/settings300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_category_settings.png)
-        # Settings screen icons (reuse as placeholder)
-        install(FILES "${_icon_src_dir}/settings300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_settings_personalization.png)
-        install(FILES "${_icon_src_dir}/settings300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_settings_video.png)
-        install(FILES "${_icon_src_dir}/settings300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_settings_input.png)
-        install(FILES "${_icon_src_dir}/settings300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_settings_debug.png)
-        install(FILES "${_icon_src_dir}/settings300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_settings_toggle-background-blur.png)
-        install(FILES "${_icon_src_dir}/settings300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_settings_update.png)
-        install(FILES "${_icon_src_dir}/settings300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_settings_reset.png)
-        install(FILES "${_icon_src_dir}/settings300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_bug.png)
-        install(FILES "${_icon_src_dir}/settings300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_licenses.png)
-        install(FILES "${_icon_src_dir}/settings300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_license.png)
-      endif()
-      if(EXISTS "${_icon_src_dir}/game300.png")
-        install(FILES "${_icon_src_dir}/game300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_category_game.png)
-        install(FILES "${_icon_src_dir}/game300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_category_application.png)
-      endif()
-      if(EXISTS "${_icon_src_dir}/network300.png")
-        install(FILES "${_icon_src_dir}/network300.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_category_network.png)
-      endif()
-      if(EXISTS "${_icon_src_dir}/friends350.png")
-        install(FILES "${_icon_src_dir}/friends350.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_category_users.png)
-        install(FILES "${_icon_src_dir}/friends350.png" DESTINATION "${CMAKE_INSTALL_DATADIR}/shell/icons" RENAME icon_category_friends.png)
-      endif()
-    endif()
-
-    # Also copy the sounds into the build tree for run-in-place during development
-    set(_build_sounds_dir "${CMAKE_CURRENT_BINARY_DIR}/share/shell/sounds")
-    add_custom_command(TARGET XMS POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E make_directory "${_build_sounds_dir}")
-    # ok.wav already handled via install; mirror to build tree if present
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.clicker.Opt.wav")
-      add_custom_command(TARGET XMS POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.clicker.Opt.wav"
-                "${_build_sounds_dir}/ok.wav")
-    elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.ui.Confirm.wav")
-      add_custom_command(TARGET XMS POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.ui.Confirm.wav"
-                "${_build_sounds_dir}/ok.wav")
-    endif()
-    foreach(_snd IN ITEMS
-        NSE.questionMark.wav NSE.questionMark.ogg
-        NSE.ui.Confirm.wav   NSE.ui.Confirm.ogg
-        NSE.ui.Cancel.wav    NSE.ui.Cancel.ogg
-        NSE.clicker.Cancel.wav NSE.clicker.Cancel.ogg)
-      if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/${_snd}")
-        add_custom_command(TARGET XMS POST_BUILD
-          COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                  "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/${_snd}"
-                  "${_build_sounds_dir}/${_snd}")
-      endif()
     endforeach()
 
     # Configure our launcher script template and install it.
@@ -561,7 +602,12 @@ if(UNIX)
         @ONLY
     )
     # Ensure the build-folder script is executable for direct use pre-install
-    execute_process(COMMAND ${CMAKE_COMMAND} -E chmod "+x" ${CMAKE_CURRENT_BINARY_DIR}/XMS.sh)
+    file(CHMOD ${CMAKE_CURRENT_BINARY_DIR}/XMS.sh
+        PERMISSIONS
+          OWNER_READ OWNER_WRITE OWNER_EXECUTE
+          GROUP_READ GROUP_EXECUTE
+          WORLD_READ WORLD_EXECUTE
+    )
     install(
         FILES ${CMAKE_CURRENT_BINARY_DIR}/XMS.sh
         DESTINATION "${CMAKE_INSTALL_BINDIR}"
@@ -578,82 +624,37 @@ if(UNIX)
     file(MAKE_DIRECTORY "${_dev_shell_dir}/icons")
     file(MAKE_DIRECTORY "${_dev_shell_dir}/sounds")
     # Font
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/TypefaceServer/Play-Regular.ttf")
-      configure_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/TypefaceServer/Play-Regular.ttf
-        ${_dev_shell_dir}/Play-Regular.ttf COPYONLY)
-    endif()
+    openxmb_configure_copy_if_exists(
+      "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/TypefaceServer/Play-Regular.ttf"
+      "${_dev_shell_dir}/Play-Regular.ttf"
+    )
     # Sounds
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.clicker.Opt.wav")
-      configure_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.clicker.Opt.wav
-        ${_dev_shell_dir}/sounds/ok.wav COPYONLY)
+      openxmb_configure_copy_if_exists("${_snd_dir}/NSE.clicker.Opt.wav" "${_dev_shell_dir}/sounds/ok.wav")
     elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.ui.Confirm.wav")
-      configure_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.ui.Confirm.wav
-        ${_dev_shell_dir}/sounds/ok.wav COPYONLY)
+      openxmb_configure_copy_if_exists("${_snd_dir}/NSE.ui.Confirm.wav" "${_dev_shell_dir}/sounds/ok.wav")
     endif()
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.startup.ogg")
-      configure_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.startup.ogg
-        ${_dev_shell_dir}/sounds/startup.ogg COPYONLY)
-    endif()
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.startup.GameBoot.wav")
-      configure_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer/NSE.startup.GameBoot.wav
-        ${_dev_shell_dir}/sounds/startup.wav COPYONLY)
-    endif()
+    foreach(_snd IN LISTS OPENXMB_SOUND_ASSETS)
+      openxmb_configure_copy_if_exists("${_snd_dir}/${_snd}" "${_dev_shell_dir}/sounds/${_snd}")
+    endforeach()
+    openxmb_configure_copy_if_exists("${_snd_dir}/NSE.startup.ogg" "${_dev_shell_dir}/sounds/startup.ogg")
+    openxmb_configure_copy_if_exists("${_snd_dir}/NSE.startup.GameBoot.wav" "${_dev_shell_dir}/sounds/startup.wav")
     # Icons (map available HomeMenu and settings placeholders)
-    set(_icon_src_dir "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/GraphicsServer/HomeMenu")
-    if(EXISTS "${_icon_src_dir}/photo300.png")
-      configure_file(${_icon_src_dir}/photo300.png ${_dev_shell_dir}/icons/icon_category_photo.png COPYONLY)
-    endif()
-    if(EXISTS "${_icon_src_dir}/music300.png")
-      configure_file(${_icon_src_dir}/music300.png ${_dev_shell_dir}/icons/icon_category_music.png COPYONLY)
-    endif()
-    if(EXISTS "${_icon_src_dir}/movie300.png")
-      configure_file(${_icon_src_dir}/movie300.png ${_dev_shell_dir}/icons/icon_category_video.png COPYONLY)
-      configure_file(${_icon_src_dir}/movie300.png ${_dev_shell_dir}/icons/icon_category_tv.png COPYONLY)
-    endif()
+    foreach(_icon_index RANGE 0 ${_icon_map_last} 2)
+      math(EXPR _icon_name_index "${_icon_index} + 1")
+      list(GET OPENXMB_ICON_ASSET_MAP ${_icon_index} _icon_source)
+      list(GET OPENXMB_ICON_ASSET_MAP ${_icon_name_index} _icon_name)
+      openxmb_configure_copy_if_exists("${_icon_src_dir}/${_icon_source}" "${_dev_shell_dir}/icons/${_icon_name}")
+    endforeach()
+    foreach(_icon_name IN LISTS OPENXMB_PLACEHOLDER_ICON_ASSETS)
+      openxmb_configure_copy_if_exists("${_icon_src_dir}/settings300.png" "${_dev_shell_dir}/icons/${_icon_name}")
+    endforeach()
+    # Placeholder button icons to avoid load errors until dedicated glyphs exist.
     if(EXISTS "${_icon_src_dir}/settings300.png")
-      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_category_settings.png COPYONLY)
-      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_personalization.png COPYONLY)
-      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_video.png COPYONLY)
-      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_input.png COPYONLY)
-      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_debug.png COPYONLY)
-      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_toggle-background-blur.png COPYONLY)
-      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_update.png COPYONLY)
-      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_reset.png COPYONLY)
-      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_bug.png COPYONLY)
-      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_licenses.png COPYONLY)
-      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_license.png COPYONLY)
-      # Specific settings entries used in menus
-      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_background-type.png COPYONLY)
-      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_language.png COPYONLY)
-      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_vsync.png COPYONLY)
-      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_sample-count.png COPYONLY)
-      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_max-fps.png COPYONLY)
-      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_controller-type.png COPYONLY)
-      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_controller-rumble.png COPYONLY)
-      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_controller-analog-stick.png COPYONLY)
-      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_show-fps.png COPYONLY)
-      configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_settings_show-mem.png COPYONLY)
-    endif()
-    if(EXISTS "${_icon_src_dir}/game300.png")
-      configure_file(${_icon_src_dir}/game300.png ${_dev_shell_dir}/icons/icon_category_game.png COPYONLY)
-      configure_file(${_icon_src_dir}/game300.png ${_dev_shell_dir}/icons/icon_category_application.png COPYONLY)
-    endif()
-    if(EXISTS "${_icon_src_dir}/network300.png")
-      configure_file(${_icon_src_dir}/network300.png ${_dev_shell_dir}/icons/icon_category_network.png COPYONLY)
-    endif()
-    if(EXISTS "${_icon_src_dir}/friends350.png")
-      configure_file(${_icon_src_dir}/friends350.png ${_dev_shell_dir}/icons/icon_category_users.png COPYONLY)
-      configure_file(${_icon_src_dir}/friends350.png ${_dev_shell_dir}/icons/icon_category_friends.png COPYONLY)
-    endif()
-    # Placeholder default button icons to avoid load errors
-    if(EXISTS "${_icon_src_dir}/settings300.png")
-      foreach(_b left right up down ok cancel options extra)
-        configure_file(${_icon_src_dir}/settings300.png ${_dev_shell_dir}/icons/icon_button_default_${_b}.png COPYONLY)
+      foreach(_type IN LISTS OPENXMB_BUTTON_ICON_TYPES)
+        foreach(_action IN LISTS OPENXMB_BUTTON_ICON_ACTIONS)
+          openxmb_configure_copy_if_exists("${_icon_src_dir}/settings300.png" "${_dev_shell_dir}/icons/icon_button_${_type}_${_action}.png")
+        endforeach()
       endforeach()
     endif()
 endif()
@@ -682,7 +683,7 @@ endif()
 
 # Define locale install dir (default to share/locale on non-Windows)
 if(WIN32)
-  set(CMAKE_INSTALL_LOCALEDIR "/locale")
+  set(CMAKE_INSTALL_LOCALEDIR "locale")
 else()
   if(NOT DEFINED CMAKE_INSTALL_LOCALEDIR)
     set(CMAKE_INSTALL_LOCALEDIR "${CMAKE_INSTALL_DATADIR}/locale")

@@ -46,7 +46,7 @@ Before you begin, ensure you have the following tools and libraries installed (v
 - Ninja build system
 - C++23-capable compiler:
   - Linux: Clang 17+ (Clang 19 recommended) or GCC 13+
-  - macOS: Xcode 15 (Clang) + Vulkan SDK (MoltenVK)
+  - macOS: Homebrew LLVM/Clang with `clang-scan-deps` + Vulkan SDK (MoltenVK)
   - Windows: MSVC 19.34+
 - Vulkan 1.2 capable GPU + drivers (MoltenVK on macOS)
 - Libraries (names as found on Ubuntu 24.04-like distros):
@@ -57,15 +57,24 @@ Before you begin, ensure you have the following tools and libraries installed (v
   - glm: `libglm-dev`
   - fmt: `libfmt-dev`
   - gettext (i18n): `gettext`
-  - Optional (used by dependencies): `harfbuzz`, `spirv-tools`, `pkg-config`
+- Optional (used by dependencies): `harfbuzz`, `spirv-tools`, `pkg-config`
 
 ### Build Instructions
+
+The default preset builds a Release configuration with optional alpha modules disabled:
+
+```bash
+cmake --preset default
+cmake --build --preset default
+```
+
+For editor/debug work, use `cmake --preset dev && cmake --build --preset dev`.
 
 #### macOS
 
 1.  **Install Dependencies (via Homebrew):**
     ```bash
-    brew install cmake ninja pkg-config ffmpeg sdl2 sdl2_image sdl2_mixer gettext fmt freetype glm
+    brew install cmake ninja pkg-config llvm ffmpeg sdl2 sdl2_image sdl2_mixer gettext fmt freetype glm
     # Install the Vulkan SDK, which includes MoltenVK
     brew install vulkan-sdk
     ```
@@ -76,19 +85,14 @@ Before you begin, ensure you have the following tools and libraries installed (v
     git clone https://github.com/phenom64/OpenXMB.git
     cd OpenXMB
 
-    # Configure the project
-    cmake -S . -B build -G Ninja \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 \
-      # Optionally point to a local AuroreEngine checkout:
-      # -DDREAMRENDER_LOCAL=/path/to/AuroreEngine
-
-    # Build the project
-    cmake --build build -j $(sysctl -n hw.ncpu)
+    # Configure and build the project
+    LLVM_PREFIX=$(brew --prefix llvm)
+    CC="$LLVM_PREFIX/bin/clang" CXX="$LLVM_PREFIX/bin/clang++" cmake --preset default
+    cmake --build --preset default
 
     # (Optional) Install the application
     # This will place the binary and assets in the specified directory.
-    cmake --install build --prefix "/Applications/OpenXMB"
+    cmake --install build/default --prefix "/Applications/OpenXMB"
     ```
     The launcher script will automatically try to locate the `MoltenVK_icd.json` file required for Vulkan to work on macOS.
 
@@ -98,7 +102,7 @@ Before you begin, ensure you have the following tools and libraries installed (v
     ```bash
     sudo apt update
     sudo apt install build-essential git cmake ninja-build pkg-config \
-        libvulkan-dev vulkan-validationlayers-dev spirv-tools \
+        clang clang-tools libvulkan-dev vulkan-validationlayers-dev spirv-tools \
         libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev \
         libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev \
         libglm-dev libfreetype-dev gettext libfmt-dev
@@ -110,18 +114,12 @@ Before you begin, ensure you have the following tools and libraries installed (v
     git clone https://github.com/phenom64/OpenXMB.git
     cd OpenXMB
 
-    # Configure the project
-    cmake -S . -B build -G Ninja \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 \
-      # Optionally point to a local AuroreEngine checkout:
-      # -DDREAMRENDER_LOCAL=/path/to/AuroreEngine
-
-    # Build the project
-    cmake --build build -j $(nproc)
+    # Configure and build the project
+    CC=clang CXX=clang++ cmake --preset default
+    cmake --build --preset default
 
     # (Optional) Install the application system-wide
-    sudo cmake --install build
+    sudo cmake --install build/default
     ```
 
 #### Windows
@@ -166,40 +164,47 @@ You can customize the build using the following CMake options:
 *   `-DENABLE_BROWSER=ON/OFF`: Enable the CEF-based browser module [ALPHA] (Default: OFF)
 *   `-DENABLE_DISC_MEDIA=ON/OFF`: Enable DVD/Blu-ray support [ALPHA] (Default: OFF)
 *   `-DENABLE_LIBRETRO=ON/OFF`: Enable the libretro core host for emulation [ALPHA] (Default: OFF)
-*   `-DINTERFACE_FX_DEBUG=ON/OFF`: Enable interface/UI graphics+text debug overlays (Default: ON)
+*   `-DINTERFACE_FX_DEBUG=ON/OFF`: Enable interface/UI graphics+text debug overlays (Default: OFF)
+*   `-DOPENXMB_APPLE_PREFIXES=/path/a;/path/b`: Add macOS package-manager prefixes if dependencies are not in the usual Homebrew locations.
 
 Example: `cmake -B build -DENABLE_BROWSER=ON`
 
-Recommended one-liner (Linux/macOS):
+Recommended one-liner after selecting the compiler for your platform:
 
 ```bash
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 \
-  # -DDREAMRENDER_LOCAL=/path/to/AuroreEngine \
-  && ninja -C build -j $(nproc)
+cmake --preset default && cmake --build --preset default
 ```
+
+For CI or packaging checks, run the headless staged-install smoke script:
+
+```bash
+scripts/headless-smoke.sh
+```
+
+It configures, builds, installs into `build/ci/stage`, and verifies the launcher, binary, default config, font, representative icons, and OK sound were staged.
+Set `OPENXMB_SMOKE_CONFIGURE_ONLY=1` to stop after configure; the CI workflow uses that mode until the remaining engine-side SDL module build issue is fixed.
 
 ## Configuration
 
-OpenXMB is configured using the `config.json` file. When you first run the application using the `XMS` launcher script, a default `config.json` will be created in your working directory. You can edit this file to change settings like:
+OpenXMB is configured using the `config.json` file. When you first run the application using the `XMS` launcher script, a default `config.json` will be copied into your working directory from the build tree or install prefix. You can edit this file to change settings like:
 
 *   Background colors and type (`wave`, `color`, `image`)
 *   Fonts and date/time display
 *   Controller settings
 *   Render quality (VSync, MSAA, FPS limit)
 
-The application looks for assets (icons, sounds, fonts) in a directory specified by the `XMB_ASSET_DIR` environment variable. If not set, it defaults to the `share/shell` directory relative to the executable.
+The launcher sets `XMB_ASSET_DIR` and `XMB_LOCALE_DIR` when they are not already provided. Build-tree runs prefer `build/<preset>/share/shell` and `build/<preset>/locales`; installed runs prefer `share/shell` and `share/locale` under the install prefix.
 
 ## Roadmap
 
 *   **✅ M1: Scaffold:** App compiles & runs; static XMB; JSON config.
-*   **✅ M2: Menus, Fonts, Icons:** Fully navigable XMB with text & icons; async file menu scanning; intro text alignment polish.
-*   ** M3: Audio & Music:** Background music playback, visualizer, and sound effects.
+*   **✅ M2: Menus, Fonts, Icons:** Fully navigable XMB with text & icons; async file menu scanning; local placeholder assets packaged for build/install runs.
+*   **🚧 M3: Audio & Music:** UI sound effects are wired; background music playback and visualizer remain planned.
 *   **🚧 M4: Video Player:** File playback with GPU-accelerated YUV decoding; subtitle support next.
 *   ** M5: Libretro Overlay:** Emulation support via a libretro core host.
 *   ** M6: Web Browser:** Integration of a CEF-based browser.
 *   ** M7: Disc Media:** Support for DVD/Blu-ray playback.
-*   **🚧 M8: Performance Pass:** Release/IPO defaults, steady-clock timing, async I/O; engine-side loader/pipeline tweaks; further descriptor/pool tuning planned.
+*   **🚧 M8: Performance/Release Pass:** Release/IPO defaults, presets, staged install smoke, CI matrix, steady-clock timing, async I/O; engine-side loader/pipeline tweaks and further descriptor/pool tuning planned.
 
 ### Notes on AuroreEngine
 

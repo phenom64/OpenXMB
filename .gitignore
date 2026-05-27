@@ -1,4 +1,8 @@
 # C++ objects and libs
+/build/
+/out/
+CMakeUserPresets.json
+.DS_Store
 *.slo
 *.lo
 *.o

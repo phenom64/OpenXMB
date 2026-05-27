@@ -28,5 +28,13 @@ void main()
     vec3 normal = normalize(cross(x, y));
     float c = 1.0 - dot(normal, vec3(0.0, 0.0, 1.0));
     c = (1.0 - cos(c * c)) / 3.0;
-    FragColor = vec4(c, c, c, 1.0) * constants.color;
+    c = smoothstep(0.015, 0.36, c);
+
+    float depthFade = smoothstep(-0.92, -0.52, vEC.z) * (1.0 - smoothstep(0.56, 0.94, vEC.z));
+    float horizonFade = smoothstep(-0.08, 0.34, vEC.y) * (1.0 - smoothstep(0.58, 0.84, vEC.y));
+    float intensity = c * mix(0.52, 1.0, depthFade) * mix(0.72, 1.0, horizonFade);
+
+    vec3 tint = mix(constants.color.rgb, vec3(1.0), 0.58);
+    vec3 hot = mix(tint, vec3(1.0), smoothstep(0.55, 1.0, intensity));
+    FragColor = vec4(hot * intensity * 0.74, intensity * 0.55);
 }

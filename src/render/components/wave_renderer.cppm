@@ -80,7 +80,7 @@ export class wave_renderer {
     public:
         static constexpr int grid_quality = 128;
         glm::vec3 waveColor = {0.5, 0.5, 0.5};
-        float speed = 1.0;
+        float speed = 0.78f;
 
         wave_renderer(vk::Device device, vma::Allocator allocator, vk::Extent2D frameSize) : device(device), allocator(allocator), frameSize(frameSize),
             aspectRatio(static_cast<double>(frameSize.width)/frameSize.height) {}
@@ -158,11 +158,14 @@ export class wave_renderer {
         void finish(int frame) {}
 
         void render(vk::CommandBuffer cmd, int frame, vk::RenderPass renderPass) {
+            auto it = pipelines.find(renderPass);
+            if(it == pipelines.end()) return;
+
             auto time = std::chrono::high_resolution_clock::now() - startTime;
             auto seconds = std::chrono::duration_cast<std::chrono::seconds>(time);
             auto partialSeconds = std::chrono::duration<float>(time-seconds);
 
-            cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipelines[renderPass].get());
+            cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, it->second.get());
 
             push_constants push{
                 .color=glm::vec4(waveColor, 1.0),

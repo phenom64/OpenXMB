@@ -25,7 +25,6 @@ export module openxmb.app:startup_overlay;
 
 import dreamrender;
 import glm;
-import sdl2;
 import spdlog;
 import openxmb.config;
 import :component;
@@ -36,7 +35,7 @@ namespace app {
 export class startup_overlay : public component {
   public:
     startup_overlay() = default;
-    ~startup_overlay() override = default;
+    ~startup_overlay() override;
 
     result tick(app::shell*) override;
     void render(dreamrender::gui_renderer& renderer, app::shell*) override;
@@ -46,9 +45,12 @@ export class startup_overlay : public component {
     [[nodiscard]] bool do_fade_out() const override { return true; }
 
   private:
-    using time_point = std::chrono::time_point<std::chrono::system_clock>;
-    time_point start_time { std::chrono::system_clock::now() };
+    using time_point = std::chrono::time_point<std::chrono::steady_clock>;
+    time_point start_time { std::chrono::steady_clock::now() };
+    void* startup_sound { nullptr };
+    int startup_channel { -1 };
     bool started_audio { false };
+    bool fading_audio { false };
 };
 
 }

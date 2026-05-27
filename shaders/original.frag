@@ -46,11 +46,11 @@ float value2d(vec2 p){
 // Signed distance to the translucent wave (from Shadertoy reference)
 float sdf(vec3 p, float t){
     p *= 2.0;
-    float o = 4.2*sin(0.05*p.x + t*0.25)
-            + 0.04*p.z
-            + sin(p.x*0.11 + t)
-            + 2.0*sin(p.z*0.20 + t)
-            + value2d(vec2(0.03,0.4)*p.xz + vec2(t*0.5,0.0));
+    float ripple = (0.04*p.z)
+                 * sin(p.x*0.11 + t)
+                 * (2.0*sin(p.z*0.20 + t))
+                 * value2d(vec2(0.03,0.4)*p.xz + vec2(t*0.5,0.0));
+    float o = 4.2*sin(0.05*p.x + t*0.25) + ripple;
     return abs(dot(p, normalize(vec3(0.0,1.0,0.05))) + 2.5 + o*0.5);
 }
 
@@ -96,26 +96,32 @@ void main(){
     vec2 ires = pc.resolution; vec2 U = vUV * ires; vec2 uv = U/ires; float t = pc.time;
     vec3 o = vec3(0.0);
     vec3 d = vec3((U - 0.5*ires)/ires.y, 1.0);
-    // Layer the ribbon with slight spatial/temporal offsets to emulate multiple bands
+    // Layer the ribbon with slight spatial/temporal offsets to emulate multiple bands.
     vec2 rm0 = raymarch(o, d, t);
-    vec2 rm1 = raymarch(o + vec3(0.0, 0.08, 0.0), d, t*0.97 + 0.15);
-    vec2 rm2 = raymarch(o + vec3(0.0, -0.06, 0.0), d, t*1.05 - 0.12);
-    float m = clamp(rm0.x*1.0 + rm1.x*0.65 + rm2.x*0.50, 0.0, 1.0);
-    float glow = clamp(max(max(rm0.y, rm1.y*0.8), rm2.y*0.7), 0.0, 1.0);
+    vec2 rm1 = raymarch(o + vec3(0.0, 0.12, -0.20), d, t*0.92 + 1.80);
+    vec2 rm2 = raymarch(o + vec3(0.0, -0.10, 0.35), d, t*1.08 - 1.20);
+    float m = clamp(rm0.x*0.95 + rm1.x*0.42 + rm2.x*0.32, 0.0, 0.86);
+    float glow = clamp(max(max(rm0.y, rm1.y*0.70), rm2.y*0.58), 0.0, 1.0);
 
     // Theme-driven gradient: derive two tones from tint and blend by position
     vec3 tint = pc.tint.rgb;
-    vec3 baseDark  = clamp(tint * vec3(0.35, 0.35, 0.35), 0.0, 1.0);
-    vec3 baseMid   = clamp(tint * vec3(0.55, 0.55, 0.55), 0.0, 1.0);
-    vec3 baseLight = clamp(tint * vec3(0.85, 0.85, 0.85), 0.0, 1.0);
-    vec3 g0 = mix(baseDark, baseMid,   smoothstep(0.0, 1.0, uv.x));
-    vec3 g1 = mix(baseMid,  baseLight, smoothstep(0.0, 1.0, uv.x));
+    vec3 baseDark  = clamp(tint * 0.24, 0.0, 1.0);
+    vec3 baseMid   = clamp(mix(tint * 0.56, tint + vec3(0.08), 0.32), 0.0, 1.0);
+    vec3 baseLight = clamp(mix(tint * 0.88, vec3(1.0), 0.14), 0.0, 1.0);
+    vec3 g0 = mix(baseDark, baseMid, smoothstep(0.0, 1.0, uv.x));
+    vec3 g1 = mix(baseMid, baseLight, smoothstep(0.0, 1.0, uv.x));
     vec3 c = mix(g0, g1, smoothstep(0.0, 1.0, uv.y));
-    // Blend to white by ribbon alpha, and boost a bit with glow
-    float w = clamp(m + glow * 0.85, 0.0, 1.0);
-    c = mix(c, vec3(1.0), w);
 
-    // No dust here — the particle renderer draws drifting dust in a separate pipeline.
-    c *= pc.brightness;
+    float vignette = smoothstep(0.05, 0.90, 1.0 - length((uv - vec2(0.50, 0.54)) * vec2(1.10, 0.95)));
+    float silk = value2d(uv * vec2(21.0, 13.0) + vec2(t * 0.018, -t * 0.012));
+    c *= mix(0.76, 1.08, vignette);
+    c += (silk - 0.5) * 0.012;
+
+    vec3 ribbon = mix(tint * 0.16 + vec3(0.78), vec3(1.0), smoothstep(0.15, 0.85, glow));
+    float w = clamp(m * 0.92 + glow * 0.36, 0.0, 0.90);
+    c = mix(c, ribbon, w);
+    c += vec3(glow * 0.025);
+
+    c = clamp(c * pc.brightness, 0.0, 1.0);
     FragColor = vec4(c, 1.0);
 }
