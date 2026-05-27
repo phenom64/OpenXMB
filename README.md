@@ -218,7 +218,7 @@ See the [LICENSE](LICENSE) file for the full text.
 A significant portion of the OpenXMB base is derived from **XMBShell**, and this is reflected in code taken from that project.  
 Many thanks to its author, **JCM**.
 
-All other original code is © 2025 Syndromatic Ltd and contributors, and licensed under version 3 of the GNU General Public License.  
+All other original code is © 2025-2026 Syndromatic Ltd and contributors, and licensed under version 3 of the GNU General Public License.
 AuroreEngine components adapted from **dreamrender** remain under the MPL 2.0 license.
 
 ---

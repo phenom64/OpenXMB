@@ -1,5 +1,5 @@
 # French translations for OpenXMB package.
-# TM & (C) 2025 Syndromatic Ltd. Tous droits réservés.
+# ™ & © 2025-2026 Syndromatic Ltd. Tous droits réservés.
 # This file is distributed under the same license as the OpenXMB package.
 
 msgid ""

@@ -1,5 +1,5 @@
 # cmakelists.txt for the OpenXMB project
-# TM & (C) 2025 Syndromatic Ltd Britannia, Syndromatic Ltd Bharat. All rights reserved.
+# ™ & © 2025-2026 Syndromatic Ltd Britannia, Syndromatic Ltd Bharat. All rights reserved.
 # Designed by Kavish Krishnakumar in Manchester.
 # Licensed with the GPLv3, see LICENSE
 
@@ -18,7 +18,7 @@ set(COLOR_GREEN   "${ESC}[32m")
 project(OpenXMB VERSION 1.0 LANGUAGES CXX)
 
 message(STATUS "${COLOR_GREEN}Starting OpenXMB Builder...${COLOR_RESET}")
-message(STATUS "${COLOR_YELLOW}TM & (C) 2025 Syndromatic Ltd Britannia, Syndromatic Ltd Bharat. All rights reserved.${COLOR_RESET}")
+message(STATUS "${COLOR_YELLOW}™ & © 2025-2026 Syndromatic Ltd Britannia, Syndromatic Ltd Bharat. All rights reserved.${COLOR_RESET}")
 
 # Platform Detection
 if(APPLE)

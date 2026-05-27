@@ -1,6 +1,6 @@
 # Polish translations for OpenXMB package.
 # Original author: Cyndi, 2025. (ported from xmbshell)
-# TM & (C) 2025 Syndromatic Ltd. All rights reserved.
+# ™ & © 2025-2026 Syndromatic Ltd. All rights reserved.
 # This file is distributed under the same license as the OpenXMB package.
 
 msgid ""

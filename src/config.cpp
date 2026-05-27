@@ -1,5 +1,5 @@
 /* This file is a part of the OpenXMB desktop experience project.
- * Copyright (C) 2025 Syndromatic Ltd. All rights reserved
+ * Copyright (C) 2025-2026 Syndromatic Ltd. All rights reserved
  * Designed by Kavish Krishnakumar in Manchester.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -521,7 +521,7 @@ void config::save_to_json() {
             {"app_version", "0.1.0-beta"},
             {"config_version", current_config_version},
             {"author", "Kavish Krishnakumar / Syndromatic Limited Bharat Britannia"},
-            {"copyright", "TM (C) 2025. Syndromatic Ltd. All rights reserved."},
+            {"copyright", "™ & © 2025-2026. Syndromatic Ltd. All rights reserved."},
             {"license", "GPLv3"},
             {"website", "https://syndromatic.com"},
             {"generated_at", "2025-08-20T00:00:00Z"}
