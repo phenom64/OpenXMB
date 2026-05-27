@@ -230,47 +230,49 @@ namespace app
             std::unique_ptr<simple_renderer> simple_render;
             std::unique_ptr<render::wave_renderer> wave_render;
             std::unique_ptr<render::original_renderer> original_render;
-            std::unique_ptr<render::particles_renderer> particles_render;
 
             vk::UniqueRenderPass backgroundRenderPass, shellRenderPass;
 
-            std::vector<vk::UniqueFramebuffer> backgroundFramebuffers;
             // Per-frame resolve target for background (offscreen, avoids reusing swapchain mid-frame)
             std::vector<std::unique_ptr<texture>> backgroundResolve;
+            std::vector<vk::UniqueFramebuffer> backgroundFramebuffers;
 
             vk::UniqueDescriptorSetLayout blurDescriptorSetLayout;
-            vk::UniqueDescriptorPool blurDescriptorPool;
-            std::vector<vk::DescriptorSet> blurDescriptorSets;
             vk::UniquePipelineLayout blurPipelineLayout;
             vk::UniquePipeline blurPipeline;
             vk::UniquePipeline downsamplePipeline;
             vk::UniquePipeline upsamplePipeline;
 
-            std::unique_ptr<texture> renderImage;
-            std::unique_ptr<texture> blurImageSrc;
-            std::unique_ptr<texture> blurImageDst;
-            std::unique_ptr<texture> blurHalfSrc;
-            std::unique_ptr<texture> blurHalfDst;
-            std::unique_ptr<texture> blurQuarterSrc;
-            std::unique_ptr<texture> blurQuarterDst;
+            struct blur_frame_resources {
+                std::unique_ptr<texture> fullSrc;
+                std::unique_ptr<texture> fullDst;
+                std::unique_ptr<texture> halfSrc;
+                std::unique_ptr<texture> halfDst;
+                std::unique_ptr<texture> quarterSrc;
+                std::unique_ptr<texture> quarterDst;
+
+                vk::DescriptorSet downsampleSet{};
+                vk::DescriptorSet halfBlurSet{};
+                vk::DescriptorSet upsampleSet{};
+                vk::DescriptorSet downsample2Set{};
+                vk::DescriptorSet quarterBlurSet{};
+                vk::DescriptorSet upsample2Set{};
+            };
 
             std::vector<vk::Image> swapchainImages;
+            std::vector<std::unique_ptr<texture>> renderImages;
+            std::vector<blur_frame_resources> blurFrames;
             std::vector<vk::UniqueFramebuffer> framebuffers;
+            vk::UniqueDescriptorPool blurDescriptorPool;
+            std::vector<vk::DescriptorSet> blurDescriptorSets;
+            // Extra descriptor pool for downsample/upsample chain
+            vk::UniqueDescriptorPool blurExtraDescriptorPool;
 
             std::unique_ptr<texture> backgroundTexture;
             main_menu menu{this};
             news_display news{this};
             std::array<std::unique_ptr<texture>, std::to_underlying(action::_length)> buttonTextures;
             std::unique_ptr<texture> cursorTexture;
-            // Extra descriptor pool and sets for downsample/upsample chain
-            vk::UniqueDescriptorPool blurExtraDescriptorPool;
-            vk::DescriptorSet downsampleSet;
-            vk::DescriptorSet halfBlurSet;
-            vk::DescriptorSet upsampleSet;
-            // Quarter-res chain
-            vk::DescriptorSet downsample2Set; // half -> quarter
-            vk::DescriptorSet quarterBlurSet; // quarter -> quarter
-            vk::DescriptorSet upsample2Set;   // quarter -> half
 
             sdl::mix::unique_chunk ok_sound;
             sdl::mix::unique_chunk question_sound;

@@ -22,6 +22,7 @@ module;
 
 #include <chrono>
 #include <cstdint>
+#include <tuple>
 #include <vector>
 
 export module openxmb.render:wave_renderer;
@@ -103,6 +104,7 @@ export class wave_renderer {
                         vma::AllocationCreateInfo({}, vma::MemoryUsage::eCpuToGpu));
 
                     allocator.copyMemoryToAllocation(vertices.data(), vertexAllocation.get(), 0, vertices.size()*sizeof(glm::vec3));
+                    allocator.flushAllocation(vertexAllocation.get(), 0, vertices.size()*sizeof(glm::vec3));
                 }
                 {
                     std::tie(indexBuffer, indexAllocation) = allocator.createBufferUnique(
@@ -110,6 +112,7 @@ export class wave_renderer {
                         vma::AllocationCreateInfo({}, vma::MemoryUsage::eCpuToGpu));
 
                     allocator.copyMemoryToAllocation(indices.data(), indexAllocation.get(), 0, indices.size()*sizeof(uint16_t));
+                    allocator.flushAllocation(indexAllocation.get(), 0, indices.size()*sizeof(uint16_t));
                 }
             }
             {

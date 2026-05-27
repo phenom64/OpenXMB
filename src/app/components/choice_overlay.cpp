@@ -37,7 +37,6 @@ import :choice_overlay;
 
 import dreamrender;
 import glm;
-import openxmb.config;
 import openxmb.utils;
 import vulkan_hpp;
 import vma;
@@ -110,12 +109,7 @@ void choice_overlay::render(dreamrender::gui_renderer& renderer, class shell* xm
     (void)xmb;
 
     // Sidebar gradient that adapts to the current theme colour (slightly lighter/darker)
-    glm::vec3 base = config::CONFIG.themeOriginalColour ? utils::xmb_dynamic_colour(std::chrono::system_clock::now())
-                                                        : config::CONFIG.themeCustomColour;
-    float minuteFrac = (std::chrono::duration<float>(std::chrono::system_clock::now().time_since_epoch()).count()/60.0f);
-    int hour = (int)std::fmod(std::chrono::duration<float>(std::chrono::system_clock::now().time_since_epoch()).count()/3600.0f, 24.0f);
-    float bright = utils::xmb_hour_brightness(hour, std::fmod(minuteFrac,1.0f));
-    base *= bright;
+    glm::vec3 base = utils::xmb_resolve_theme_colour(std::chrono::system_clock::now()).shaded_colour;
     glm::vec4 leftCol  = glm::vec4(glm::clamp(base*1.10f, 0.0f, 1.0f), 1.0f);
     glm::vec4 rightCol = glm::vec4(glm::clamp(base*0.35f, 0.0f, 1.0f), 0.0f);
     renderer.draw_quad(std::array{

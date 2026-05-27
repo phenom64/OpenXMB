@@ -128,9 +128,16 @@ export namespace utils
     }
 
     // PS3‑style dynamic XMB colour and brightness helpers
+    struct xmb_resolved_theme_colour {
+        glm::vec3 base_colour{};
+        float brightness = 1.0f;
+        glm::vec3 shaded_colour{};
+    };
+
     glm::vec3 xmb_month_colour(int monthIndex /*0=Jan*/);
     float     xmb_hour_brightness(int hour /*0..23*/, float minuteFrac);
     glm::vec3 xmb_dynamic_colour(std::chrono::system_clock::time_point now);
+    xmb_resolved_theme_colour xmb_resolve_theme_colour(std::chrono::system_clock::time_point now);
 
     template<typename T>
     class aligned_wrapper {

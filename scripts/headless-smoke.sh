@@ -78,4 +78,8 @@ require_path "$INSTALL_PREFIX/share/shell/icons/icon_category_settings.png"
 require_path "$INSTALL_PREFIX/share/shell/icons/icon_settings_background-type.png"
 require_path "$INSTALL_PREFIX/share/shell/sounds/ok.wav"
 
+if [ "${OPENXMB_RENDER_SMOKE:-0}" = "1" ]; then
+    OPENXMB_INSTALL_PREFIX="$INSTALL_PREFIX" "$ROOT_DIR/scripts/headless-render-smoke.sh"
+fi
+
 echo "OpenXMB headless smoke passed: $INSTALL_PREFIX"
