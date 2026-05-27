@@ -125,10 +125,11 @@ For editor/debug work, use `cmake --preset dev && cmake --build --preset dev`.
 #### Windows
 
 1.  **Install Dependencies:**
-    *   **Visual Studio 2022:** Install with the "Desktop development with C++" workload.
-    *   **Git, CMake, Ninja:** Install these tools and ensure they are in your system's PATH.
+    *   **LLVM/Clang:** Install LLVM and ensure `clang++` and `clang-scan-deps` are in your PATH. The current Windows build uses Clang/Ninja because the shader/resource embedding path is not MSVC-compatible yet.
+    *   **Visual Studio 2022 Build Tools:** Install the "Desktop development with C++" workload for the Windows SDK, linker/runtime pieces, and platform libraries.
+    *   **Git, CMake 3.28+, Ninja:** Install these tools and ensure they are in your PATH.
     *   **Vulkan SDK:** Download and install from the [LunarG website](https://vulkan.lunarg.com/).
-    *   **vcpkg:** Use vcpkg to install the remaining dependencies.
+    *   **vcpkg:** Set `VCPKG_ROOT` to your vcpkg checkout. The manifest and presets require SDL2's Vulkan feature; if installing dependencies explicitly, use:
       ```powershell
       # Clone and set up vcpkg
       git clone https://github.com/microsoft/vcpkg.git
@@ -146,16 +147,17 @@ For editor/debug work, use `cmake --preset dev && cmake --build --preset dev`.
     git clone https://github.com/phenom64/OpenXMB.git
     cd OpenXMB
 
-    # Point the preset at vcpkg and use the sibling AuroreEngine checkout when developing both repos
-    $env:VCPKG_ROOT = "C:/dev/vcpkg"
-    cmake --preset windows-local-aurore
+    # Point the preset at vcpkg
+    $env:VCPKG_ROOT = "<path-to-vcpkg>"
+    cmake --preset windows-vcpkg
 
     # Build the project
-    cmake --build --preset windows-local-aurore
+    cmake --build --preset windows-vcpkg
 
     # (Optional) Install the application
-    cmake --install build/windows-local-aurore --prefix "C:/OpenXMB"
+    cmake --install build/windows-vcpkg --prefix "C:/OpenXMB"
     ```
+    When developing OpenXMB and AuroreEngine together, use `windows-local-aurore` or pass `-DDREAMRENDER_LOCAL=<path-to-AuroreEngine>` so OpenXMB builds against your local engine checkout.
 
 ### Build Options
 
@@ -169,7 +171,7 @@ You can customize the build using the following CMake options:
 
 Example: `cmake -B build -DENABLE_BROWSER=ON`
 
-Recommended one-liner after selecting the compiler for your platform:
+Recommended one-liner after selecting the compiler for Linux/macOS:
 
 ```bash
 cmake --preset default && cmake --build --preset default
@@ -182,18 +184,18 @@ scripts/headless-smoke.sh
 ```
 
 It configures, builds, installs into `build/ci/stage`, and verifies the launcher, binary, default config, font, representative icons, and OK sound were staged.
-Set `OPENXMB_SMOKE_CONFIGURE_ONLY=1` to stop after configure; the CI workflow uses that mode until the remaining engine-side SDL module build issue is fixed.
+On Windows, use the `windows-vcpkg` preset and verify both a windowed launch and an app-local install layout.
 
 ## Configuration
 
-OpenXMB is configured using the `config.json` file. When you first run the application using the `XMS` launcher script, a default `config.json` will be copied into your working directory from the build tree or install prefix. You can edit this file to change settings like:
+OpenXMB is configured using the `config.json` file. At runtime it checks `OPENXMB_CONFIG` first, then `config.json` beside the executable, and finally a per-user config location such as `%LOCALAPPDATA%/OpenXMB/config.json` on Windows. You can edit this file to change settings like:
 
 *   Background colors and type (`wave`, `color`, `image`)
 *   Fonts and date/time display
 *   Controller settings
 *   Render quality (VSync, MSAA, FPS limit)
 
-The launcher sets `XMB_ASSET_DIR` and `XMB_LOCALE_DIR` when they are not already provided. Build-tree runs prefer `build/<preset>/share/shell` and `build/<preset>/locales`; installed runs prefer `share/shell` and `share/locale` under the install prefix.
+The Unix launcher sets `XMB_ASSET_DIR` and `XMB_LOCALE_DIR` when they are not already provided. Windows build-tree and install runs use an app-local layout beside `XMS.bin.exe`, with `shell` for assets and `locales` for gettext catalogs.
 
 ## Roadmap
 
@@ -208,7 +210,7 @@ The launcher sets `XMB_ASSET_DIR` and `XMB_LOCALE_DIR` when they are not already
 
 ### Notes on AuroreEngine
 
-OpenXMB uses AuroreEngine as the rendering backend. By default, the build fetches it automatically. For development or local changes, you can point CMake to a local checkout with `-DDREAMRENDER_LOCAL=/path/to/AuroreEngine`.
+OpenXMB uses AuroreEngine as the rendering backend. By default, the build fetches it automatically. For development or local changes, use the `windows-local-aurore` preset on Windows or point CMake to a local checkout with `-DDREAMRENDER_LOCAL=/path/to/AuroreEngine`.
 
 ## License
 
