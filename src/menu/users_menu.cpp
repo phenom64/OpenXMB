@@ -28,9 +28,11 @@ module;
 #include <string>
 #include <string_view>
 #include <vector>
+#if !defined(_WIN32)
 #include <pwd.h>
 #include <grp.h>
 #include <unistd.h>
+#endif
 
 module openxmb.app;
 
@@ -64,6 +66,7 @@ namespace menu {
         return value.empty() ? fallback : value;
     }
 
+#if !defined(_WIN32)
     bool group_contains_user(const char* group_name, const std::string& username, gid_t primary_gid)
     {
         auto* group = getgrnam(group_name);
@@ -93,6 +96,7 @@ namespace menu {
             group_contains_user("sudo", username, primary_gid) ||
             group_contains_user("admin", username, primary_gid);
     }
+#endif
 
     bool is_login_shell(const char* shell)
     {
@@ -278,6 +282,19 @@ namespace menu {
     } // namespace
 
     user_info::user_info(const std::string& name) : username(name) {
+#if defined(_WIN32)
+        real_name = name;
+        if(const char* profile = std::getenv("USERPROFILE"); profile != nullptr) {
+            home_directory = profile;
+        } else {
+            home_directory = "";
+        }
+        shell = "";
+        uid = 0;
+        gid = 0;
+        is_active = true;
+        is_admin = false;
+#else
         struct passwd* pwd = getpwnam(name.c_str());
         if (pwd) {
             real_name = clean_gecos(pwd->pw_gecos, name);
@@ -296,6 +313,7 @@ namespace menu {
             is_active = false;
             is_admin = false;
         }
+#endif
     }
 
     users_menu::users_menu(std::string name, dreamrender::texture&& icon, app::shell* xmb, dreamrender::resource_loader& loader)
@@ -307,6 +325,12 @@ namespace menu {
     std::vector<user_info> users_menu::scan_users() {
         std::vector<user_info> user_list;
 
+#if defined(_WIN32)
+        if(const char* username = std::getenv("USERNAME"); username != nullptr && *username != '\0') {
+            user_list.emplace_back(username);
+        }
+        return user_list;
+#else
         try {
             constexpr uid_t min_user_uid =
 #if defined(__APPLE__)
@@ -345,6 +369,7 @@ namespace menu {
         });
 
         return user_list;
+#endif
     }
 
     void users_menu::reload() {

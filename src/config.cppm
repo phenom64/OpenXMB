@@ -29,13 +29,17 @@ module;
 #include <filesystem>
 #include <functional>
 #include <map>
+#include <stdexcept>
 #include <unordered_set>
 #include <version>
 
 #include <glm/vec3.hpp>
 
 #ifdef _WIN32
-#include <libloaderapi.h>
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
 #endif
 
 export module openxmb.config;
@@ -58,11 +62,12 @@ export namespace config
             std::filesystem::path exe_directory = std::filesystem::canonical("/proc/self/exe").parent_path();
 #elif _WIN32
             std::filesystem::path exe_directory = [](){
-                std::array<char, MAX_PATH> buffer{};
-                if (GetModuleFileNameA(nullptr, buffer.data(), MAX_PATH) == 0) {
-                    throw std::runtime_error("Failed to get executable path");
+                std::array<char, 32768> buffer{};
+                const auto length = GetModuleFileNameA(nullptr, buffer.data(), static_cast<DWORD>(buffer.size()));
+                if (length == 0 || length >= buffer.size()) {
+                    return std::filesystem::current_path();
                 }
-                return std::string_view{buffer}.parent_path();
+                return std::filesystem::path(buffer.data()).parent_path();
             }();
 #else
             std::filesystem::path exe_directory = std::filesystem::current_path(); // best guess for other platforms
@@ -168,6 +173,8 @@ export namespace config
         private:
             std::multimap<std::string, std::function<void(const std::string&)>> callbacks;
             void notifyCallbacks(const std::string& key, const std::string& value = {});
+            std::filesystem::path config_path_for_read() const;
+            std::filesystem::path config_path_for_write() const;
             void resetThemeColourStrings();
             void load_from_json();
             void save_to_json();

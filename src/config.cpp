@@ -134,7 +134,13 @@ namespace
     std::filesystem::path expand_user_path(const std::string& path)
     {
         if(path == "~" || path.starts_with("~/")) {
-            if(const char* home = std::getenv("HOME"); home != nullptr) {
+            const char* home = std::getenv("HOME");
+#if _WIN32
+            if(home == nullptr) {
+                home = std::getenv("USERPROFILE");
+            }
+#endif
+            if(home != nullptr) {
                 if(path == "~") {
                     return std::filesystem::path(home);
                 }
@@ -142,6 +148,38 @@ namespace
             }
         }
         return path;
+    }
+
+    std::filesystem::path env_path(const char* name)
+    {
+        if(const char* value = std::getenv(name); value && *value) {
+            return value;
+        }
+        return {};
+    }
+
+    std::filesystem::path user_config_directory()
+    {
+#if _WIN32
+        if(auto path = env_path("LOCALAPPDATA"); !path.empty()) {
+            return path / "OpenXMB";
+        }
+        if(auto path = env_path("APPDATA"); !path.empty()) {
+            return path / "OpenXMB";
+        }
+#elif defined(__APPLE__)
+        if(auto path = env_path("HOME"); !path.empty()) {
+            return path / "Library" / "Application Support" / "OpenXMB";
+        }
+#else
+        if(auto path = env_path("XDG_CONFIG_HOME"); !path.empty()) {
+            return path / "openxmb";
+        }
+        if(auto path = env_path("HOME"); !path.empty()) {
+            return path / ".config" / "openxmb";
+        }
+#endif
+        return std::filesystem::current_path();
     }
 
     std::array<std::array<std::string, 24>, 12> build_month_time_colours(
@@ -287,6 +325,11 @@ void set_default_user_dirs(config& cfg) {
     if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_MYPICTURES, NULL, 0, szPath))) cfg.picturesPath = szPath;
     if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_MYMUSIC, NULL, 0, szPath))) cfg.musicPath = szPath;
     if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_MYVIDEO, NULL, 0, szPath))) cfg.videosPath = szPath;
+    if(const char* profile = std::getenv("USERPROFILE"); profile != nullptr) {
+        if(cfg.picturesPath.empty()) cfg.picturesPath = std::filesystem::path(profile) / "Pictures";
+        if(cfg.musicPath.empty()) cfg.musicPath = std::filesystem::path(profile) / "Music";
+        if(cfg.videosPath.empty()) cfg.videosPath = std::filesystem::path(profile) / "Videos";
+    }
 #else
     const char* home = std::getenv("HOME");
     if (home) {
@@ -309,13 +352,34 @@ void config::save_config() {
     save_to_json();
 }
 
+std::filesystem::path config::config_path_for_read() const {
+    if(auto path = env_path("OPENXMB_CONFIG"); !path.empty()) {
+        return path;
+    }
+
+    auto exe_config = exe_directory / "config.json";
+    if(std::filesystem::exists(exe_config)) {
+        return exe_config;
+    }
+
+    return user_config_directory() / "config.json";
+}
+
+std::filesystem::path config::config_path_for_write() const {
+    if(auto path = env_path("OPENXMB_CONFIG"); !path.empty()) {
+        return path;
+    }
+    return user_config_directory() / "config.json";
+}
+
 void config::load_from_json() {
     set_default_user_dirs(*this);
     resetThemeColourStrings();
-    std::filesystem::path config_path = "config.json";
+    setFontPath("default");
+    std::filesystem::path config_path = config_path_for_read();
     
     if (!std::filesystem::exists(config_path)) {
-        spdlog::info("Config file not found, using defaults");
+        spdlog::info("Config file not found at {}, using defaults", config_path.string());
         return;
     }
     
@@ -511,9 +575,12 @@ void config::load_from_json() {
 }
 
 void config::save_to_json() {
-    std::filesystem::path config_path = "config.json";
+    std::filesystem::path config_path = config_path_for_write();
     
     try {
+        if(!config_path.parent_path().empty()) {
+            std::filesystem::create_directories(config_path.parent_path());
+        }
         nlohmann::json config;
         config["_meta"] = {
             {"project", "OpenXMB"},
@@ -641,7 +708,7 @@ void config::setMaxFPS(double fps) {
     double new_max_fps = fps;
     std::chrono::duration<double> new_frame_time;
     if(fps <= 0) {
-        new_max_fps = std::numeric_limits<double>::max();
+        new_max_fps = (std::numeric_limits<double>::max)();
         new_frame_time = std::chrono::duration<double>(0);
     } else {
         new_frame_time = std::chrono::duration<double>(std::chrono::seconds(1)) / new_max_fps;

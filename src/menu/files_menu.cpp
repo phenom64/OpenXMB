@@ -38,8 +38,6 @@ module;
 #include <fstream>
 #include <nlohmann/json.hpp>
 
-#include <unistd.h>
-
 module openxmb.app;
 
 import :files_menu;

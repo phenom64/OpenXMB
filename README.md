@@ -42,12 +42,12 @@ The rendering backend is powered by [**AuroreEngine**](https://github.com/phenom
 Before you begin, ensure you have the following tools and libraries installed (versions are minimums unless stated):
 
 - Git
-- CMake 3.22+
+- CMake 3.28+
 - Ninja build system
 - C++23-capable compiler:
   - Linux: Clang 17+ (Clang 19 recommended) or GCC 13+
   - macOS: Homebrew LLVM/Clang with `clang-scan-deps` + Vulkan SDK (MoltenVK)
-  - Windows: MSVC 19.34+
+  - Windows: LLVM/Clang with `clang-scan-deps` (MSVC support is blocked by the current `#embed` shader/resource path)
 - Vulkan 1.2 capable GPU + drivers (MoltenVK on macOS)
 - Libraries (names as found on Ubuntu 24.04-like distros):
   - Vulkan headers and loader: `libvulkan-dev`, `vulkan-validationlayers-dev`
@@ -137,7 +137,7 @@ For editor/debug work, use `cmake --preset dev && cmake --build --preset dev`.
       ./vcpkg integrate install
 
       # Install dependencies
-      ./vcpkg install sdl2 sdl2-image sdl2-mixer ffmpeg freetype glm fmt gettext --triplet x64-windows
+      ./vcpkg install "sdl2[vulkan]" sdl2-image sdl2-mixer ffmpeg freetype glm fmt gettext harfbuzz pkgconf --triplet x64-windows
       ```
 
 2.  **Build OpenXMB:**
@@ -146,15 +146,15 @@ For editor/debug work, use `cmake --preset dev && cmake --build --preset dev`.
     git clone https://github.com/phenom64/OpenXMB.git
     cd OpenXMB
 
-    # Configure the project, replacing [path to vcpkg] with your vcpkg directory
-    cmake -S . -B build -G Ninja -DCMAKE_TOOLCHAIN_FILE=[path to vcpkg]/scripts/buildsystems/vcpkg.cmake \
-      -DCMAKE_BUILD_TYPE=Release
+    # Point the preset at vcpkg and use the sibling AuroreEngine checkout when developing both repos
+    $env:VCPKG_ROOT = "C:/dev/vcpkg"
+    cmake --preset windows-local-aurore
 
     # Build the project
-    cmake --build build -j %NUMBER_OF_PROCESSORS%
+    cmake --build --preset windows-local-aurore
 
     # (Optional) Install the application
-    cmake --install build --prefix "C:/OpenXMB"
+    cmake --install build/windows-local-aurore --prefix "C:/OpenXMB"
     ```
 
 ### Build Options

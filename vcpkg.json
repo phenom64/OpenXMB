@@ -1,0 +1,21 @@
+{
+  "name": "openxmb",
+  "version-string": "0.1.0",
+  "dependencies": [
+    {
+      "name": "sdl2",
+      "features": [
+        "vulkan"
+      ]
+    },
+    "sdl2-image",
+    "sdl2-mixer",
+    "ffmpeg",
+    "freetype",
+    "glm",
+    "fmt",
+    "gettext",
+    "harfbuzz",
+    "pkgconf"
+  ]
+}

@@ -3,9 +3,12 @@
 # Designed by Kavish Krishnakumar in Manchester.
 # Licensed with the GPLv3, see LICENSE
 
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 3.28)
 cmake_policy(SET CMP0097 NEW)
 cmake_policy(SET CMP0144 NEW)
+if(POLICY CMP0207)
+  cmake_policy(SET CMP0207 NEW)
+endif()
 
 # ANSI color codes for terminal output
 string(ASCII 27 ESC)
@@ -19,6 +22,16 @@ project(OpenXMB VERSION 1.0 LANGUAGES CXX)
 
 message(STATUS "${COLOR_GREEN}Starting OpenXMB Builder...${COLOR_RESET}")
 message(STATUS "${COLOR_YELLOW}™ & © 2025-2026 Syndromatic Ltd Britannia, Syndromatic Ltd Bharat. All rights reserved.${COLOR_RESET}")
+
+if(WIN32 AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  message(FATAL_ERROR "OpenXMB's current C++23 module/#embed build is supported on Windows with LLVM/Clang + Ninja. Use the windows-vcpkg preset or set CMAKE_CXX_COMPILER=clang++.")
+endif()
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  find_program(CLANG_SCAN_DEPS_EXECUTABLE clang-scan-deps)
+  if(NOT CLANG_SCAN_DEPS_EXECUTABLE)
+    message(FATAL_ERROR "clang-scan-deps is required for C++23 module dependency scanning with Clang.")
+  endif()
+endif()
 
 # Platform Detection
 if(APPLE)
@@ -145,18 +158,35 @@ message(STATUS "${COLOR_YELLOW}Enabled features: ${COLOR_RESET}BROWSER=${BROWSER
 set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-add_compile_options(-fPIC)
-add_compile_options(-Wno-nullability-completeness)
+if(NOT WIN32)
+  add_compile_options(-fPIC)
+endif()
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wno-nullability-completeness)
+endif()
 
 # Propagate HWACCEL preference for conditional code
 add_compile_definitions(OPENXMB_HWACCEL_STR="${HWACCEL}")
 
 find_package(glm REQUIRED)
 find_package(Freetype REQUIRED)
-find_package(PkgConfig REQUIRED)
 find_package(Gettext REQUIRED)
+find_package(Intl REQUIRED)
 find_package(fmt REQUIRED)
-pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET libavcodec libavformat libavutil libswscale libswresample)
+find_package(PkgConfig QUIET)
+find_package(FFMPEG QUIET)
+if(FFMPEG_FOUND)
+  set(OPENXMB_FFMPEG_INCLUDE_DIRS ${FFMPEG_INCLUDE_DIRS})
+  set(OPENXMB_FFMPEG_LIBRARY_DIRS ${FFMPEG_LIBRARY_DIRS})
+  set(OPENXMB_FFMPEG_LIBRARIES ${FFMPEG_LIBRARIES})
+elseif(PkgConfig_FOUND)
+  pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET libavcodec libavformat libavutil libswscale libswresample)
+  set(OPENXMB_FFMPEG_INCLUDE_DIRS ${FFMPEG_INCLUDE_DIRS})
+  set(OPENXMB_FFMPEG_LIBRARY_DIRS ${FFMPEG_LIBRARY_DIRS})
+  set(OPENXMB_FFMPEG_LIBRARIES ${FFMPEG_LIBRARIES})
+else()
+  message(FATAL_ERROR "FFmpeg was not found. Install FFmpeg development libraries or use vcpkg/pkg-config.")
+endif()
 
 set(SDL_BUILDING_LIBRARY ON CACHE BOOL "" FORCE)
 find_package(SDL2 REQUIRED)
@@ -204,8 +234,12 @@ set(DREAMS_FIND_PACKAGES ON CACHE BOOL "Allow AuroreEngine to create required pa
 
 set(DREAMRENDER_LOCAL "" CACHE PATH "Path to local AuroreEngine checkout (optional)")
 if(DREAMRENDER_LOCAL)
-  message(STATUS "${COLOR_YELLOW}Using local AuroreEngine at ${COLOR_CYAN}${DREAMRENDER_LOCAL}${COLOR_RESET}")
-  add_subdirectory(${DREAMRENDER_LOCAL} ${CMAKE_CURRENT_BINARY_DIR}/_deps/dreamrender-build)
+  get_filename_component(_dreamrender_local "${DREAMRENDER_LOCAL}" ABSOLUTE)
+  if(NOT EXISTS "${_dreamrender_local}/CMakeLists.txt")
+    message(FATAL_ERROR "DREAMRENDER_LOCAL does not point to an AuroreEngine checkout: ${_dreamrender_local}")
+  endif()
+  message(STATUS "${COLOR_YELLOW}Using local AuroreEngine at ${COLOR_CYAN}${_dreamrender_local}${COLOR_RESET}")
+  add_subdirectory("${_dreamrender_local}" "${CMAKE_CURRENT_BINARY_DIR}/_deps/dreamrender-build")
 else()
   FetchContent_Declare(dreamrender
     GIT_REPOSITORY https://github.com/phenom64/AuroreEngine.git
@@ -215,7 +249,7 @@ else()
   FetchContent_GetProperties(dreamrender)
   if(NOT dreamrender_POPULATED)
     FetchContent_Populate(dreamrender)
-    add_subdirectory(${dreamrender_SOURCE_DIR} ${dreamrender_BINARY_DIR})
+    add_subdirectory("${dreamrender_SOURCE_DIR}" "${dreamrender_BINARY_DIR}")
   endif()
 endif()
 
@@ -255,13 +289,17 @@ add_library(i18nModule STATIC)
 target_sources(i18nModule PUBLIC FILE_SET CXX_MODULES FILES third_party/i18n.cppm)
 target_compile_features(i18nModule PUBLIC cxx_std_20)
 target_link_libraries(i18nModule PUBLIC i18n::i18n-lib)
-target_compile_options(i18nModule PRIVATE -pthread)
+if(NOT WIN32)
+  target_compile_options(i18nModule PRIVATE -pthread)
+endif()
 
 add_library(argparseModule STATIC)
 target_sources(argparseModule PUBLIC FILE_SET CXX_MODULES BASE_DIRS ${argparse_SOURCE_DIR}/module FILES ${argparse_SOURCE_DIR}/module/argparse.cppm)
 target_compile_features(argparseModule PUBLIC cxx_std_23)
 target_link_libraries(argparseModule PUBLIC argparse::argparse)
-target_compile_options(argparseModule PRIVATE -pthread)
+if(NOT WIN32)
+  target_compile_options(argparseModule PRIVATE -pthread)
+endif()
 
 set(XMS_SOURCES
   src/app/shell.cpp
@@ -387,9 +425,11 @@ target_compile_definitions(XMS PRIVATE
   $<$<CONFIG:Release>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_INFO>
 )
 
-target_compile_options(XMS PRIVATE -pthread)
+if(NOT WIN32)
+  target_compile_options(XMS PRIVATE -pthread)
+endif()
 
-target_include_directories(XMS PRIVATE include/ ${FFMPEG_INCLUDE_DIRS} ${nlohmann_json_SOURCE_DIR}/include)
+target_include_directories(XMS PRIVATE include/ ${OPENXMB_FFMPEG_INCLUDE_DIRS} ${nlohmann_json_SOURCE_DIR}/include)
 if(APPLE)
   target_include_directories(XMS PRIVATE ${Vulkan_INCLUDE_DIRS} ${OPENXMB_APPLE_INCLUDE_DIRS})
 endif()
@@ -408,10 +448,13 @@ target_link_libraries(XMS PRIVATE i18nModule)
 target_link_libraries(XMS PRIVATE argparseModule)
 target_link_libraries(XMS PRIVATE nlohmann_json::nlohmann_json)
 
-target_link_directories(XMS PRIVATE ${FFMPEG_LIBRARY_DIRS})
+target_link_directories(XMS PRIVATE ${OPENXMB_FFMPEG_LIBRARY_DIRS})
 
-target_link_libraries(XMS PRIVATE ${FFMPEG_LIBRARIES})
+target_link_libraries(XMS PRIVATE ${OPENXMB_FFMPEG_LIBRARIES})
 target_link_libraries(XMS PRIVATE i18n::i18n-lib)
+if(TARGET Intl::Intl)
+  target_link_libraries(XMS PRIVATE Intl::Intl)
+endif()
 target_link_libraries(XMS PRIVATE fmt::fmt)
 
 if(APPLE)
@@ -659,6 +702,78 @@ if(UNIX)
     endif()
 endif()
 
+if(WIN32)
+    # Build-tree assets for direct XMS.bin.exe runs on Windows. The Windows
+    # constants look for ./shell beside the executable, so mirror the same
+    # minimal runtime assets there during configure.
+    set(_win_dev_shell_dir "${CMAKE_CURRENT_BINARY_DIR}/shell")
+    set(_win_snd_dir "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/AudioServer")
+    set(_win_icon_src_dir "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/GraphicsServer/HomeMenu")
+    file(MAKE_DIRECTORY "${_win_dev_shell_dir}/icons")
+    file(MAKE_DIRECTORY "${_win_dev_shell_dir}/sounds")
+    openxmb_configure_copy_if_exists(
+      "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/TypefaceServer/Play-Regular.ttf"
+      "${_win_dev_shell_dir}/Play-Regular.ttf"
+    )
+    openxmb_configure_copy_if_exists(
+      "${CMAKE_CURRENT_SOURCE_DIR}/config.json"
+      "${CMAKE_CURRENT_BINARY_DIR}/config.json"
+    )
+    if(EXISTS "${_win_snd_dir}/NSE.clicker.Opt.wav")
+      openxmb_configure_copy_if_exists("${_win_snd_dir}/NSE.clicker.Opt.wav" "${_win_dev_shell_dir}/sounds/ok.wav")
+    elseif(EXISTS "${_win_snd_dir}/NSE.ui.Confirm.wav")
+      openxmb_configure_copy_if_exists("${_win_snd_dir}/NSE.ui.Confirm.wav" "${_win_dev_shell_dir}/sounds/ok.wav")
+    endif()
+    foreach(_snd IN LISTS OPENXMB_SOUND_ASSETS)
+      openxmb_configure_copy_if_exists("${_win_snd_dir}/${_snd}" "${_win_dev_shell_dir}/sounds/${_snd}")
+    endforeach()
+    openxmb_configure_copy_if_exists("${_win_snd_dir}/NSE.startup.ogg" "${_win_dev_shell_dir}/sounds/startup.ogg")
+    openxmb_configure_copy_if_exists("${_win_snd_dir}/NSE.startup.GameBoot.wav" "${_win_dev_shell_dir}/sounds/startup.wav")
+
+    list(LENGTH OPENXMB_ICON_ASSET_MAP _win_icon_map_len)
+    math(EXPR _win_icon_map_last "${_win_icon_map_len} - 1")
+    foreach(_icon_index RANGE 0 ${_win_icon_map_last} 2)
+      math(EXPR _icon_name_index "${_icon_index} + 1")
+      list(GET OPENXMB_ICON_ASSET_MAP ${_icon_index} _icon_source)
+      list(GET OPENXMB_ICON_ASSET_MAP ${_icon_name_index} _icon_name)
+      openxmb_configure_copy_if_exists("${_win_icon_src_dir}/${_icon_source}" "${_win_dev_shell_dir}/icons/${_icon_name}")
+    endforeach()
+    foreach(_icon_name IN LISTS OPENXMB_PLACEHOLDER_ICON_ASSETS)
+      openxmb_configure_copy_if_exists("${_win_icon_src_dir}/settings300.png" "${_win_dev_shell_dir}/icons/${_icon_name}")
+    endforeach()
+    if(EXISTS "${_win_icon_src_dir}/settings300.png")
+      foreach(_type IN LISTS OPENXMB_BUTTON_ICON_TYPES)
+        foreach(_action IN LISTS OPENXMB_BUTTON_ICON_ACTIONS)
+          openxmb_configure_copy_if_exists("${_win_icon_src_dir}/settings300.png" "${_win_dev_shell_dir}/icons/icon_button_${_type}_${_action}.png")
+        endforeach()
+      endforeach()
+    endif()
+endif()
+
+if(WIN32)
+    install(TARGETS XMS
+        RUNTIME_DEPENDENCY_SET openxmb_runtime_deps
+        RUNTIME DESTINATION "."
+    )
+
+    set(_openxmb_runtime_dependency_dirs)
+    if(DEFINED _VCPKG_INSTALLED_DIR AND DEFINED VCPKG_TARGET_TRIPLET)
+      list(APPEND _openxmb_runtime_dependency_dirs "${_VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/bin")
+    endif()
+    set(_openxmb_runtime_dependency_directories_arg)
+    if(_openxmb_runtime_dependency_dirs)
+      list(APPEND _openxmb_runtime_dependency_directories_arg DIRECTORIES ${_openxmb_runtime_dependency_dirs})
+    endif()
+    install(RUNTIME_DEPENDENCY_SET openxmb_runtime_deps
+        PRE_EXCLUDE_REGEXES "api-ms-" "ext-ms-"
+        POST_EXCLUDE_REGEXES ".*[Ww]indows[\\\\/].*" ".*[Ss]ystem32[\\\\/].*"
+        ${_openxmb_runtime_dependency_directories_arg}
+        RUNTIME DESTINATION "."
+    )
+    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/config.json" DESTINATION ".")
+    install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/shell/" DESTINATION "shell")
+endif()
+
 # Optional external dependencies when flags are enabled (best-effort)
 if(ENABLE_DISC_MEDIA)
   find_package(PkgConfig QUIET)
@@ -683,7 +798,7 @@ endif()
 
 # Define locale install dir (default to share/locale on non-Windows)
 if(WIN32)
-  set(CMAKE_INSTALL_LOCALEDIR "locale")
+  set(CMAKE_INSTALL_LOCALEDIR "locales")
 else()
   if(NOT DEFINED CMAKE_INSTALL_LOCALEDIR)
     set(CMAKE_INSTALL_LOCALEDIR "${CMAKE_INSTALL_DATADIR}/locale")
@@ -700,13 +815,26 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/po/LINGUAS")
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${LING}.gmo
       DESTINATION ${CMAKE_INSTALL_LOCALEDIR}/${LING}/LC_MESSAGES/
       RENAME shell.mo)
-    # For running from build tree: create locales/<ling>/LC_MESSAGES/shell.mo symlink
-    add_custom_target(openxmb-link-po-${LING} ALL
-      COMMAND
-        ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/locales/${LING}/LC_MESSAGES
-      COMMAND
-        ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_BINARY_DIR}/${LING}.gmo ${CMAKE_CURRENT_BINARY_DIR}/locales/${LING}/LC_MESSAGES/shell.mo
-      BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/locales/${LING}/LC_MESSAGES/shell.mo
-      VERBATIM)
+    # For running from build tree: create locales/<ling>/LC_MESSAGES/shell.mo.
+    # Windows does not always grant symlink privileges, so copy there.
+    if(WIN32)
+      add_custom_target(openxmb-link-po-${LING} ALL
+        COMMAND
+          ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/locales/${LING}/LC_MESSAGES
+        COMMAND
+          ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/${LING}.gmo ${CMAKE_CURRENT_BINARY_DIR}/locales/${LING}/LC_MESSAGES/shell.mo
+        DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/${LING}.gmo"
+        BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/locales/${LING}/LC_MESSAGES/shell.mo
+        VERBATIM)
+    else()
+      add_custom_target(openxmb-link-po-${LING} ALL
+        COMMAND
+          ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/locales/${LING}/LC_MESSAGES
+        COMMAND
+          ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_BINARY_DIR}/${LING}.gmo ${CMAKE_CURRENT_BINARY_DIR}/locales/${LING}/LC_MESSAGES/shell.mo
+        DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/${LING}.gmo"
+        BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/locales/${LING}/LC_MESSAGES/shell.mo
+        VERBATIM)
+    endif()
   endforeach()
 endif()

@@ -213,7 +213,7 @@ namespace app
             debugName(device, upsamplePipeline.get(), "Upsample Pipeline");
         }
 
-        font_render->preload(loader, {shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get(), nullptr, 0x20, 0x1ff);
+        add_task(font_render->preload(loader, {shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get(), nullptr, 0x20, 0x1ff));
         image_render->preload({backgroundRenderPass.get(), shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
         simple_render->preload({shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
         wave_render->preload({backgroundRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
@@ -263,25 +263,27 @@ namespace app
         menu.preload(device, allocator, *loader);
         news.preload(device, allocator, *loader);
 
-        ok_sound = sdl::mix::unique_chunk{sdl::mix::LoadWAV((config::CONFIG.asset_directory/"sounds/ok.wav").string().c_str())};
-        if(!ok_sound) {
-            spdlog::error("sdl::mix::LoadWAV: {}", sdl::mix::GetError());
-        }
-        auto load_sound_multi = [&](sdl::mix::unique_chunk& slot, std::initializer_list<const char*> names){
-            for(const char* n : names) {
-                auto p = (config::CONFIG.asset_directory/"sounds"/n).string();
-                slot = sdl::mix::unique_chunk{sdl::mix::LoadWAV(p.c_str())};
-                if(slot) { spdlog::debug("Loaded sound {}", p); return; }
+        if(!win->config.headless) {
+            ok_sound = sdl::mix::unique_chunk{sdl::mix::LoadWAV((config::CONFIG.asset_directory/"sounds/ok.wav").string().c_str())};
+            if(!ok_sound) {
+                spdlog::warn("sdl::mix::LoadWAV: {}", sdl::mix::GetError());
             }
-            // final fallback to ok.wav so UX isn't silent
-            auto fallback = (config::CONFIG.asset_directory/"sounds/ok.wav").string();
-            slot = sdl::mix::unique_chunk{sdl::mix::LoadWAV(fallback.c_str())};
-            if(!slot) spdlog::debug("Failed to load any sound from list; last error: {}", sdl::mix::GetError());
-        };
-        load_sound_multi(question_sound, {"NSE.questionMark.wav", "NSE.questionMark.ogg"});
-        load_sound_multi(confirm_sound,  {"NSE.ui.Confirm.wav",   "NSE.ui.Confirm.ogg"});
-        load_sound_multi(cancel_sound,   {"NSE.ui.Cancel.wav",    "NSE.ui.Cancel.ogg"});
-        load_sound_multi(back_sound,     {"NSE.clicker.Cancel.wav","NSE.clicker.Cancel.ogg"});
+            auto load_sound_multi = [&](sdl::mix::unique_chunk& slot, std::initializer_list<const char*> names){
+                for(const char* n : names) {
+                    auto p = (config::CONFIG.asset_directory/"sounds"/n).string();
+                    slot = sdl::mix::unique_chunk{sdl::mix::LoadWAV(p.c_str())};
+                    if(slot) { spdlog::debug("Loaded sound {}", p); return; }
+                }
+                // final fallback to ok.wav so UX isn't silent
+                auto fallback = (config::CONFIG.asset_directory/"sounds/ok.wav").string();
+                slot = sdl::mix::unique_chunk{sdl::mix::LoadWAV(fallback.c_str())};
+                if(!slot) spdlog::debug("Failed to load any sound from list; last error: {}", sdl::mix::GetError());
+            };
+            load_sound_multi(question_sound, {"NSE.questionMark.wav", "NSE.questionMark.ogg"});
+            load_sound_multi(confirm_sound,  {"NSE.ui.Confirm.wav",   "NSE.ui.Confirm.ogg"});
+            load_sound_multi(cancel_sound,   {"NSE.ui.Cancel.wav",    "NSE.ui.Cancel.ogg"});
+            load_sound_multi(back_sound,     {"NSE.clicker.Cancel.wav","NSE.clicker.Cancel.ogg"});
+        }
 
         reload_button_icons();
 
@@ -291,7 +293,9 @@ namespace app
             config::CONFIG.asset_directory/"icons/icon_category_settings.png"));
 
         // Push startup splash overlay (plays jingle, fades text)
-        emplace_overlay<app::startup_overlay>();
+        if(!win->config.headless) {
+            emplace_overlay<app::startup_overlay>();
+        }
     }
 
     void shell::prepare(std::vector<vk::Image> swapchainImages, std::vector<vk::ImageView> swapchainViews)
@@ -1478,7 +1482,7 @@ namespace app
             }
         }
         if(result & result::ok_sound) {
-            if(sdl::mix::PlayChannel(-1, ok_sound.get(), 0) == -1) {
+            if(ok_sound && sdl::mix::PlayChannel(-1, ok_sound.get(), 0) == -1) {
                 spdlog::error("sdl::mix::PlayChannel: {}", sdl::mix::GetError());
             }
         }

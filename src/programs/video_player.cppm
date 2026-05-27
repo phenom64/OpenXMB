@@ -64,7 +64,8 @@ export class video_player : private base_viewer, public component, public action
             load_future = std::async(std::launch::async, [this, &loader] -> std::unique_ptr<video_decoding_context> {
                 auto ctx = std::make_unique<video_decoding_context>();
                 try {
-                    if (avformat_open_input(&ctx->format_ctx, this->path.c_str(), nullptr, nullptr) != 0) {
+                    const auto input_path = this->path.string();
+                    if (avformat_open_input(&ctx->format_ctx, input_path.c_str(), nullptr, nullptr) != 0) {
                         throw std::runtime_error("Could not open input file");
                     }
                     if (avformat_find_stream_info(ctx->format_ctx, nullptr) < 0) {
