@@ -102,7 +102,7 @@ For editor/debug work, use `cmake --preset dev && cmake --build --preset dev`.
     ```bash
     sudo apt update
     sudo apt install build-essential git cmake ninja-build pkg-config \
-        clang clang-tools libvulkan-dev vulkan-utility-libraries-dev glslang-tools spirv-tools \
+        clang-18 clang-tools-18 libvulkan-dev vulkan-utility-libraries-dev glslang-tools spirv-tools \
         libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev \
         libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev \
         libglm-dev libfreetype-dev gettext libfmt-dev
@@ -115,7 +115,7 @@ For editor/debug work, use `cmake --preset dev && cmake --build --preset dev`.
     cd OpenXMB
 
     # Configure and build the project
-    CC=clang CXX=clang++ cmake --preset default
+    CC=clang-18 CXX=clang++-18 cmake --preset default
     cmake --build --preset default
 
     # (Optional) Install the application system-wide

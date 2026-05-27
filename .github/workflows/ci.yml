@@ -31,8 +31,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            clang \
-            clang-tools \
+            clang-18 \
+            clang-tools-18 \
             cmake \
             gettext \
             libavcodec-dev \
@@ -52,6 +52,8 @@ jobs:
             glslang-tools \
             spirv-tools \
             vulkan-utility-libraries-dev
+          echo "CC=clang-18" >> "$GITHUB_ENV"
+          echo "CXX=clang++-18" >> "$GITHUB_ENV"
 
       - name: Install macOS dependencies
         if: runner.os == 'macOS'
