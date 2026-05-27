@@ -49,8 +49,9 @@ jobs:
             libvulkan-dev \
             ninja-build \
             pkg-config \
+            glslang-tools \
             spirv-tools \
-            vulkan-validationlayers-dev
+            vulkan-utility-libraries-dev
 
       - name: Install macOS dependencies
         if: runner.os == 'macOS'
@@ -63,12 +64,14 @@ jobs:
             gettext \
             glm \
             llvm \
+            glslang \
+            molten-vk \
             ninja \
             pkg-config \
             sdl2 \
             sdl2_image \
             sdl2_mixer \
-            vulkan-sdk
+            vulkan-loader
           echo "$(brew --prefix gettext)/bin" >> "$GITHUB_PATH"
           echo "$(brew --prefix llvm)/bin" >> "$GITHUB_PATH"
           echo "CC=$(brew --prefix llvm)/bin/clang" >> "$GITHUB_ENV"

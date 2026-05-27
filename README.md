@@ -46,18 +46,18 @@ Before you begin, ensure you have the following tools and libraries installed (v
 - Ninja build system
 - C++23-capable compiler:
   - Linux: Clang 17+ (Clang 19 recommended) or GCC 13+
-  - macOS: Homebrew LLVM/Clang with `clang-scan-deps` + Vulkan SDK (MoltenVK)
+  - macOS: Homebrew LLVM/Clang with `clang-scan-deps` + Vulkan loader/MoltenVK packages
   - Windows: LLVM/Clang with `clang-scan-deps` (MSVC support is blocked by the current `#embed` shader/resource path)
 - Vulkan 1.2 capable GPU + drivers (MoltenVK on macOS)
 - Libraries (names as found on Ubuntu 24.04-like distros):
-  - Vulkan headers and loader: `libvulkan-dev`, `vulkan-validationlayers-dev`
+  - Vulkan headers and loader: `libvulkan-dev`, `vulkan-utility-libraries-dev`
   - SDL2 core + image + mixer: `libsdl2-dev`, `libsdl2-image-dev`, `libsdl2-mixer-dev`
   - FFmpeg (if `ENABLE_VIDEO_PLAYER=ON`): `libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev`
   - Freetype: `libfreetype-dev`
   - glm: `libglm-dev`
   - fmt: `libfmt-dev`
   - gettext (i18n): `gettext`
-- Optional (used by dependencies): `harfbuzz`, `spirv-tools`, `pkg-config`
+- Optional (used by dependencies): `harfbuzz`, `glslang-tools`, `spirv-tools`, `pkg-config`
 
 ### Build Instructions
 
@@ -75,8 +75,8 @@ For editor/debug work, use `cmake --preset dev && cmake --build --preset dev`.
 1.  **Install Dependencies (via Homebrew):**
     ```bash
     brew install cmake ninja pkg-config llvm ffmpeg sdl2 sdl2_image sdl2_mixer gettext fmt freetype glm
-    # Install the Vulkan SDK, which includes MoltenVK
-    brew install vulkan-sdk
+    # Install Vulkan loader, shader tools, and MoltenVK
+    brew install vulkan-loader glslang molten-vk
     ```
 
 2.  **Build OpenXMB:**
@@ -102,7 +102,7 @@ For editor/debug work, use `cmake --preset dev && cmake --build --preset dev`.
     ```bash
     sudo apt update
     sudo apt install build-essential git cmake ninja-build pkg-config \
-        clang clang-tools libvulkan-dev vulkan-validationlayers-dev spirv-tools \
+        clang clang-tools libvulkan-dev vulkan-utility-libraries-dev glslang-tools spirv-tools \
         libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev \
         libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev \
         libglm-dev libfreetype-dev gettext libfmt-dev
