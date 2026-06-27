@@ -46,7 +46,7 @@ class main_menu : public action_receiver {
 
         result on_action(action action) override;
     private:
-        using time_point = std::chrono::time_point<std::chrono::system_clock>;
+        using time_point = std::chrono::time_point<std::chrono::steady_clock>;
 
         class shell* xmb;
 
@@ -72,7 +72,7 @@ class main_menu : public action_receiver {
 
         int last_selected = 0;
         time_point last_selected_transition;
-        constexpr static auto transition_duration = std::chrono::milliseconds(200);
+        constexpr static auto transition_duration = std::chrono::milliseconds(250);
 
         int last_selected_menu_item = 0;
         time_point last_selected_menu_item_transition;
@@ -82,11 +82,11 @@ class main_menu : public action_receiver {
         menu::menu* current_submenu = nullptr;
         std::vector<menu::menu*> submenu_stack;
         time_point last_submenu_transition;
-        constexpr static auto transition_submenu_activate_duration = std::chrono::milliseconds(100);
+        constexpr static auto transition_submenu_activate_duration = std::chrono::milliseconds(250);
 
         int last_selected_submenu_item = 0;
         time_point last_selected_submenu_item_transition;
-        constexpr static auto transition_submenu_item_duration = std::chrono::milliseconds(100);
+        constexpr static auto transition_submenu_item_duration = std::chrono::milliseconds(200);
 };
 
 }

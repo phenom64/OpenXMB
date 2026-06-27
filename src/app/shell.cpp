@@ -22,9 +22,11 @@ module;
 
 #include <array>
 #include <algorithm>
+#include <charconv>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <filesystem>
 #include <format>
 #include <memory>
@@ -44,6 +46,9 @@ module;
 
 #include <glm/vec2.hpp>
 
+#include "openxmb/xmb/boot_timeline.hpp"
+#include "openxmb/xmb/background.hpp"
+
 module openxmb.app;
 
 import i18n;
@@ -58,6 +63,8 @@ import openxmb.constants;
 import openxmb.render;
 import openxmb.debug;
 import openxmb.utils;
+import openxmb.xmb.captured_wave_renderer;
+import openxmb.xmb.monthly_background_renderer;
 import :startup_overlay;
 import :message_overlay;
 
@@ -101,6 +108,28 @@ namespace app
             }
             return path;
         }
+
+        [[nodiscard]] std::optional<double> fixed_wave_seconds_from_environment()
+        {
+            const char* value = std::getenv("OPENXMB_FIXED_WAVE_SECONDS");
+            if(value == nullptr || *value == '\0') {
+                return std::nullopt;
+            }
+
+            const std::string_view text{value};
+            double seconds{};
+            const auto [end, error] = std::from_chars(
+                text.data(), text.data() + text.size(), seconds,
+                std::chars_format::general);
+            if(error != std::errc{} || end != text.data() + text.size() ||
+               !std::isfinite(seconds) || seconds < 0.0) {
+                spdlog::warn(
+                    "Ignoring invalid OPENXMB_FIXED_WAVE_SECONDS value '{}'; expected a finite non-negative number",
+                    text);
+                return std::nullopt;
+            }
+            return seconds;
+        }
     }
 
     struct BlurConstants {
@@ -129,22 +158,31 @@ namespace app
         image_render = std::make_unique<image_renderer>(device, win->swapchainExtent, win->gpuFeatures);
         simple_render = std::make_unique<simple_renderer>(device, allocator, win->swapchainExtent, win->gpuFeatures);
         wave_render = std::make_unique<render::wave_renderer>(device, allocator, win->swapchainExtent);
-        original_render = std::make_unique<render::original_renderer>(device, win->swapchainExtent);
+        captured_wave_render = std::make_unique<openxmb::xmb::CapturedWaveRenderer>(
+            device, allocator, win->swapchainExtent);
+        monthly_background_render =
+            std::make_unique<openxmb::xmb::MonthlyBackgroundRenderer>(
+                device, win->swapchainExtent);
+        const auto captured_wave_directory =
+            config::CONFIG.asset_directory / "compat/xmb-ui-compat/wave";
+        try {
+            captured_wave_render->load_assets({
+                .geometry = captured_wave_directory / "wave_geo.bin",
+                .idle_sequence = captured_wave_directory / "wave_seq2.bin",
+                .idle_metadata = captured_wave_directory / "wave_seq2.json",
+                .boot_sequence = captured_wave_directory / "wave_boot.bin",
+                .boot_metadata = captured_wave_directory / "wave_boot.json",
+            });
+            spdlog::info("Loaded local captured-wave compatibility pack from {}",
+                         captured_wave_directory.string());
+        } catch(const std::exception& error) {
+            captured_wave_failed = true;
+            spdlog::warn(
+                "Captured-wave compatibility pack is unavailable ({}); Original will use the licensed Classic fallback",
+                error.what());
+        }
 
         {
-            std::array<vk::AttachmentDescription, 2> attachments = {
-                vk::AttachmentDescription({}, win->swapchainFormat.format, win->config.sampleCount,
-                    vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
-                    vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-                    vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal),
-                vk::AttachmentDescription({}, win->swapchainFormat.format, vk::SampleCountFlagBits::e1,
-                    vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eStore,
-                    vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-                    vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal)
-            };
-            vk::AttachmentReference ref(0, vk::ImageLayout::eColorAttachmentOptimal);
-            vk::AttachmentReference rref(1, vk::ImageLayout::eColorAttachmentOptimal);
-            vk::SubpassDescription subpass({}, vk::PipelineBindPoint::eGraphics, {}, ref, rref);
             std::array<vk::SubpassDependency, 2> deps{
                 vk::SubpassDependency(vk::SubpassExternal, 0,
                     vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eColorAttachmentOutput,
@@ -153,29 +191,82 @@ namespace app
                     vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader,
                     vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead)
             };
-            vk::RenderPassCreateInfo renderpass_info({}, attachments, subpass, deps);
-            backgroundRenderPass = device.createRenderPassUnique(renderpass_info);
+            if(win->config.sampleCount == vk::SampleCountFlagBits::e1) {
+                const std::array attachments{
+                    vk::AttachmentDescription({}, win->swapchainFormat.format,
+                        vk::SampleCountFlagBits::e1,
+                        vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
+                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+                        vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal)
+                };
+                const vk::AttachmentReference color_ref(
+                    0, vk::ImageLayout::eColorAttachmentOptimal);
+                const vk::SubpassDescription subpass(
+                    {}, vk::PipelineBindPoint::eGraphics, {}, color_ref);
+                backgroundRenderPass = device.createRenderPassUnique(
+                    vk::RenderPassCreateInfo({}, attachments, subpass, deps));
+            } else {
+                const std::array attachments{
+                    vk::AttachmentDescription({}, win->swapchainFormat.format, win->config.sampleCount,
+                        vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
+                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+                        vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal),
+                    vk::AttachmentDescription({}, win->swapchainFormat.format, vk::SampleCountFlagBits::e1,
+                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eStore,
+                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+                        vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal)
+                };
+                const vk::AttachmentReference color_ref(
+                    0, vk::ImageLayout::eColorAttachmentOptimal);
+                const vk::AttachmentReference resolve_ref(
+                    1, vk::ImageLayout::eColorAttachmentOptimal);
+                const vk::SubpassDescription subpass(
+                    {}, vk::PipelineBindPoint::eGraphics, {}, color_ref,
+                    resolve_ref);
+                backgroundRenderPass = device.createRenderPassUnique(
+                    vk::RenderPassCreateInfo({}, attachments, subpass, deps));
+            }
             debugName(device, backgroundRenderPass.get(), "Background Render Pass");
         }
         {
-            std::array<vk::AttachmentDescription, 2> attachments = {
-                vk::AttachmentDescription({}, win->swapchainFormat.format, win->config.sampleCount,
-                    vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
-                    vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-                    vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal),
-                vk::AttachmentDescription({}, win->swapchainFormat.format, vk::SampleCountFlagBits::e1,
-                    vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eStore,
-                    vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-                    vk::ImageLayout::eUndefined, win->swapchainFinalLayout)
-            };
-            vk::AttachmentReference ref(0, vk::ImageLayout::eColorAttachmentOptimal);
-            vk::AttachmentReference rref(1, vk::ImageLayout::eColorAttachmentOptimal);
-            vk::SubpassDescription subpass({}, vk::PipelineBindPoint::eGraphics, {}, ref, rref);
             vk::SubpassDependency dep(vk::SubpassExternal, 0,
                 vk::PipelineStageFlagBits::eTransfer | vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eColorAttachmentOutput,
                 vk::AccessFlagBits::eTransferWrite | vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eColorAttachmentWrite);
-            vk::RenderPassCreateInfo renderpass_info({}, attachments, subpass, dep);
-            shellRenderPass = device.createRenderPassUnique(renderpass_info);
+            if(win->config.sampleCount == vk::SampleCountFlagBits::e1) {
+                const std::array attachments{
+                    vk::AttachmentDescription({}, win->swapchainFormat.format,
+                        vk::SampleCountFlagBits::e1,
+                        vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
+                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+                        vk::ImageLayout::eUndefined, win->swapchainFinalLayout)
+                };
+                const vk::AttachmentReference color_ref(
+                    0, vk::ImageLayout::eColorAttachmentOptimal);
+                const vk::SubpassDescription subpass(
+                    {}, vk::PipelineBindPoint::eGraphics, {}, color_ref);
+                shellRenderPass = device.createRenderPassUnique(
+                    vk::RenderPassCreateInfo({}, attachments, subpass, dep));
+            } else {
+                const std::array attachments{
+                    vk::AttachmentDescription({}, win->swapchainFormat.format, win->config.sampleCount,
+                        vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
+                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+                        vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal),
+                    vk::AttachmentDescription({}, win->swapchainFormat.format, vk::SampleCountFlagBits::e1,
+                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eStore,
+                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+                        vk::ImageLayout::eUndefined, win->swapchainFinalLayout)
+                };
+                const vk::AttachmentReference color_ref(
+                    0, vk::ImageLayout::eColorAttachmentOptimal);
+                const vk::AttachmentReference resolve_ref(
+                    1, vk::ImageLayout::eColorAttachmentOptimal);
+                const vk::SubpassDescription subpass(
+                    {}, vk::PipelineBindPoint::eGraphics, {}, color_ref,
+                    resolve_ref);
+                shellRenderPass = device.createRenderPassUnique(
+                    vk::RenderPassCreateInfo({}, attachments, subpass, dep));
+            }
             debugName(device, shellRenderPass.get(), "Shell Render Pass");
         }
         {
@@ -217,7 +308,28 @@ namespace app
         image_render->preload({backgroundRenderPass.get(), shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
         simple_render->preload({shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
         wave_render->preload({backgroundRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
-        original_render->preload({backgroundRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
+        try {
+            monthly_background_render->preload(
+                {backgroundRenderPass.get()}, win->config.sampleCount,
+                win->pipelineCache.get());
+        } catch(const std::exception& error) {
+            monthly_background_failed = true;
+            spdlog::error(
+                "Monthly-background Vulkan pipeline initialization failed ({}); using the safe clear-colour fallback",
+                error.what());
+        }
+        if(captured_wave_render->assets_ready() && !captured_wave_failed) {
+            try {
+                captured_wave_render->preload(
+                    {backgroundRenderPass.get()}, win->config.sampleCount,
+                    win->pipelineCache.get());
+            } catch(const std::exception& error) {
+                captured_wave_failed = true;
+                spdlog::error(
+                    "Captured-wave Vulkan pipeline initialization failed ({}); Original will use Classic",
+                    error.what());
+            }
+        }
 
         if(config::CONFIG.backgroundType == config::config::background_type::image) {
             backgroundTexture = std::make_unique<texture>(device, allocator);
@@ -319,7 +431,6 @@ namespace app
             image_render->prepare(0);
             simple_render->prepare(0);
             wave_render->prepare(0);
-            original_render->prepare(0);
             return;
         }
 
@@ -391,17 +502,35 @@ namespace app
                 debugName(device, blurFrame.quarterDst->image, "Blur Quarter Destination #"+std::to_string(i));
             }
             {
-                std::array<vk::ImageView, 2> attachments = {renderImages[i]->imageView.get(), swapchainViews[i]};
-                vk::FramebufferCreateInfo framebuffer_info({}, shellRenderPass.get(), attachments,
-                    extent.width, extent.height, 1);
-                framebuffers.push_back(device.createFramebufferUnique(framebuffer_info));
+                if(win->config.sampleCount == vk::SampleCountFlagBits::e1) {
+                    const std::array attachments{swapchainViews[i]};
+                    framebuffers.push_back(device.createFramebufferUnique(
+                        vk::FramebufferCreateInfo({}, shellRenderPass.get(), attachments,
+                            extent.width, extent.height, 1)));
+                } else {
+                    const std::array attachments{
+                        renderImages[i]->imageView.get(), swapchainViews[i]};
+                    framebuffers.push_back(device.createFramebufferUnique(
+                        vk::FramebufferCreateInfo({}, shellRenderPass.get(), attachments,
+                            extent.width, extent.height, 1)));
+                }
                 debugName(device, framebuffers.back().get(), "XMB Shell Framebuffer #"+std::to_string(i));
             }
             {
-                std::array<vk::ImageView, 2> attachments = {renderImages[i]->imageView.get(), backgroundResolve[i]->imageView.get()};
-                vk::FramebufferCreateInfo framebuffer_info({}, backgroundRenderPass.get(), attachments,
-                    extent.width, extent.height, 1);
-                backgroundFramebuffers.push_back(device.createFramebufferUnique(framebuffer_info));
+                if(win->config.sampleCount == vk::SampleCountFlagBits::e1) {
+                    const std::array attachments{
+                        backgroundResolve[i]->imageView.get()};
+                    backgroundFramebuffers.push_back(device.createFramebufferUnique(
+                        vk::FramebufferCreateInfo({}, backgroundRenderPass.get(), attachments,
+                            extent.width, extent.height, 1)));
+                } else {
+                    const std::array attachments{
+                        renderImages[i]->imageView.get(),
+                        backgroundResolve[i]->imageView.get()};
+                    backgroundFramebuffers.push_back(device.createFramebufferUnique(
+                        vk::FramebufferCreateInfo({}, backgroundRenderPass.get(), attachments,
+                            extent.width, extent.height, 1)));
+                }
                 debugName(device, backgroundFramebuffers.back().get(), "XMB Shell Background Framebuffer #"+std::to_string(i));
             }
         }
@@ -483,7 +612,6 @@ namespace app
         image_render->prepare(swapchainViews.size());
         simple_render->prepare(swapchainViews.size());
         wave_render->prepare(swapchainViews.size());
-        original_render->prepare(swapchainViews.size());
     }
 
     void shell::reload_language() {
@@ -540,12 +668,30 @@ namespace app
             overlay->prerender(commandBuffer, frame, this);
         }
         {
-            auto themeColour = utils::xmb_resolve_theme_colour(std::chrono::system_clock::now());
+            const auto wall_now = openxmb::xmb::wall_clock_now();
+            auto themeColour = utils::xmb_resolve_theme_colour(wall_now);
             glm::vec3 baseThemeColour = themeColour.base_colour;
-            float brightness = themeColour.brightness;
+            const auto wall_time = std::chrono::system_clock::to_time_t(wall_now);
+            std::tm local_time{};
+#if defined(_WIN32)
+            localtime_s(&local_time, &wall_time);
+#else
+            localtime_r(&wall_time, &local_time);
+#endif
+            const auto local_hour = static_cast<float>(local_time.tm_hour) +
+                static_cast<float>(local_time.tm_min) / 60.0F +
+                static_cast<float>(local_time.tm_sec) / 3600.0F;
+            const auto monthly_gradient =
+                openxmb::xmb::resolve_background_gradient(
+                    local_time.tm_mon, local_hour);
+            const bool can_render_monthly_background =
+                config::CONFIG.backgroundType ==
+                    config::config::background_type::original &&
+                monthly_background_render->pipelines_ready() &&
+                !monthly_background_failed;
             // Always tint the background clear colour (for both Original and Classic)
             vk::ClearValue color(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f});
-            {
+            if(!can_render_monthly_background) {
                 glm::vec3 c = themeColour.shaded_colour;
                 color = vk::ClearColorValue(std::array<float, 4>{ c.r, c.g, c.b, 1.0f });
             }
@@ -563,8 +709,78 @@ namespace app
 
             if(!ingame_mode) {
                 if(config::CONFIG.backgroundType == config::config::background_type::original) {
+                    if(can_render_monthly_background) {
+                        try {
+                            monthly_background_render->render(
+                                commandBuffer, backgroundRenderPass.get(),
+                                monthly_gradient);
+                        } catch(const std::exception& error) {
+                            monthly_background_failed = true;
+                            spdlog::error(
+                                "Monthly-background rendering failed ({}); using the safe clear-colour fallback",
+                                error.what());
+                        }
+                    }
                     float seconds = std::chrono::duration<float>(std::chrono::steady_clock::now() - shader_time_zero).count();
-                    original_render->render(commandBuffer, frame, backgroundRenderPass.get(), baseThemeColour, brightness, seconds);
+                    if(win->config.headless) {
+                        // Headless visual verification intentionally omits the
+                        // startup overlay, so begin in the same settled scene.
+                        seconds += static_cast<float>(
+                            openxmb::xmb::BootMilestones::identity_out_seconds);
+                    }
+                    bool rendered_captured_wave = false;
+                    if(captured_wave_render->assets_ready() &&
+                       captured_wave_render->pipelines_ready() &&
+                       !captured_wave_failed) {
+                        try {
+                            const auto boot =
+                                openxmb::xmb::sample_boot_timeline(seconds);
+                            const bool boot_wave = seconds <
+                                openxmb::xmb::BootMilestones::identity_out_seconds;
+                            if(boot_wave) {
+                                captured_wave_render->update_boot(
+                                    boot.wave_geometry_progress);
+                            } else {
+                                static const auto fixed_wave_seconds =
+                                    fixed_wave_seconds_from_environment();
+                                captured_wave_render->update_idle(
+                                    fixed_wave_seconds.value_or(
+                                        seconds - openxmb::xmb::BootMilestones::identity_out_seconds));
+                            }
+                            openxmb::xmb::CapturedWaveParameters parameters{};
+                            parameters.gain = boot_wave
+                                ? static_cast<float>(boot.wave_gain)
+                                : 1.0F;
+                            // xmb-web's captured clip positions target WebGL,
+                            // where +Y reaches the top of the framebuffer. Our
+                            // positive-height Vulkan viewport maps +Y down, so
+                            // the imported cloth needs one explicit sign flip.
+                            parameters.y_flip = -1.0F;
+                            parameters.draw_fill = true;
+                            // The reference selects either its filled captured
+                            // cloth or the optional diagnostic line topology;
+                            // compositing both made the native ribbon opaque,
+                            // over-bright, and visibly wireframed.
+                            parameters.draw_lines = false;
+                            captured_wave_render->render(
+                                commandBuffer, backgroundRenderPass.get(),
+                                boot_wave
+                                    ? openxmb::xmb::CapturedWaveBlendMode::boot_alpha_over
+                                    : openxmb::xmb::CapturedWaveBlendMode::idle_additive,
+                                parameters);
+                            rendered_captured_wave = true;
+                        } catch(const std::exception& error) {
+                            captured_wave_failed = true;
+                            spdlog::error(
+                                "Captured-wave rendering failed ({}); switching Original to Classic",
+                                error.what());
+                        }
+                    }
+                    if(!rendered_captured_wave) {
+                        wave_render->waveColor = baseThemeColour;
+                        wave_render->render(
+                            commandBuffer, frame, backgroundRenderPass.get());
+                    }
                 }
                 else if(config::CONFIG.backgroundType == config::config::background_type::wave) {
                     wave_render->waveColor = baseThemeColour; // PS3 look: wave uses base, brightness on background only
@@ -1167,22 +1383,17 @@ namespace app
             // Render the entire XMB UI (menu + time + news) within the zoom scope
             menu.render(renderer);
 
-#if __cpp_lib_chrono >= 201907L || defined(__GLIBCXX__)
-            static const std::chrono::time_zone* timezone = [](){
-                auto tz = std::chrono::current_zone();
-                auto system = std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now());
-                auto local = std::chrono::zoned_time(tz, system);
-                spdlog::debug("{}", std::format("Timezone: {}, System Time: {}, Local Time: {}", tz->name(), system, local));
-                return tz;
-            }();
-            auto local_now = std::chrono::zoned_time(timezone, std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now()));
-#else
-            auto local_now = std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now());
-#endif
-            renderer.draw_text(std::vformat("{:"+config::CONFIG.dateTimeFormat+"}", std::make_format_args(local_now)),
-                static_cast<float>(0.831770833f+config::CONFIG.dateTimeOffset), 0.086111111f, 0.021296296f*2.5f);
+            if(!status_bar_render.render_local(
+                   renderer, openxmb::xmb::wall_clock_now())) {
+                static bool status_bar_time_warning_logged = false;
+                if(!status_bar_time_warning_logged) {
+                    spdlog::warn(
+                        "The local civil time is unavailable; hiding the XMB status bar clock");
+                    status_bar_time_warning_logged = true;
+                }
+            }
 
-            news.render(renderer);
+            // The reference root scene has no legacy placeholder ticker.
             if(pushed_zoom) renderer.pop_zoom();
             if(overlay_transition || has_overlay || fading_out_message) {
                 renderer.pop_color();

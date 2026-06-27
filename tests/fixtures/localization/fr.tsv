@@ -1,0 +1,4 @@
+# Deliberately partial: fallback behavior is part of the contract.
+menu.greeting	Bonjour, {name} !
+menu.progress	{count} fichiers copiés sur {total}
+menu.plain	Paramètres système

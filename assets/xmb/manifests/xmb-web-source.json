@@ -1,0 +1,238 @@
+{
+  "assets": [
+    {
+      "bytes": 589824,
+      "fallback": "identity.classic-retroarch-wave",
+      "import": true,
+      "logical_id": "wave.geometry",
+      "provenance_classification": "unresolved-firmware-capture/local-only",
+      "required_optional_tier": "required-for-original; optional-for-clean-build",
+      "role": "captured-wave-static-vertices",
+      "sha256": "49a8e98e7f4c7474d7eb2faaa64a8b4c4c89fc59f48d30b037073313276f0a38",
+      "source_relative_path": "wave_geo.bin",
+      "target_pack": "xmb-ui-compat",
+      "target_relative_path": "wave/wave_geo.bin"
+    },
+    {
+      "bytes": 8355864,
+      "fallback": "identity.classic-retroarch-wave",
+      "import": true,
+      "logical_id": "wave.idle.sequence",
+      "provenance_classification": "unresolved-firmware-capture/local-only",
+      "required_optional_tier": "required-for-original; optional-for-clean-build",
+      "role": "captured-wave-idle-keyframes",
+      "sha256": "4eced376a8e0b61de22935105a6b525e51e5c85fb17c329b7d7b295a3b2bacc6",
+      "source_relative_path": "wave_seq2.bin",
+      "target_pack": "xmb-ui-compat",
+      "target_relative_path": "wave/wave_seq2.bin"
+    },
+    {
+      "bytes": 2059,
+      "fallback": "identity.classic-retroarch-wave",
+      "import": true,
+      "logical_id": "wave.idle.metadata",
+      "provenance_classification": "source-author-permitted; capture-provenance-unresolved",
+      "required_optional_tier": "required-for-original; optional-for-clean-build",
+      "role": "captured-wave-idle-metadata",
+      "sha256": "e5fb50fe77005b31055b420163a41bfdbc630d89e06004001c68bf581f74f0b1",
+      "source_relative_path": "wave_seq2.json",
+      "target_pack": "xmb-ui-compat",
+      "target_relative_path": "wave/wave_seq2.json"
+    },
+    {
+      "bytes": 5505044,
+      "fallback": "identity.classic-retroarch-wave",
+      "import": true,
+      "logical_id": "wave.boot.sequence",
+      "provenance_classification": "unresolved-firmware-capture/local-only",
+      "required_optional_tier": "required-for-original; optional-for-clean-build",
+      "role": "captured-wave-boot-keyframes",
+      "sha256": "30eaeff9d29273b47be44cb2f33bd866ad4f2adccb72cff8ae5a7080a5ccacef",
+      "source_relative_path": "wave_boot.bin",
+      "target_pack": "xmb-ui-compat",
+      "target_relative_path": "wave/wave_boot.bin"
+    },
+    {
+      "bytes": 8689,
+      "fallback": "identity.classic-retroarch-wave",
+      "import": true,
+      "logical_id": "wave.boot.metadata",
+      "provenance_classification": "source-author-permitted; capture-provenance-unresolved",
+      "required_optional_tier": "required-for-original; optional-for-clean-build",
+      "role": "captured-wave-boot-metadata",
+      "sha256": "5ba5b1eb9dcfda2e90d6d2e29fbc1fd9310cfa1deb9105c4b011a21d1747c2b7",
+      "source_relative_path": "wave_boot.json",
+      "target_pack": "xmb-ui-compat",
+      "target_relative_path": "wave/wave_boot.json"
+    },
+    {
+      "bytes": 8432,
+      "fallback": "generated-flat-normal",
+      "import": false,
+      "logical_id": "icon.normal.spike",
+      "provenance_classification": "unresolved-firmware-extraction/local-only",
+      "required_optional_tier": "optional-spike",
+      "role": "single-icon-glass-normal-map",
+      "sha256": "02a1df34b7c17051469805f9c30226c69b7ac7bfd1a0c48cb0ffc44042411a95",
+      "source_relative_path": "normalmaps/nmap_000.png",
+      "target_pack": "xmb-ui-compat",
+      "target_relative_path": "normalmaps/nmap_000.png"
+    },
+    {
+      "bytes": 935615,
+      "fallback": "identity.classic-retroarch-background",
+      "import": false,
+      "logical_id": "source.index.month-table",
+      "provenance_classification": "source-author-permitted; measured-firmware-values",
+      "required_optional_tier": "required-for-original; optional-for-clean-build",
+      "role": "audited-month-table-source",
+      "sha256": "f533fcccb0f78f3cd4858eeef0f3e669d5fae93641637ed79421dbfaa11c6b1c",
+      "source_relative_path": "index.html",
+      "target_pack": "xmb-ui-compat",
+      "target_relative_path": "data/month-gradient.json"
+    }
+  ],
+  "asset_families": [
+    {
+      "aggregate_sha256": "a3da0a13253b0be77180bc88618f3f0790310e737c1450127034b5a5d7484ccd",
+      "expected_bytes": 4415,
+      "expected_files": 2,
+      "extensions": [".png"],
+      "fallback": "generated-neutral-environment",
+      "logical_id_prefix": "compat.environment",
+      "provenance_classification": "unresolved-firmware-reference/local-only",
+      "required_optional_tier": "required-for-icon-glass; optional-for-clean-build",
+      "role": "icon-glass-environment-texture",
+      "source_directory": "assets",
+      "target_directory": "environment",
+      "target_pack": "xmb-ui-compat"
+    },
+    {
+      "aggregate_sha256": "02e35741487aad7011708a20d025cefb9f493acd884c21c7354e927e0fb5699a",
+      "expected_bytes": 2252028,
+      "expected_files": 11,
+      "extensions": [".jpg", ".png"],
+      "fallback": "background.month-gradient",
+      "logical_id_prefix": "compat.background",
+      "provenance_classification": "unresolved-third-party-artwork/local-only",
+      "required_optional_tier": "optional-wallpaper-library",
+      "role": "wallpaper-and-landing-background",
+      "source_directory": "backgrounds",
+      "target_directory": "backgrounds",
+      "target_pack": "xmb-ui-compat"
+    },
+    {
+      "aggregate_sha256": "fdedc84813bd33b0c6d4958af1ab9d49103f70a2d768da66cb5a7b52b59b1e84",
+      "expected_bytes": 16196,
+      "expected_files": 1,
+      "extensions": [".png"],
+      "fallback": "text-only-dialog",
+      "logical_id_prefix": "compat.dialog",
+      "provenance_classification": "unresolved-firmware-extraction/local-only",
+      "required_optional_tier": "optional-dialog-illustration",
+      "role": "dialog-illustration",
+      "source_directory": "dialogs",
+      "target_directory": "dialogs",
+      "target_pack": "xmb-ui-compat"
+    },
+    {
+      "aggregate_sha256": "fd28eb4c2de330d65bcb55fe21044b9de6430d683feb957bef7fe2b083526617",
+      "expected_bytes": 2862441,
+      "expected_files": 92,
+      "extensions": [".png"],
+      "fallback": "clean-vector-icon-set",
+      "logical_id_prefix": "compat.icon",
+      "provenance_classification": "unresolved-firmware-extraction/local-only",
+      "required_optional_tier": "required-for-reference-icons; optional-for-clean-build",
+      "role": "xmb-icon",
+      "source_directory": "icons",
+      "target_directory": "icons",
+      "target_pack": "xmb-ui-compat"
+    },
+    {
+      "aggregate_sha256": "80d4e65861b205111cd065f9313870eb0416186974027008a76b47fa1ef0e3ac",
+      "expected_bytes": 2369313,
+      "expected_files": 344,
+      "extensions": [".jpg", ".json", ".png"],
+      "fallback": "generated-control-glyphs",
+      "logical_id_prefix": "compat.control",
+      "provenance_classification": "mixed-unresolved-firmware-and-source-art/local-only",
+      "required_optional_tier": "required-for-player-reference; optional-for-clean-build",
+      "role": "player-control-and-ui-image",
+      "source_directory": "images",
+      "target_directory": "images",
+      "target_pack": "xmb-ui-compat"
+    },
+    {
+      "aggregate_sha256": "02672cc18fdf0d23abfe9c60e0e567b5911602af4b863f047cb5bcab07de796a",
+      "expected_bytes": 635505,
+      "expected_files": 70,
+      "extensions": [".png"],
+      "fallback": "generated-flat-normal",
+      "logical_id_prefix": "compat.normal",
+      "provenance_classification": "unresolved-firmware-extraction/local-only",
+      "required_optional_tier": "required-for-reference-icon-glass; optional-for-clean-build",
+      "role": "icon-glass-normal-map",
+      "source_directory": "normalmaps",
+      "target_directory": "normalmaps",
+      "target_pack": "xmb-ui-compat"
+    },
+    {
+      "aggregate_sha256": "d01b3f4bb33830f2115817d324938c3d0639b856bdae700e6098a80fe5c77567",
+      "expected_bytes": 20099853,
+      "expected_files": 42,
+      "extensions": [".jpg", ".png"],
+      "fallback": "empty-photo-library",
+      "logical_id_prefix": "compat.photo",
+      "provenance_classification": "unresolved-third-party-photography/local-only",
+      "required_optional_tier": "optional-demo-media",
+      "role": "photo-demo-and-derived-thumbnail",
+      "source_directory": "photos",
+      "target_directory": "photos",
+      "target_pack": "xmb-ui-compat"
+    },
+    {
+      "aggregate_sha256": "82e16973078b27d0ae73e001a7370b5d544a7bb5cba4b49a017d87146e11ba20",
+      "expected_bytes": 6977751,
+      "expected_files": 10,
+      "extensions": [".jpg", ".mp4"],
+      "fallback": "empty-video-library",
+      "logical_id_prefix": "compat.video",
+      "provenance_classification": "unresolved-third-party-demo-media/local-only",
+      "required_optional_tier": "optional-demo-media",
+      "role": "video-demo-poster-chapter-and-stream",
+      "source_directory": "video",
+      "target_directory": "video",
+      "target_pack": "xmb-ui-compat"
+    }
+  ],
+  "excluded": [
+    "globe_assets/**",
+    "globe_cap3test/**",
+    "music/**",
+    "boot/** (PS3 logo artwork is intentionally not imported)",
+    "PS3/Rodin fonts and xmb-web sound files",
+    "catalog/settings source code (ported to native typed data instead of copied at runtime)"
+  ],
+  "fallback_policy": {
+    "original_when_compatibility_pack_absent": "classic",
+    "reason": "Captured and extracted xmb-web assets have unresolved third-party provenance; the clean build must remain usable with the retained licensed RetroArch Classic wave."
+  },
+  "generated_assets": [
+    {
+      "fallback": "identity.classic-retroarch-background",
+      "generated_bytes": 2056,
+      "generated_sha256": "d8804ec1664d16eaac37b76f3aa1d95f44e87bf2143b282927d28cf1aab107c5",
+      "logical_id": "source.index.month-table",
+      "output_logical_id": "background.month-gradient",
+      "role": "audited-month-gradient-table",
+      "target_relative_path": "data/month-gradient.json"
+    }
+  ],
+  "schema_version": 1,
+  "source": {
+    "commit": "5d4675366ad50deca14fe3d70a2aa646c341aee0",
+    "project": "TheGammaSqueeze/xmb-web",
+    "repository": "https://github.com/TheGammaSqueeze/xmb-web"
+  }
+}

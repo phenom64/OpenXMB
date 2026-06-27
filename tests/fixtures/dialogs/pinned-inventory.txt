@@ -1,0 +1,4 @@
+source_commit=5d4675366ad50deca14fe3d70a2aa646c341aee0
+dialog_templates=51
+wizard_screens=120
+screen_kinds=message,choice,progress,busy,error,text-entry,information

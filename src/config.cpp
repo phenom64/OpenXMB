@@ -54,6 +54,25 @@ namespace
     constexpr double min_controller_cursor_speed = 0.10;
     constexpr double max_controller_cursor_speed = 4.0;
 
+    bool replace_config_file(const std::filesystem::path& temporary,
+                             const std::filesystem::path& destination,
+                             std::error_code& error) noexcept
+    {
+#if defined(_WIN32)
+        if(MoveFileExW(temporary.c_str(), destination.c_str(),
+                       MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) != 0) {
+            error.clear();
+            return true;
+        }
+        error = std::error_code(static_cast<int>(GetLastError()),
+                                std::system_category());
+        return false;
+#else
+        std::filesystem::rename(temporary, destination, error);
+        return !error;
+#endif
+    }
+
     const std::array<std::string, 12>& default_month_colours()
     {
         static const std::array<std::string, 12> colours = {
@@ -158,6 +177,16 @@ namespace
         return {};
     }
 
+    bool env_flag(const char* name)
+    {
+        if(const char* value = std::getenv(name); value != nullptr) {
+            const std::string_view text{value};
+            return text == "1" || text == "true" || text == "TRUE" ||
+                   text == "yes" || text == "YES";
+        }
+        return false;
+    }
+
     std::filesystem::path user_config_directory()
     {
 #if _WIN32
@@ -208,7 +237,9 @@ namespace
             auto now = std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now());
 #if __cpp_lib_chrono >= 201907L || defined(__GLIBCXX__)
             auto local_now = std::chrono::zoned_time(std::chrono::current_zone(), now);
-            std::vformat("{:" + format + "}", std::make_format_args(local_now));
+            [[maybe_unused]] const auto formatted =
+                std::vformat("{:" + format + "}",
+                             std::make_format_args(local_now));
 #else
             std::vformat("{:" + format + "}", std::make_format_args(now));
 #endif
@@ -566,7 +597,12 @@ void config::load_from_json() {
         spdlog::info("Configuration loaded successfully");
         if(migrated) {
             spdlog::info("Configuration migrated to version {}", current_config_version);
-            save_to_json();
+            if(env_flag("OPENXMB_CONFIG_READ_ONLY")) {
+                spdlog::info(
+                    "Configuration override is read-only; migration remains in memory for this run");
+            } else {
+                save_to_json();
+            }
         }
         
     } catch (const std::exception& e) {
@@ -659,8 +695,7 @@ void config::save_to_json() {
             config_file.close();
 
             std::error_code rename_error;
-            std::filesystem::rename(temp_path, config_path, rename_error);
-            if(rename_error) {
+            if(!replace_config_file(temp_path, config_path, rename_error)) {
                 spdlog::error("Failed to replace config file {}: {}", config_path.string(), rename_error.message());
                 std::error_code remove_error;
                 std::filesystem::remove(temp_path, remove_error);

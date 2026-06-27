@@ -37,6 +37,9 @@ export module openxmb.app:main;
 
 import openxmb.render;
 import openxmb.utils;
+import openxmb.xmb.captured_wave_renderer;
+import openxmb.xmb.monthly_background_renderer;
+import openxmb.xmb.status_bar_renderer;
 import dreamrender;
 import glm;
 import sdl2;
@@ -229,7 +232,11 @@ namespace app
             std::unique_ptr<image_renderer> image_render;
             std::unique_ptr<simple_renderer> simple_render;
             std::unique_ptr<render::wave_renderer> wave_render;
-            std::unique_ptr<render::original_renderer> original_render;
+            std::unique_ptr<openxmb::xmb::CapturedWaveRenderer> captured_wave_render;
+            std::unique_ptr<openxmb::xmb::MonthlyBackgroundRenderer> monthly_background_render;
+            openxmb::xmb::StatusBarRenderer status_bar_render;
+            bool captured_wave_failed{};
+            bool monthly_background_failed{};
 
             vk::UniqueRenderPass backgroundRenderPass, shellRenderPass;
 

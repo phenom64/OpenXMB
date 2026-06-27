@@ -126,7 +126,8 @@ namespace menu {
 
     std::unique_ptr<action_menu_entry> make_user_action_entry(
         const std::string& label,
-        const std::string& icon_name,
+        std::string_view compatibility_icon_name,
+        std::string_view clean_icon_name,
         dreamrender::resource_loader& loader,
         std::function<result()> callback
     ) {
@@ -136,147 +137,15 @@ namespace menu {
             std::move(icon_texture),
             std::move(callback)
         );
-        load_icon_if_present(loader, *entry, config::CONFIG.asset_directory / "icons" / icon_name);
+        const auto compatibility_icon = config::CONFIG.asset_directory /
+            "compat/xmb-ui-compat/icons" / compatibility_icon_name;
+        if(!load_icon_if_present(loader, *entry, compatibility_icon)) {
+            const auto clean_icon = config::CONFIG.asset_directory / "icons" / clean_icon_name;
+            spdlog::debug("Compatibility icon {} is unavailable; using clean icon {}",
+                compatibility_icon.string(), clean_icon.string());
+            load_icon_if_present(loader, *entry, clean_icon);
+        }
         return entry;
-    }
-
-    void confirm_and_launch(app::shell* xmb, const std::string& title, const std::string& message, std::vector<std::string> args)
-    {
-        xmb->emplace_overlay<app::message_overlay>(
-            title,
-            message,
-            std::vector<std::string>{"Yes"_(), "No"_()},
-            [xmb, title, args = std::move(args)](unsigned int choice) {
-                if(choice != 0) {
-                    return;
-                }
-                if(!launch_detached(args)) {
-                    xmb->emplace_overlay<app::message_overlay>(
-                        title,
-                        "The requested system action could not be started."_()
-                    );
-                }
-            },
-            true
-        );
-    }
-
-    bool add_guarded_system_actions(
-        std::vector<std::unique_ptr<menu_entry>>& entries,
-        app::shell* xmb,
-        dreamrender::resource_loader& loader
-    ) {
-        bool added = false;
-
-#if defined(__linux__)
-        if(command_available("loginctl")) {
-            entries.push_back(make_user_action_entry("Lock Screen"_(), "icon_action_lock.png", loader, [xmb]() {
-                if(!launch_detached({"loginctl", "lock-session"})) {
-                    xmb->emplace_overlay<app::message_overlay>("Lock Screen"_(), "The session could not be locked."_());
-                }
-                return result::success;
-            }));
-            added = true;
-
-            if(const char* session = std::getenv("XDG_SESSION_ID"); session != nullptr && *session != '\0') {
-                entries.push_back(make_user_action_entry("Log Out"_(), "icon_action_logout.png", loader, [xmb, session_id = std::string(session)]() {
-                    confirm_and_launch(
-                        xmb,
-                        "Log Out"_(),
-                        "Do you really want to log out of this session?"_(),
-                        {"loginctl", "terminate-session", session_id}
-                    );
-                    return result::success;
-                }));
-                added = true;
-            }
-        }
-
-        if(command_available("systemctl")) {
-            entries.push_back(make_user_action_entry("Suspend"_(), "icon_action_suspend.png", loader, [xmb]() {
-                confirm_and_launch(
-                    xmb,
-                    "Suspend"_(),
-                    "Do you really want to suspend the system?"_(),
-                    {"systemctl", "suspend"}
-                );
-                return result::success;
-            }));
-            entries.push_back(make_user_action_entry("Reboot"_(), "icon_action_reboot.png", loader, [xmb]() {
-                confirm_and_launch(
-                    xmb,
-                    "Reboot"_(),
-                    "Do you really want to reboot the system?"_(),
-                    {"systemctl", "reboot"}
-                );
-                return result::success;
-            }));
-            entries.push_back(make_user_action_entry("Power off"_(), "icon_action_poweroff.png", loader, [xmb]() {
-                confirm_and_launch(
-                    xmb,
-                    "Power off"_(),
-                    "Do you really want to power off the system?"_(),
-                    {"systemctl", "poweroff"}
-                );
-                return result::success;
-            }));
-            added = true;
-        }
-#elif defined(__APPLE__)
-        const std::filesystem::path cg_session = "/System/Library/CoreServices/Menu Extras/User.menu/Contents/Resources/CGSession";
-        std::error_code ec;
-        if(std::filesystem::exists(cg_session, ec) && !ec) {
-            entries.push_back(make_user_action_entry("Lock Screen"_(), "icon_action_lock.png", loader, [xmb, cg_session]() {
-                if(!launch_detached({cg_session.string(), "-suspend"})) {
-                    xmb->emplace_overlay<app::message_overlay>("Lock Screen"_(), "The session could not be locked."_());
-                }
-                return result::success;
-            }));
-            added = true;
-        }
-
-        if(command_available("osascript")) {
-            entries.push_back(make_user_action_entry("Log Out"_(), "icon_action_logout.png", loader, [xmb]() {
-                confirm_and_launch(
-                    xmb,
-                    "Log Out"_(),
-                    "Do you really want to log out of this session?"_(),
-                    {"osascript", "-e", "tell application \"System Events\" to log out"}
-                );
-                return result::success;
-            }));
-            entries.push_back(make_user_action_entry("Sleep"_(), "icon_action_suspend.png", loader, [xmb]() {
-                confirm_and_launch(
-                    xmb,
-                    "Sleep"_(),
-                    "Do you really want to sleep the system?"_(),
-                    {"osascript", "-e", "tell application \"System Events\" to sleep"}
-                );
-                return result::success;
-            }));
-            entries.push_back(make_user_action_entry("Reboot"_(), "icon_action_reboot.png", loader, [xmb]() {
-                confirm_and_launch(
-                    xmb,
-                    "Reboot"_(),
-                    "Do you really want to reboot the system?"_(),
-                    {"osascript", "-e", "tell application \"System Events\" to restart"}
-                );
-                return result::success;
-            }));
-            entries.push_back(make_user_action_entry("Power off"_(), "icon_action_poweroff.png", loader, [xmb]() {
-                confirm_and_launch(
-                    xmb,
-                    "Power off"_(),
-                    "Do you really want to power off the system?"_(),
-                    {"osascript", "-e", "tell application \"System Events\" to shut down"}
-                );
-                return result::success;
-            }));
-            added = true;
-        }
-#endif
-
-        return added;
     }
 
     } // namespace
@@ -380,31 +249,14 @@ namespace menu {
 
         entries.clear();
         users = scan_users();
-        
-        for (const auto& user : users) {
-            dreamrender::texture icon_texture(loader.getDevice(), loader.getAllocator());
-            
-            std::string display_name = user.username;
-            if (user.is_admin) {
-                display_name += " (Admin)";
-            }
-            
-            auto entry = std::make_unique<action_menu_entry>(
-                display_name, 
-                std::move(icon_texture),
-                std::function<result()>{}, 
-                [this, user](action a) { 
-                    return activate_user(user, a); 
-                }
-            );
-            
-            entries.push_back(std::move(entry));
-        }
 
-        // Add Quit option (PS3-style behavior under Users column)
-        entries.push_back(make_user_action_entry("Quit OpenXMB"_(), "icon_action_quit.png", loader, [this]() {
+        // Keep the measured reference rail stable. The first item exits only
+        // after the shell's existing confirmation path; it never calls an OS
+        // shutdown command directly.
+        entries.push_back(make_user_action_entry(
+            "Turn Off System"_(), "xmb_icon_054.png", "icon_action_quit.png", loader, [this]() {
             xmb->emplace_overlay<app::message_overlay>(
-                "Quit OpenXMB"_(),
+                "Turn Off System"_(),
                 "Do you want to quit OpenXMB?"_(),
                 std::vector<std::string>{"Yes"_(), "No"_()},
                 [](unsigned int idx) {
@@ -419,7 +271,41 @@ namespace menu {
             return result::success;
         }));
 
-        add_guarded_system_actions(entries, xmb, loader);
+        entries.push_back(make_user_action_entry(
+            "Create New User"_(), "xmb_icon_041.png", "icon_category_users.png", loader, [this]() {
+                xmb->emplace_overlay<app::message_overlay>(
+                    "Create New User"_(),
+                    "User creation is not available on this system."_()
+                );
+                return result::success;
+            }));
+
+        dreamrender::texture current_user_icon(loader.getDevice(), loader.getAllocator());
+        auto current_user = std::make_unique<action_menu_entry>(
+            "*User"_(),
+            std::move(current_user_icon),
+            std::function<result()>{},
+            [this](action user_action) {
+                if(users.empty()) {
+                    if(user_action == action::ok || user_action == action::options) {
+                        xmb->emplace_overlay<app::message_overlay>(
+                            "User Information"_(),
+                            "No local user information is available."_()
+                        );
+                        return result::success;
+                    }
+                    return result::unsupported;
+                }
+                return activate_user(users.front(), user_action);
+            }
+        );
+        const auto compatibility_user_icon = config::CONFIG.asset_directory /
+            "compat/xmb-ui-compat/icons/xmb_icon_041.png";
+        if(!load_icon_if_present(loader, *current_user, compatibility_user_icon)) {
+            load_icon_if_present(loader, *current_user,
+                config::CONFIG.asset_directory / "icons/icon_category_users.png");
+        }
+        entries.push_back(std::move(current_user));
 
         selected_submenu = 0;
         if(!selected_name.empty()) {

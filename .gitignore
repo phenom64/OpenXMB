@@ -2,8 +2,12 @@
 /build/
 /dist/
 /out/
+/.workflow/
 CMakeUserPresets.json
 .DS_Store
+__pycache__/
+*.pyc
+*.obj
 *.slo
 *.lo
 *.o

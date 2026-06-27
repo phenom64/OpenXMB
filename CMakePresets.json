@@ -79,6 +79,35 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
+    },
+    {
+      "name": "windows-native",
+      "displayName": "Native XMB Windows Release",
+      "description": "Self-discovering LLVM/Windows SDK/vcpkg build against the local AuroreEngine checkout.",
+      "inherits": "default",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "binaryDir": "${sourceDir}/build/native",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/windows-clang-vcpkg.cmake",
+      "cacheVariables": {
+        "DREAMRENDER_LOCAL": "$env{USERPROFILE}/Developer/AuroreEngine",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "BUILD_TESTING": "ON",
+        "OPENXMB_IMPORT_XMB_WEB_COMPAT": "ON",
+        "OPENXMB_XMB_WEB_SOURCE": "$env{USERPROFILE}/Developer/xmb-web"
+      }
+    },
+    {
+      "name": "windows-native-dev",
+      "displayName": "Native XMB Windows Debug",
+      "inherits": "windows-native",
+      "binaryDir": "${sourceDir}/build/native-dev",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
     }
   ],
   "buildPresets": [
@@ -105,6 +134,16 @@
     {
       "name": "windows-vcpkg-dev",
       "configurePreset": "windows-vcpkg-dev"
+    },
+    {
+      "name": "windows-native",
+      "configurePreset": "windows-native",
+      "jobs": 2
+    },
+    {
+      "name": "windows-native-dev",
+      "configurePreset": "windows-native-dev",
+      "jobs": 2
     }
   ]
 }
