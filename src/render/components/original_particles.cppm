@@ -39,7 +39,7 @@ namespace render {
 // Additive particle sprite renderer for the Original background
 export class particles_renderer {
   public:
-    static constexpr uint32_t kParticles = 768; // tunable; keep modest for mobile GPUs
+    static constexpr uint32_t kParticles = 1400; // xmb-web's base Original-background cloud density
 
     particles_renderer(vk::Device device, vma::Allocator allocator, vk::Extent2D frameSize)
       : device(device), allocator(allocator), frameSize(frameSize), aspectRatio(static_cast<double>(frameSize.width)/frameSize.height) {}

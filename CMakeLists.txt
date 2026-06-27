@@ -357,6 +357,7 @@ set_target_properties(openxmb_media_core PROPERTIES CXX_SCAN_FOR_MODULES OFF)
 add_library(openxmb_catalog_core STATIC
   src/xmb/model/catalog.cpp
   src/xmb/model/navigation_state.cpp
+  src/xmb/model/settings_actions.cpp
   src/xmb/presentation/settings_scene.cpp
 )
 add_library(OpenXMB::CatalogCore ALIAS openxmb_catalog_core)
@@ -773,6 +774,15 @@ if(OPENXMB_BUILD_NATIVE_TESTS)
   openxmb_configure_native_test(openxmb_settings_scene_tests)
   add_test(NAME openxmb_settings_scene_tests
     COMMAND openxmb_settings_scene_tests)
+
+  add_executable(openxmb_settings_actions_tests
+    tests/xmb/settings_actions_tests.cpp
+  )
+  target_link_libraries(openxmb_settings_actions_tests PRIVATE OpenXMB::CatalogCore)
+  set_target_properties(openxmb_settings_actions_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  openxmb_configure_native_test(openxmb_settings_actions_tests)
+  add_test(NAME openxmb_settings_actions_tests
+    COMMAND openxmb_settings_actions_tests)
 
   add_executable(openxmb_localization_core_tests
     tests/localization/localization_core_tests.cpp

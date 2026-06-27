@@ -232,11 +232,13 @@ namespace app
             std::unique_ptr<image_renderer> image_render;
             std::unique_ptr<simple_renderer> simple_render;
             std::unique_ptr<render::wave_renderer> wave_render;
+            std::unique_ptr<render::particles_renderer> particles_render;
             std::unique_ptr<openxmb::xmb::CapturedWaveRenderer> captured_wave_render;
             std::unique_ptr<openxmb::xmb::MonthlyBackgroundRenderer> monthly_background_render;
             openxmb::xmb::StatusBarRenderer status_bar_render;
             bool captured_wave_failed{};
             bool monthly_background_failed{};
+            bool original_particles_failed{};
 
             vk::UniqueRenderPass backgroundRenderPass, shellRenderPass;
 

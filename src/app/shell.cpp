@@ -158,6 +158,8 @@ namespace app
         image_render = std::make_unique<image_renderer>(device, win->swapchainExtent, win->gpuFeatures);
         simple_render = std::make_unique<simple_renderer>(device, allocator, win->swapchainExtent, win->gpuFeatures);
         wave_render = std::make_unique<render::wave_renderer>(device, allocator, win->swapchainExtent);
+        particles_render = std::make_unique<render::particles_renderer>(
+            device, allocator, win->swapchainExtent);
         captured_wave_render = std::make_unique<openxmb::xmb::CapturedWaveRenderer>(
             device, allocator, win->swapchainExtent);
         monthly_background_render =
@@ -309,6 +311,16 @@ namespace app
         simple_render->preload({shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
         wave_render->preload({backgroundRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
         try {
+            particles_render->preload(
+                {backgroundRenderPass.get()}, win->config.sampleCount,
+                win->pipelineCache.get());
+        } catch(const std::exception& error) {
+            original_particles_failed = true;
+            spdlog::error(
+                "Original-background particle pipeline initialization failed ({}); continuing without particles",
+                error.what());
+        }
+        try {
             monthly_background_render->preload(
                 {backgroundRenderPass.get()}, win->config.sampleCount,
                 win->pipelineCache.get());
@@ -431,6 +443,7 @@ namespace app
             image_render->prepare(0);
             simple_render->prepare(0);
             wave_render->prepare(0);
+            particles_render->prepare(0);
             return;
         }
 
@@ -612,6 +625,7 @@ namespace app
         image_render->prepare(swapchainViews.size());
         simple_render->prepare(swapchainViews.size());
         wave_render->prepare(swapchainViews.size());
+        particles_render->prepare(swapchainViews.size());
     }
 
     void shell::reload_language() {
@@ -769,6 +783,23 @@ namespace app
                                     : openxmb::xmb::CapturedWaveBlendMode::idle_additive,
                                 parameters);
                             rendered_captured_wave = true;
+                            if(!original_particles_failed && particles_render) {
+                                try {
+                                    const float particle_brightness = std::clamp(
+                                        themeColour.brightness * (boot_wave ? 0.35F : 0.58F),
+                                        0.0F, 1.0F);
+                                    particles_render->render(
+                                        commandBuffer, frame,
+                                        backgroundRenderPass.get(),
+                                        baseThemeColour, particle_brightness,
+                                        static_cast<float>(fixed_wave_seconds_from_environment().value_or(seconds)));
+                                } catch(const std::exception& particle_error) {
+                                    original_particles_failed = true;
+                                    spdlog::error(
+                                        "Original-background particle rendering failed ({}); continuing without particles",
+                                        particle_error.what());
+                                }
+                            }
                         } catch(const std::exception& error) {
                             captured_wave_failed = true;
                             spdlog::error(

@@ -39,5 +39,9 @@ void main(){
     float a = halo*halo*0.70 + core*0.30;
     // Subtle tint; avoid stark white specks
     vec3 c = mix(pc.tint.rgb, vec3(1.0), 0.38);
-    FragColor = vec4(c, a * vAlpha);
+    // xmb-web's particle pass uses additive ONE/ONE blending with
+    // premultiplied colour. Keep the alpha term in RGB or every particle adds
+    // a full-bright sprite regardless of its soft falloff.
+    float alpha = a * vAlpha;
+    FragColor = vec4(c * alpha, alpha);
 }
