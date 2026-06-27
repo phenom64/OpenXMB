@@ -20,12 +20,21 @@
 
 module;
 
+#include "openxmb/xmb/catalog.hpp"
+#include "openxmb/xmb/settings_actions.hpp"
+#include "openxmb/xmb/settings_controller.hpp"
+
 #include <algorithm>
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <cstdlib>
 #include <filesystem>
+#include <optional>
+#include <string>
 #include <string_view>
+#include <unordered_set>
+#include <vector>
 
 module openxmb.app;
 
@@ -37,6 +46,7 @@ import vulkan_hpp;
 import vma;
 import dreamrender;
 import openxmb.xmb.root_scene;
+import openxmb.xmb.settings_scene_renderer;
 
 import openxmb.config;
 import :menu_base;
@@ -56,6 +66,8 @@ using namespace openxmb::xmb;
 
 inline constexpr double logical_width = 1920.0;
 inline constexpr double logical_height = 1080.0;
+inline constexpr int settings_category_index = 1;
+inline constexpr std::string_view initial_category_env = "OPENXMB_INITIAL_CATEGORY";
 
 struct contained_layout {
     double scale{};
@@ -128,6 +140,104 @@ struct contained_layout {
     spdlog::debug("Compatibility icon {} is unavailable; using clean icon {}",
         compatibility.string(), clean.string());
     return clean;
+}
+
+[[nodiscard]] bool file_exists(const std::filesystem::path& path) noexcept {
+    std::error_code error;
+    return std::filesystem::is_regular_file(path, error) && !error;
+}
+
+[[nodiscard]] std::optional<std::filesystem::path> resolve_compat_icon_ref(
+    const std::filesystem::path& asset_directory,
+    std::string_view icon_ref
+) {
+    constexpr std::string_view xmb_icon_prefix = "compat.icon.xmb.icon.";
+    constexpr std::string_view compat_icon_prefix = "compat.icon.";
+    const auto icon_directory = asset_directory / "compat/xmb-ui-compat/icons";
+
+    if(icon_ref.starts_with(xmb_icon_prefix)) {
+        const auto suffix = icon_ref.substr(xmb_icon_prefix.size());
+        const auto filename = suffix == "psn"
+            ? std::string{"xmb_icon_psn.png"}
+            : std::string{"xmb_icon_"} + std::string{suffix} + ".png";
+        const auto path = icon_directory / filename;
+        if(file_exists(path)) {
+            return path;
+        }
+    }
+
+    if(icon_ref.starts_with(compat_icon_prefix)) {
+        auto name = std::string{icon_ref.substr(compat_icon_prefix.size())};
+        std::ranges::replace(name, '.', '_');
+        const auto underscored = icon_directory / (name + ".png");
+        if(file_exists(underscored)) {
+            return underscored;
+        }
+        std::ranges::replace(name, '_', '-');
+        const auto dashed = icon_directory / (name + ".png");
+        if(file_exists(dashed)) {
+            return dashed;
+        }
+    }
+
+    return std::nullopt;
+}
+
+[[nodiscard]] double seconds_from_time_point(
+    std::chrono::steady_clock::time_point now) noexcept {
+    return std::chrono::duration<double>(now.time_since_epoch()).count();
+}
+
+[[nodiscard]] std::optional<int> initial_category_index_from_env() noexcept {
+    const auto* raw = std::getenv(initial_category_env.data());
+    if(raw == nullptr) {
+        return std::nullopt;
+    }
+
+    const std::string_view value{raw};
+    if(value.empty()) {
+        return std::nullopt;
+    }
+
+    constexpr std::array aliases{
+        std::pair{std::string_view{"0"}, 0},
+        std::pair{std::string_view{"users"}, 0},
+        std::pair{std::string_view{"category.users"}, 0},
+        std::pair{std::string_view{"1"}, 1},
+        std::pair{std::string_view{"settings"}, 1},
+        std::pair{std::string_view{"category.settings"}, 1},
+        std::pair{std::string_view{"2"}, 2},
+        std::pair{std::string_view{"photo"}, 2},
+        std::pair{std::string_view{"category.photo"}, 2},
+        std::pair{std::string_view{"3"}, 3},
+        std::pair{std::string_view{"music"}, 3},
+        std::pair{std::string_view{"category.music"}, 3},
+        std::pair{std::string_view{"4"}, 4},
+        std::pair{std::string_view{"video"}, 4},
+        std::pair{std::string_view{"category.video"}, 4},
+        std::pair{std::string_view{"5"}, 5},
+        std::pair{std::string_view{"game"}, 5},
+        std::pair{std::string_view{"category.game"}, 5},
+        std::pair{std::string_view{"6"}, 6},
+        std::pair{std::string_view{"network"}, 6},
+        std::pair{std::string_view{"category.network"}, 6},
+        std::pair{std::string_view{"7"}, 7},
+        std::pair{std::string_view{"psn"}, 7},
+        std::pair{std::string_view{"online"}, 7},
+        std::pair{std::string_view{"playstation.network"}, 7},
+        std::pair{std::string_view{"category.online"}, 7},
+        std::pair{std::string_view{"8"}, 8},
+        std::pair{std::string_view{"friends"}, 8},
+        std::pair{std::string_view{"category.friends"}, 8},
+    };
+
+    for(const auto& [alias, index] : aliases) {
+        if(value == alias) {
+            return index;
+        }
+    }
+
+    return -1;
 }
 
 void draw_icon(
@@ -203,7 +313,57 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, dreamrender
     menus.push_back(make_simple_of<menu::menu>("Friends"_(),
         preferred_icon(asset_directory, "xmb_icon_007.png", "icon_category_friends.png"), loader));
 
+    if(const auto initial_category = initial_category_index_from_env()) {
+        if(*initial_category >= 0 &&
+           static_cast<std::size_t>(*initial_category) < menus.size()) {
+            selected = *initial_category;
+            last_selected = selected;
+            last_selected_menu_item = menus[static_cast<std::size_t>(selected)]
+                ->get_selected_submenu();
+        } else {
+            spdlog::warn("Ignoring unsupported {} value", initial_category_env);
+        }
+    }
+
     menus[selected]->on_open();
+
+    const auto catalog_path = asset_directory / "catalog/en.json";
+    if(auto loaded = openxmb::xmb::load_catalog_file(catalog_path); loaded) {
+        settings_catalog.emplace(std::move(*loaded.value));
+        if(auto created = openxmb::xmb::SettingsCatalogController::create(*settings_catalog); created) {
+            settings_controller.emplace(std::move(*created.controller));
+            std::unordered_set<std::string> loaded_icon_refs;
+            for(const auto& [node_id, node] : settings_catalog->nodes) {
+                (void)node_id;
+                if(node.icon_ref.empty() || !loaded_icon_refs.insert(node.icon_ref).second) {
+                    continue;
+                }
+                auto texture = std::make_unique<dreamrender::texture>(device, allocator);
+                const auto path = resolve_compat_icon_ref(asset_directory, node.icon_ref)
+                    .value_or(asset_directory / "icons/icon_category_settings.png");
+                try {
+                    loader.loadTexture(texture.get(), path);
+                    settings_icon_textures.push_back({
+                        .semantic_id = node.icon_ref,
+                        .texture = std::move(texture),
+                    });
+                } catch(const std::exception& error) {
+                    spdlog::debug("Failed to queue Settings icon {} from {}: {}",
+                        node.icon_ref, path.string(), error.what());
+                }
+            }
+            spdlog::info("Loaded catalog-backed Settings controller with {} icon binding(s)",
+                settings_icon_textures.size());
+        } else {
+            spdlog::warn("Settings catalog loaded from {}, but controller creation failed",
+                catalog_path.string());
+        }
+    } else if(loaded.error) {
+        spdlog::warn("Could not load Settings catalog {}: {}",
+            catalog_path.string(), loaded.error->message);
+    } else {
+        spdlog::warn("Could not load Settings catalog {}", catalog_path.string());
+    }
 }
 
 result main_menu::on_action(action action) {
@@ -235,6 +395,10 @@ result main_menu::on_action(action action) {
 
 bool main_menu::select_relative(direction dir) {
     if(!in_submenu) {
+        if(settings_category_active() &&
+           (dir == direction::up || dir == direction::down)) {
+            return select_settings_relative(dir);
+        }
         if(dir == direction::left) {
             if(selected > 0) {
                 select(selected-1);
@@ -275,6 +439,9 @@ bool main_menu::select_relative(direction dir) {
     return false;
 }
 bool main_menu::activate_current(action action) {
+    if(settings_category_active()) {
+        return activate_settings(action);
+    }
     auto& menu = *menus[selected];
     auto res = menu.activate(action);
     if(res == result::submenu) {
@@ -301,6 +468,9 @@ bool main_menu::activate_current(action action) {
     return res == result::success;
 }
 bool main_menu::back() {
+    if(settings_category_active() && back_settings()) {
+        return true;
+    }
     if(in_submenu) {
         current_submenu->on_close();
         if(submenu_stack.empty()) {
@@ -314,6 +484,67 @@ bool main_menu::back() {
         return true;
     }
     return false;
+}
+
+bool main_menu::settings_category_active() const {
+    return selected == settings_category_index && settings_catalog &&
+        settings_controller && !in_submenu;
+}
+
+bool main_menu::select_settings_relative(direction dir) {
+    if(!settings_controller) {
+        return false;
+    }
+    const auto delta = dir == direction::up ? -1 : 1;
+    const auto step = settings_controller->move_selection(
+        delta, seconds_from_time_point(std::chrono::steady_clock::now()));
+    return step && step.changed;
+}
+
+bool main_menu::activate_settings(action action) {
+    if(action != action::ok || !settings_catalog || !settings_controller) {
+        return false;
+    }
+
+    const auto& route = settings_controller->route();
+    if(route.layer != openxmb::xmb::NavigationLayer::nested_menu) {
+        return false;
+    }
+    const auto* menu_node = settings_catalog->find_node(route.id);
+    if(!menu_node || route.selection >= menu_node->children.size()) {
+        return false;
+    }
+
+    const auto resolved = openxmb::xmb::resolve_settings_action(
+        *settings_catalog, menu_node->children[route.selection]);
+    if(!resolved || !resolved.plan) {
+        return false;
+    }
+
+    switch(resolved.plan->kind) {
+        case openxmb::xmb::SettingsActionKind::navigate_menu: {
+            const auto step = settings_controller->activate(
+                seconds_from_time_point(std::chrono::steady_clock::now()));
+            return step && step.changed;
+        }
+        case openxmb::xmb::SettingsActionKind::simulated_setting:
+            spdlog::info("Settings '{}' is catalog-backed but value panels are not live-wired yet",
+                resolved.plan->node_id);
+            return true;
+        default:
+            spdlog::info("Settings action '{}' resolves to '{}', but dialog/wizard presentation is not live-wired yet",
+                resolved.plan->node_id, resolved.plan->target_id);
+            return false;
+    }
+}
+
+bool main_menu::back_settings() {
+    if(!settings_controller || settings_controller->navigation().stack.size() <= 2) {
+        return false;
+    }
+    const auto step = settings_controller->back(
+        seconds_from_time_point(std::chrono::steady_clock::now()));
+    return step && step.changed;
 }
 
 void main_menu::select(int index) {
@@ -371,6 +602,9 @@ void main_menu::render(dreamrender::gui_renderer& renderer) {
     bool in_submenu_now = in_submenu || partial > 0.0;
 
     render_crossbar(renderer, now);
+    if(settings_category_active()) {
+        render_settings_scene(renderer, now);
+    }
 
     std::vector<std::pair<action, std::string>> buttons{};
     buttons.reserve(5);
@@ -382,6 +616,32 @@ void main_menu::render(dreamrender::gui_renderer& renderer) {
     if(in_submenu_now) {
         xmb->render_controller_buttons(renderer, 0.5f, 0.9f, buttons);
     }
+}
+
+void main_menu::render_settings_scene(dreamrender::gui_renderer& renderer, time_point now) {
+    if(!settings_catalog || !settings_controller) {
+        return;
+    }
+
+    const auto sampled = settings_controller->sample_scene(seconds_from_time_point(now));
+    if(!sampled) {
+        return;
+    }
+
+    std::vector<openxmb::xmb::SettingsSceneIcon> icons;
+    icons.reserve(settings_icon_textures.size());
+    for(const auto& entry : settings_icon_textures) {
+        icons.push_back({
+            .semantic_id = entry.semantic_id,
+            .texture = entry.texture.get(),
+        });
+    }
+
+    settings_scene_renderer.render(
+        renderer,
+        sampled.snapshot,
+        icons,
+        {.glass_icons = config::CONFIG.iconGlassRefraction});
 }
 
 void main_menu::render_crossbar(dreamrender::gui_renderer& renderer, time_point now) {
@@ -477,6 +737,10 @@ void main_menu::render_crossbar(dreamrender::gui_renderer& renderer, time_point 
     };
 
     const auto rail_alpha = std::max(0.0, 1.0 - submenu_transition);
+    if(settings_category_active()) {
+        return;
+    }
+
     if(selected != last_selected && category_linear < 1.0) {
         const auto travel = static_cast<double>(selected - last_selected) * kCategorySpacing;
         const auto old_shift = -travel * category_eased;

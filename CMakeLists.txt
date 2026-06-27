@@ -938,6 +938,10 @@ if(UNIX)
         FILES ${CMAKE_CURRENT_SOURCE_DIR}/config.json
         DESTINATION "${OPENXMB_CONFIG_INSTALL_DIR}"
     )
+    install(
+        FILES ${CMAKE_CURRENT_SOURCE_DIR}/assets/xmb/catalog/en.json
+        DESTINATION "${OPENXMB_SHELL_INSTALL_DIR}/catalog"
+    )
 
     # Install assets from interfaceFX (icons, sounds, fonts) into share/shell
     install(CODE "
@@ -1013,6 +1017,11 @@ if(UNIX)
     set(_dev_shell_dir "${CMAKE_CURRENT_BINARY_DIR}/share/shell")
     file(MAKE_DIRECTORY "${_dev_shell_dir}/icons")
     file(MAKE_DIRECTORY "${_dev_shell_dir}/sounds")
+    file(MAKE_DIRECTORY "${_dev_shell_dir}/catalog")
+    openxmb_configure_copy_if_exists(
+      "${CMAKE_CURRENT_SOURCE_DIR}/assets/xmb/catalog/en.json"
+      "${_dev_shell_dir}/catalog/en.json"
+    )
     # Font
     openxmb_configure_copy_if_exists(
       "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/TypefaceServer/Play-Regular.ttf"
@@ -1058,6 +1067,11 @@ if(WIN32)
     set(_win_icon_src_dir "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/GraphicsServer/HomeMenu")
     file(MAKE_DIRECTORY "${_win_dev_shell_dir}/icons")
     file(MAKE_DIRECTORY "${_win_dev_shell_dir}/sounds")
+    file(MAKE_DIRECTORY "${_win_dev_shell_dir}/catalog")
+    openxmb_configure_copy_if_exists(
+      "${CMAKE_CURRENT_SOURCE_DIR}/assets/xmb/catalog/en.json"
+      "${_win_dev_shell_dir}/catalog/en.json"
+    )
     openxmb_configure_copy_if_exists(
       "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/TypefaceServer/Play-Regular.ttf"
       "${_win_dev_shell_dir}/Play-Regular.ttf"

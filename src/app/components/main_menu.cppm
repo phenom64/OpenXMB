@@ -23,8 +23,13 @@
 
 module;
 
+#include "openxmb/xmb/catalog.hpp"
+#include "openxmb/xmb/settings_controller.hpp"
+
 #include <chrono>
 #include <memory>
+#include <optional>
+#include <string>
 #include <vector>
 
 export module openxmb.app:main_menu;
@@ -35,6 +40,7 @@ import sdl2;
 import vulkan_hpp;
 import vma;
 import openxmb.utils;
+import openxmb.xmb.settings_scene_renderer;
 
 namespace app {
 
@@ -66,6 +72,11 @@ class main_menu : public action_receiver {
         bool select_relative(direction dir);
         bool activate_current(action action);
         bool back();
+        bool settings_category_active() const;
+        bool select_settings_relative(direction dir);
+        bool activate_settings(action action);
+        bool back_settings();
+        void render_settings_scene(dreamrender::gui_renderer& renderer, time_point now);
 
         std::vector<std::unique_ptr<menu::menu>> menus;
         int selected = 0;
@@ -87,6 +98,16 @@ class main_menu : public action_receiver {
         int last_selected_submenu_item = 0;
         time_point last_selected_submenu_item_transition;
         constexpr static auto transition_submenu_item_duration = std::chrono::milliseconds(200);
+
+        struct settings_icon_texture {
+            std::string semantic_id;
+            std::unique_ptr<dreamrender::texture> texture;
+        };
+
+        std::optional<openxmb::xmb::Catalog> settings_catalog;
+        std::optional<openxmb::xmb::SettingsCatalogController> settings_controller;
+        openxmb::xmb::SettingsSceneRenderer settings_scene_renderer;
+        std::vector<settings_icon_texture> settings_icon_textures;
 };
 
 }
