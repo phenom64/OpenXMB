@@ -22,6 +22,12 @@ struct BackgroundGradient {
 [[nodiscard]] BackgroundGradient
 resolve_background_gradient(int month_zero_based, float local_hour) noexcept;
 
+// Manual PS3 Colour selections keep the same Original background structure and
+// day/night envelope, but replace the month hue with the selected palette hue.
+[[nodiscard]] BackgroundGradient
+resolve_manual_background_gradient(std::array<float, 3> rgb,
+                                   float local_hour) noexcept;
+
 // Deterministic visual runs may pin wall time without changing normal runtime
 // behavior. Invalid values are ignored and the live clock remains authoritative.
 [[nodiscard]] std::optional<std::chrono::system_clock::time_point>

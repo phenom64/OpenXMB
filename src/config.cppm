@@ -99,7 +99,7 @@ export namespace config
 
             bool showFPS    = false;
             bool showMemory = false;
-            bool iconGlassRefraction = false;
+            bool iconGlassRefraction = true;
 
             std::filesystem::path   fontPath;
             background_type			backgroundType = background_type::original;

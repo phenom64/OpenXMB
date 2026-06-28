@@ -695,9 +695,24 @@ namespace app
             const auto local_hour = static_cast<float>(local_time.tm_hour) +
                 static_cast<float>(local_time.tm_min) / 60.0F +
                 static_cast<float>(local_time.tm_sec) / 3600.0F;
-            const auto monthly_gradient =
+            const auto original_gradient =
                 openxmb::xmb::resolve_background_gradient(
                     local_time.tm_mon, local_hour);
+            const auto manual_gradient =
+                openxmb::xmb::resolve_manual_background_gradient(
+                    {themeColour.base_colour.r, themeColour.base_colour.g,
+                     themeColour.base_colour.b},
+                    local_hour);
+            const auto background_gradient = config::CONFIG.themeOriginalColour
+                ? original_gradient
+                : manual_gradient;
+            // xmb-web's Original background lets the calendar-driven gradient
+            // carry the hue.  The captured ribbon and dust/glints stay close to
+            // neutral silver/white so they read over every month instead of
+            // forcing the older OpenXMB theme colour (which made the scene feel
+            // stuck on June/cyan).
+            constexpr glm::vec3 original_effect_tint{0.96F, 0.97F, 1.0F};
+            constexpr float original_effect_brightness = 1.0F;
             const bool can_render_monthly_background =
                 config::CONFIG.backgroundType ==
                     config::config::background_type::original &&
@@ -727,7 +742,7 @@ namespace app
                         try {
                             monthly_background_render->render(
                                 commandBuffer, backgroundRenderPass.get(),
-                                monthly_gradient);
+                                background_gradient);
                         } catch(const std::exception& error) {
                             monthly_background_failed = true;
                             spdlog::error(
@@ -786,12 +801,13 @@ namespace app
                             if(!original_particles_failed && particles_render) {
                                 try {
                                     const float particle_brightness = std::clamp(
-                                        themeColour.brightness * (boot_wave ? 0.35F : 0.58F),
+                                        original_effect_brightness *
+                                            (boot_wave ? 0.35F : 0.58F),
                                         0.0F, 1.0F);
                                     particles_render->render(
                                         commandBuffer, frame,
                                         backgroundRenderPass.get(),
-                                        baseThemeColour, particle_brightness,
+                                        original_effect_tint, particle_brightness,
                                         static_cast<float>(fixed_wave_seconds_from_environment().value_or(seconds)));
                                 } catch(const std::exception& particle_error) {
                                     original_particles_failed = true;
@@ -808,7 +824,7 @@ namespace app
                         }
                     }
                     if(!rendered_captured_wave) {
-                        wave_render->waveColor = baseThemeColour;
+                        wave_render->waveColor = original_effect_tint;
                         wave_render->render(
                             commandBuffer, frame, backgroundRenderPass.get());
                     }

@@ -50,7 +50,7 @@ namespace config
 
 namespace
 {
-    constexpr int current_config_version = 2;
+    constexpr int current_config_version = 3;
     constexpr double min_controller_cursor_speed = 0.10;
     constexpr double max_controller_cursor_speed = 4.0;
 
@@ -74,6 +74,16 @@ namespace
     }
 
     const std::array<std::string, 12>& default_month_colours()
+    {
+        static const std::array<std::string, 12> colours = {
+            "#ffff60", "#87c545", "#eb6793", "#1c5c1a",
+            "#704d92", "#3ad2af", "#4aa2c2", "#c459df",
+            "#ffe750", "#684d2b", "#ce4644", "#ffffff",
+        };
+        return colours;
+    }
+
+    const std::array<std::string, 12>& legacy_month_colours()
     {
         static const std::array<std::string, 12> colours = {
             "#f2e6a6", "#9e4540", "#4da640", "#f299cc",
@@ -286,6 +296,7 @@ namespace
 
         auto& shell = config["shell"];
         auto& controller = config["controller"];
+        auto& render = config["render"];
 
         if(shell.contains("theme-color-mode") && !shell.contains("theme-colour-mode")) {
             shell["theme-colour-mode"] = shell["theme-color-mode"];
@@ -336,6 +347,21 @@ namespace
         if(!shell.contains("theme-month-time-colours")) {
             shell["theme-month-time-colours"] = build_month_time_colours(default_month_colours());
             migrated = true;
+        }
+
+        if(version < 3) {
+            if(shell.contains("theme-month-colours") &&
+                shell["theme-month-colours"] == nlohmann::json(legacy_month_colours())) {
+                shell["theme-month-colours"] = default_month_colours();
+                shell["theme-month-time-colours"] = build_month_time_colours(default_month_colours());
+                migrated = true;
+            }
+            if(!render.contains("icon-glass-refraction") ||
+                (render["icon-glass-refraction"].is_boolean() &&
+                 !render["icon-glass-refraction"].get<bool>())) {
+                render["icon-glass-refraction"] = true;
+                migrated = true;
+            }
         }
 
         if(version < current_config_version) {

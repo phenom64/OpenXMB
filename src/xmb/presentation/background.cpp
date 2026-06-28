@@ -125,6 +125,18 @@ BackgroundGradient resolve_background_gradient(int month_zero_based,
   };
 }
 
+BackgroundGradient resolve_manual_background_gradient(std::array<float, 3> rgb,
+                                                      float local_hour) noexcept {
+  for (auto &channel : rgb) {
+    channel = std::clamp(channel, 0.0F, 1.0F);
+  }
+  return {
+      .top_rgb = rgb,
+      .bottom_rgb = rgb,
+      .night_day_blend = night_day_blend(local_hour),
+  };
+}
+
 std::optional<std::chrono::system_clock::time_point>
 parse_unix_seconds(std::string_view value) noexcept {
   if (value.empty()) {

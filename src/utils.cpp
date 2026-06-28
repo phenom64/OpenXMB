@@ -18,6 +18,8 @@
 
 module;
 
+#include "openxmb/xmb/background.hpp"
+
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -206,18 +208,18 @@ namespace utils {
         const std::array<glm::vec3, 12>& fallback_month_colours()
         {
             static const std::array<glm::vec3, 12> colours = {
-                glm::vec3{0.95f, 0.90f, 0.65f}, // Jan - pale yellow
-                glm::vec3{0.62f, 0.27f, 0.25f}, // Feb - red/brown
-                glm::vec3{0.30f, 0.65f, 0.25f}, // Mar - green
-                glm::vec3{0.95f, 0.60f, 0.80f}, // Apr - pink
-                glm::vec3{0.60f, 0.80f, 0.35f}, // May - light green
-                glm::vec3{0.70f, 0.60f, 0.90f}, // Jun - purple
-                glm::vec3{0.50f, 0.85f, 0.95f}, // Jul - cyan
-                glm::vec3{0.20f, 0.45f, 0.95f}, // Aug - blue
-                glm::vec3{0.18f, 0.18f, 0.45f}, // Sep - navy
-                glm::vec3{0.60f, 0.30f, 0.70f}, // Oct - violet
-                glm::vec3{0.80f, 0.50f, 0.25f}, // Nov - orange/brown
-                glm::vec3{0.90f, 0.25f, 0.25f}, // Dec - red
+                glm::vec3{1.00f, 1.00f, 0.38f}, // Jan - xmb-web yellow
+                glm::vec3{0.53f, 0.77f, 0.27f}, // Feb - xmb-web green
+                glm::vec3{0.92f, 0.40f, 0.58f}, // Mar - xmb-web rose
+                glm::vec3{0.11f, 0.36f, 0.10f}, // Apr - xmb-web deep green
+                glm::vec3{0.44f, 0.30f, 0.57f}, // May - xmb-web purple
+                glm::vec3{0.23f, 0.82f, 0.69f}, // Jun - xmb-web teal
+                glm::vec3{0.29f, 0.63f, 0.76f}, // Jul - xmb-web cyan
+                glm::vec3{0.77f, 0.35f, 0.87f}, // Aug - xmb-web magenta
+                glm::vec3{1.00f, 0.91f, 0.31f}, // Sep - xmb-web gold
+                glm::vec3{0.41f, 0.30f, 0.17f}, // Oct - xmb-web brown
+                glm::vec3{0.81f, 0.28f, 0.27f}, // Nov - xmb-web red
+                glm::vec3{1.00f, 1.00f, 1.00f}, // Dec - xmb-web white
             };
             return colours;
         }
@@ -238,6 +240,31 @@ namespace utils {
         glm::vec3 fallback_month_colour(int month_index)
         {
             return fallback_month_colours()[wrap_index(month_index, 12)];
+        }
+
+        glm::vec3 vec3_from_array(const std::array<float, 3>& colour)
+        {
+            return {colour[0], colour[1], colour[2]};
+        }
+
+        glm::vec3 xmb_web_month_anchor(int month_index)
+        {
+            const auto gradient = openxmb::xmb::resolve_background_gradient(
+                wrap_index(month_index, 12), 13.0F);
+            return clamp_colour(vec3_from_array(gradient.top_rgb));
+        }
+
+        float local_hour(const std::tm& lt)
+        {
+            return static_cast<float>(lt.tm_hour) +
+                static_cast<float>(lt.tm_min) / 60.0F +
+                static_cast<float>(lt.tm_sec) / 3600.0F;
+        }
+
+        float xmb_web_day_night_brightness(float hour)
+        {
+            const auto night = openxmb::xmb::night_day_blend(hour);
+            return 1.0F + (0.42F - 1.0F) * night;
         }
 
         float fallback_hour_brightness_sample(int hour)
@@ -352,45 +379,42 @@ namespace utils {
 
     glm::vec3 xmb_month_colour(int monthIndex)
     {
-        return configured_month_colour(monthIndex);
+        return xmb_web_month_anchor(monthIndex);
     }
 
     float xmb_hour_brightness(int hour, float minuteFrac)
     {
-        int h0 = wrap_index(hour, 24);
-        int h1 = wrap_index(h0 + 1, 24);
-        float t = std::clamp(minuteFrac, 0.0f, 1.0f);
-        return fallback_hour_brightness_sample(h0) * (1.0f - t) + fallback_hour_brightness_sample(h1) * t;
+        const float resolved_hour =
+            static_cast<float>(wrap_index(hour, 24)) +
+            std::clamp(minuteFrac, 0.0f, 1.0f);
+        return xmb_web_day_night_brightness(resolved_hour);
     }
 
     glm::vec3 xmb_dynamic_colour(std::chrono::system_clock::time_point now)
     {
         std::tm lt = local_time(now);
-        int days = days_in_month(lt.tm_year + 1900, lt.tm_mon);
-        return resolve_month_transition(lt.tm_mon, lt.tm_mday, days, configured_month_colour);
+        (void)lt.tm_mday;
+        return xmb_web_month_anchor(lt.tm_mon);
     }
 
     xmb_resolved_theme_colour xmb_resolve_theme_colour(std::chrono::system_clock::time_point now)
     {
         std::tm lt = local_time(now);
-        int days = days_in_month(lt.tm_year + 1900, lt.tm_mon);
-        float minute_frac = std::clamp(static_cast<float>(lt.tm_min) / 60.0f, 0.0f, 1.0f);
-        float fallback_brightness = xmb_hour_brightness(lt.tm_hour, minute_frac);
+        float brightness = xmb_web_day_night_brightness(local_hour(lt));
 
         if(!config::CONFIG.themeOriginalColour) {
             glm::vec3 base = clamp_colour(config::CONFIG.themeCustomColour);
             return {
                 base,
-                fallback_brightness,
-                clamp_colour(base * fallback_brightness),
+                brightness,
+                clamp_colour(base * brightness),
             };
         }
 
         glm::vec3 anchor = xmb_dynamic_colour(now);
-        glm::vec3 shaded = clamp_colour(resolve_month_time_colour(lt, minute_frac, days));
-        float brightness = derive_brightness(shaded, anchor, fallback_brightness);
+        glm::vec3 shaded = clamp_colour(anchor * brightness);
         return {
-            derive_base_colour(shaded, brightness),
+            anchor,
             brightness,
             shaded,
         };
