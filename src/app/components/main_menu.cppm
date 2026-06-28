@@ -30,6 +30,7 @@ module;
 #include <memory>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 export module openxmb.app:main_menu;
@@ -76,6 +77,8 @@ class main_menu : public action_receiver {
         bool select_settings_relative(direction dir);
         bool activate_settings(action action);
         bool back_settings();
+        bool open_settings_choice_overlay(const openxmb::xmb::CatalogNode& node);
+        void apply_initial_settings_route();
         void render_settings_scene(dreamrender::gui_renderer& renderer, time_point now);
 
         std::vector<std::unique_ptr<menu::menu>> menus;
@@ -108,6 +111,7 @@ class main_menu : public action_receiver {
         std::optional<openxmb::xmb::SettingsCatalogController> settings_controller;
         openxmb::xmb::SettingsSceneRenderer settings_scene_renderer;
         std::vector<settings_icon_texture> settings_icon_textures;
+        std::unordered_map<std::string, std::string> settings_value_labels;
 };
 
 }

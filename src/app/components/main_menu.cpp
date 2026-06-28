@@ -26,6 +26,7 @@ module;
 
 #include <algorithm>
 #include <array>
+#include <charconv>
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
@@ -51,6 +52,7 @@ import openxmb.xmb.settings_scene_renderer;
 import openxmb.config;
 import :menu_base;
 import :menu_utils;
+import :choice_overlay;
 import :applications_menu;
 import :settings_menu;
 import :users_menu;
@@ -68,6 +70,11 @@ inline constexpr double logical_width = 1920.0;
 inline constexpr double logical_height = 1080.0;
 inline constexpr int settings_category_index = 1;
 inline constexpr std::string_view initial_category_env = "OPENXMB_INITIAL_CATEGORY";
+inline constexpr std::string_view initial_settings_menu_env = "OPENXMB_INITIAL_SETTINGS_MENU";
+inline constexpr std::string_view initial_settings_selection_env =
+    "OPENXMB_INITIAL_SETTINGS_SELECTION";
+inline constexpr std::string_view initial_settings_open_choice_env =
+    "OPENXMB_OPEN_INITIAL_SETTINGS_CHOICE";
 
 struct contained_layout {
     double scale{};
@@ -191,6 +198,9 @@ struct contained_layout {
 [[nodiscard]] std::optional<int> initial_category_index_from_env() noexcept {
     const auto* raw = std::getenv(initial_category_env.data());
     if(raw == nullptr) {
+        if(std::getenv(initial_settings_menu_env.data()) != nullptr) {
+            return settings_category_index;
+        }
         return std::nullopt;
     }
 
@@ -238,6 +248,67 @@ struct contained_layout {
     }
 
     return -1;
+}
+
+[[nodiscard]] std::optional<std::string_view> env_string(std::string_view name) noexcept {
+    const auto* raw = std::getenv(name.data());
+    if(raw == nullptr || std::string_view{raw}.empty()) {
+        return std::nullopt;
+    }
+    return std::string_view{raw};
+}
+
+[[nodiscard]] std::optional<std::size_t> env_size(std::string_view name) noexcept {
+    const auto raw = env_string(name);
+    if(!raw) {
+        return std::nullopt;
+    }
+    std::size_t value{};
+    const auto* begin = raw->data();
+    const auto* end = begin + raw->size();
+    const auto parsed = std::from_chars(begin, end, value);
+    if(parsed.ec != std::errc{} || parsed.ptr != end) {
+        return std::nullopt;
+    }
+    return value;
+}
+
+[[nodiscard]] bool env_truthy(std::string_view name) noexcept {
+    const auto raw = env_string(name);
+    if(!raw) {
+        return false;
+    }
+    return *raw == "1" || *raw == "true" || *raw == "yes" || *raw == "on";
+}
+
+[[nodiscard]] bool find_settings_menu_path(
+    const openxmb::xmb::Catalog& catalog,
+    std::string_view current_menu_id,
+    std::string_view target_menu_id,
+    std::vector<std::size_t>& path
+) {
+    if(current_menu_id == target_menu_id) {
+        return true;
+    }
+
+    const auto* menu = catalog.find_node(current_menu_id);
+    if(!menu) {
+        return false;
+    }
+
+    for(std::size_t index = 0; index < menu->children.size(); ++index) {
+        const auto* child = catalog.find_node(menu->children[index]);
+        if(!child || child->children.empty()) {
+            continue;
+        }
+        path.push_back(index);
+        if(find_settings_menu_path(catalog, child->id, target_menu_id, path)) {
+            return true;
+        }
+        path.pop_back();
+    }
+
+    return false;
 }
 
 void draw_icon(
@@ -354,6 +425,7 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, dreamrender
             }
             spdlog::info("Loaded catalog-backed Settings controller with {} icon binding(s)",
                 settings_icon_textures.size());
+            apply_initial_settings_route();
         } else {
             spdlog::warn("Settings catalog loaded from {}, but controller creation failed",
                 catalog_path.string());
@@ -528,9 +600,15 @@ bool main_menu::activate_settings(action action) {
             return step && step.changed;
         }
         case openxmb::xmb::SettingsActionKind::simulated_setting:
-            spdlog::info("Settings '{}' is catalog-backed but value panels are not live-wired yet",
+            if(resolved.plan->may_update_settings_state) {
+                if(const auto* node = settings_catalog->find_node(resolved.plan->node_id);
+                   node && open_settings_choice_overlay(*node)) {
+                    return true;
+                }
+            }
+            spdlog::info("Settings '{}' is catalog-backed but has no live value panel yet",
                 resolved.plan->node_id);
-            return true;
+            return false;
         default:
             spdlog::info("Settings action '{}' resolves to '{}', but dialog/wizard presentation is not live-wired yet",
                 resolved.plan->node_id, resolved.plan->target_id);
@@ -545,6 +623,98 @@ bool main_menu::back_settings() {
     const auto step = settings_controller->back(
         seconds_from_time_point(std::chrono::steady_clock::now()));
     return step && step.changed;
+}
+
+bool main_menu::open_settings_choice_overlay(const openxmb::xmb::CatalogNode& node) {
+    if(!settings_catalog || node.choices.empty()) {
+        return false;
+    }
+
+    std::vector<std::string> labels;
+    labels.reserve(node.choices.size());
+    for(const auto& choice : node.choices) {
+        const auto localized = settings_catalog->text(choice.label_key);
+        labels.push_back(localized.empty() ? choice.value : std::string{localized});
+    }
+
+    auto selection = static_cast<unsigned int>(
+        std::min(node.default_selection, node.choices.size() - 1));
+    if(const auto saved = settings_value_labels.find(node.id);
+       saved != settings_value_labels.end()) {
+        for(std::size_t index = 0; index < labels.size(); ++index) {
+            if(labels[index] == saved->second) {
+                selection = static_cast<unsigned int>(index);
+                break;
+            }
+        }
+    }
+
+    xmb->emplace_overlay<app::choice_overlay>(
+        labels,
+        selection,
+        [this, node_id = node.id, labels](unsigned int index) {
+            if(index < labels.size()) {
+                settings_value_labels[node_id] = labels[index];
+            }
+        });
+    return true;
+}
+
+void main_menu::apply_initial_settings_route() {
+    if(!settings_catalog || !settings_controller) {
+        return;
+    }
+
+    const auto target_menu = env_string(initial_settings_menu_env);
+    if(!target_menu) {
+        return;
+    }
+    if(!openxmb::xmb::is_settings_catalog_id(*target_menu)) {
+        spdlog::warn("Ignoring non-Settings {} value", initial_settings_menu_env);
+        return;
+    }
+
+    selected = settings_category_index;
+    last_selected = selected;
+    last_selected_menu_item = menus[static_cast<std::size_t>(selected)]
+        ->get_selected_submenu();
+
+    std::vector<std::size_t> path;
+    if(!find_settings_menu_path(
+           *settings_catalog, "category.settings", *target_menu, path)) {
+        spdlog::warn("Ignoring unknown {} value '{}'",
+            initial_settings_menu_env, *target_menu);
+        return;
+    }
+
+    const auto now = seconds_from_time_point(std::chrono::steady_clock::now());
+    for(const auto selection : path) {
+        const auto selected_child = settings_controller->set_selection(selection, now);
+        if(!selected_child) {
+            spdlog::warn("Could not select Settings route segment {} for '{}'",
+                selection, *target_menu);
+            return;
+        }
+        const auto entered = settings_controller->activate(now);
+        if(!entered || !entered.changed) {
+            spdlog::warn("Could not enter Settings route segment {} for '{}'",
+                selection, *target_menu);
+            return;
+        }
+    }
+
+    if(const auto selection = env_size(initial_settings_selection_env)) {
+        if(const auto selected_child = settings_controller->set_selection(*selection, now);
+           !selected_child) {
+            spdlog::warn("Ignoring unsupported {} value",
+                initial_settings_selection_env);
+        }
+    }
+
+    if(env_truthy(initial_settings_open_choice_env) &&
+       !activate_settings(action::ok)) {
+        spdlog::warn("Could not open initial Settings choice panel");
+    }
 }
 
 void main_menu::select(int index) {
@@ -623,7 +793,17 @@ void main_menu::render_settings_scene(dreamrender::gui_renderer& renderer, time_
         return;
     }
 
-    const auto sampled = settings_controller->sample_scene(seconds_from_time_point(now));
+    std::vector<openxmb::xmb::SettingsValueOverride> value_overrides;
+    value_overrides.reserve(settings_value_labels.size());
+    for(const auto& [node_id, label] : settings_value_labels) {
+        value_overrides.push_back({
+            .node_id = node_id,
+            .localized_value = label,
+        });
+    }
+
+    const auto sampled = settings_controller->sample_scene(
+        seconds_from_time_point(now), value_overrides);
     if(!sampled) {
         return;
     }
