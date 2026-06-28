@@ -35,6 +35,7 @@ module;
 #include <string>
 #include <string_view>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 module openxmb.app;
@@ -190,6 +191,134 @@ struct contained_layout {
     return std::nullopt;
 }
 
+struct ps3_colour_entry {
+    std::string_view value;
+    glm::vec3 tint;
+    glm::vec3 swatch;
+};
+
+[[nodiscard]] const std::array<ps3_colour_entry, 21>& ps3_colour_palette() {
+    static const std::array<ps3_colour_entry, 21> colours{{
+        {"original", {0.820F, 0.620F, 0.900F}, {0.720F, 0.750F, 0.790F}},
+        {"yellow", {1.000F, 0.880F, 0.200F}, {0.800F, 0.720F, 0.110F}},
+        {"green", {0.650F, 0.870F, 0.300F}, {0.450F, 0.660F, 0.160F}},
+        {"pink", {1.000F, 0.640F, 0.720F}, {0.870F, 0.430F, 0.510F}},
+        {"dark.green", {0.250F, 0.700F, 0.250F}, {0.110F, 0.480F, 0.110F}},
+        {"light.purple", {0.820F, 0.620F, 0.900F}, {0.570F, 0.440F, 0.740F}},
+        {"teal", {0.300F, 0.880F, 0.850F}, {0.140F, 0.720F, 0.670F}},
+        {"dark.blue", {0.100F, 0.300F, 0.800F}, {0.030F, 0.220F, 0.650F}},
+        {"magenta", {0.700F, 0.300F, 0.800F}, {0.550F, 0.210F, 0.610F}},
+        {"orange", {1.000F, 0.700F, 0.150F}, {0.760F, 0.560F, 0.070F}},
+        {"brown", {0.620F, 0.430F, 0.180F}, {0.620F, 0.430F, 0.180F}},
+        {"red", {0.900F, 0.220F, 0.220F}, {0.900F, 0.220F, 0.220F}},
+        {"black", {0.060F, 0.060F, 0.075F}, {0.040F, 0.040F, 0.047F}},
+        {"white", {0.950F, 0.950F, 0.980F}, {0.950F, 0.950F, 0.960F}},
+        {"gray", {0.550F, 0.570F, 0.620F}, {0.550F, 0.560F, 0.620F}},
+        {"blue", {0.200F, 0.450F, 0.950F}, {0.210F, 0.450F, 0.950F}},
+        {"cyan", {0.200F, 0.850F, 0.950F}, {0.200F, 0.850F, 0.950F}},
+        {"lime", {0.550F, 0.950F, 0.200F}, {0.550F, 0.950F, 0.200F}},
+        {"gold", {1.000F, 0.780F, 0.250F}, {1.000F, 0.780F, 0.250F}},
+        {"violet", {0.550F, 0.350F, 0.950F}, {0.550F, 0.350F, 0.950F}},
+        {"crimson", {0.800F, 0.100F, 0.300F}, {0.800F, 0.100F, 0.300F}},
+    }};
+    return colours;
+}
+
+[[nodiscard]] std::optional<ps3_colour_entry> ps3_colour_for_value(
+    std::string_view value) {
+    for(const auto& colour : ps3_colour_palette()) {
+        if(colour.value == value) {
+            return colour;
+        }
+    }
+    return std::nullopt;
+}
+
+[[nodiscard]] bool near_colour(glm::vec3 lhs, glm::vec3 rhs) noexcept {
+    constexpr float tolerance = 0.006F;
+    return std::abs(lhs.r - rhs.r) <= tolerance &&
+           std::abs(lhs.g - rhs.g) <= tolerance &&
+           std::abs(lhs.b - rhs.b) <= tolerance;
+}
+
+[[nodiscard]] std::string_view current_ps3_colour_value() noexcept {
+    if(config::CONFIG.themeOriginalColour) {
+        return "original";
+    }
+
+    for(const auto& colour : ps3_colour_palette()) {
+        if(colour.value == "original") {
+            continue;
+        }
+        if(near_colour(config::CONFIG.themeCustomColour, colour.tint)) {
+            return colour.value;
+        }
+    }
+    return "light.purple";
+}
+
+[[nodiscard]] std::string_view current_ps3_background_value() noexcept {
+    using background_type = config::config::background_type;
+    switch(config::CONFIG.backgroundType) {
+        case background_type::original:
+            return "original";
+        case background_type::wave:
+            return "classic";
+        case background_type::image:
+            return "wallpaper";
+        case background_type::color:
+            return "brightness";
+    }
+    return "original";
+}
+
+[[nodiscard]] std::string_view current_ps3_theme_value() noexcept {
+    return config::CONFIG.backgroundType == config::config::background_type::wave
+        ? "classic"
+        : "original";
+}
+
+[[nodiscard]] std::string_view current_ps3_font_value() noexcept {
+    // The native font picker is not yet backed by packaged xmb-web font
+    // variants. Keep the panel enterable and truthful instead of guessing.
+    return "original";
+}
+
+[[nodiscard]] std::string_view current_ps3_day_night_value() noexcept {
+    // The current xmb-web background path follows the live clock unless a
+    // deterministic test timestamp is supplied.
+    return "auto.time.of.day";
+}
+
+[[nodiscard]] std::string_view current_dialog_value(std::string_view dialog_id) noexcept {
+    if(dialog_id == "dialog.colour") {
+        return current_ps3_colour_value();
+    }
+    if(dialog_id == "dialog.background") {
+        return current_ps3_background_value();
+    }
+    if(dialog_id == "dialog.theme") {
+        return current_ps3_theme_value();
+    }
+    if(dialog_id == "dialog.font") {
+        return current_ps3_font_value();
+    }
+    if(dialog_id == "dialog.day.night") {
+        return current_ps3_day_night_value();
+    }
+    return "";
+}
+
+[[nodiscard]] bool config_override_read_only() noexcept {
+    const auto* raw = std::getenv("OPENXMB_CONFIG_READ_ONLY");
+    if(raw == nullptr) {
+        return false;
+    }
+    const std::string_view value{raw};
+    return value == "1" || value == "true" || value == "TRUE" ||
+           value == "yes" || value == "YES" || value == "on" || value == "ON";
+}
+
 [[nodiscard]] double seconds_from_time_point(
     std::chrono::steady_clock::time_point now) noexcept {
     return std::chrono::duration<double>(now.time_since_epoch()).count();
@@ -314,6 +443,7 @@ struct contained_layout {
 void draw_icon(
     dreamrender::gui_renderer& renderer,
     const dreamrender::texture& texture,
+    const dreamrender::texture* glass_texture,
     const contained_layout& layout,
     double center_x,
     double center_y,
@@ -329,10 +459,29 @@ void draw_icon(
     const auto width = layout.width(extent);
     const auto height = layout.height(extent);
     const auto tint = glm::vec4(1.0f, 1.0f, 1.0f, static_cast<float>(alpha));
-    if(config::CONFIG.iconGlassRefraction) {
-        renderer.draw_image_glass(texture, x, y, width, height, tint);
+    if(config::CONFIG.iconGlassRefraction && glass_texture != nullptr && glass_texture->loaded) {
+        renderer.draw_image_glass(*glass_texture, x, y, width, height, tint);
     } else {
         renderer.draw_image_a(texture, x, y, width, height, tint);
+    }
+}
+
+void draw_normalized_icon(
+    dreamrender::gui_renderer& renderer,
+    const dreamrender::texture& texture,
+    const dreamrender::texture* glass_texture,
+    float x,
+    float y,
+    double width,
+    double height,
+    glm::vec4 tint = glm::vec4{1.0F}
+) {
+    if(config::CONFIG.iconGlassRefraction && glass_texture != nullptr && glass_texture->loaded) {
+        renderer.draw_image_glass(*glass_texture, x, y,
+            static_cast<float>(width), static_cast<float>(height), tint);
+    } else {
+        renderer.draw_image_a(texture, x, y,
+            static_cast<float>(width), static_cast<float>(height), tint);
     }
 }
 
@@ -414,9 +563,15 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, dreamrender
                     .value_or(asset_directory / "icons/icon_category_settings.png");
                 try {
                     loader.loadTexture(texture.get(), path);
+                    std::unique_ptr<dreamrender::texture> glass_texture;
+                    if(const auto normal_map = menu::xmb_web_normal_map_for_icon(path)) {
+                        glass_texture = std::make_unique<dreamrender::texture>(device, allocator);
+                        loader.loadTexture(glass_texture.get(), *normal_map);
+                    }
                     settings_icon_textures.push_back({
                         .semantic_id = node.icon_ref,
                         .texture = std::move(texture),
+                        .glass_texture = std::move(glass_texture),
                     });
                 } catch(const std::exception& error) {
                     spdlog::debug("Failed to queue Settings icon {} from {}: {}",
@@ -599,6 +754,13 @@ bool main_menu::activate_settings(action action) {
                 seconds_from_time_point(std::chrono::steady_clock::now()));
             return step && step.changed;
         }
+        case openxmb::xmb::SettingsActionKind::open_dialog:
+            if(open_settings_dialog_choice_overlay(*resolved.plan)) {
+                return true;
+            }
+            spdlog::info("Settings dialog '{}' is catalog-backed but has no live presenter yet",
+                resolved.plan->target_id);
+            return false;
         case openxmb::xmb::SettingsActionKind::simulated_setting:
             if(resolved.plan->may_update_settings_state) {
                 if(const auto* node = settings_catalog->find_node(resolved.plan->node_id);
@@ -657,6 +819,139 @@ bool main_menu::open_settings_choice_overlay(const openxmb::xmb::CatalogNode& no
                 settings_value_labels[node_id] = labels[index];
             }
         });
+    return true;
+}
+
+bool main_menu::open_settings_dialog_choice_overlay(
+    const openxmb::xmb::SettingsActionPlan& plan) {
+    if(!settings_catalog) {
+        return false;
+    }
+    if(plan.target_id.rfind("dialog.", 0) != 0) {
+        return false;
+    }
+
+    const auto dialog_it = settings_catalog->dialogs.find(plan.target_id);
+    if(dialog_it == settings_catalog->dialogs.end() ||
+       dialog_it->second.choices.empty()) {
+        return false;
+    }
+
+    const auto& dialog = dialog_it->second;
+    std::vector<std::string> labels;
+    labels.reserve(dialog.choices.size());
+    for(const auto& choice : dialog.choices) {
+        const auto localized = settings_catalog->text(choice.label_key);
+        labels.push_back(localized.empty() ? choice.value : std::string{localized});
+    }
+
+    const auto current_value = current_dialog_value(plan.target_id);
+    unsigned int selection = 0;
+    if(!current_value.empty()) {
+        for(std::size_t index = 0; index < dialog.choices.size(); ++index) {
+            if(dialog.choices[index].value == current_value) {
+                selection = static_cast<unsigned int>(index);
+                break;
+            }
+        }
+    }
+    if(selection < labels.size()) {
+        settings_value_labels[plan.node_id] = labels[selection];
+    }
+
+    std::vector<glm::vec3> swatches;
+    if(plan.target_id == "dialog.colour") {
+        swatches.reserve(dialog.choices.size());
+        for(const auto& choice : dialog.choices) {
+            const auto colour = ps3_colour_for_value(choice.value)
+                .value_or(ps3_colour_entry{choice.value, {0.72F, 0.75F, 0.79F}, {0.72F, 0.75F, 0.79F}});
+            swatches.push_back(colour.swatch);
+        }
+    }
+
+    const auto dialog_id = plan.target_id;
+    const auto node_id = plan.node_id;
+    auto* overlay = xmb->emplace_overlay<app::choice_overlay>(
+        labels,
+        selection,
+        [this,
+         dialog_id,
+         node_id,
+         labels,
+         choices = dialog.choices](unsigned int index) {
+            if(index >= choices.size() || index >= labels.size()) {
+                return;
+            }
+
+            bool applied = false;
+            const auto& choice = choices[index];
+            if(dialog_id == "dialog.colour") {
+                if(choice.value == "original") {
+                    config::CONFIG.setThemeOriginalColour(true);
+                    applied = true;
+                } else if(const auto colour = ps3_colour_for_value(choice.value)) {
+                    config::CONFIG.setThemeOriginalColour(false);
+                    config::CONFIG.setThemeCustomColour(colour->tint);
+                    applied = true;
+                }
+            } else if(dialog_id == "dialog.background") {
+                using background_type = config::config::background_type;
+                if(choice.value == "original") {
+                    config::CONFIG.setBackgroundType(background_type::original);
+                    applied = true;
+                } else if(choice.value == "classic") {
+                    config::CONFIG.setBackgroundType(background_type::wave);
+                    applied = true;
+                } else if(choice.value == "wallpaper") {
+                    if(!config::CONFIG.backgroundImage.empty()) {
+                        config::CONFIG.setBackgroundType(background_type::image);
+                        applied = true;
+                    } else {
+                        spdlog::info("Background Wallpaper is available only after a wallpaper path is configured");
+                    }
+                } else if(choice.value == "brightness") {
+                    spdlog::info("Background Brightness is catalog-backed but not live-wired yet");
+                }
+            } else if(dialog_id == "dialog.theme") {
+                using background_type = config::config::background_type;
+                if(choice.value == "original") {
+                    config::CONFIG.setBackgroundType(background_type::original);
+                    applied = true;
+                } else if(choice.value == "classic") {
+                    config::CONFIG.setBackgroundType(background_type::wave);
+                    applied = true;
+                } else if(choice.value == "install") {
+                    spdlog::info("Theme Install is catalog-backed but not live-wired yet");
+                }
+            } else if(dialog_id == "dialog.font") {
+                if(choice.value == "original") {
+                    config::CONFIG.setFontPath("default");
+                    applied = true;
+                } else {
+                    spdlog::info("Font variant '{}' is catalog-backed but not packaged yet",
+                        choice.value);
+                }
+            } else if(dialog_id == "dialog.day.night") {
+                spdlog::info("Day/Night mode '{}' is catalog-backed; renderer override storage is not live-wired yet",
+                    choice.value);
+            }
+
+            if(applied || dialog_id == "dialog.font" || dialog_id == "dialog.day.night") {
+                settings_value_labels[node_id] = labels[index];
+            }
+
+            if(applied) {
+                if(config_override_read_only()) {
+                    spdlog::info("Skipping config save because OPENXMB_CONFIG_READ_ONLY is set");
+                } else {
+                    config::CONFIG.save_config();
+                }
+            }
+        });
+
+    if(!swatches.empty()) {
+        overlay->set_colour_swatches(swatches);
+    }
     return true;
 }
 
@@ -814,6 +1109,7 @@ void main_menu::render_settings_scene(dreamrender::gui_renderer& renderer, time_
         icons.push_back({
             .semantic_id = entry.semantic_id,
             .texture = entry.texture.get(),
+            .glass_texture = entry.glass_texture.get(),
         });
     }
 
@@ -864,7 +1160,8 @@ void main_menu::render_crossbar(dreamrender::gui_renderer& renderer, time_point 
             extent *= 0.68;
         }
 
-        draw_icon(renderer, menus[index]->get_icon(), layout,
+        draw_icon(renderer, menus[index]->get_icon(),
+            menus[index]->get_glass_icon(), layout,
             center_x, center_y, extent, alpha);
 
         if(active) {
@@ -900,7 +1197,7 @@ void main_menu::render_crossbar(dreamrender::gui_renderer& renderer, time_point 
             const auto extent = focused ? kActiveItemIconExtent : kInactiveItemIconExtent;
             const auto alpha = (focused ? kFocusAlpha : kInactiveItemAlpha) * alpha_multiplier;
             auto& entry = menu.get_submenu(static_cast<unsigned int>(index));
-            draw_icon(renderer, entry.get_icon(), layout,
+            draw_icon(renderer, entry.get_icon(), entry.get_glass_icon(), layout,
                 kItemIconX + x_shift, center_y, extent, alpha);
 
             const auto label_size = focused ? kActiveItemLabelSize : kInactiveItemLabelSize;
@@ -966,13 +1263,10 @@ void main_menu::render_submenu(dreamrender::gui_renderer& renderer, time_point n
     const auto& selected_menu = *menus[selected];
     const auto& selected_submenu = *current_submenu;
 
-    if(config::CONFIG.iconGlassRefraction) {
-        renderer.draw_image_glass(selected_menu.get_icon(), base_pos.x, base_pos.y, 0.1f, 0.1f);
-        renderer.draw_image_glass(selected_submenu.get_icon(), base_pos.x, base_pos.y+0.15f, 0.1f, 0.1f);
-    } else {
-        renderer.draw_image_a(selected_menu.get_icon(), base_pos.x, base_pos.y, 0.1f, 0.1f);
-        renderer.draw_image_a(selected_submenu.get_icon(), base_pos.x, base_pos.y+0.15f, 0.1f, 0.1f);
-    }
+    draw_normalized_icon(renderer, selected_menu.get_icon(), selected_menu.get_glass_icon(),
+        base_pos.x, base_pos.y, 0.1, 0.1);
+    draw_normalized_icon(renderer, selected_submenu.get_icon(), selected_submenu.get_glass_icon(),
+        base_pos.x, base_pos.y + 0.15F, 0.1, 0.1);
 
     if(!in_submenu)
         return;
@@ -1000,11 +1294,8 @@ void main_menu::render_submenu(dreamrender::gui_renderer& renderer, time_point n
                 continue;
 
             auto& entry = submenu->get_submenu(i);
-            if(config::CONFIG.iconGlassRefraction) {
-                renderer.draw_image_glass(entry.get_icon(), base_pos.x + 0.1 + offset, y, size, size);
-            } else {
-                renderer.draw_image_a(entry.get_icon(), base_pos.x + 0.1 + offset, y, size, size);
-            }
+            draw_normalized_icon(renderer, entry.get_icon(), entry.get_glass_icon(),
+                static_cast<float>(base_pos.x + 0.1 + offset), static_cast<float>(y), size, size);
             renderer.draw_text(entry.get_name(), base_pos.x + 0.2, y+size/2, size/2, glm::vec4(1, 1, 1, 1), false, true);
             if(i == selected) {
                 auto s = renderer.measure_text(entry.get_name(), size/2);

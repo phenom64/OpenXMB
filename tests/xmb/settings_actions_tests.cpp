@@ -83,6 +83,43 @@ void test_real_catalog_routes() {
   expect_firewalled(theme,
                     "Theme Settings does not reuse the legacy partial menu");
 
+  const auto theme_dialog =
+      plan_for(catalog, "category.settings.theme.settings.theme");
+  expect(theme_dialog.kind == SettingsActionKind::open_dialog &&
+             theme_dialog.target_id == "dialog.theme",
+         "Theme entry opens the xmb-web Theme dialog route");
+  expect_firewalled(theme_dialog, "Theme dialog cannot call legacy settings");
+
+  const auto colour_dialog =
+      plan_for(catalog, "category.settings.theme.settings.colour");
+  expect(colour_dialog.kind == SettingsActionKind::open_dialog &&
+             colour_dialog.target_id == "dialog.colour",
+         "Colour entry opens the xmb-web Colour dialog route");
+  expect_firewalled(colour_dialog, "Colour dialog stays behind the catalog bridge");
+
+  const auto background_dialog =
+      plan_for(catalog, "category.settings.theme.settings.background");
+  expect(background_dialog.kind == SettingsActionKind::open_dialog &&
+             background_dialog.target_id == "dialog.background",
+         "Background entry opens the xmb-web Background dialog route");
+  expect_firewalled(background_dialog,
+                    "Background dialog stays behind the catalog bridge");
+
+  const auto font_dialog =
+      plan_for(catalog, "category.settings.theme.settings.font");
+  expect(font_dialog.kind == SettingsActionKind::open_dialog &&
+             font_dialog.target_id == "dialog.font",
+         "Font entry opens the xmb-web Font dialog route");
+  expect_firewalled(font_dialog, "Font dialog stays behind the catalog bridge");
+
+  const auto day_night_dialog =
+      plan_for(catalog, "category.settings.theme.settings.day.night");
+  expect(day_night_dialog.kind == SettingsActionKind::open_dialog &&
+             day_night_dialog.target_id == "dialog.day.night",
+         "Day/Night entry opens the xmb-web Day/Night dialog route");
+  expect_firewalled(day_night_dialog,
+                    "Day/Night dialog stays behind the catalog bridge");
+
   const auto vibration = plan_for(
       catalog,
       "category.settings.accessory.settings.controller.vibration.function");

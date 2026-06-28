@@ -24,6 +24,7 @@
 module;
 
 #include "openxmb/xmb/catalog.hpp"
+#include "openxmb/xmb/settings_actions.hpp"
 #include "openxmb/xmb/settings_controller.hpp"
 
 #include <chrono>
@@ -78,6 +79,8 @@ class main_menu : public action_receiver {
         bool activate_settings(action action);
         bool back_settings();
         bool open_settings_choice_overlay(const openxmb::xmb::CatalogNode& node);
+        bool open_settings_dialog_choice_overlay(
+            const openxmb::xmb::SettingsActionPlan& plan);
         void apply_initial_settings_route();
         void render_settings_scene(dreamrender::gui_renderer& renderer, time_point now);
 
@@ -105,6 +108,7 @@ class main_menu : public action_receiver {
         struct settings_icon_texture {
             std::string semantic_id;
             std::unique_ptr<dreamrender::texture> texture;
+            std::unique_ptr<dreamrender::texture> glass_texture;
         };
 
         std::optional<openxmb::xmb::Catalog> settings_catalog;

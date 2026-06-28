@@ -1357,6 +1357,7 @@ namespace app
 
             image_render->renderImageSized(commandBuffer, frame, shellRenderPass.get(), compositedBackgroundView,
                 0.0f, 0.0f, static_cast<int>(win->swapchainExtent.width), static_cast<int>(win->swapchainExtent.height));
+            image_render->setGlassBackground(compositedBackgroundView);
 
             gui_renderer ctx(commandBuffer, frame, shellRenderPass.get(), win->swapchainExtent, font_render.get(), image_render.get(), simple_render.get());
             // Interface/FX debug overlays: draw font atlas for verification

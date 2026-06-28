@@ -18,6 +18,7 @@ export namespace openxmb::xmb {
 struct SettingsSceneIcon {
   std::string_view semantic_id;
   const dreamrender::texture *texture{};
+  const dreamrender::texture *glass_texture{};
 };
 
 struct SettingsSceneRenderOptions {
@@ -80,27 +81,27 @@ make_layout(const dreamrender::gui_renderer &renderer) noexcept {
   };
 }
 
-[[nodiscard]] const dreamrender::texture *
+[[nodiscard]] const SettingsSceneIcon *
 find_icon(std::span<const SettingsSceneIcon> icons,
           std::string_view semantic_id) noexcept {
   for (const auto &icon : icons) {
     if (icon.semantic_id == semantic_id)
-      return icon.texture;
+      return &icon;
   }
   return nullptr;
 }
 
 void draw_icon(dreamrender::gui_renderer &renderer,
                const ContainedLayout &layout, const SettingsRowVisual &row,
-               const dreamrender::texture &texture, bool glass) {
+               const SettingsSceneIcon &icon, bool glass) {
   const auto extent = layout.image_extent(row.icon_extent);
   const auto x = layout.x(row.icon_center_x - row.icon_extent * 0.5);
   const auto y = layout.y(row.center_y - row.icon_extent * 0.5);
   const auto tint = glm::vec4(1.0F, 1.0F, 1.0F, static_cast<float>(row.alpha));
-  if (glass)
-    renderer.draw_image_glass(texture, x, y, extent, extent, tint);
-  else
-    renderer.draw_image_a(texture, x, y, extent, extent, tint);
+  if (glass && icon.glass_texture != nullptr && icon.glass_texture->loaded)
+    renderer.draw_image_glass(*icon.glass_texture, x, y, extent, extent, tint);
+  else if (icon.texture != nullptr)
+    renderer.draw_image_a(*icon.texture, x, y, extent, extent, tint);
 }
 
 void draw_focused_label(dreamrender::gui_renderer &renderer,
@@ -204,8 +205,8 @@ void SettingsSceneRenderer::render(dreamrender::gui_renderer &renderer,
     if (row.alpha <= 0.001)
       continue;
 
-    if (const auto *texture = find_icon(icons, row.icon_ref))
-      draw_icon(renderer, layout, row, *texture, options.glass_icons);
+    if (const auto *icon = find_icon(icons, row.icon_ref))
+      draw_icon(renderer, layout, row, *icon, options.glass_icons);
 
     if (row.focused) {
       draw_focused_label(renderer, layout, row);

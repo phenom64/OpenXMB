@@ -119,15 +119,14 @@ namespace app
                 float current_x = x - total_width/2;
                 for (const auto& [action, text] : buttons) {
                     auto icon = buttonTextures[std::to_underlying(action)].get();
-                    float width = std::max(min_width, space_x + renderer.measure_text(text, size).x);
-                    if(action != action::none && icon) {
-                        if(config::CONFIG.iconGlassRefraction) {
-                            renderer.draw_image_glass(*icon, current_x, y, size/2.0, size/2.0);
-                        } else {
-                            renderer.draw_image(*icon, current_x, y, size/2.0, size/2.0);
-                        }
-                        renderer.draw_text(text, current_x+space_x, y+size*0.033f, size);
-                    }
+                float width = std::max(min_width, space_x + renderer.measure_text(text, size).x);
+                if(action != action::none && icon) {
+                    // Controller glyphs are flat UI assets, not xmb-web normal maps.
+                    // The glass shader intentionally expects normal-map inputs now,
+                    // so non-XMB utility glyphs stay on the ordinary image path.
+                    renderer.draw_image(*icon, current_x, y, size/2.0, size/2.0);
+                    renderer.draw_text(text, current_x+space_x, y+size*0.033f, size);
+                }
                     current_x += width;
                 }
             }
