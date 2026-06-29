@@ -29,8 +29,9 @@ layout(push_constant) uniform PC {
     float brightness; // 0..1
 } pc;
 
-layout(location=0) out vec2 vLocal; // pass unit quad coord to frag
+layout(location=0) out vec2 vLocal;  // pass unit quad coord to frag
 layout(location=1) out float vAlpha; // per-sprite alpha
+layout(location=2) out float vGlint; // rare soft specular lift
 
 // Dave Hoskins—style hash/value noise (2D)
 float hash12(vec2 p){
@@ -43,43 +44,51 @@ float value2d(vec2 p){
     return mix(mix(hash12(pg+k.xx),hash12(pg+k.yx),pc.x), mix(hash12(pg+k.xy),hash12(pg+k.yy),pc.x), pc.y);
 }
 
-// Approximate the ribbon SDF (same formulation as in original.frag),
-// sampled at a z=0 slice. Used to bias particle density/size near the wave.
-float sdf(vec3 q){
-    q *= 2.0;
-    float ripple = (0.04*q.z)
-                 * sin(q.x*0.11 + pc.time)
-                 * (2.0*sin(q.z*0.20 + pc.time))
-                 * value2d(vec2(0.03,0.4)*q.xz + vec2(pc.time*0.5,0.0));
-    float o = 4.2*sin(0.05*q.x + pc.time*0.25) + ripple;
-    return abs(dot(q, normalize(vec3(0.0,1.0,0.05))) + 2.5 + o*0.5);
+// Screen-space approximation of xmb-web's particle cloud: a wave-coupled bokeh/glitter band,
+// not a full-screen star field. The analytic crest is
+// intentionally broad and low-frequency so it follows the captured ribbon's
+// perceived sweep without adding a second obvious waveform.
+float crestY(float x, float t) {
+    float sweepPhase = t * 0.18;
+    float primary = sin(x * 4.15 - 1.30 + sweepPhase);
+    float secondary = sin(x * 2.0 + sweepPhase * 0.6);
+    return 0.505
+         + 0.115 * primary
+         - 0.035 * secondary
+         + 0.012 * sin(x * 5.6549 + t * 0.35);
 }
 
 void main(){
-    // Smooth, non-teleport drift: sample value noise along time-varying lines
+    // Smooth, non-teleport drift: sample value noise along time-varying lines.
+    // The cloud stays bound to the wave lane; drift only breathes it.
     float t = pc.time * 0.038;
     vec2 s = inSeed*64.0; // domain scale
     vec2 drift;
     drift.x = value2d(s + vec2(0.0, t)) - 0.5;
     drift.y = value2d(s + vec2(37.13, t*1.2)) - 0.5;
-    drift *= 0.15; // reduce magnitude to avoid chaotic motion
+    drift *= 0.055;
 
-    // Base position from seed (uniform in screen), then drift
-    vec2 p = inSeed * pc.resolution;              // pixels
-    p += drift * pc.resolution.y;                 // scale drift by height so AR-neutral
-    vec2 center = p/pc.resolution * 2.0 - 1.0;    // NDC center
+    float x = mix(-0.08, 1.08, inSeed.x) + drift.x;
+    float lane = inSeed.y - 0.62;
+    float laneNoise = value2d(s * 0.31 + vec2(11.0, -pc.time * 0.015));
+    float spread = mix(0.020, 0.074, clamp(x, 0.0, 1.0)) *
+                   mix(0.62, 1.18, laneNoise);
+    float y = crestY(clamp(x, 0.0, 1.0), pc.time) + lane * spread + drift.y;
+    vec2 center = vec2(x, y) * 2.0 - 1.0;         // normalized screen -> NDC
 
-    // Approximate proximity to ribbon using SDF at z=0 slice (cheap bias)
-    vec2 U = p; // pixels
-    vec3 q0 = vec3((U - 0.5*pc.resolution)/pc.resolution.y, 0.0);
-    float dfield = sdf(q0);
-    float waveBias = smoothstep(0.82, 0.0, dfield); // stronger emphasis near ribbon
-    float edgeBias = pow(0.74 + 0.26*cos((p.x / pc.resolution.x) * 6.2831853), 1.7);
+    float edgeFade = smoothstep(-0.08, 0.06, x) * smoothstep(1.08, 0.90, x);
+    float laneFade = 1.0 - smoothstep(0.18, 0.58, abs(lane));
+    float bandEnergy = edgeFade * mix(0.40, 1.0, laneFade);
 
-    // Sprite size: scale with brightness, a touch of noise, and wave bias
+    // Sprite size: soft bokeh specks, larger than star pixels and widest near
+    // the frayed right side of the wave.
     float n = value2d(s + vec2(123.7, 913.1));
     float shimmer = mix(0.82, 1.10, value2d(s*0.45 + vec2(pc.time*0.09, -pc.time*0.04)));
-    float px = mix(0.75, 1.90, n) * (0.45 + 0.55*pc.brightness) * mix(0.75, 1.42, waveBias) * shimmer;
+    float edgeGlint = step(0.92, value2d(s + vec2(5.1, 91.7)));
+    float px = mix(3.20, 9.50, n) *
+               mix(0.92, 1.42, clamp(x, 0.0, 1.0)) *
+               mix(1.0, 1.35, edgeGlint) *
+               (0.58 + 0.42*pc.brightness) * shimmer;
     vec2 halfSize = vec2(px/pc.resolution.y);     // keep aspect-independent
 
     // Expand the unit quad about the center
@@ -87,7 +96,8 @@ void main(){
     gl_Position = vec4(pos, 0.0, 1.0);
 
     vLocal = inPos;
-    // Alpha prefers particles near the ribbon while keeping a faint PS3-style dust floor.
-    float lane = mix(0.12, 1.0, smoothstep(0.02, 0.72, waveBias));
-    vAlpha = clamp(mix(0.030, 0.42, n) * pc.brightness * lane * edgeBias, 0.0, 0.48);
+    vGlint = edgeGlint * smoothstep(0.45, 1.0, bandEnergy) *
+             (0.35 + 0.35 * sin(pc.time * 2.74 + n * 31.416));
+    vAlpha = clamp(mix(0.008, 0.060, n) * pc.brightness * bandEnergy,
+                   0.0, 0.075);
 }

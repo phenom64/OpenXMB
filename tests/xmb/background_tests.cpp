@@ -3,7 +3,10 @@
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <string>
 #include <string_view>
 
 namespace {
@@ -18,6 +21,13 @@ void require(bool condition, std::string_view message) {
     std::cerr << "background contract failed: " << message << '\n';
     std::exit(EXIT_FAILURE);
   }
+}
+
+std::string read_text(const std::filesystem::path &path) {
+  std::ifstream stream(path, std::ios::binary);
+  require(static_cast<bool>(stream), "shader source is readable");
+  return {std::istreambuf_iterator<char>(stream),
+          std::istreambuf_iterator<char>()};
 }
 
 } // namespace
@@ -71,4 +81,17 @@ int main() {
   require(!parse_unix_seconds("1781524800garbage").has_value(),
           "trailing garbage is rejected");
   require(!parse_unix_seconds("").has_value(), "empty timestamp is rejected");
+
+  const auto source_root =
+      std::filesystem::path(__FILE__).parent_path().parent_path().parent_path();
+  const auto particle_vertex =
+      read_text(source_root / "shaders/original_particles.vert");
+  const auto particle_fragment =
+      read_text(source_root / "shaders/original_particles.frag");
+  require(particle_vertex.contains("wave-coupled bokeh/glitter band"),
+          "Original particles are documented as a wave-coupled bokeh band");
+  require(!particle_vertex.contains("uniform in screen"),
+          "Original particles are not a full-screen starfield");
+  require(particle_fragment.contains("no pinprick star core"),
+          "Original particle fragment avoids star-like cores");
 }
