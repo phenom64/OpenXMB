@@ -371,10 +371,11 @@ struct ps3_colour_entry {
             return false;
         }
         if(choice_value == "brightness") {
+            config::CONFIG.setBackgroundType(background_type::color);
             if(log_unsupported) {
-                spdlog::info("Background Brightness is catalog-backed but not live-wired yet");
+                spdlog::info("Background Brightness opens a simplified native static-colour fallback until the full xmb-web brightness submenu is ported");
             }
-            return false;
+            return true;
         }
         return false;
     }
@@ -934,9 +935,28 @@ bool main_menu::open_settings_dialog_choice_overlay(
     }
 
     const auto& dialog = dialog_it->second;
-    std::vector<std::string> labels;
-    labels.reserve(dialog.choices.size());
+    std::vector<openxmb::xmb::CatalogChoice> selectable_choices;
+    selectable_choices.reserve(dialog.choices.size());
+    std::string top_action_label;
     for(const auto& choice : dialog.choices) {
+        const bool top_action =
+            (plan.target_id == "dialog.theme" && choice.value == "install") ||
+            (plan.target_id == "dialog.background" && choice.value == "brightness");
+        if(top_action) {
+            const auto localized = settings_catalog->text(choice.label_key);
+            top_action_label =
+                localized.empty() ? choice.value : std::string{localized};
+            continue;
+        }
+        selectable_choices.push_back(choice);
+    }
+    if(selectable_choices.empty()) {
+        return false;
+    }
+
+    std::vector<std::string> labels;
+    labels.reserve(selectable_choices.size());
+    for(const auto& choice : selectable_choices) {
         const auto localized = settings_catalog->text(choice.label_key);
         labels.push_back(localized.empty() ? choice.value : std::string{localized});
     }
@@ -944,8 +964,8 @@ bool main_menu::open_settings_dialog_choice_overlay(
     const auto current_value = current_dialog_value(plan.target_id);
     unsigned int selection = 0;
     if(!current_value.empty()) {
-        for(std::size_t index = 0; index < dialog.choices.size(); ++index) {
-            if(dialog.choices[index].value == current_value) {
+        for(std::size_t index = 0; index < selectable_choices.size(); ++index) {
+            if(selectable_choices[index].value == current_value) {
                 selection = static_cast<unsigned int>(index);
                 break;
             }
@@ -957,8 +977,8 @@ bool main_menu::open_settings_dialog_choice_overlay(
 
     std::vector<glm::vec3> swatches;
     if(plan.target_id == "dialog.colour") {
-        swatches.reserve(dialog.choices.size());
-        for(const auto& choice : dialog.choices) {
+        swatches.reserve(selectable_choices.size());
+        for(const auto& choice : selectable_choices) {
             const auto colour = ps3_colour_for_value(choice.value)
                 .value_or(ps3_colour_entry{choice.value, {0.72F, 0.75F, 0.79F}, {0.72F, 0.75F, 0.79F}});
             swatches.push_back(colour.swatch);
@@ -975,7 +995,7 @@ bool main_menu::open_settings_dialog_choice_overlay(
          dialog_id,
          node_id,
          labels,
-         choices = dialog.choices](unsigned int index) {
+         choices = selectable_choices](unsigned int index) {
             if(index >= choices.size() || index >= labels.size()) {
                 return;
             }
@@ -996,7 +1016,7 @@ bool main_menu::open_settings_dialog_choice_overlay(
                 }
             }
         },
-        [this, dialog_id, node_id, labels, choices = dialog.choices,
+        [this, dialog_id, node_id, labels, choices = selectable_choices,
          original_selection]() {
             if(original_selection < choices.size()) {
                 (void)apply_settings_dialog_choice_value(
@@ -1006,7 +1026,7 @@ bool main_menu::open_settings_dialog_choice_overlay(
                 settings_value_labels[node_id] = labels[original_selection];
             }
         },
-        [dialog_id, choices = dialog.choices](unsigned int index) {
+        [dialog_id, choices = selectable_choices](unsigned int index) {
             if(index < choices.size()) {
                 (void)apply_settings_dialog_choice_value(
                     dialog_id, choices[index].value, false);
@@ -1015,6 +1035,12 @@ bool main_menu::open_settings_dialog_choice_overlay(
 
     if(!swatches.empty()) {
         overlay->set_colour_swatches(swatches);
+    }
+    if(!top_action_label.empty()) {
+        const float top_action_y = plan.target_id == "dialog.theme"
+            ? 270.0F / 1080.0F
+            : 390.0F / 1080.0F;
+        overlay->set_top_action(top_action_label, top_action_y);
     }
     return true;
 }

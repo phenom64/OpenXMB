@@ -26,6 +26,7 @@ module;
 #include <chrono>
 #include <functional>
 #include <string>
+#include <utility>
 #include <vector>
 
 export module openxmb.app:choice_overlay;
@@ -49,6 +50,10 @@ export class choice_overlay : public component, public action_receiver {
         );
         // Optional colour swatches to display next to each choice (same length as choices or empty)
         void set_colour_swatches(const std::vector<glm::vec3>& cols) { swatches = cols; }
+        void set_top_action(std::string label, float y = 390.0F / 1080.0F) {
+            top_action = std::move(label);
+            top_action_y = y;
+        }
 
         void render(dreamrender::gui_renderer& renderer, class shell* xmb) override;
         result on_action(action action) override;
@@ -73,6 +78,8 @@ export class choice_overlay : public component, public action_receiver {
         constexpr static auto transition_duration = std::chrono::milliseconds(100);
 
         std::vector<glm::vec3> swatches;
+        std::string top_action;
+        float top_action_y = 390.0F / 1080.0F;
 };
 
 }

@@ -164,6 +164,25 @@ void choice_overlay::render(dreamrender::gui_renderer& renderer, class shell* xm
     constexpr float swatch_x = 1341.0F / 1920.0F;
     constexpr float swatch_extent = 27.0F / 1080.0F;
     constexpr double panel_bottom = 1020.0 / 1080.0;
+    if(!top_action.empty()) {
+        renderer.draw_text(top_action, text_x, top_action_y, 0.044,
+            glm::vec4(1.0F, 1.0F, 1.0F, 0.90F), false, true);
+        const auto arrow_offset = std::clamp(
+            (14.0F + static_cast<float>(top_action.size()) * 10.4F) / 1920.0F,
+            0.035F,
+            0.072F);
+        const float ax = text_x + arrow_offset;
+        const float aw = 8.0F / 1920.0F;
+        const float ah = 6.0F / 1080.0F;
+        const auto arrow_colour = glm::vec4(1.0F, 1.0F, 1.0F, 0.78F);
+        renderer.draw_quad(std::array{
+            dreamrender::simple_renderer::vertex_data{{ax, top_action_y - ah}, arrow_colour, {0.0F, 0.0F}},
+            dreamrender::simple_renderer::vertex_data{{ax, top_action_y + ah}, arrow_colour, {0.0F, 1.0F}},
+            dreamrender::simple_renderer::vertex_data{{ax + aw, top_action_y}, arrow_colour, {1.0F, 0.5F}},
+            dreamrender::simple_renderer::vertex_data{{ax + aw, top_action_y}, arrow_colour, {1.0F, 0.5F}},
+        }, dreamrender::simple_renderer::params{});
+    }
+
     const auto visible_capacity = static_cast<std::size_t>(std::max(
         1.0, std::floor((panel_bottom - list_top_y) / item_height)));
 
