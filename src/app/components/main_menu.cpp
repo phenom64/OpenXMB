@@ -555,11 +555,16 @@ void draw_icon(
     const auto y = layout.y(center_y - extent * 0.5);
     const auto width = layout.width(extent);
     const auto height = layout.height(extent);
-    const auto tint = glm::vec4(1.0f, 1.0f, 1.0f, static_cast<float>(alpha));
+    const auto tint =
+        glm::vec4(1.0f, 1.0f, 1.0f, static_cast<float>(alpha));
     if(config::CONFIG.iconGlassRefraction && glass_texture != nullptr && glass_texture->loaded) {
         renderer.draw_image_glass(*glass_texture, x, y, width, height, tint);
     } else {
-        renderer.draw_image_a(texture, x, y, width, height, tint);
+        const auto flat_alpha =
+            extent >= kActiveItemIconExtent - 0.5 ? alpha * 0.58 : alpha;
+        const auto flat_tint =
+            glm::vec4(1.0f, 1.0f, 1.0f, static_cast<float>(flat_alpha));
+        renderer.draw_image_a(texture, x, y, width, height, flat_tint);
     }
 }
 

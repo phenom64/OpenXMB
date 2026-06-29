@@ -97,7 +97,11 @@ void draw_icon(dreamrender::gui_renderer &renderer,
   const auto extent = layout.image_extent(row.icon_extent);
   const auto x = layout.x(row.icon_center_x - row.icon_extent * 0.5);
   const auto y = layout.y(row.center_y - row.icon_extent * 0.5);
-  const auto tint = glm::vec4(1.0F, 1.0F, 1.0F, static_cast<float>(row.alpha));
+  const auto glass_alpha = row.focused
+                               ? std::min(1.0, row.alpha * 1.08)
+                               : row.alpha;
+  const auto tint =
+      glm::vec4(1.0F, 1.0F, 1.0F, static_cast<float>(glass ? glass_alpha : row.alpha));
   if (glass && icon.glass_texture != nullptr && icon.glass_texture->loaded)
     renderer.draw_image_glass(*icon.glass_texture, x, y, extent, extent, tint);
   else if (icon.texture != nullptr)

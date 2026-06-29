@@ -23,6 +23,8 @@
 
 module;
 
+#include <openxmb/xmb/icon_resolver.hpp>
+
 #include <array>
 #include <cstdlib>
 #include <cerrno>
@@ -139,30 +141,7 @@ inline std::filesystem::path icon_or_fallback(std::filesystem::path icon_path)
 inline std::optional<std::filesystem::path> xmb_web_normal_map_for_icon(
     const std::filesystem::path& icon_path)
 {
-    const auto filename = icon_path.filename().string();
-    constexpr std::string_view prefix = "xmb_icon_";
-    constexpr std::string_view suffix = ".png";
-    if(filename.size() != prefix.size() + 3 + suffix.size() ||
-        filename.rfind(prefix, 0) != 0 ||
-        filename.substr(filename.size() - suffix.size()) != suffix) {
-        return std::nullopt;
-    }
-
-    const auto number = filename.substr(prefix.size(), 3);
-    for(const auto character : number) {
-        if(!std::isdigit(static_cast<unsigned char>(character))) {
-            return std::nullopt;
-        }
-    }
-
-    const auto normal_map =
-        icon_path.parent_path().parent_path() / "normalmaps" /
-        ("nmap_" + number + ".png");
-    std::error_code error;
-    if(std::filesystem::exists(normal_map, error) && !error) {
-        return normal_map;
-    }
-    return std::nullopt;
+    return openxmb::xmb::xmb_web_normal_map_for_icon(icon_path);
 }
 
 inline bool launch_detached(const std::vector<std::string>& args)

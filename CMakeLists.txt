@@ -806,6 +806,17 @@ if(OPENXMB_BUILD_NATIVE_TESTS)
   add_test(NAME openxmb_localization_core_tests
     COMMAND openxmb_localization_core_tests)
 
+  add_executable(openxmb_icon_resolver_tests
+    tests/xmb/icon_resolver_tests.cpp
+  )
+  target_include_directories(openxmb_icon_resolver_tests PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include")
+  set_target_properties(openxmb_icon_resolver_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  openxmb_configure_native_test(openxmb_icon_resolver_tests)
+  add_test(NAME openxmb_icon_resolver_tests
+    COMMAND openxmb_icon_resolver_tests
+      "${CMAKE_BINARY_DIR}/shell/compat/xmb-ui-compat")
+
   add_executable(openxmb_visual_harness_tests
     tests/xmb/visual_harness_tests.cpp
   )
