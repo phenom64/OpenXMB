@@ -20,9 +20,9 @@ Presets: `tools/xmb/scene_presets.json`
 ```powershell
 cd $env:USERPROFILE/Developer/OpenXMB
 
-# 1. Build with compat pack
-cmake --preset windows-native
-cmake --build --preset windows-native
+# 1. Build with compat pack (parity workflow uses build/native-c)
+cmake --preset windows-native-c
+cmake --build --preset windows-native-c
 
 # 2. Install xmb-web reference PNGs (local, gitignored)
 .\tools\xmb\install_reference_frames.ps1
@@ -81,10 +81,10 @@ Thresholds: MAE ≤ 0.06, RMSE ≤ 0.12, P95 ≤ 0.20, fraction_pixels_over_32 �
 ## CTest integration
 
 ```powershell
-cmake --preset windows-native -DOPENXMB_VISUAL_REGRESSION=ON
-cmake --build --preset windows-native
+cmake --preset windows-native-c -DOPENXMB_VISUAL_REGRESSION=ON
+cmake --build --preset windows-native-c
 .\tools\xmb\install_reference_frames.ps1
-ctest --test-dir build/native -R "openxmb_visual" --output-on-failure
+ctest --test-dir build/native-c -R "openxmb_visual" --output-on-failure
 ```
 
 `openxmb_verify_reference_frames` is enabled when reference PNGs exist.  

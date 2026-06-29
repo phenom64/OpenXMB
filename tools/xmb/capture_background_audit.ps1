@@ -15,7 +15,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 if (-not $BuildDir) {
-    $BuildDir = Join-Path $RepoRoot "build/native"
+    $BuildDir = Join-Path $RepoRoot "build/native-c"
 }
 if (-not $CaptureDir) {
     $CaptureDir = Join-Path $RepoRoot "build/audit-captures/native-original-explicit"

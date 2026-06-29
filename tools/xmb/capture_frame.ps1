@@ -16,7 +16,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 if (-not $BuildDir) {
-    $BuildDir = Join-Path $RepoRoot "build/native"
+    $BuildDir = Join-Path $RepoRoot "build/native-c"
 }
 
 $presetsPath = Join-Path $RepoRoot "tools/xmb/scene_presets.json"
@@ -106,7 +106,9 @@ function Invoke-SceneCapture {
     }
     $last = $pngs[-1]
     $canonical = Join-Path $sceneDir "$SceneName.png"
-    Copy-Item -LiteralPath $last.FullName -Destination $canonical -Force
+    if ($last.FullName -ne $canonical) {
+        Copy-Item -LiteralPath $last.FullName -Destination $canonical -Force
+    }
     Write-Host "  canonical: $canonical ($($last.Length) bytes)"
     return $canonical
 }

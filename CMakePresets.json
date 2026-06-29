@@ -101,6 +101,13 @@
       }
     },
     {
+      "name": "windows-native-c",
+      "displayName": "Native XMB Windows Release (Clang build dir)",
+      "description": "Same as windows-native but outputs to build/native-c — the parity workflow build directory used for headless captures and visual regression.",
+      "inherits": "windows-native",
+      "binaryDir": "${sourceDir}/build/native-c"
+    },
+    {
       "name": "windows-native-dev",
       "displayName": "Native XMB Windows Debug",
       "inherits": "windows-native",
@@ -138,6 +145,11 @@
     {
       "name": "windows-native",
       "configurePreset": "windows-native",
+      "jobs": 2
+    },
+    {
+      "name": "windows-native-c",
+      "configurePreset": "windows-native-c",
       "jobs": 2
     },
     {

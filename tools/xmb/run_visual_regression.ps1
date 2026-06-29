@@ -12,7 +12,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 if (-not $BuildDir) {
-    $BuildDir = Join-Path $RepoRoot "build/native"
+    $BuildDir = Join-Path $RepoRoot "build/native-c"
 }
 if (-not $ReferenceDir) {
     $ReferenceDir = Join-Path $RepoRoot "tests/xmb/reference_frames"
