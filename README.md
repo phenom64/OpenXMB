@@ -186,6 +186,42 @@ scripts/headless-smoke.sh
 It configures, builds, installs into `build/ci/stage`, and verifies the launcher, binary, default config, font, representative icons, and OK sound were staged.
 On Windows, use the `windows-vcpkg` preset and verify both a windowed launch and an app-local install layout.
 
+### xmb-web Parity Development (RSX-26)
+
+Native parity work targets one-to-one visual and behavioral match with the pinned [xmb-web](https://github.com/TheGammaSqueeze/xmb-web) reference (`5d4675366ad50deca14fe3d70a2aa646c341aee0`). Implementation plan: `docs/superpowers/plans/2026-06-29-xmb-web-parity.md`.
+
+**Three-repo layout (local):**
+
+| Checkout | Branch | Path |
+|----------|--------|------|
+| OpenXMB | `RSX-26` | `%USERPROFILE%/Developer/OpenXMB` |
+| AuroreEngine | `RSX-26` | `%USERPROFILE%/Developer/AuroreEngine` |
+| xmb-web | pinned commit | `%USERPROFILE%/Developer/xmb-web` |
+
+**Windows native preset** links all three and imports the local-only compat asset pack:
+
+```powershell
+$env:VCPKG_ROOT = "$env:USERPROFILE/Developer/vcpkg"   # if not already set
+cmake --preset windows-native
+cmake --build --preset windows-native
+ctest --test-dir build/native -R openxmb_ --output-on-failure
+```
+
+**Compat import verify** (no files written):
+
+```powershell
+python tools/xmb/import_xmb_web.py --source $env:USERPROFILE/Developer/xmb-web `
+  --output $env:TEMP/xmb-compat-verify --verify-only
+```
+
+**Headless visual capture** for parity audits:
+
+```powershell
+.\tools\xmb\capture_background_audit.ps1
+```
+
+See `tools/xmb/capture_native_frame.md` for full env-var reference and `compare_frames.py` usage.
+
 ## Configuration
 
 OpenXMB is configured using the `config.json` file. At runtime it checks `OPENXMB_CONFIG` first, then `config.json` beside the executable, and finally a per-user config location such as `%LOCALAPPDATA%/OpenXMB/config.json` on Windows. You can edit this file to change settings like:
