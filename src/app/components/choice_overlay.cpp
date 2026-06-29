@@ -115,16 +115,39 @@ bool choice_overlay::select_relative(action dir) {
 void choice_overlay::render(dreamrender::gui_renderer& renderer, class shell* xmb) {
     (void)xmb;
 
-    // Sidebar gradient that adapts to the current theme colour (slightly lighter/darker)
-    glm::vec3 base = utils::xmb_resolve_theme_colour(std::chrono::system_clock::now()).shaded_colour;
-    glm::vec4 leftCol  = glm::vec4(glm::clamp(base*1.10f, 0.0f, 1.0f), 1.0f);
-    glm::vec4 rightCol = glm::vec4(glm::clamp(base*0.35f, 0.0f, 1.0f), 0.0f);
-    renderer.draw_quad(std::array{
-        dreamrender::simple_renderer::vertex_data{{0.65f, 0.0f}, leftCol,  {0.0f, 0.0f}},
-        dreamrender::simple_renderer::vertex_data{{0.65f, 1.0f}, leftCol,  {0.0f, 1.0f}},
-        dreamrender::simple_renderer::vertex_data{{0.90f, 0.0f}, rightCol, {1.0f, 0.0f}},
-        dreamrender::simple_renderer::vertex_data{{0.90f, 1.0f}, rightCol, {1.0f, 1.0f}},
-    }, dreamrender::simple_renderer::params{});
+    struct gradient_stop {
+        float position;
+        glm::vec4 colour;
+    };
+
+    // xmb-web's firmware-measured Theme/Colour/Background side panel is a
+    // right-side translucent lavender wash, not a recoloured copy of the active
+    // month.  Keep the XMB visible behind it and interpolate the measured
+    // multi-stop profile with small quads.
+    constexpr float panel_left = 1324.0F / 1920.0F;
+    constexpr float panel_right = 1697.0F / 1920.0F;
+    constexpr std::array<gradient_stop, 8> stops{{
+        {0.000F, {178.0F / 255.0F, 170.0F / 255.0F, 194.0F / 255.0F, 0.00F}},
+        {0.043F, {178.0F / 255.0F, 170.0F / 255.0F, 194.0F / 255.0F, 0.22F}},
+        {0.142F, {151.0F / 255.0F, 141.0F / 255.0F, 174.0F / 255.0F, 0.52F}},
+        {0.300F, {160.0F / 255.0F, 150.0F / 255.0F, 182.0F / 255.0F, 0.44F}},
+        {0.470F, {174.0F / 255.0F, 165.0F / 255.0F, 191.0F / 255.0F, 0.32F}},
+        {0.651F, {195.0F / 255.0F, 189.0F / 255.0F, 210.0F / 255.0F, 0.20F}},
+        {0.820F, {220.0F / 255.0F, 217.0F / 255.0F, 229.0F / 255.0F, 0.08F}},
+        {1.000F, {245.0F / 255.0F, 244.0F / 255.0F, 247.0F / 255.0F, 0.00F}},
+    }};
+    for(std::size_t i = 0; i + 1 < stops.size(); ++i) {
+        const float x0 = panel_left + (panel_right - panel_left) * stops[i].position;
+        const float x1 = panel_left + (panel_right - panel_left) * stops[i + 1].position;
+        const auto c0 = stops[i].colour;
+        const auto c1 = stops[i + 1].colour;
+        renderer.draw_quad(std::array{
+            dreamrender::simple_renderer::vertex_data{{x0, 0.0f}, c0, {0.0f, 0.0f}},
+            dreamrender::simple_renderer::vertex_data{{x0, 1.0f}, c0, {0.0f, 1.0f}},
+            dreamrender::simple_renderer::vertex_data{{x1, 0.0f}, c1, {1.0f, 0.0f}},
+            dreamrender::simple_renderer::vertex_data{{x1, 1.0f}, c1, {1.0f, 1.0f}},
+        }, dreamrender::simple_renderer::params{});
+    }
 
     auto now = std::chrono::system_clock::now();
     double selected = selection_index;
@@ -135,39 +158,79 @@ void choice_overlay::render(dreamrender::gui_renderer& renderer, class shell* xm
         selected = last_selection_index + (selected - last_selection_index) * p;
     }
 
-    const bool compact = choices.size() > 8;
-    const double base_size = compact ? 0.058 : 0.070;
-    const double item_height = compact ? 0.046 : 0.058;
-    constexpr glm::vec2 base_pos = {0.675f, 0.425f};
+    constexpr double item_height = 40.0 / 1080.0;
+    constexpr double list_top_y = 510.0 / 1080.0;
+    constexpr float text_x = 1340.0F / 1920.0F;
+    constexpr float swatch_x = 1341.0F / 1920.0F;
+    constexpr float swatch_extent = 27.0F / 1080.0F;
+    constexpr double panel_bottom = 1020.0 / 1080.0;
+    const auto visible_capacity = static_cast<std::size_t>(std::max(
+        1.0, std::floor((panel_bottom - list_top_y) / item_height)));
 
-    double offsetY = -selected*item_height;
+    std::size_t first_visible = 0;
+    if(choices.size() > visible_capacity) {
+        const std::size_t selected_index = static_cast<std::size_t>(selection_index);
+        if(selected_index >= visible_capacity - 1) {
+            first_visible = selected_index - (visible_capacity - 2);
+        }
+        if(first_visible + visible_capacity > choices.size()) {
+            first_visible = choices.size() - visible_capacity;
+        }
+    }
+    const std::size_t last_visible = choices.empty()
+        ? 0
+        : std::min(choices.size() - 1, first_visible + visible_capacity - 1);
+    const bool colour_chooser = !swatches.empty();
 
-    for(size_t i=0; i<choices.size(); i++) {
-        double focus = 1.0 - std::clamp(std::abs(static_cast<double>(i) - selected), 0.0, 1.0);
-        focus = focus * focus * (3.0 - 2.0 * focus);
+    for(size_t i = first_visible; i <= last_visible && i < choices.size(); i++) {
+        const double focus = 1.0 - std::clamp(std::abs(static_cast<double>(i) - selected), 0.0, 1.0);
+        const double eased_focus = focus * focus * (3.0 - 2.0 * focus);
+        const bool focused = i == selection_index;
 
-        double size = base_size * glm::mix(0.74, 1.0, focus);
-        float alpha = static_cast<float>(glm::mix(0.58, 1.0, focus));
+        const double size = glm::mix(0.044, 0.052, eased_focus);
+        const float alpha = static_cast<float>(glm::mix(0.84, 1.0, eased_focus));
 
-        // Optional colour swatch square
-        float y = base_pos.y + offsetY + item_height*i;
-        if(i < swatches.size()) {
+        const float y = static_cast<float>(
+            list_top_y + static_cast<double>(i - first_visible) * item_height);
+        if(colour_chooser && !focused && i < swatches.size()) {
             glm::vec3 c = swatches[i];
-            float sq = size*0.6f; // square size relative to text size
-            glm::vec2 swatch_pos{base_pos.x - 0.032f/static_cast<float>(renderer.aspect_ratio), y - sq/2.0f};
-            glm::vec2 swatch_size{sq/static_cast<float>(renderer.aspect_ratio), sq};
-            renderer.draw_rect(swatch_pos - glm::vec2{0.0015f, 0.0015f}, swatch_size + glm::vec2{0.003f, 0.003f}, glm::vec4(0.0f, 0.0f, 0.0f, 0.34f));
-            renderer.draw_rect(swatch_pos, swatch_size, glm::vec4(c, alpha));
+            glm::vec2 swatch_pos{
+                swatch_x,
+                y - swatch_extent * 0.5F,
+            };
+            glm::vec2 swatch_size{
+                swatch_extent / static_cast<float>(renderer.aspect_ratio),
+                swatch_extent,
+            };
+            renderer.draw_rect(
+                swatch_pos - glm::vec2{0.0015F, 0.0015F},
+                swatch_size + glm::vec2{0.003F, 0.003F},
+                glm::vec4(0.0F, 0.0F, 0.0F, 0.34F));
+            renderer.draw_rect(swatch_pos, swatch_size, glm::vec4(c, 1.0F));
+            continue;
         }
         const std::string& entry = choices[i];
-        if(focus > 0.02) {
+        if(eased_focus > 0.02) {
             float px = 1.2f / static_cast<float>(renderer.frame_size.width);
             float py = 1.2f / static_cast<float>(renderer.frame_size.height);
-            glm::vec4 glow(1.0f, 1.0f, 1.0f, static_cast<float>(0.12 * focus));
-            renderer.draw_text(entry, base_pos.x + px, y + py, size, glow, false, true);
-            renderer.draw_text(entry, base_pos.x - px, y - py, size, glow * 0.65f, false, true);
+            glm::vec4 glow(1.0f, 1.0f, 1.0f, static_cast<float>(0.12 * eased_focus));
+            renderer.draw_text(entry, text_x + px, y + py, size, glow, false, true);
+            renderer.draw_text(entry, text_x - px, y - py, size, glow * 0.65f, false, true);
         }
-        renderer.draw_text(entry, base_pos.x, y, size, glm::vec4(1, 1, 1, alpha), false, true);
+        renderer.draw_text(entry, text_x, y, size, glm::vec4(1, 1, 1, alpha), false, true);
+    }
+
+    constexpr float arrow_size = 0.035F;
+    if(first_visible > 0) {
+        renderer.draw_text("▲", text_x,
+            static_cast<float>(list_top_y - item_height),
+            arrow_size, glm::vec4(1.0F, 1.0F, 1.0F, 0.85F), false, true);
+    }
+    if(!choices.empty() && last_visible + 1 < choices.size()) {
+        renderer.draw_text("▼", text_x,
+            static_cast<float>(list_top_y +
+                static_cast<double>(last_visible - first_visible + 1) * item_height),
+            arrow_size, glm::vec4(1.0F, 1.0F, 1.0F, 0.85F), false, true);
     }
 }
 
