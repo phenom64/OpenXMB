@@ -73,6 +73,23 @@ using namespace mfk::i18n::literals;
 namespace app
 {
     namespace {
+        bool truthy_environment_flag(const char* name) noexcept
+        {
+            const char* value = std::getenv(name);
+            if(value == nullptr || value[0] == '\0') {
+                return false;
+            }
+            const std::string_view text(value);
+            return text != "0" && text != "false" && text != "FALSE" &&
+                   text != "off" && text != "OFF" && text != "no" &&
+                   text != "NO";
+        }
+
+        bool force_headless_startup_overlay() noexcept
+        {
+            return truthy_environment_flag("OPENXMB_HEADLESS_STARTUP");
+        }
+
         events::logical_controller_button to_logical_button(sdl::GameControllerButton button)
         {
             return static_cast<events::logical_controller_button>(std::to_underlying(button));
@@ -109,9 +126,10 @@ namespace app
             return path;
         }
 
-        [[nodiscard]] std::optional<double> fixed_wave_seconds_from_environment()
+        [[nodiscard]] std::optional<double> fixed_seconds_from_environment(
+            const char* name)
         {
-            const char* value = std::getenv("OPENXMB_FIXED_WAVE_SECONDS");
+            const char* value = std::getenv(name);
             if(value == nullptr || *value == '\0') {
                 return std::nullopt;
             }
@@ -124,11 +142,21 @@ namespace app
             if(error != std::errc{} || end != text.data() + text.size() ||
                !std::isfinite(seconds) || seconds < 0.0) {
                 spdlog::warn(
-                    "Ignoring invalid OPENXMB_FIXED_WAVE_SECONDS value '{}'; expected a finite non-negative number",
-                    text);
+                    "Ignoring invalid {} value '{}'; expected a finite non-negative number",
+                    name, text);
                 return std::nullopt;
             }
             return seconds;
+        }
+
+        [[nodiscard]] std::optional<double> fixed_wave_seconds_from_environment()
+        {
+            return fixed_seconds_from_environment("OPENXMB_FIXED_WAVE_SECONDS");
+        }
+
+        [[nodiscard]] std::optional<double> fixed_boot_seconds_from_environment()
+        {
+            return fixed_seconds_from_environment("OPENXMB_FIXED_BOOT_SECONDS");
         }
     }
 
@@ -416,8 +444,10 @@ namespace app
             config::CONFIG.asset_directory/"icons/icon_cursor.png",
             config::CONFIG.asset_directory/"icons/icon_category_settings.png"));
 
-        // Push startup splash overlay (plays jingle, fades text)
-        if(!win->config.headless) {
+        // Push startup splash overlay (plays jingle, fades text). Headless
+        // runs keep their settled-scene default unless visual verification
+        // explicitly opts into the real boot overlay.
+        if(!win->config.headless || force_headless_startup_overlay()) {
             emplace_overlay<app::startup_overlay>();
         }
     }
@@ -753,7 +783,12 @@ namespace app
                         }
                     }
                     float seconds = std::chrono::duration<float>(std::chrono::steady_clock::now() - shader_time_zero).count();
-                    if(win->config.headless) {
+                    if(win->config.headless && force_headless_startup_overlay()) {
+                        if(const auto fixed_boot_seconds =
+                               fixed_boot_seconds_from_environment()) {
+                            seconds = static_cast<float>(*fixed_boot_seconds);
+                        }
+                    } else if(win->config.headless) {
                         // Headless visual verification intentionally omits the
                         // startup overlay, so begin in the same settled scene.
                         seconds += static_cast<float>(

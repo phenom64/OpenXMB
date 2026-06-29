@@ -1,7 +1,9 @@
 #include "openxmb/xmb/boot_timeline.hpp"
 #include "openxmb/xmb/identity.hpp"
 #include "openxmb/xmb/layout.hpp"
+#include "openxmb/xmb/boot_layout.hpp"
 
+#include <array>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -125,6 +127,39 @@ void test_boot_timeline() {
   require_near(skipped.ui_reveal, 1.0, 1e-12, "skip reveals UI");
 }
 
+void test_boot_text_layout() {
+  require_near(kBootIdentityRightX, 0.9165, 1e-12,
+               "identity right edge follows xmb-web logo gap");
+  require_near(kBootIdentityCenterY, 0.532, 1e-12,
+               "identity vertical center follows xmb-web logo center");
+  require_near(kBootIdentityMaxWidth, 0.365, 1e-12,
+               "identity text is fitted to the xmb-web logo box width");
+  require_near(kBootNativeTextMeasureToVisualScale, 0.5, 1e-12,
+               "boot overlay compensates the native renderer's 2x text measure");
+  require(kBootIdentityBaseSize > 0.09,
+          "identity text is no longer the undersized legacy splash");
+
+  const auto identity =
+      place_startup_identity_text({.width = 0.52, .height = 0.07});
+  require_near(identity.x, 0.3965, 1e-12,
+               "identity text is right-aligned to the xmb-web logo gap");
+  require_near(identity.y, 0.497, 1e-12,
+               "identity text is vertically centered on the xmb-web logo");
+
+  constexpr std::array<double, 4> warning_widths{{0.31, 0.64, 0.58, 0.51}};
+  const auto warning = place_boot_warning_block(warning_widths);
+  require_near(warning.x, 0.18, 1e-12,
+               "warning block is centered by its longest line");
+  require_near(warning.first_top_y, 0.43703703703703706, 1e-12,
+               "warning block top is vertically centered by line count and pitch");
+  require_near(kBootWarningReferenceFontSize, 24.0 / 1080.0, 1e-12,
+               "warning records the xmb-web 24px reference size");
+  require(warning.font_size > 0.045,
+          "warning draw size compensates native glyph scale");
+  require_near(warning.line_pitch, 34.0 / 1080.0, 1e-12,
+               "warning line pitch matches xmb-web 34px reference pitch");
+}
+
 void test_root_scene() {
   auto state = make_users_root_scene();
   const auto initial = sample_root_scene(state, 0.0);
@@ -211,6 +246,7 @@ void test_shader_interface() {
       read_text(source_root / "shaders/captured_wave.frag");
   const auto renderer =
       read_text(source_root / "src/xmb/renderer/captured_wave_renderer.cppm");
+  const auto shell = read_text(source_root / "src/app/shell.cpp");
 
   require(vertex.contains("layout(location = 0) in vec4 in_clip"),
           "shader clip attribute matches renderer location 0 / vec4");
@@ -235,6 +271,10 @@ void test_shader_interface() {
           "renderer exposes boot alpha-over mode");
   require(renderer.contains("CapturedWaveBlendMode::idle_additive"),
           "renderer exposes idle additive mode");
+  require(shell.contains("OPENXMB_HEADLESS_STARTUP"),
+          "headless visual verification can opt into the real startup overlay");
+  require(shell.contains("OPENXMB_FIXED_BOOT_SECONDS"),
+          "headless startup visual verification can pin the boot timestamp");
 }
 
 } // namespace
@@ -243,6 +283,7 @@ int main() {
   try {
     test_layout_transforms();
     test_boot_timeline();
+    test_boot_text_layout();
     test_root_scene();
     test_shader_interface();
     std::cout << "OpenXMB layout/timeline/root/shader tests passed\n";
