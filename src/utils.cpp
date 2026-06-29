@@ -261,6 +261,18 @@ namespace utils {
                 static_cast<float>(lt.tm_sec) / 3600.0F;
         }
 
+        float normalize_hour(float local_hour)
+        {
+            if(!std::isfinite(local_hour)) {
+                return 13.0F;
+            }
+            auto hour = std::fmod(local_hour, 24.0F);
+            if(hour < 0.0F) {
+                hour += 24.0F;
+            }
+            return hour;
+        }
+
         float xmb_web_day_night_brightness(float hour)
         {
             const auto night = openxmb::xmb::night_day_blend(hour);
@@ -382,12 +394,35 @@ namespace utils {
         return xmb_web_month_anchor(monthIndex);
     }
 
+    float xmb_effective_day_night_hour(float localHour)
+    {
+        using day_night_mode = config::config::day_night_mode;
+        switch(config::CONFIG.themeDayNightMode) {
+            case day_night_mode::auto_time_of_day:
+                return normalize_hour(localHour);
+            case day_night_mode::day:
+                return 13.0F;
+            case day_night_mode::morning:
+                // xmb-web fixed Morning = blend 0.25. The native gradient
+                // path derives blend from an equivalent dawn local-hour sample.
+                return 6.375F;
+            case day_night_mode::dusk:
+                return 18.5F;
+            case day_night_mode::evening:
+                return 19.5F;
+            case day_night_mode::night:
+                return 22.0F;
+        }
+        return normalize_hour(localHour);
+    }
+
     float xmb_hour_brightness(int hour, float minuteFrac)
     {
         const float resolved_hour =
             static_cast<float>(wrap_index(hour, 24)) +
             std::clamp(minuteFrac, 0.0f, 1.0f);
-        return xmb_web_day_night_brightness(resolved_hour);
+        return xmb_web_day_night_brightness(
+            xmb_effective_day_night_hour(resolved_hour));
     }
 
     glm::vec3 xmb_dynamic_colour(std::chrono::system_clock::time_point now)
@@ -400,7 +435,8 @@ namespace utils {
     xmb_resolved_theme_colour xmb_resolve_theme_colour(std::chrono::system_clock::time_point now)
     {
         std::tm lt = local_time(now);
-        float brightness = xmb_web_day_night_brightness(local_hour(lt));
+        float brightness = xmb_web_day_night_brightness(
+            xmb_effective_day_night_hour(local_hour(lt)));
 
         if(!config::CONFIG.themeOriginalColour) {
             glm::vec3 base = clamp_colour(config::CONFIG.themeCustomColour);

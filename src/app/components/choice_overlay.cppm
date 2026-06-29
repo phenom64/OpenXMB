@@ -44,7 +44,8 @@ export class choice_overlay : public component, public action_receiver {
     public:
         choice_overlay(std::vector<std::string> choices, unsigned int selection_index = 0,
             std::function<void(unsigned int)> confirm_callback = [](unsigned int){},
-            std::function<void()> cancel_callback = [](){}
+            std::function<void()> cancel_callback = [](){},
+            std::function<void(unsigned int)> preview_callback = [](unsigned int){}
         );
         // Optional colour swatches to display next to each choice (same length as choices or empty)
         void set_colour_swatches(const std::vector<glm::vec3>& cols) { swatches = cols; }
@@ -61,6 +62,7 @@ export class choice_overlay : public component, public action_receiver {
         std::vector<std::string> choices;
         std::function<void(unsigned int)> confirm_callback;
         std::function<void()> cancel_callback;
+        std::function<void(unsigned int)> preview_callback;
 
         bool select_relative(action dir);
 

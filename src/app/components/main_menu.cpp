@@ -285,8 +285,21 @@ struct ps3_colour_entry {
 }
 
 [[nodiscard]] std::string_view current_ps3_day_night_value() noexcept {
-    // The current xmb-web background path follows the live clock unless a
-    // deterministic test timestamp is supplied.
+    using day_night_mode = config::config::day_night_mode;
+    switch(config::CONFIG.themeDayNightMode) {
+        case day_night_mode::auto_time_of_day:
+            return "auto.time.of.day";
+        case day_night_mode::day:
+            return "day";
+        case day_night_mode::morning:
+            return "morning";
+        case day_night_mode::dusk:
+            return "dusk";
+        case day_night_mode::evening:
+            return "evening";
+        case day_night_mode::night:
+            return "night";
+    }
     return "auto.time.of.day";
 }
 
@@ -317,6 +330,89 @@ struct ps3_colour_entry {
     const std::string_view value{raw};
     return value == "1" || value == "true" || value == "TRUE" ||
            value == "yes" || value == "YES" || value == "on" || value == "ON";
+}
+
+[[nodiscard]] bool apply_settings_dialog_choice_value(
+    std::string_view dialog_id,
+    std::string_view choice_value,
+    bool log_unsupported = true
+) {
+    if(dialog_id == "dialog.colour") {
+        if(choice_value == "original") {
+            config::CONFIG.setThemeOriginalColour(true);
+            return true;
+        }
+        if(const auto colour = ps3_colour_for_value(choice_value)) {
+            config::CONFIG.setThemeOriginalColour(false);
+            config::CONFIG.setThemeCustomColour(colour->tint);
+            return true;
+        }
+        return false;
+    }
+
+    if(dialog_id == "dialog.background") {
+        using background_type = config::config::background_type;
+        if(choice_value == "original") {
+            config::CONFIG.setBackgroundType(background_type::original);
+            return true;
+        }
+        if(choice_value == "classic") {
+            config::CONFIG.setBackgroundType(background_type::wave);
+            return true;
+        }
+        if(choice_value == "wallpaper") {
+            if(!config::CONFIG.backgroundImage.empty()) {
+                config::CONFIG.setBackgroundType(background_type::image);
+                return true;
+            }
+            if(log_unsupported) {
+                spdlog::info("Background Wallpaper is available only after a wallpaper path is configured");
+            }
+            return false;
+        }
+        if(choice_value == "brightness") {
+            if(log_unsupported) {
+                spdlog::info("Background Brightness is catalog-backed but not live-wired yet");
+            }
+            return false;
+        }
+        return false;
+    }
+
+    if(dialog_id == "dialog.theme") {
+        using background_type = config::config::background_type;
+        if(choice_value == "original") {
+            config::CONFIG.setBackgroundType(background_type::original);
+            return true;
+        }
+        if(choice_value == "classic") {
+            config::CONFIG.setBackgroundType(background_type::wave);
+            return true;
+        }
+        if(choice_value == "install" && log_unsupported) {
+            spdlog::info("Theme Install is catalog-backed but not live-wired yet");
+        }
+        return false;
+    }
+
+    if(dialog_id == "dialog.font") {
+        if(choice_value == "original") {
+            config::CONFIG.setFontPath("default");
+            return true;
+        }
+        if(log_unsupported) {
+            spdlog::info("Font variant '{}' is catalog-backed but not packaged yet",
+                choice_value);
+        }
+        return false;
+    }
+
+    if(dialog_id == "dialog.day.night") {
+        config::CONFIG.setThemeDayNightMode(choice_value);
+        return true;
+    }
+
+    return false;
 }
 
 [[nodiscard]] double seconds_from_time_point(
@@ -871,6 +967,7 @@ bool main_menu::open_settings_dialog_choice_overlay(
 
     const auto dialog_id = plan.target_id;
     const auto node_id = plan.node_id;
+    const auto original_selection = selection;
     auto* overlay = xmb->emplace_overlay<app::choice_overlay>(
         labels,
         selection,
@@ -883,60 +980,11 @@ bool main_menu::open_settings_dialog_choice_overlay(
                 return;
             }
 
-            bool applied = false;
             const auto& choice = choices[index];
-            if(dialog_id == "dialog.colour") {
-                if(choice.value == "original") {
-                    config::CONFIG.setThemeOriginalColour(true);
-                    applied = true;
-                } else if(const auto colour = ps3_colour_for_value(choice.value)) {
-                    config::CONFIG.setThemeOriginalColour(false);
-                    config::CONFIG.setThemeCustomColour(colour->tint);
-                    applied = true;
-                }
-            } else if(dialog_id == "dialog.background") {
-                using background_type = config::config::background_type;
-                if(choice.value == "original") {
-                    config::CONFIG.setBackgroundType(background_type::original);
-                    applied = true;
-                } else if(choice.value == "classic") {
-                    config::CONFIG.setBackgroundType(background_type::wave);
-                    applied = true;
-                } else if(choice.value == "wallpaper") {
-                    if(!config::CONFIG.backgroundImage.empty()) {
-                        config::CONFIG.setBackgroundType(background_type::image);
-                        applied = true;
-                    } else {
-                        spdlog::info("Background Wallpaper is available only after a wallpaper path is configured");
-                    }
-                } else if(choice.value == "brightness") {
-                    spdlog::info("Background Brightness is catalog-backed but not live-wired yet");
-                }
-            } else if(dialog_id == "dialog.theme") {
-                using background_type = config::config::background_type;
-                if(choice.value == "original") {
-                    config::CONFIG.setBackgroundType(background_type::original);
-                    applied = true;
-                } else if(choice.value == "classic") {
-                    config::CONFIG.setBackgroundType(background_type::wave);
-                    applied = true;
-                } else if(choice.value == "install") {
-                    spdlog::info("Theme Install is catalog-backed but not live-wired yet");
-                }
-            } else if(dialog_id == "dialog.font") {
-                if(choice.value == "original") {
-                    config::CONFIG.setFontPath("default");
-                    applied = true;
-                } else {
-                    spdlog::info("Font variant '{}' is catalog-backed but not packaged yet",
-                        choice.value);
-                }
-            } else if(dialog_id == "dialog.day.night") {
-                spdlog::info("Day/Night mode '{}' is catalog-backed; renderer override storage is not live-wired yet",
-                    choice.value);
-            }
+            const bool applied = apply_settings_dialog_choice_value(
+                dialog_id, choice.value, true);
 
-            if(applied || dialog_id == "dialog.font" || dialog_id == "dialog.day.night") {
+            if(applied) {
                 settings_value_labels[node_id] = labels[index];
             }
 
@@ -946,6 +994,22 @@ bool main_menu::open_settings_dialog_choice_overlay(
                 } else {
                     config::CONFIG.save_config();
                 }
+            }
+        },
+        [this, dialog_id, node_id, labels, choices = dialog.choices,
+         original_selection]() {
+            if(original_selection < choices.size()) {
+                (void)apply_settings_dialog_choice_value(
+                    dialog_id, choices[original_selection].value, false);
+            }
+            if(original_selection < labels.size()) {
+                settings_value_labels[node_id] = labels[original_selection];
+            }
+        },
+        [dialog_id, choices = dialog.choices](unsigned int index) {
+            if(index < choices.size()) {
+                (void)apply_settings_dialog_choice_value(
+                    dialog_id, choices[index].value, false);
             }
         });
 

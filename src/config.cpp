@@ -50,7 +50,7 @@ namespace config
 
 namespace
 {
-    constexpr int current_config_version = 3;
+    constexpr int current_config_version = 4;
     constexpr double min_controller_cursor_speed = 0.10;
     constexpr double max_controller_cursor_speed = 4.0;
 
@@ -158,6 +158,45 @@ namespace
             return std::nullopt;
         }
         return colour_to_hex(*colour);
+    }
+
+    std::string_view day_night_mode_to_string(config::day_night_mode mode)
+    {
+        using day_night_mode = config::day_night_mode;
+        switch(mode) {
+            case day_night_mode::auto_time_of_day: return "auto.time.of.day";
+            case day_night_mode::day: return "day";
+            case day_night_mode::morning: return "morning";
+            case day_night_mode::dusk: return "dusk";
+            case day_night_mode::evening: return "evening";
+            case day_night_mode::night: return "night";
+        }
+        return "auto.time.of.day";
+    }
+
+    std::optional<config::day_night_mode> parse_day_night_mode(std::string_view mode)
+    {
+        using day_night_mode = config::day_night_mode;
+        if(mode == "auto" || mode == "auto.time.of.day" ||
+           mode == "automatic" || mode == "time.of.day") {
+            return day_night_mode::auto_time_of_day;
+        }
+        if(mode == "day") {
+            return day_night_mode::day;
+        }
+        if(mode == "morning") {
+            return day_night_mode::morning;
+        }
+        if(mode == "dusk") {
+            return day_night_mode::dusk;
+        }
+        if(mode == "evening") {
+            return day_night_mode::evening;
+        }
+        if(mode == "night") {
+            return day_night_mode::night;
+        }
+        return std::nullopt;
     }
 
     std::filesystem::path expand_user_path(const std::string& path)
@@ -348,6 +387,10 @@ namespace
             shell["theme-month-time-colours"] = build_month_time_colours(default_month_colours());
             migrated = true;
         }
+        if(!shell.contains("theme-day-night-mode")) {
+            shell["theme-day-night-mode"] = "auto.time.of.day";
+            migrated = true;
+        }
 
         if(version < 3) {
             if(shell.contains("theme-month-colours") &&
@@ -506,6 +549,9 @@ void config::load_from_json() {
             }
             if (shell.contains("theme-custom-colour")) {
                 setThemeCustomColour(shell["theme-custom-colour"].get<std::string>());
+            }
+            if (shell.contains("theme-day-night-mode")) {
+                setThemeDayNightMode(shell["theme-day-night-mode"].get<std::string>());
             }
             if (shell.contains("theme-month-colours") && shell["theme-month-colours"].is_array()) {
                 const auto& colours = shell["theme-month-colours"];
@@ -688,6 +734,7 @@ void config::save_to_json() {
         // Theme/colour scheme
         config["shell"]["theme-colour-mode"] = themeOriginalColour ? "original" : "custom";
         config["shell"]["theme-custom-colour"] = colour_to_hex(themeCustomColour);
+        config["shell"]["theme-day-night-mode"] = day_night_mode_to_string(themeDayNightMode);
         config["shell"]["theme-month-colours"] = themeMonthColourStrings;
         config["shell"]["theme-month-time-colours"] = themeMonthTimeColourStrings;
 
@@ -941,6 +988,28 @@ void config::setThemeCustomColour(std::string_view hex) {
 }
 void config::setThemeCustomColour(const std::string& hex) {
     setThemeCustomColour(std::string_view(hex));
+}
+
+void config::setThemeDayNightMode(day_night_mode mode) {
+    if(themeDayNightMode == mode) {
+        return;
+    }
+    themeDayNightMode = mode;
+    notifyCallbacks("theme-day-night-mode", std::string(day_night_mode_to_string(themeDayNightMode)));
+}
+
+void config::setThemeDayNightMode(std::string_view mode) {
+    auto parsed = parse_day_night_mode(mode);
+    if(!parsed) {
+        spdlog::warn("Ignoring invalid theme-day-night-mode: {}", mode);
+        setThemeDayNightMode(day_night_mode::auto_time_of_day);
+        return;
+    }
+    setThemeDayNightMode(*parsed);
+}
+
+void config::setThemeDayNightMode(const std::string& mode) {
+    setThemeDayNightMode(std::string_view(mode));
 }
 
 void config::setDateTimeFormat(const std::string& format) {

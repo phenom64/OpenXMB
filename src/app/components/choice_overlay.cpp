@@ -44,8 +44,12 @@ import vma;
 namespace app {
 
 choice_overlay::choice_overlay(std::vector<std::string> choices, unsigned int selection_index,
-    std::function<void(unsigned int)> confirm_callback, std::function<void()> cancel_callback)
-    : choices{std::move(choices)}, confirm_callback{std::move(confirm_callback)}, cancel_callback{std::move(cancel_callback)}
+    std::function<void(unsigned int)> confirm_callback,
+    std::function<void()> cancel_callback,
+    std::function<void(unsigned int)> preview_callback)
+    : choices{std::move(choices)}, confirm_callback{std::move(confirm_callback)},
+      cancel_callback{std::move(cancel_callback)},
+      preview_callback{std::move(preview_callback)}
 {
     if(this->choices.empty()) {
         this->selection_index = 0;
@@ -101,6 +105,9 @@ bool choice_overlay::select_relative(action dir) {
         selection_index = (selection_index + 1) % choices.size();
     } else {
         return false;
+    }
+    if(preview_callback) {
+        preview_callback(selection_index);
     }
     return true;
 }

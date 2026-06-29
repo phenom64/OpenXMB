@@ -695,14 +695,16 @@ namespace app
             const auto local_hour = static_cast<float>(local_time.tm_hour) +
                 static_cast<float>(local_time.tm_min) / 60.0F +
                 static_cast<float>(local_time.tm_sec) / 3600.0F;
+            const auto day_night_hour =
+                utils::xmb_effective_day_night_hour(local_hour);
             const auto original_gradient =
                 openxmb::xmb::resolve_background_gradient(
-                    local_time.tm_mon, local_hour);
+                    local_time.tm_mon, day_night_hour);
             const auto manual_gradient =
                 openxmb::xmb::resolve_manual_background_gradient(
                     {themeColour.base_colour.r, themeColour.base_colour.g,
                      themeColour.base_colour.b},
-                    local_hour);
+                    day_night_hour);
             const auto background_gradient = config::CONFIG.themeOriginalColour
                 ? original_gradient
                 : manual_gradient;

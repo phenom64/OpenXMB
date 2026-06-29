@@ -57,6 +57,9 @@ export namespace config
             enum class background_type {
                 original, wave, color, image
             };
+            enum class day_night_mode {
+                auto_time_of_day, day, morning, dusk, evening, night
+            };
 
 #if __linux__
             std::filesystem::path exe_directory = std::filesystem::canonical("/proc/self/exe").parent_path();
@@ -116,6 +119,7 @@ export namespace config
             glm::vec3               themeCustomColour{0.65f, 0.30f, 0.65f};
             std::array<std::string, 12> themeMonthColourStrings{};
             std::array<std::array<std::string, 24>, 12> themeMonthTimeColourStrings{};
+            day_night_mode          themeDayNightMode = day_night_mode::auto_time_of_day;
 
             std::filesystem::path   picturesPath;
             std::filesystem::path   musicPath;
@@ -154,6 +158,9 @@ export namespace config
             void setThemeCustomColour(glm::vec3 color);
             void setThemeCustomColour(std::string_view hex);
             void setThemeCustomColour(const std::string& hex);
+            void setThemeDayNightMode(day_night_mode mode);
+            void setThemeDayNightMode(std::string_view mode);
+            void setThemeDayNightMode(const std::string& mode);
             void setDateTimeFormat(const std::string& format);
             void setDateTimeOffset(double offset);
             void setLanguage(const std::string& lang);
