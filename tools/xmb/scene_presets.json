@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "description": "Deterministic headless capture presets for xmb-web visual parity scenes.",
+  "defaults": {
+    "width": 1920,
+    "height": 1080,
+    "frames": 4,
+    "fixed_unix_seconds": 1781524800,
+    "fixed_wave_seconds": 4.0,
+    "background_type": "original",
+    "theme_colour_mode": "original",
+    "icon_glass_refraction": true,
+    "sample_count": 1,
+    "max_fps": 30
+  },
+  "scenes": {
+    "root": {
+      "description": "Users root after boot complete, Original theme, June afternoon",
+      "pattern": "root-{:05d}.png",
+      "env": {
+        "OPENXMB_INITIAL_CATEGORY": "users"
+      }
+    },
+    "settings": {
+      "description": "Settings category, System Settings focused (catalog index 5)",
+      "pattern": "settings-{:05d}.png",
+      "env": {
+        "OPENXMB_INITIAL_CATEGORY": "settings",
+        "OPENXMB_INITIAL_SETTINGS_MENU": "category.settings",
+        "OPENXMB_INITIAL_SETTINGS_SELECTION": "5"
+      }
+    },
+    "theme": {
+      "description": "Theme Settings submenu focused",
+      "pattern": "theme-{:05d}.png",
+      "env": {
+        "OPENXMB_INITIAL_CATEGORY": "settings",
+        "OPENXMB_INITIAL_SETTINGS_MENU": "category.settings.theme.settings"
+      }
+    },
+    "theme-panel": {
+      "description": "Theme Settings with Theme dialog panel open (Original selected)",
+      "pattern": "theme-panel-{:05d}.png",
+      "env": {
+        "OPENXMB_INITIAL_CATEGORY": "settings",
+        "OPENXMB_INITIAL_SETTINGS_MENU": "category.settings.theme.settings",
+        "OPENXMB_INITIAL_SETTINGS_SELECTION": "0",
+        "OPENXMB_OPEN_INITIAL_SETTINGS_CHOICE": "1"
+      }
+    }
+  }
+}

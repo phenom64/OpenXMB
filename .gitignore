@@ -3,6 +3,7 @@
 /dist/
 /out/
 /.workflow/
+/tests/xmb/reference_frames/
 CMakeUserPresets.json
 .DS_Store
 __pycache__/

@@ -131,6 +131,7 @@ option(ENABLE_DISC_MEDIA "Enable DVD/Blu-ray support" OFF)
 option(ENABLE_LIBRETRO "Enable libretro core host" OFF)
 option(OPENXMB_BUILD_NATIVE_TESTS "Build deterministic native OpenXMB contract tests" ON)
 option(OPENXMB_IMPORT_XMB_WEB_COMPAT "Import the local-only xmb-web compatibility asset pack" OFF)
+option(OPENXMB_VISUAL_REGRESSION "Enable optional visual regression CTest targets (requires reference frames)" OFF)
 set(OPENXMB_XMB_WEB_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../xmb-web" CACHE PATH
   "Pinned local TheGammaSqueeze/xmb-web checkout used for the restricted compatibility pack")
 set(HWACCEL "auto" CACHE STRING "Preferred hardware video decode backend")
@@ -433,6 +434,7 @@ if(OPENXMB_IMPORT_XMB_WEB_COMPAT)
     OUTPUT "${_openxmb_compat_manifest}"
     BYPRODUCTS
       "${OPENXMB_COMPAT_DIR}/data/month-gradient.json"
+      "${OPENXMB_COMPAT_DIR}/data/particle-cloud.bin"
       "${OPENXMB_COMPAT_DIR}/normalmaps/nmap_000.png"
       "${OPENXMB_COMPAT_DIR}/wave/wave_geo.bin"
       "${OPENXMB_COMPAT_DIR}/wave/wave_seq2.bin"
@@ -453,6 +455,7 @@ if(OPENXMB_IMPORT_XMB_WEB_COMPAT)
       "${OPENXMB_XMB_WEB_SOURCE}/wave_boot.json"
       "${OPENXMB_XMB_WEB_SOURCE}/normalmaps/nmap_000.png"
       "${OPENXMB_XMB_WEB_SOURCE}/index.html"
+      "${OPENXMB_XMB_WEB_SOURCE}/particle_cloud.js"
       ${_openxmb_compat_family_inputs}
     COMMENT "Verifying and importing the local-only OpenXMB xmb-web compatibility pack"
     VERBATIM
@@ -802,6 +805,59 @@ if(OPENXMB_BUILD_NATIVE_TESTS)
   openxmb_configure_native_test(openxmb_localization_core_tests)
   add_test(NAME openxmb_localization_core_tests
     COMMAND openxmb_localization_core_tests)
+
+  add_executable(openxmb_visual_harness_tests
+    tests/xmb/visual_harness_tests.cpp
+  )
+  set_target_properties(openxmb_visual_harness_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  openxmb_configure_native_test(openxmb_visual_harness_tests)
+  add_test(NAME openxmb_visual_harness_tests
+    COMMAND openxmb_visual_harness_tests
+      "${CMAKE_CURRENT_SOURCE_DIR}")
+
+  find_package(Python3 COMPONENTS Interpreter)
+  if(Python3_FOUND)
+    set(_openxmb_reference_root
+      "${CMAKE_CURRENT_SOURCE_DIR}/tests/xmb/reference_frames/root.png")
+    add_test(NAME openxmb_verify_reference_frames
+      COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/xmb/verify_reference_frames.py"
+        --reference-dir
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/xmb/reference_frames"
+        --thresholds
+        "${CMAKE_CURRENT_SOURCE_DIR}/assets/xmb/manifests/visual-thresholds.json")
+    set_tests_properties(openxmb_verify_reference_frames PROPERTIES
+      LABELS "visual-regression")
+    if(NOT EXISTS "${_openxmb_reference_root}")
+      set_tests_properties(openxmb_verify_reference_frames PROPERTIES DISABLED TRUE)
+    endif()
+
+    if(OPENXMB_VISUAL_REGRESSION)
+      if(EXISTS "${_openxmb_reference_root}")
+        if(WIN32)
+          add_test(NAME openxmb_visual_regression
+            COMMAND pwsh -NoProfile -File
+              "${CMAKE_CURRENT_SOURCE_DIR}/tools/xmb/run_visual_regression.ps1"
+              -RepoRoot "${CMAKE_CURRENT_SOURCE_DIR}"
+              -BuildDir "${CMAKE_BINARY_DIR}"
+              -SkipCapture
+              -Heatmap)
+        else()
+          add_test(NAME openxmb_visual_regression
+            COMMAND "${Python3_EXECUTABLE}"
+              "${CMAKE_CURRENT_SOURCE_DIR}/tools/xmb/compare_frames.py"
+              --reference "${CMAKE_CURRENT_SOURCE_DIR}/tests/xmb/reference_frames/root.png"
+              --actual "${CMAKE_BINARY_DIR}/visual-regression/captures/root/root.png"
+              --thresholds "${CMAKE_CURRENT_SOURCE_DIR}/assets/xmb/manifests/visual-thresholds.json"
+              --scene root)
+          set_tests_properties(openxmb_visual_regression PROPERTIES
+            DISABLED TRUE
+            LABELS "visual-regression")
+        endif()
+        set_tests_properties(openxmb_visual_regression PROPERTIES LABELS "visual-regression")
+      endif()
+    endif()
+  endif()
 endif()
 
 if(APPLE)

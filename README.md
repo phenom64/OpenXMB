@@ -214,13 +214,17 @@ python tools/xmb/import_xmb_web.py --source $env:USERPROFILE/Developer/xmb-web `
   --output $env:TEMP/xmb-compat-verify --verify-only
 ```
 
-**Headless visual capture** for parity audits:
+**Visual regression harness** (Phase 1):
 
 ```powershell
-.\tools\xmb\capture_background_audit.ps1
+.\tools\xmb\install_reference_frames.ps1
+.\tools\xmb\capture_frame.ps1 -Scene all
+.\tools\xmb\run_visual_regression.ps1 -Heatmap
 ```
 
-See `tools/xmb/capture_native_frame.md` for full env-var reference and `compare_frames.py` usage.
+Background-only wave tuning: `.\tools\xmb\capture_background_audit.ps1`
+
+See `tools/xmb/capture_native_frame.md` for scene presets, env vars, and CTest usage.
 
 ## Configuration
 
