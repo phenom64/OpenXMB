@@ -88,10 +88,44 @@ int main() {
       read_text(source_root / "shaders/original_particles.vert");
   const auto particle_fragment =
       read_text(source_root / "shaders/original_particles.frag");
-  require(particle_vertex.contains("wave-coupled bokeh/glitter band"),
-          "Original particles are documented as a wave-coupled bokeh band");
-  require(!particle_vertex.contains("uniform in screen"),
-          "Original particles are not a full-screen starfield");
-  require(particle_fragment.contains("no pinprick star core"),
-          "Original particle fragment avoids star-like cores");
+  const auto particle_renderer =
+      read_text(source_root / "src/render/components/original_particles.cppm");
+  const auto monthly_fragment =
+      read_text(source_root / "shaders/monthly_background.frag");
+  const auto shell = read_text(source_root / "src/app/shell.cpp");
+  const auto default_config = read_text(source_root / "config.json");
+  require(default_config.contains("\"background-type\": \"original\""),
+          "shipped config defaults to Original, not Classic");
+  require(default_config.contains("\"icon-glass-refraction\": true"),
+          "shipped config enables xmb-web icon glass by default");
+  require(particle_vertex.contains("Firmware cloud homes"),
+          "Original particles are projected from the xmb-web firmware cloud");
+  require(particle_vertex.contains("projFx = 1.12820041"),
+          "Original particles use the xmb-web particle projection constants");
+  require(particle_vertex.contains("spin0"),
+          "Original particles use the xmb-web spinning-normal specular model");
+  require(particle_vertex.contains("waveMotionDeltaY"),
+          "Original particles ride the captured wave motion");
+  require(particle_vertex.contains(
+              "vec2(sizePx / resolution.x, sizePx / resolution.y)"),
+          "Original particle sprites keep square pixel aspect on widescreen");
+  require(particle_fragment.contains("diffraction-spike"),
+          "Original particle fragment keeps xmb-web's glitter sparkle profile");
+  require(particle_fragment.contains("discard"),
+          "Original particle fragment renders round sprites, not square stars");
+  require(particle_renderer.contains("load_particle_cloud"),
+          "Original particle renderer can consume the imported xmb-web cloud");
+  require(particle_renderer.contains("make_instances"),
+          "Original particle renderer precomputes deterministic cloud instances");
+  require(monthly_fragment.contains("1.05 - 0.26 * dip"),
+          "Original gradient keeps xmb-web's dark menu-band envelope");
+  require(monthly_fragment.contains(
+              "top_multiplier = mix(0.30, 0.02, night)"),
+          "Original gradient keeps xmb-web's day/night top ramp");
+  require(monthly_fragment.contains("xmb_web_composite"),
+          "Original gradient bakes xmb-web's steady scene composite");
+  require(monthly_fragment.contains("0.899181"),
+          "Original gradient uses xmb-web HDR day white level");
+  require(shell.contains("compat/xmb-ui-compat/data/particle-cloud.bin"),
+          "OpenXMB shell loads the imported xmb-web particle cloud when present");
 }

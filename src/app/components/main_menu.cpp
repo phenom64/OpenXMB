@@ -70,6 +70,13 @@ using namespace openxmb::xmb;
 inline constexpr double logical_width = 1920.0;
 inline constexpr double logical_height = 1080.0;
 inline constexpr int settings_category_index = 1;
+inline constexpr float submenu_backdrop_blur_px = 9.0F;
+inline constexpr float submenu_backdrop_dim_alpha = 0.0F;
+inline constexpr double settings_parent_col_x = 316.0;
+inline constexpr double settings_sibling_col_x = 455.0;
+inline constexpr double settings_parent_spacing = 80.0;
+inline constexpr double xmb_web_icon_glass_alpha = 0.76;
+inline constexpr double xmb_web_flat_active_icon_alpha = 0.54;
 inline constexpr std::string_view initial_category_env = "OPENXMB_INITIAL_CATEGORY";
 inline constexpr std::string_view initial_settings_menu_env = "OPENXMB_INITIAL_SETTINGS_MENU";
 inline constexpr std::string_view initial_settings_selection_env =
@@ -322,6 +329,31 @@ struct ps3_colour_entry {
     return "";
 }
 
+[[nodiscard]] bool settings_dialog_top_action(
+    std::string_view dialog_id, std::string_view choice_value) noexcept {
+    return (dialog_id == "dialog.theme" && choice_value == "install") ||
+        (dialog_id == "dialog.background" && choice_value == "brightness");
+}
+
+[[nodiscard]] std::string localized_dialog_choice_label(
+    const openxmb::xmb::Catalog& catalog,
+    std::string_view dialog_id,
+    std::string_view choice_value) {
+    const auto dialog_it = catalog.dialogs.find(dialog_id);
+    if(dialog_it == catalog.dialogs.end()) {
+        return {};
+    }
+    for(const auto& choice : dialog_it->second.choices) {
+        if(settings_dialog_top_action(dialog_id, choice.value) ||
+           std::string_view{choice.value} != choice_value) {
+            continue;
+        }
+        const auto localized = catalog.text(choice.label_key);
+        return localized.empty() ? choice.value : std::string{localized};
+    }
+    return {};
+}
+
 [[nodiscard]] bool config_override_read_only() noexcept {
     const auto* raw = std::getenv("OPENXMB_CONFIG_READ_ONLY");
     if(raw == nullptr) {
@@ -556,12 +588,15 @@ void draw_icon(
     const auto width = layout.width(extent);
     const auto height = layout.height(extent);
     const auto tint =
-        glm::vec4(1.0f, 1.0f, 1.0f, static_cast<float>(alpha));
+        glm::vec4(1.0f, 1.0f, 1.0f,
+            static_cast<float>(alpha * xmb_web_icon_glass_alpha));
     if(config::CONFIG.iconGlassRefraction && glass_texture != nullptr && glass_texture->loaded) {
         renderer.draw_image_glass(*glass_texture, x, y, width, height, tint);
     } else {
         const auto flat_alpha =
-            extent >= kActiveItemIconExtent - 0.5 ? alpha * 0.58 : alpha;
+            extent >= kActiveItemIconExtent - 0.5
+                ? alpha * xmb_web_flat_active_icon_alpha
+                : alpha;
         const auto flat_tint =
             glm::vec4(1.0f, 1.0f, 1.0f, static_cast<float>(flat_alpha));
         renderer.draw_image_a(texture, x, y, width, height, flat_tint);
@@ -618,13 +653,13 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, dreamrender
         preferred_icon(asset_directory, "xmb_icon_001.png", "icon_category_settings.png"), loader, xmb, loader));
     menus.push_back(make_simple<menu::files_menu>("Photo"_(),
         preferred_icon(asset_directory, "xmb_icon_002.png", "icon_category_photo.png"), loader, xmb,
-        config::CONFIG.picturesPath, loader));
+        config::CONFIG.picturesPath, loader, menu::files_menu_profile::photo));
     menus.push_back(make_simple<menu::files_menu>("Music"_(),
         preferred_icon(asset_directory, "xmb_icon_003.png", "icon_category_music.png"), loader, xmb,
-        config::CONFIG.musicPath, loader));
+        config::CONFIG.musicPath, loader, menu::files_menu_profile::music));
     menus.push_back(make_simple<menu::files_menu>("Video"_(),
         preferred_icon(asset_directory, "xmb_icon_004.png", "icon_category_video.png"), loader, xmb,
-        config::CONFIG.videosPath, loader));
+        config::CONFIG.videosPath, loader, menu::files_menu_profile::video));
     menus.push_back(make_simple<menu::applications_menu>("Game"_(),
         preferred_icon(asset_directory, "xmb_icon_005.png", "icon_category_game.png"), loader,
         xmb, loader, ::menu::categoryFilter("Game")));
@@ -682,6 +717,7 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, dreamrender
             }
             spdlog::info("Loaded catalog-backed Settings controller with {} icon binding(s)",
                 settings_icon_textures.size());
+            seed_settings_dialog_values();
             apply_initial_settings_route();
         } else {
             spdlog::warn("Settings catalog loaded from {}, but controller creation failed",
@@ -820,6 +856,46 @@ bool main_menu::settings_category_active() const {
         settings_controller && !in_submenu;
 }
 
+bool main_menu::settings_chrome_collapsed() const {
+    return settings_category_active() &&
+        settings_controller->route().id != "category.settings";
+}
+
+float main_menu::background_blur_px() const {
+    if(in_submenu || settings_chrome_collapsed()) {
+        return submenu_backdrop_blur_px;
+    }
+    return 0.0F;
+}
+
+float main_menu::background_dim_alpha() const {
+    if(in_submenu || settings_chrome_collapsed()) {
+        return submenu_backdrop_dim_alpha;
+    }
+    return 0.0F;
+}
+
+void main_menu::seed_settings_dialog_values() {
+    if(!settings_catalog) {
+        return;
+    }
+    for(const auto& [node_id, node] : settings_catalog->nodes) {
+        (void)node_id;
+        if(node.action_id.rfind("dialog.", 0) != 0) {
+            continue;
+        }
+        const auto current_value = current_dialog_value(node.action_id);
+        if(current_value.empty()) {
+            continue;
+        }
+        auto label = localized_dialog_choice_label(
+            *settings_catalog, node.action_id, current_value);
+        if(!label.empty()) {
+            settings_value_labels[node.id] = std::move(label);
+        }
+    }
+}
+
 bool main_menu::select_settings_relative(direction dir) {
     if(!settings_controller) {
         return false;
@@ -913,13 +989,18 @@ bool main_menu::open_settings_choice_overlay(const openxmb::xmb::CatalogNode& no
         }
     }
 
-    xmb->emplace_overlay<app::choice_overlay>(
+    settings_choice_panel_open = true;
+    auto* overlay = xmb->emplace_overlay<app::choice_overlay>(
         labels,
         selection,
         [this, node_id = node.id, labels](unsigned int index) {
+            settings_choice_panel_open = false;
             if(index < labels.size()) {
                 settings_value_labels[node_id] = labels[index];
             }
+        },
+        [this]() {
+            settings_choice_panel_open = false;
         });
     return true;
 }
@@ -945,8 +1026,7 @@ bool main_menu::open_settings_dialog_choice_overlay(
     std::string top_action_label;
     for(const auto& choice : dialog.choices) {
         const bool top_action =
-            (plan.target_id == "dialog.theme" && choice.value == "install") ||
-            (plan.target_id == "dialog.background" && choice.value == "brightness");
+            settings_dialog_top_action(plan.target_id, choice.value);
         if(top_action) {
             const auto localized = settings_catalog->text(choice.label_key);
             top_action_label =
@@ -993,6 +1073,7 @@ bool main_menu::open_settings_dialog_choice_overlay(
     const auto dialog_id = plan.target_id;
     const auto node_id = plan.node_id;
     const auto original_selection = selection;
+    settings_choice_panel_open = true;
     auto* overlay = xmb->emplace_overlay<app::choice_overlay>(
         labels,
         selection,
@@ -1001,6 +1082,7 @@ bool main_menu::open_settings_dialog_choice_overlay(
          node_id,
          labels,
          choices = selectable_choices](unsigned int index) {
+            settings_choice_panel_open = false;
             if(index >= choices.size() || index >= labels.size()) {
                 return;
             }
@@ -1023,6 +1105,7 @@ bool main_menu::open_settings_dialog_choice_overlay(
         },
         [this, dialog_id, node_id, labels, choices = selectable_choices,
          original_selection]() {
+            settings_choice_panel_open = false;
             if(original_selection < choices.size()) {
                 (void)apply_settings_dialog_choice_value(
                     dialog_id, choices[original_selection].value, false);
@@ -1105,6 +1188,94 @@ void main_menu::apply_initial_settings_route() {
        !activate_settings(action::ok)) {
         spdlog::warn("Could not open initial Settings choice panel");
     }
+}
+
+void main_menu::render_settings_parent_layer(dreamrender::gui_renderer& renderer) {
+    if(!settings_catalog || !settings_controller) {
+        return;
+    }
+    const auto& stack = settings_controller->navigation().stack;
+    if(stack.size() <= 2) {
+        return;
+    }
+
+    const auto& parent_route = stack[stack.size() - 2];
+    const auto* parent_menu = settings_catalog->find_node(parent_route.id);
+    if(!parent_menu || parent_menu->children.empty() ||
+       parent_route.selection >= parent_menu->children.size()) {
+        return;
+    }
+
+    const auto layout = make_contained_layout(renderer);
+    const auto find_icon = [this](std::string_view icon_ref)
+        -> const settings_icon_texture* {
+        for(const auto& icon : settings_icon_textures) {
+            if(icon.semantic_id == icon_ref) {
+                return &icon;
+            }
+        }
+        return nullptr;
+    };
+
+    const auto draw_parent_icon = [&](const openxmb::xmb::CatalogNode& node,
+                                      double center_x,
+                                      double center_y,
+                                      double alpha) {
+        const auto* icon = find_icon(node.icon_ref);
+        if(icon == nullptr || !icon->texture || !icon->texture->loaded) {
+            return;
+        }
+        draw_icon(renderer, *icon->texture, icon->glass_texture.get(), layout,
+            center_x, center_y, openxmb::xmb::SettingsSceneMetrics::icon_extent,
+            alpha);
+    };
+
+    for(std::size_t index = 0; index < parent_menu->children.size(); ++index) {
+        const auto* node = settings_catalog->find_node(parent_menu->children[index]);
+        if(node == nullptr) {
+            continue;
+        }
+
+        const auto selected_parent = index == parent_route.selection;
+        const auto signed_delta = static_cast<int>(index) -
+            static_cast<int>(parent_route.selection);
+        const auto center_y = openxmb::xmb::SettingsSceneMetrics::focus_y +
+            static_cast<double>(signed_delta) * settings_parent_spacing;
+        if(center_y < openxmb::xmb::SettingsSceneMetrics::clip_top - 40.0 ||
+           center_y > openxmb::xmb::SettingsSceneMetrics::clip_bottom + 40.0) {
+            continue;
+        }
+
+        const auto distance = std::abs(signed_delta);
+        auto alpha = selected_parent
+            ? 0.92
+            : std::max(0.12, 0.42 - static_cast<double>(distance - 1) * 0.05);
+        if(center_y < 40.0) {
+            alpha *= std::max(0.0, center_y / 40.0);
+        }
+        if(center_y > openxmb::xmb::SettingsSceneMetrics::logical_height - 20.0) {
+            alpha *= std::max(0.0,
+                (openxmb::xmb::SettingsSceneMetrics::logical_height - center_y) / 20.0);
+        }
+        draw_parent_icon(*node,
+            selected_parent ? settings_parent_col_x : settings_sibling_col_x,
+            center_y, alpha);
+    }
+
+    const auto arrow_alpha = 0.95F;
+    const auto arrow_top = glm::vec4(206.0F / 255.0F, 206.0F / 255.0F,
+        208.0F / 255.0F, arrow_alpha);
+    const auto arrow_bottom = glm::vec4(120.0F / 255.0F, 120.0F / 255.0F,
+        124.0F / 255.0F, arrow_alpha);
+    const std::array<dreamrender::simple_renderer::vertex_data, 3> chevron{{
+        {{layout.x(430.0), layout.y(openxmb::xmb::SettingsSceneMetrics::focus_y)},
+            arrow_top, {0.0F, 0.5F}},
+        {{layout.x(462.0), layout.y(openxmb::xmb::SettingsSceneMetrics::focus_y - 15.0)},
+            arrow_top, {1.0F, 0.0F}},
+        {{layout.x(462.0), layout.y(openxmb::xmb::SettingsSceneMetrics::focus_y + 15.0)},
+            arrow_bottom, {1.0F, 1.0F}},
+    }};
+    renderer.draw_generic(chevron);
 }
 
 void main_menu::select(int index) {
@@ -1208,11 +1379,16 @@ void main_menu::render_settings_scene(dreamrender::gui_renderer& renderer, time_
         });
     }
 
+    render_settings_parent_layer(renderer);
     settings_scene_renderer.render(
         renderer,
         sampled.snapshot,
         icons,
-        {.glass_icons = config::CONFIG.iconGlassRefraction});
+        {
+            .glass_icons = config::CONFIG.iconGlassRefraction,
+            .suppress_value_labels =
+                settings_choice_panel_open || xmb->has_choice_overlay(),
+        });
 }
 
 void main_menu::render_crossbar(dreamrender::gui_renderer& renderer, time_point now) {
@@ -1231,6 +1407,8 @@ void main_menu::render_crossbar(dreamrender::gui_renderer& renderer, time_point 
     const auto submenu_transition = last_submenu_transition.time_since_epoch().count() == 0
         ? (in_submenu ? 1.0 : 0.0)
         : (in_submenu ? submenu_eased : 1.0 - submenu_eased);
+    const auto chrome_transition = std::max(
+        submenu_transition, settings_chrome_collapsed() ? 1.0 : 0.0);
 
     for(std::size_t index = 0; index < menus.size(); ++index) {
         const auto active = static_cast<int>(index) == selected;
@@ -1242,11 +1420,11 @@ void main_menu::render_crossbar(dreamrender::gui_renderer& renderer, time_point 
         auto alpha = active ? 1.0 : (distance <= 2 ? 0.9 : 0.25);
 
         if(active) {
-            center_x -= 257.0 * submenu_transition;
-            extent *= 1.0 + (kInactiveItemScaleTier - 1.0) * submenu_transition;
-            alpha *= 1.0 + (0.6 - 1.0) * submenu_transition;
+            center_x -= 257.0 * chrome_transition;
+            extent *= 1.0 + (kInactiveItemScaleTier - 1.0) * chrome_transition;
+            alpha *= 1.0 + (0.6 - 1.0) * chrome_transition;
         } else {
-            alpha *= 1.0 - submenu_transition;
+            alpha *= 1.0 - chrome_transition;
         }
 
         // The PSN sphere fills substantially more of its source canvas than
@@ -1266,7 +1444,7 @@ void main_menu::render_crossbar(dreamrender::gui_renderer& renderer, time_point 
                 layout.y(kCategoryLabelY),
                 layout.height(kCategoryLabelSize * 2.5),
                 glm::vec4(225.0f / 255.0f, 210.0f / 255.0f, 235.0f / 255.0f,
-                    static_cast<float>(0.9 * (1.0 - 0.55 * submenu_transition))),
+                    static_cast<float>(0.9 * (1.0 - 0.55 * chrome_transition))),
                 true,
                 false);
         }
@@ -1308,7 +1486,7 @@ void main_menu::render_crossbar(dreamrender::gui_renderer& renderer, time_point 
         }
     };
 
-    const auto rail_alpha = std::max(0.0, 1.0 - submenu_transition);
+    const auto rail_alpha = std::max(0.0, 1.0 - chrome_transition);
     if(settings_category_active()) {
         return;
     }

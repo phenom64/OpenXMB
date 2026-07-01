@@ -51,6 +51,8 @@ class main_menu : public action_receiver {
         main_menu(class shell* xmb);
         void preload(vk::Device device, vma::Allocator allocator, dreamrender::resource_loader& loader);
         void render(dreamrender::gui_renderer& renderer);
+        [[nodiscard]] float background_blur_px() const;
+        [[nodiscard]] float background_dim_alpha() const;
 
         result on_action(action action) override;
     private:
@@ -75,13 +77,16 @@ class main_menu : public action_receiver {
         bool activate_current(action action);
         bool back();
         bool settings_category_active() const;
+        bool settings_chrome_collapsed() const;
         bool select_settings_relative(direction dir);
         bool activate_settings(action action);
         bool back_settings();
         bool open_settings_choice_overlay(const openxmb::xmb::CatalogNode& node);
         bool open_settings_dialog_choice_overlay(
             const openxmb::xmb::SettingsActionPlan& plan);
+        void seed_settings_dialog_values();
         void apply_initial_settings_route();
+        void render_settings_parent_layer(dreamrender::gui_renderer& renderer);
         void render_settings_scene(dreamrender::gui_renderer& renderer, time_point now);
 
         std::vector<std::unique_ptr<menu::menu>> menus;
@@ -116,6 +121,7 @@ class main_menu : public action_receiver {
         openxmb::xmb::SettingsSceneRenderer settings_scene_renderer;
         std::vector<settings_icon_texture> settings_icon_textures;
         std::unordered_map<std::string, std::string> settings_value_labels;
+        bool settings_choice_panel_open = false;
 };
 
 }

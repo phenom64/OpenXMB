@@ -237,11 +237,28 @@ void test_navigation() {
          "back at root is a stable no-op");
 }
 
+void test_files_menu_closed_contract() {
+  const auto source = read_text(repository_root() / "src/menu/files_menu.cpp");
+  const auto main_menu =
+      read_text(repository_root() / "src/app/components/main_menu.cpp");
+  expect(source.contains("files_menu::get_submenus_count"),
+         "files menu implementation fixture is readable");
+  expect(!source.contains("return is_open ? entries.size() : 1;"),
+         "closed file menus do not advertise a phantom submenu after clearing entries");
+  expect(main_menu.contains("files_menu_profile::music"),
+         "file-backed Music category declares a media-specific profile");
+  expect(source.contains("compat/xmb-ui-compat/images/icon_fw_track.png"),
+         "Music file rows prefer xmb-web's track icon");
+  expect(source.contains("filter_for_profile(profile, info)"),
+         "file-backed media categories filter to relevant local media");
+}
+
 } // namespace
 
 int main() {
   test_catalog();
   test_navigation();
+  test_files_menu_closed_contract();
   if (failures) {
     std::cerr << failures << " catalogue/state test(s) failed\n";
     return 1;

@@ -13,7 +13,7 @@
     "shell": {
         "background-color": "#1e1e1e",
         "wave-color": "#ffffff",
-        "background-type": "wave",
+        "background-type": "original",
         "background-image": "",
         "font-path": "default",
         "date-time-format": "%a %d %b %H:%M",
@@ -72,6 +72,6 @@
         "vsync": true,
         "show-fps": false,
         "show-mem": false,
-        "icon-glass-refraction": false
+        "icon-glass-refraction": true
     }
 }

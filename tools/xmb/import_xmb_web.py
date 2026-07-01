@@ -199,6 +199,11 @@ BOTTOM_ENTRY_RE = re.compile(
     r"(\d+)\s*:\s*\{\s*h:\s*([-+]?\d+(?:\.\d+)?)\s*,\s*s:\s*([-+]?\d+(?:\.\d+)?)"
     r"\s*,\s*v:\s*([-+]?\d+(?:\.\d+)?)\s*,\s*nv:\s*([-+]?\d+(?:\.\d+)?)\s*\}"
 )
+PARTICLE_ARRAY_RE = re.compile(
+    r"PARTICLE_CLOUD\s*=\s*new\s+Float32Array\s*\(\s*\[(.*?)\]\s*\)",
+    re.DOTALL,
+)
+FLOAT_RE = re.compile(r"[-+]?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][-+]?\d+)?")
 
 
 def extract_month_table(index_html: bytes, commit: str) -> bytes:
@@ -269,6 +274,27 @@ def extract_month_table(index_html: bytes, commit: str) -> bytes:
         "value_precompensation": float(precomp_match.group(1)),
     }
     return canonical_json(artifact)
+
+
+def extract_particle_cloud(particle_cloud_js: bytes) -> bytes:
+    try:
+        source = particle_cloud_js.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise ImportFailure(f"particle_cloud.js is not UTF-8: {error}") from error
+    array_match = PARTICLE_ARRAY_RE.search(source)
+    if array_match is None:
+        raise ImportFailure("particle_cloud.js no longer exposes PARTICLE_CLOUD")
+    values = [float(value) for value in FLOAT_RE.findall(array_match.group(1))]
+    if len(values) != 2400 or len(values) % 3 != 0:
+        raise ImportFailure(
+            f"expected 2400 particle-cloud scalars, found {len(values)}"
+        )
+    output = bytearray()
+    for index, value in enumerate(values):
+        if not math.isfinite(value):
+            raise ImportFailure(f"particle cloud scalar {index} is non-finite")
+        output.extend(struct.pack("<f", value))
+    return bytes(output)
 
 
 def atomic_write(path: Path, data: bytes) -> None:
@@ -407,31 +433,41 @@ def run(source: Path, output: Path, verify_only: bool) -> dict[str, Any]:
         source_entries[logical_id] = entry
     validate_wave_formats(source_files)
 
-    month_spec = manifest["generated_assets"][0]
-    index_entry = source_entries[month_spec["logical_id"]]
-    month_data = extract_month_table(source_files[month_spec["logical_id"]], pinned_commit)
-    if len(month_data) != month_spec["generated_bytes"] or sha256(month_data) != month_spec[
-        "generated_sha256"
-    ]:
-        raise ImportFailure(
-            "generated month table differs from the pinned audited machine-readable artifact"
-        )
-
     imported: list[tuple[dict[str, Any], bytes]] = []
     for logical_id, data in source_files.items():
         entry = source_entries[logical_id]
         if entry.get("import"):
             imported.append((entry, data))
-    month_entry = dict(index_entry)
-    month_entry.update(
-        {
-            "logical_id": month_spec["output_logical_id"],
-            "role": month_spec["role"],
-            "target_relative_path": month_spec["target_relative_path"],
-            "fallback": month_spec["fallback"],
-        }
-    )
-    imported.append((month_entry, month_data))
+    for generated_spec in manifest.get("generated_assets", []):
+        source_logical_id = generated_spec["logical_id"]
+        source_entry = source_entries[source_logical_id]
+        generator = generated_spec.get("generator")
+        if generator == "month-gradient":
+            generated_data = extract_month_table(
+                source_files[source_logical_id], pinned_commit
+            )
+        elif generator == "particle-cloud-bin":
+            generated_data = extract_particle_cloud(source_files[source_logical_id])
+        else:
+            raise ImportFailure(f"unsupported generated asset: {generator!r}")
+        if (
+            len(generated_data) != generated_spec["generated_bytes"]
+            or sha256(generated_data) != generated_spec["generated_sha256"]
+        ):
+            raise ImportFailure(
+                f"generated asset {generated_spec['output_logical_id']} differs "
+                "from the pinned audited artifact"
+            )
+        generated_entry = dict(source_entry)
+        generated_entry.update(
+            {
+                "logical_id": generated_spec["output_logical_id"],
+                "role": generated_spec["role"],
+                "target_relative_path": generated_spec["target_relative_path"],
+                "fallback": generated_spec["fallback"],
+            }
+        )
+        imported.append((generated_entry, generated_data))
     for family in manifest.get("asset_families", []):
         imported.extend(validate_asset_family(source, family))
 

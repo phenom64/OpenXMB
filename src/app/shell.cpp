@@ -73,6 +73,8 @@ using namespace mfk::i18n::literals;
 namespace app
 {
     namespace {
+        inline constexpr float xmb_web_native_steady_wave_fill_alpha = 0.078F;
+
         bool truthy_environment_flag(const char* name) noexcept
         {
             const char* value = std::getenv(name);
@@ -188,6 +190,15 @@ namespace app
         wave_render = std::make_unique<render::wave_renderer>(device, allocator, win->swapchainExtent);
         particles_render = std::make_unique<render::particles_renderer>(
             device, allocator, win->swapchainExtent);
+        try {
+            particles_render->load_particle_cloud(
+                config::CONFIG.asset_directory /
+                    "compat/xmb-ui-compat/data/particle-cloud.bin");
+        } catch(const std::exception& error) {
+            spdlog::warn(
+                "xmb particle cloud is unavailable ({}); using analytic Original particle fallback",
+                error.what());
+        }
         captured_wave_render = std::make_unique<openxmb::xmb::CapturedWaveRenderer>(
             device, allocator, win->swapchainExtent);
         monthly_background_render =
@@ -375,6 +386,14 @@ namespace app
             backgroundTexture = std::make_unique<texture>(device, allocator);
             loader->loadTexture(backgroundTexture.get(), config::CONFIG.backgroundImage);
         }
+        iconGlassAmbientTexture = std::make_unique<texture>(device, allocator);
+        iconGlassEnvironmentTexture = std::make_unique<texture>(device, allocator);
+        const auto glass_environment_directory =
+            config::CONFIG.asset_directory / "compat/xmb-ui-compat/environment";
+        loader->loadTexture(iconGlassAmbientTexture.get(),
+                            glass_environment_directory / "icon_amb.png");
+        loader->loadTexture(iconGlassEnvironmentTexture.get(),
+                            glass_environment_directory / "texenv.png");
         config::CONFIG.addCallback("background-type", [this](const std::string&){
             if(config::CONFIG.backgroundType == config::config::background_type::image) {
                 reload_background();
@@ -768,13 +787,36 @@ namespace app
             commandBuffer.setViewport(0, viewport);
             commandBuffer.setScissor(0, scissor);
 
+            float seconds = std::chrono::duration<float>(
+                std::chrono::steady_clock::now() - shader_time_zero)
+                                .count();
+            if(win->config.headless && force_headless_startup_overlay()) {
+                if(const auto fixed_boot_seconds =
+                       fixed_boot_seconds_from_environment()) {
+                    seconds = static_cast<float>(*fixed_boot_seconds);
+                }
+            } else if(win->config.headless) {
+                // Headless visual verification intentionally omits the
+                // startup overlay, so begin in the same settled scene.
+                seconds += static_cast<float>(
+                    openxmb::xmb::BootMilestones::complete_seconds);
+            }
+            const auto boot =
+                openxmb::xmb::sample_boot_timeline(seconds);
+
             if(!ingame_mode) {
                 if(config::CONFIG.backgroundType == config::config::background_type::original) {
                     if(can_render_monthly_background) {
                         try {
+                            const std::array boot_background{
+                                static_cast<float>(boot.background_exposure_top),
+                                static_cast<float>(boot.background_exposure_bottom),
+                                static_cast<float>(boot.background_sweep),
+                                boot.background_active ? 1.0F : 0.0F,
+                            };
                             monthly_background_render->render(
                                 commandBuffer, backgroundRenderPass.get(),
-                                background_gradient);
+                                background_gradient, boot_background);
                         } catch(const std::exception& error) {
                             monthly_background_failed = true;
                             spdlog::error(
@@ -782,25 +824,11 @@ namespace app
                                 error.what());
                         }
                     }
-                    float seconds = std::chrono::duration<float>(std::chrono::steady_clock::now() - shader_time_zero).count();
-                    if(win->config.headless && force_headless_startup_overlay()) {
-                        if(const auto fixed_boot_seconds =
-                               fixed_boot_seconds_from_environment()) {
-                            seconds = static_cast<float>(*fixed_boot_seconds);
-                        }
-                    } else if(win->config.headless) {
-                        // Headless visual verification intentionally omits the
-                        // startup overlay, so begin in the same settled scene.
-                        seconds += static_cast<float>(
-                            openxmb::xmb::BootMilestones::identity_out_seconds);
-                    }
                     bool rendered_captured_wave = false;
                     if(captured_wave_render->assets_ready() &&
                        captured_wave_render->pipelines_ready() &&
                        !captured_wave_failed) {
                         try {
-                            const auto boot =
-                                openxmb::xmb::sample_boot_timeline(seconds);
                             const bool boot_wave = seconds <
                                 openxmb::xmb::BootMilestones::identity_out_seconds;
                             if(boot_wave) {
@@ -817,6 +845,9 @@ namespace app
                             parameters.gain = boot_wave
                                 ? static_cast<float>(boot.wave_gain)
                                 : 1.0F;
+                            parameters.fill_alpha = boot_wave
+                                ? parameters.fill_alpha
+                                : xmb_web_native_steady_wave_fill_alpha;
                             // xmb-web's captured clip positions target WebGL,
                             // where +Y reaches the top of the framebuffer. Our
                             // positive-height Vulkan viewport maps +Y down, so
@@ -845,7 +876,8 @@ namespace app
                                         commandBuffer, frame,
                                         backgroundRenderPass.get(),
                                         original_effect_tint, particle_brightness,
-                                        static_cast<float>(fixed_wave_seconds_from_environment().value_or(seconds)));
+                                        static_cast<float>(fixed_wave_seconds_from_environment().value_or(seconds)),
+                                        background_gradient.night_day_blend);
                                 } catch(const std::exception& particle_error) {
                                     original_particles_failed = true;
                                     spdlog::error(
@@ -884,7 +916,13 @@ namespace app
             commandBuffer.endRenderPass();
         }
         double blur_background_progress = utils::progress(now, last_blur_background_change, blur_background_transition_duration);
-        const bool use_blur_background = blur_background || blur_background_progress < 1.0;
+        const auto startup_blur_radius = std::max(0.0f, startup_background_blur_px);
+        const bool use_startup_blur_background = startup_blur_radius > 0.05f;
+        const auto menu_blur_radius = background_only ? 0.0F : menu.background_blur_px();
+        const auto menu_dim_alpha = background_only ? 0.0F : menu.background_dim_alpha();
+        const bool use_menu_blur_background = menu_blur_radius > 0.05F;
+        const bool use_blur_background = blur_background || blur_background_progress < 1.0 ||
+            use_startup_blur_background || use_menu_blur_background;
         vk::ImageView compositedBackgroundView = backgroundResolve[frame]->imageView.get();
         if(use_blur_background) {
             compositedBackgroundView = blurFrame.fullDst->imageView.get();
@@ -946,7 +984,11 @@ namespace app
 
             // Decide path: full-res separable Gaussian for small radius; downsampled pipeline for larger
             BlurConstants constants{};
-            const int targetRadius = static_cast<int>(20 * (blur_background ? blur_background_progress : (1.0 - blur_background_progress)));
+            const int modalRadius = static_cast<int>(20 * (blur_background ? blur_background_progress : (1.0 - blur_background_progress)));
+            const int startupRadius = static_cast<int>(std::round(startup_blur_radius));
+            const int menuRadius = static_cast<int>(std::round(
+                menu_blur_radius * static_cast<float>(win->swapchainExtent.height) / 1080.0F));
+            const int targetRadius = std::max({modalRadius, startupRadius, menuRadius});
 
             if(targetRadius <= 4) {
                 int groupCountX = static_cast<int>(std::ceil(blurFrame.fullSrc->width/16.0));
@@ -1394,9 +1436,20 @@ namespace app
 
             image_render->renderImageSized(commandBuffer, frame, shellRenderPass.get(), compositedBackgroundView,
                 0.0f, 0.0f, static_cast<int>(win->swapchainExtent.width), static_cast<int>(win->swapchainExtent.height));
-            image_render->setGlassBackground(compositedBackgroundView);
-
             gui_renderer ctx(commandBuffer, frame, shellRenderPass.get(), win->swapchainExtent, font_render.get(), image_render.get(), simple_render.get());
+            if(menu_dim_alpha > 0.001F) {
+                ctx.draw_rect(glm::vec2{0.0F, 0.0F}, glm::vec2{1.0F, 1.0F},
+                    glm::vec4{0.0F, 0.0F, 0.0F, menu_dim_alpha});
+            }
+            image_render->setGlassBackground(compositedBackgroundView);
+            image_render->setGlassMaterial(
+                iconGlassAmbientTexture && iconGlassAmbientTexture->loaded
+                    ? iconGlassAmbientTexture->imageView.get()
+                    : vk::ImageView{},
+                iconGlassEnvironmentTexture && iconGlassEnvironmentTexture->loaded
+                    ? iconGlassEnvironmentTexture->imageView.get()
+                    : vk::ImageView{});
+
             // Interface/FX debug overlays: draw font atlas for verification
             if(openxmb::debug::interfacefx_debug) {
                 const dreamrender::texture* atlas = font_render->get_atlas();
@@ -1433,6 +1486,7 @@ namespace app
         unsigned int overlay_begin = 0;
         bool has_overlay = !overlays.empty();
         bool top_is_message = has_overlay && (dynamic_cast<app::message_overlay*>(overlays.back().get()) != nullptr);
+        bool top_uses_shell_fade = has_overlay && overlays.back()->do_fade_in();
 
         if(has_overlay) {
             for(int i=static_cast<int>(overlays.size())-1; i >= 0; i--) {
@@ -1452,9 +1506,10 @@ namespace app
         // Consider fade-out of a message overlay (stored as old_overlay) as part of the transition too
         bool fading_out_message = (!has_overlay && overlay_transition && old_overlay && (dynamic_cast<app::message_overlay*>(old_overlay.get()) != nullptr));
         // If a message overlay is appearing/disappearing, still render menu during transition
-        bool allow_menu = render_menu || ((top_is_message || fading_out_message) && overlay_transition);
+        const bool shell_fade_transition = overlay_transition && top_uses_shell_fade;
+        bool allow_menu = render_menu || ((top_is_message || fading_out_message) && shell_fade_transition);
         if(allow_menu){
-            if(overlay_transition || has_overlay || fading_out_message) {
+            if(shell_fade_transition || fading_out_message) {
                 // Fade UI to transparency: scale RGB and A together by (1 - progress)
                 float s = 1.0f - static_cast<float>(dir_progress);
                 renderer.push_color(glm::vec4(s, s, s, s));
@@ -1480,7 +1535,7 @@ namespace app
 
             // The reference root scene has no legacy placeholder ticker.
             if(pushed_zoom) renderer.pop_zoom();
-            if(overlay_transition || has_overlay || fading_out_message) {
+            if(shell_fade_transition || fading_out_message) {
                 renderer.pop_color();
             }
 
@@ -1488,7 +1543,7 @@ namespace app
 
         bool enable_cursor = false;
         for(unsigned int i=overlay_begin; i < overlays.size(); i++) {
-            if(i == overlays.size()-1 && overlay_transition) {
+            if(i == overlays.size()-1 && shell_fade_transition) {
                 renderer.push_color(glm::mix(glm::vec4(0.0), glm::vec4(1.0), dir_progress));
                 overlays[i]->render(renderer, this);
                 renderer.pop_color();
@@ -1497,7 +1552,8 @@ namespace app
             }
             enable_cursor = overlays[i]->enable_cursor();
         }
-        if(overlay_transition && overlay_fade_direction == transition_direction::out && old_overlay) {
+        if(overlay_transition && overlay_fade_direction == transition_direction::out &&
+           old_overlay && old_overlay->do_fade_out()) {
             renderer.push_color(glm::mix(glm::vec4(0.0), glm::vec4(1.0), dir_progress));
             old_overlay->render(renderer, this);
             renderer.pop_color();

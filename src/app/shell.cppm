@@ -150,6 +150,18 @@ namespace app
                 last_blur_background_change = std::chrono::steady_clock::now();
             }
             bool get_blur_background() const { return blur_background; }
+            void set_startup_background_blur_px(float blur_px) {
+                startup_background_blur_px = std::max(0.0f, blur_px);
+            }
+            bool has_choice_overlay() const {
+                for(const auto& overlay : overlays) {
+                    if(dynamic_cast<app::choice_overlay*>(overlay.get()) != nullptr) {
+                        return true;
+                    }
+                }
+                return old_overlay &&
+                    dynamic_cast<app::choice_overlay*>(old_overlay.get()) != nullptr;
+            }
 
             app::component* push_overlay(std::unique_ptr<app::component>&& component) {
                 auto ptr = component.get();
@@ -281,6 +293,8 @@ namespace app
             news_display news{this};
             std::array<std::unique_ptr<texture>, std::to_underlying(action::_length)> buttonTextures;
             std::unique_ptr<texture> cursorTexture;
+            std::unique_ptr<texture> iconGlassAmbientTexture;
+            std::unique_ptr<texture> iconGlassEnvironmentTexture;
 
             sdl::mix::unique_chunk ok_sound;
             sdl::mix::unique_chunk question_sound;
@@ -319,6 +333,7 @@ namespace app
 
             bool blur_background = false;
             time_point last_blur_background_change;
+            float startup_background_blur_px = 0.0f;
 
             std::vector<std::unique_ptr<app::component>> overlays;
 

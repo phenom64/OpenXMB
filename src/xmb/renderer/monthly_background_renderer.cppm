@@ -23,7 +23,8 @@ public:
                vk::SampleCountFlagBits sample_count,
                vk::PipelineCache pipeline_cache = {});
   void render(vk::CommandBuffer command_buffer, vk::RenderPass render_pass,
-              const BackgroundGradient &gradient) const;
+              const BackgroundGradient &gradient,
+              std::array<float, 4> boot = {1.0F, 1.0F, 1.0F, 0.0F}) const;
 
   [[nodiscard]] bool pipelines_ready() const noexcept {
     return pipelines_ready_;
@@ -32,6 +33,7 @@ public:
   struct PushConstants {
     std::array<float, 4> top_and_night{};
     std::array<float, 4> bottom_and_reserved{};
+    std::array<float, 4> boot{};
   };
 
 private:
@@ -48,7 +50,7 @@ namespace openxmb::xmb {
 namespace {
 
 static_assert(sizeof(MonthlyBackgroundRenderer::PushConstants) ==
-              sizeof(float) * 8);
+              sizeof(float) * 12);
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wc23-extensions"
@@ -129,7 +131,7 @@ void MonthlyBackgroundRenderer::preload(
 
 void MonthlyBackgroundRenderer::render(
     vk::CommandBuffer command_buffer, vk::RenderPass render_pass,
-    const BackgroundGradient &gradient) const {
+    const BackgroundGradient &gradient, std::array<float, 4> boot) const {
   if (!pipelines_ready_) {
     throw std::logic_error(
         "OpenXMB monthly background draw requested before pipeline preload");
@@ -154,6 +156,7 @@ void MonthlyBackgroundRenderer::render(
                         gradient.top_rgb[2], gradient.night_day_blend},
       .bottom_and_reserved = {gradient.bottom_rgb[0], gradient.bottom_rgb[1],
                               gradient.bottom_rgb[2], 0.0F},
+      .boot = boot,
   };
   command_buffer.pushConstants(pipeline_layout_.get(),
                                vk::ShaderStageFlagBits::eFragment, 0,

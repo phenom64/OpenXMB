@@ -51,6 +51,13 @@ namespace app {
 
 export namespace menu {
 
+enum class files_menu_profile {
+    generic,
+    photo,
+    music,
+    video,
+};
+
 // JSON-based file info structure to replace Gio::FileInfo
 struct file_info {
     std::string name;
@@ -68,7 +75,8 @@ struct file_info {
 
 class files_menu : public simple_menu {
     public:
-        files_menu(std::string name, dreamrender::texture&& icon, app::shell* xmb, std::filesystem::path path, dreamrender::resource_loader& loader);
+        files_menu(std::string name, dreamrender::texture&& icon, app::shell* xmb, std::filesystem::path path, dreamrender::resource_loader& loader,
+            files_menu_profile profile = files_menu_profile::generic);
         ~files_menu() override = default;
 
         void on_open() override;
@@ -135,6 +143,7 @@ class files_menu : public simple_menu {
         app::shell* xmb;
         std::filesystem::path path;
         dreamrender::resource_loader& loader;
+        files_menu_profile profile = files_menu_profile::generic;
 
         struct extra_data {
             std::filesystem::path path;

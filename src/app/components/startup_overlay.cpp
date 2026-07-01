@@ -130,7 +130,7 @@ startup_overlay::~startup_overlay() {
   }
 }
 
-result startup_overlay::tick(app::shell*) {
+result startup_overlay::tick(app::shell* xmb) {
   // Start audio on first tick to ensure mixer is ready
   if (!started_audio) {
     const std::array sound_paths{
@@ -166,6 +166,10 @@ result startup_overlay::tick(app::shell*) {
 
   const auto elapsed = boot_elapsed_seconds(start_time);
   const auto sample = openxmb::xmb::sample_boot_timeline(elapsed);
+  if(xmb != nullptr) {
+    xmb->set_startup_background_blur_px(static_cast<float>(
+        sample.complete ? 0.0 : sample.warning_backdrop_blur_px));
+  }
   if(!fading_audio && elapsed >= openxmb::xmb::BootMilestones::identity_fade_seconds &&
      startup_channel >= 0 && sdl::mix::Playing(startup_channel)) {
     sdl::mix::FadeOutChannel(startup_channel, 900);
@@ -189,12 +193,8 @@ void startup_overlay::render(dreamrender::gui_renderer& renderer, app::shell*) {
       glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f),
       glm::vec4(0.005f, 0.0f, 0.012f, 0.88f * (1.0f - settle)));
 
-  // Preserve the exact startup identity words, but lay them out as a right-side
-  // two-line logo replacement so the long phrase does not shrink to a tiny
-  // single line inside xmb-web's coldboot logo zone.
-  constexpr std::array<std::string_view, 2> identity_lines{{
-      "Syndromatic Limited",
-      "Bharat Britannia",
+  constexpr std::array<std::string_view, 1> identity_lines{{
+      openxmb::xmb::kStartupIdentity,
   }};
   float size = static_cast<float>(openxmb::xmb::kBootIdentityBaseSize) *
                static_cast<float>(sample.identity_scale);

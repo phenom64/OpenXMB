@@ -28,6 +28,10 @@ struct BootSample {
   double wave_boot_time_seconds{};
   double wave_gain{};
   double wave_geometry_progress{};
+  double background_exposure_top{1.0};
+  double background_exposure_bottom{1.0};
+  double background_sweep{1.0};
+  bool background_active{};
 
   // Identity layer. The host draws kStartupIdentity using these values.
   double identity_opacity{};

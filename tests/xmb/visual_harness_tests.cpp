@@ -53,6 +53,9 @@ void test_runtime_harness_contract(const std::filesystem::path &root) {
   const auto main_menu =
       read_file(root / "src/app/components/main_menu.cpp");
   const auto shell = read_file(root / "src/app/shell.cpp");
+  const auto shell_module = read_file(root / "src/app/shell.cppm");
+  const auto settings_renderer =
+      read_file(root / "src/xmb/renderer/settings_scene_renderer.cppm");
 
   require_contains(main_menu, "OPENXMB_INITIAL_CATEGORY",
                    "main_menu reads category harness env");
@@ -62,13 +65,44 @@ void test_runtime_harness_contract(const std::filesystem::path &root) {
                    "main_menu reads settings selection harness env");
   require_contains(main_menu, "OPENXMB_OPEN_INITIAL_SETTINGS_CHOICE",
                    "main_menu reads choice panel harness env");
+  require_contains(main_menu, "ImageRenderer uses framebuffer-height units",
+                   "main XMB icons compensate for Aurore aspect scaling");
+  require_contains(main_menu, "xmb_web_icon_glass_alpha",
+                   "main XMB glass icon opacity stays tuned to xmb-web");
+  require_contains(main_menu, "settings_chrome_collapsed",
+                   "deep Settings routes collapse the crossbar chrome");
+  require_contains(main_menu, "background_blur_px",
+                   "nested routes request xmb-web submenu backdrop blur");
+  require_contains(main_menu, "background_dim_alpha",
+                   "nested routes attenuate the blurred xmb-web submenu backdrop");
+  require_contains(main_menu, "seed_settings_dialog_values",
+                   "dialog-backed Settings rows expose default value labels");
+  require_contains(main_menu, "render_settings_parent_layer",
+                   "deep Settings routes draw the xmb-web parent breadcrumb column");
+  require_contains(main_menu, "settings_choice_panel_open",
+                   "Settings choice side panel suppresses source value labels");
+  require_contains(settings_renderer, "suppress_value_labels",
+                   "Settings renderer can hide value labels behind side panels");
+  require_contains(shell, "menu.background_blur_px",
+                   "shell applies menu-driven backdrop blur before UI");
+  require_contains(shell, "menu.background_dim_alpha",
+                   "shell applies menu-driven backdrop attenuation before UI");
+  require_contains(shell_module, "has_choice_overlay",
+                   "shell exposes side-panel presence to menu renderers");
   require_contains(shell, "OPENXMB_HEADLESS_STARTUP",
                    "shell supports optional headless startup overlay");
   require_contains(shell, "OPENXMB_FIXED_BOOT_SECONDS",
                    "shell supports fixed boot seconds");
+
+  const auto choice_overlay =
+      read_file(root / "src/app/components/choice_overlay.cpp");
+  require_contains(choice_overlay, "0.88F",
+                   "choice panel ports xmb-web's measured lavender core alpha");
 }
 
 void test_tooling_present(const std::filesystem::path &root) {
+  const auto capture_frame = read_file(root / "tools/xmb/capture_frame.ps1");
+
   require(std::filesystem::is_regular_file(root / "tools/xmb/capture_frame.ps1"),
           "capture_frame.ps1 exists");
   require(std::filesystem::is_regular_file(
@@ -83,6 +117,10 @@ void test_tooling_present(const std::filesystem::path &root) {
   require(std::filesystem::is_regular_file(
               root / "tools/xmb/install_reference_frames.ps1"),
           "install_reference_frames.ps1 exists");
+  require_contains(capture_frame, "-Filter \"*.png\"",
+                   "capture_frame.ps1 clears only stale PNG captures");
+  require_contains(capture_frame, "Remove-Item -Force",
+                   "capture_frame.ps1 clears stale scene PNGs");
 }
 
 } // namespace

@@ -124,23 +124,33 @@ void choice_overlay::render(dreamrender::gui_renderer& renderer, class shell* xm
     // right-side translucent lavender wash, not a recoloured copy of the active
     // month.  Keep the XMB visible behind it and interpolate the measured
     // multi-stop profile with small quads.
+    const auto open_elapsed =
+        std::chrono::duration<double>(std::chrono::steady_clock::now() - opened_time);
+    const auto open_linear = std::clamp(
+        open_elapsed / std::chrono::duration<double>(open_duration), 0.0, 1.0);
+    const auto open_alpha =
+        static_cast<float>(open_linear * open_linear * (3.0 - 2.0 * open_linear));
+    const float x_shift = (1.0F - open_alpha) * (12.0F / 1920.0F);
+    constexpr float panel_native_alpha_scale = 0.90F;
     constexpr float panel_left = 1324.0F / 1920.0F;
     constexpr float panel_right = 1697.0F / 1920.0F;
     constexpr std::array<gradient_stop, 8> stops{{
         {0.000F, {178.0F / 255.0F, 170.0F / 255.0F, 194.0F / 255.0F, 0.00F}},
-        {0.043F, {178.0F / 255.0F, 170.0F / 255.0F, 194.0F / 255.0F, 0.22F}},
-        {0.142F, {151.0F / 255.0F, 141.0F / 255.0F, 174.0F / 255.0F, 0.52F}},
-        {0.300F, {160.0F / 255.0F, 150.0F / 255.0F, 182.0F / 255.0F, 0.44F}},
-        {0.470F, {174.0F / 255.0F, 165.0F / 255.0F, 191.0F / 255.0F, 0.32F}},
-        {0.651F, {195.0F / 255.0F, 189.0F / 255.0F, 210.0F / 255.0F, 0.20F}},
-        {0.820F, {220.0F / 255.0F, 217.0F / 255.0F, 229.0F / 255.0F, 0.08F}},
+        {0.043F, {178.0F / 255.0F, 170.0F / 255.0F, 194.0F / 255.0F, 0.55F}},
+        {0.142F, {151.0F / 255.0F, 141.0F / 255.0F, 174.0F / 255.0F, 0.88F}},
+        {0.300F, {160.0F / 255.0F, 150.0F / 255.0F, 182.0F / 255.0F, 0.80F}},
+        {0.470F, {174.0F / 255.0F, 165.0F / 255.0F, 191.0F / 255.0F, 0.65F}},
+        {0.651F, {195.0F / 255.0F, 189.0F / 255.0F, 210.0F / 255.0F, 0.45F}},
+        {0.820F, {220.0F / 255.0F, 217.0F / 255.0F, 229.0F / 255.0F, 0.22F}},
         {1.000F, {245.0F / 255.0F, 244.0F / 255.0F, 247.0F / 255.0F, 0.00F}},
-    }};
+    }}; 
     for(std::size_t i = 0; i + 1 < stops.size(); ++i) {
-        const float x0 = panel_left + (panel_right - panel_left) * stops[i].position;
-        const float x1 = panel_left + (panel_right - panel_left) * stops[i + 1].position;
-        const auto c0 = stops[i].colour;
-        const auto c1 = stops[i + 1].colour;
+        const float x0 = panel_left + x_shift + (panel_right - panel_left) * stops[i].position;
+        const float x1 = panel_left + x_shift + (panel_right - panel_left) * stops[i + 1].position;
+        auto c0 = stops[i].colour;
+        auto c1 = stops[i + 1].colour;
+        c0.a *= open_alpha * panel_native_alpha_scale;
+        c1.a *= open_alpha * panel_native_alpha_scale;
         renderer.draw_quad(std::array{
             dreamrender::simple_renderer::vertex_data{{x0, 0.0f}, c0, {0.0f, 0.0f}},
             dreamrender::simple_renderer::vertex_data{{x0, 1.0f}, c0, {0.0f, 1.0f}},
@@ -165,16 +175,16 @@ void choice_overlay::render(dreamrender::gui_renderer& renderer, class shell* xm
     constexpr float swatch_extent = 27.0F / 1080.0F;
     constexpr double panel_bottom = 1020.0 / 1080.0;
     if(!top_action.empty()) {
-        renderer.draw_text(top_action, text_x, top_action_y, 0.044,
-            glm::vec4(1.0F, 1.0F, 1.0F, 0.90F), false, true);
+        renderer.draw_text(top_action, text_x + x_shift, top_action_y, 0.044,
+            glm::vec4(1.0F, 1.0F, 1.0F, 0.90F * open_alpha), false, true);
         const auto arrow_offset = std::clamp(
             (14.0F + static_cast<float>(top_action.size()) * 10.4F) / 1920.0F,
             0.035F,
             0.072F);
-        const float ax = text_x + arrow_offset;
+        const float ax = text_x + x_shift + arrow_offset;
         const float aw = 8.0F / 1920.0F;
         const float ah = 6.0F / 1080.0F;
-        const auto arrow_colour = glm::vec4(1.0F, 1.0F, 1.0F, 0.78F);
+        const auto arrow_colour = glm::vec4(1.0F, 1.0F, 1.0F, 0.78F * open_alpha);
         renderer.draw_quad(std::array{
             dreamrender::simple_renderer::vertex_data{{ax, top_action_y - ah}, arrow_colour, {0.0F, 0.0F}},
             dreamrender::simple_renderer::vertex_data{{ax, top_action_y + ah}, arrow_colour, {0.0F, 1.0F}},
@@ -214,7 +224,7 @@ void choice_overlay::render(dreamrender::gui_renderer& renderer, class shell* xm
         if(colour_chooser && !focused && i < swatches.size()) {
             glm::vec3 c = swatches[i];
             glm::vec2 swatch_pos{
-                swatch_x,
+                swatch_x + x_shift,
                 y - swatch_extent * 0.5F,
             };
             glm::vec2 swatch_size{
@@ -225,7 +235,7 @@ void choice_overlay::render(dreamrender::gui_renderer& renderer, class shell* xm
                 swatch_pos - glm::vec2{0.0015F, 0.0015F},
                 swatch_size + glm::vec2{0.003F, 0.003F},
                 glm::vec4(0.0F, 0.0F, 0.0F, 0.34F));
-            renderer.draw_rect(swatch_pos, swatch_size, glm::vec4(c, 1.0F));
+            renderer.draw_rect(swatch_pos, swatch_size, glm::vec4(c, open_alpha));
             continue;
         }
         const std::string& entry = choices[i];
@@ -233,23 +243,25 @@ void choice_overlay::render(dreamrender::gui_renderer& renderer, class shell* xm
             float px = 1.2f / static_cast<float>(renderer.frame_size.width);
             float py = 1.2f / static_cast<float>(renderer.frame_size.height);
             glm::vec4 glow(1.0f, 1.0f, 1.0f, static_cast<float>(0.12 * eased_focus));
-            renderer.draw_text(entry, text_x + px, y + py, size, glow, false, true);
-            renderer.draw_text(entry, text_x - px, y - py, size, glow * 0.65f, false, true);
+            glow.a *= open_alpha;
+            renderer.draw_text(entry, text_x + x_shift + px, y + py, size, glow, false, true);
+            renderer.draw_text(entry, text_x + x_shift - px, y - py, size, glow * 0.65f, false, true);
         }
-        renderer.draw_text(entry, text_x, y, size, glm::vec4(1, 1, 1, alpha), false, true);
+        renderer.draw_text(entry, text_x + x_shift, y, size,
+            glm::vec4(1, 1, 1, alpha * open_alpha), false, true);
     }
 
     constexpr float arrow_size = 0.035F;
     if(first_visible > 0) {
-        renderer.draw_text("▲", text_x,
+        renderer.draw_text("▲", text_x + x_shift,
             static_cast<float>(list_top_y - item_height),
-            arrow_size, glm::vec4(1.0F, 1.0F, 1.0F, 0.85F), false, true);
+            arrow_size, glm::vec4(1.0F, 1.0F, 1.0F, 0.85F * open_alpha), false, true);
     }
     if(!choices.empty() && last_visible + 1 < choices.size()) {
-        renderer.draw_text("▼", text_x,
+        renderer.draw_text("▼", text_x + x_shift,
             static_cast<float>(list_top_y +
                 static_cast<double>(last_visible - first_visible + 1) * item_height),
-            arrow_size, glm::vec4(1.0F, 1.0F, 1.0F, 0.85F), false, true);
+            arrow_size, glm::vec4(1.0F, 1.0F, 1.0F, 0.85F * open_alpha), false, true);
     }
 }
 

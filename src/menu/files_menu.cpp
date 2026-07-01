@@ -26,12 +26,14 @@ module;
 #include <filesystem>
 #include <functional>
 #include <iomanip>
+#include <initializer_list>
 #include <thread>
 #include <mutex>
 #include <map>
 #include <numeric>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <unordered_set>
 #include <variant>
 #include <vector>
@@ -110,13 +112,107 @@ namespace menu {
         return config::CONFIG.asset_directory / "icons" / (info.is_directory ? "icon_files_folder.png" : "icon_files_file.png");
     }
 
-    std::filesystem::path icon_for_file(const std::filesystem::path& file_path, const file_info& info)
+    bool has_extension(const file_info& info, std::initializer_list<std::string_view> extensions)
     {
+        const auto extension = lower_extension(info.name);
+        return std::ranges::any_of(extensions, [&](std::string_view candidate) {
+            return extension == candidate;
+        });
+    }
+
+    bool is_photo_file(const file_info& info)
+    {
+        return info.content_type.starts_with("image/") ||
+            has_extension(info, {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp", ".tif", ".tiff", ".heic"});
+    }
+
+    bool is_music_file(const file_info& info)
+    {
+        return info.content_type.starts_with("audio/") ||
+            has_extension(info, {".mp3", ".wav", ".ogg", ".flac", ".m4a", ".aac", ".wma", ".aif", ".aiff", ".opus"});
+    }
+
+    bool is_video_file(const file_info& info)
+    {
+        return info.content_type.starts_with("video/") ||
+            has_extension(info, {".mp4", ".avi", ".mkv", ".mov", ".m4v", ".mpeg", ".mpg", ".webm", ".wmv"});
+    }
+
+    bool filter_for_profile(files_menu_profile profile, const file_info& info)
+    {
+        if(info.is_hidden) {
+            return false;
+        }
+        if(info.is_directory) {
+            return true;
+        }
+
+        switch(profile) {
+            case files_menu_profile::photo:
+                return is_photo_file(info);
+            case files_menu_profile::music:
+                return is_music_file(info);
+            case files_menu_profile::video:
+                return is_video_file(info);
+            case files_menu_profile::generic:
+                return true;
+        }
+        return true;
+    }
+
+    std::function<bool(const file_info&)> normal_filter_for(files_menu_profile profile)
+    {
+        return [profile](const file_info& info) {
+            return filter_for_profile(profile, info);
+        };
+    }
+
+    std::string_view normal_filter_label(files_menu_profile profile)
+    {
+        switch(profile) {
+            case files_menu_profile::photo:
+                return "Photo";
+            case files_menu_profile::music:
+                return "Music";
+            case files_menu_profile::video:
+                return "Video";
+            case files_menu_profile::generic:
+                return "Normal";
+        }
+        return "Normal";
+    }
+
+    std::optional<std::filesystem::path> xmb_web_media_icon(std::string_view relative_path)
+    {
+        auto path = config::CONFIG.asset_directory /
+            std::filesystem::path{std::string{relative_path}};
+        std::error_code error;
+        if(std::filesystem::is_regular_file(path, error) && !error) {
+            return path;
+        }
+        return std::nullopt;
+    }
+
+    std::filesystem::path icon_for_file(const std::filesystem::path& file_path, const file_info& info,
+        files_menu_profile profile)
+    {
+        if(profile != files_menu_profile::generic && info.is_directory) {
+            if(auto icon = xmb_web_media_icon("compat/xmb-ui-compat/images/icon_fw_folder.png")) {
+                return *icon;
+            }
+        }
+
         auto extension = lower_extension(file_path);
         if(info.content_type.starts_with("image/") ||
             extension == ".png" || extension == ".jpg" || extension == ".jpeg" ||
             extension == ".bmp" || extension == ".gif") {
             return file_path;
+        }
+
+        if(is_music_file(info)) {
+            if(auto icon = xmb_web_media_icon("compat/xmb-ui-compat/images/icon_fw_track.png")) {
+                return *icon;
+            }
         }
 
         if(auto r = utils::resolve_icon_from_json(info.content_type)) {
@@ -330,14 +426,16 @@ namespace menu {
         }
     }
 
-    files_menu::files_menu(std::string name, dreamrender::texture&& icon, app::shell* xmb, std::filesystem::path path, dreamrender::resource_loader& loader)
-    : simple_menu(std::move(name), std::move(icon)), xmb(xmb), path(std::move(path)), loader(loader)
+    files_menu::files_menu(std::string name, dreamrender::texture&& icon, app::shell* xmb, std::filesystem::path path, dreamrender::resource_loader& loader,
+        files_menu_profile profile)
+    : simple_menu(std::move(name), std::move(icon)), xmb(xmb), path(std::move(path)), loader(loader), profile(profile)
     {
+        filter = normal_filter_for(profile);
     }
 
     unsigned int files_menu::get_submenus_count() const {
         ensure_built();
-        return is_open ? entries.size() : 1;
+        return entries.size();
     }
 
     menu::menu_entry& files_menu::get_submenu(unsigned int index) const {
@@ -442,7 +540,7 @@ namespace menu {
             auto file_path = path / info.name;
             extra_data_entries.push_back({file_path, info});
 
-            auto icon_path = icon_for_file(file_path, info);
+            auto icon_path = icon_for_file(file_path, info, profile);
             dreamrender::texture icon_texture(loader.getDevice(), loader.getAllocator());
             auto entry = std::make_unique<action_menu_entry>(
                 info.display_name,
@@ -686,7 +784,9 @@ namespace menu {
 
     void files_menu::show_sort_filter_options() {
         std::vector<std::string> options{
-            std::string{"Filter: "} + std::string(filters[selected_filter].first),
+            std::string{"Filter: "} + (selected_filter == 0
+                ? std::string{normal_filter_label(profile)}
+                : std::string{filters[selected_filter].first}),
             std::string{"Sort: "} + std::string(sorts[selected_sort].first),
             std::string{"Order: "} + (sort_descending ? "Descending"_() : "Ascending"_()),
             "Refresh"_()
@@ -696,7 +796,9 @@ namespace menu {
             switch(index) {
                 case 0:
                     selected_filter = (selected_filter + 1) % filters.size();
-                    filter = filters[selected_filter].second;
+                    filter = selected_filter == 0
+                        ? normal_filter_for(profile)
+                        : std::function<bool(const file_info&)>{filters[selected_filter].second};
                     resort();
                     break;
                 case 1:

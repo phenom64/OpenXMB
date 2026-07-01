@@ -25,11 +25,11 @@ struct BootWarningBlockLayout {
 
 // xmb-web places the coldboot logo/footer on the right side of the 1920x1080
 // frame: centre (0.734W, 0.532H), width 0.365W. OpenXMB replaces only the logo
-// artwork with the preserved identity string, so the string keeps the same
-// right edge and vertical centre.
+// artwork with the preserved identity string, kept as one fitted line inside
+// the same right edge and vertical centre.
 inline constexpr double kBootIdentityRightX = 0.734 + (0.365 * 0.5);
 inline constexpr double kBootIdentityCenterY = 0.532;
-inline constexpr double kBootIdentityBaseSize = 0.096;
+inline constexpr double kBootIdentityBaseSize = 0.082;
 inline constexpr double kBootIdentityMaxWidth = 0.365;
 inline constexpr double kBootIdentityLinePitchScale = 1.16;
 inline constexpr double kBootNativeTextMeasureToVisualScale = 0.5;

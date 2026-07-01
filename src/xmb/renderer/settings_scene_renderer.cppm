@@ -23,6 +23,7 @@ struct SettingsSceneIcon {
 
 struct SettingsSceneRenderOptions {
   bool glass_icons{};
+  bool suppress_value_labels{};
 };
 
 class SettingsSceneRenderer {
@@ -37,6 +38,9 @@ public:
 
 namespace openxmb::xmb {
 namespace {
+
+inline constexpr double settings_focused_glass_alpha = 0.84;
+inline constexpr double settings_inactive_glass_alpha = 0.76;
 
 struct ContainedLayout {
   float scale{};
@@ -98,8 +102,9 @@ void draw_icon(dreamrender::gui_renderer &renderer,
   const auto x = layout.x(row.icon_center_x - row.icon_extent * 0.5);
   const auto y = layout.y(row.center_y - row.icon_extent * 0.5);
   const auto glass_alpha = row.focused
-                               ? std::min(1.0, row.alpha * 1.08)
-                               : row.alpha;
+                               ? std::min(settings_focused_glass_alpha,
+                                          row.alpha * settings_focused_glass_alpha)
+                               : row.alpha * settings_inactive_glass_alpha;
   const auto tint =
       glm::vec4(1.0F, 1.0F, 1.0F, static_cast<float>(glass ? glass_alpha : row.alpha));
   if (glass && icon.glass_texture != nullptr && icon.glass_texture->loaded)
@@ -224,7 +229,8 @@ void SettingsSceneRenderer::render(dreamrender::gui_renderer &renderer,
           true);
     }
 
-    if (row.has_value && row.value_alpha > 0.001) {
+    if (!options.suppress_value_labels && row.has_value &&
+        row.value_alpha > 0.001) {
       const auto size = layout.text_size(row.value_size);
       const auto measured = renderer.measure_text(row.value, size * 0.5F);
       const auto right = layout.x(row.value_right_x);

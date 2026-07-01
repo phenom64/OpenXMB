@@ -49,6 +49,8 @@ function Invoke-SceneCapture {
     }
     $sceneDir = Join-Path $captureRoot $SceneName
     New-Item -ItemType Directory -Force -Path $sceneDir | Out-Null
+    Get-ChildItem -LiteralPath $sceneDir -Filter "*.png" -File |
+        Remove-Item -Force
 
     $configPath = Join-Path $sceneDir "config.json"
     Copy-Item -LiteralPath (Join-Path $RepoRoot "config.json") -Destination $configPath -Force

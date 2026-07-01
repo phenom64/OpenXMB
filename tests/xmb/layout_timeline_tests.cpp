@@ -77,6 +77,16 @@ void test_boot_timeline() {
   require_near(wave_start.wave_boot_time_seconds, 0.0, 1e-12,
                "wave start time");
   require_near(wave_start.wave_gain, 0.0, 1e-12, "wave start gain");
+  require_near(sample_boot_timeline(2.5).background_exposure_top, 0.0, 1e-12,
+               "boot gradient reveal starts black");
+  require(sample_boot_timeline(3.1).background_exposure_bottom >
+              sample_boot_timeline(3.1).background_exposure_top,
+          "boot gradient bottom leads top like xmb-web");
+  require_near(sample_boot_timeline(8.5).background_exposure_top, 1.0, 1e-12,
+               "boot gradient reaches steady top exposure");
+  require(sample_boot_timeline(3.5).background_sweep > 0.0 &&
+              sample_boot_timeline(3.5).background_sweep < 1.0,
+          "boot gradient uses xmb-web left-to-right sweep");
 
   require_near(sample_boot_timeline(2.2).identity_opacity, 0.0, 1e-12,
                "identity starts at 2.2s");
@@ -136,8 +146,8 @@ void test_boot_text_layout() {
                "identity text is fitted to the xmb-web logo box width");
   require_near(kBootNativeTextMeasureToVisualScale, 0.5, 1e-12,
                "boot overlay compensates the native renderer's 2x text measure");
-  require(kBootIdentityBaseSize > 0.09,
-          "identity text is no longer the undersized legacy splash");
+  require(kBootIdentityBaseSize > 0.08 && kBootIdentityBaseSize < 0.09,
+          "identity text is a slightly smaller one-line xmb-web logo fit");
 
   const auto identity =
       place_startup_identity_text({.width = 0.52, .height = 0.07});
@@ -263,6 +273,8 @@ void test_shader_interface() {
   require(renderer.contains("sizeof(CapturedWaveRenderer::PushConstants)") &&
               renderer.contains("sizeof(float) * 16"),
           "renderer fixes shader push interface at 64 bytes");
+  require(shell.contains("background_exposure_top"),
+          "startup gradient exposure is wired into the native background pass");
   require(renderer.contains("line_passes{7}"),
           "renderer exposes seven reference line passes");
   require(renderer.contains("line_spread_px{5.4F}"),
@@ -271,10 +283,14 @@ void test_shader_interface() {
           "renderer exposes boot alpha-over mode");
   require(renderer.contains("CapturedWaveBlendMode::idle_additive"),
           "renderer exposes idle additive mode");
+  require(shell.contains("xmb_web_native_steady_wave_fill_alpha"),
+          "native steady captured wave compensates for xmb-web supersampled composition");
   require(shell.contains("OPENXMB_HEADLESS_STARTUP"),
           "headless visual verification can opt into the real startup overlay");
   require(shell.contains("OPENXMB_FIXED_BOOT_SECONDS"),
           "headless startup visual verification can pin the boot timestamp");
+  require(shell.contains("startup_background_blur_px"),
+          "startup warning blur is wired into the native background blur pass");
 }
 
 } // namespace
