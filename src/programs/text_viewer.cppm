@@ -27,6 +27,7 @@ module;
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -69,6 +70,7 @@ class mapped_memory {
                 close(m_fd);
                 throw std::runtime_error("Failed to get file size");
             }
+            if(m_size == 0) { m_data = nullptr; return; }
             m_data = mmap(nullptr, m_size, PROT_READ, MAP_PRIVATE, m_fd, 0);
             if(m_data == MAP_FAILED) {
                 spdlog::error("Failed to map file {}: {}", path.string(), strerror(errno));
@@ -125,7 +127,7 @@ class mapped_memory {
                 spdlog::error("Failed to open file {}: {}", path.string(), strerror(errno));
                 throw std::runtime_error("Failed to open file");
             }
-            std::streamsize size = -1;
+            std::streamsize size = file.tellg();
             if(size < 0) {
                 spdlog::error("Failed to get size of file {}: {}", path.string(), strerror(errno));
                 throw std::runtime_error("Failed to get file size");

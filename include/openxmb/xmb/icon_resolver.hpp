@@ -50,6 +50,20 @@ normal_map_number_from_icon_filename(std::string_view filename) noexcept {
 
 [[nodiscard]] inline std::optional<std::filesystem::path>
 xmb_web_normal_map_for_icon(const std::filesystem::path &icon_path) {
+  auto parent = icon_path.parent_path();
+  for (unsigned depth = 0; depth < 8 && !parent.empty(); ++depth) {
+    if (parent.filename() == "icons") {
+      std::error_code error;
+      const auto relative = std::filesystem::relative(icon_path, parent, error);
+      const auto material = parent.parent_path() / "normalmaps" / relative;
+      if (!error && std::filesystem::is_regular_file(material, error) && !error)
+        return material;
+      break;
+    }
+    const auto next = parent.parent_path();
+    if (next == parent) break;
+    parent = next;
+  }
   if (const auto number =
           normal_map_number_from_icon_filename(icon_path.filename().string())) {
     const auto normal_map =

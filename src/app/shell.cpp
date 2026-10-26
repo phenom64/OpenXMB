@@ -48,6 +48,10 @@ module;
 
 #include "openxmb/xmb/boot_timeline.hpp"
 #include "openxmb/xmb/background.hpp"
+#include "openxmb/music/player.hpp"
+#include "openxmb/integrations/desktop.hpp"
+#include "openxmb/themes/library.hpp"
+#include <map>
 
 module openxmb.app;
 
@@ -67,11 +71,24 @@ import openxmb.xmb.captured_wave_renderer;
 import openxmb.xmb.monthly_background_renderer;
 import :startup_overlay;
 import :message_overlay;
+import :programs;
+import :theme_manager;
+import :integration_center;
+import :library_manager;
+import :settings_center;
 
 using namespace mfk::i18n::literals;
 
 namespace app
 {
+    struct shell::theme_state {
+        std::shared_ptr<openxmb::themes::ThemeLibrary> library;
+        std::optional<openxmb::themes::AppliedTheme> active;
+        std::chrono::steady_clock::time_point started=std::chrono::steady_clock::now();
+        openxmb::themes::AnimationFrame frame;
+        std::map<std::filesystem::path,std::unique_ptr<texture>> textures;
+    };
+
     namespace {
         inline constexpr float xmb_web_native_steady_wave_fill_alpha = 0.078F;
 
@@ -169,15 +186,19 @@ namespace app
 
     void component::render_controller_buttons(app::shell* xmb, dreamrender::gui_renderer& renderer, float x, float y, std::span<const std::pair<::action, std::string_view>> buttons) const
     {
+        const auto saved_scale = renderer.text_scale;
+        renderer.text_scale /= std::max(1.0F, typography_scale());
         xmb->render_controller_buttons(renderer, x, y, buttons);
+        renderer.text_scale = saved_scale;
     }
 
-    shell::shell(window* window) : phase(window)
+    shell::shell(window* window) : phase(window),theme(std::make_unique<theme_state>())
     {
     }
 
     shell::~shell()
     {
+        openxmb::music::service().shutdown();
     }
 
     void shell::preload()
@@ -186,64 +207,44 @@ namespace app
 
         font_render = std::make_unique<font_renderer>(config::CONFIG.fontPath.string(), 32, device, allocator, win->swapchainExtent, win->gpuFeatures);
         image_render = std::make_unique<image_renderer>(device, win->swapchainExtent, win->gpuFeatures);
+        image_render->setAllocator(allocator);
         simple_render = std::make_unique<simple_renderer>(device, allocator, win->swapchainExtent, win->gpuFeatures);
+#if OPENXMB_ENABLE_VIDEO_PLAYER
+        video_background_render = std::make_unique<render::video_background>(device, allocator, win);
+#endif
         wave_render = std::make_unique<render::wave_renderer>(device, allocator, win->swapchainExtent);
-        particles_render = std::make_unique<render::particles_renderer>(
-            device, allocator, win->swapchainExtent);
-        try {
-            particles_render->load_particle_cloud(
-                config::CONFIG.asset_directory /
-                    "compat/xmb-ui-compat/data/particle-cloud.bin");
-        } catch(const std::exception& error) {
-            spdlog::warn(
-                "xmb particle cloud is unavailable ({}); using analytic Original particle fallback",
-                error.what());
-        }
-        captured_wave_render = std::make_unique<openxmb::xmb::CapturedWaveRenderer>(
-            device, allocator, win->swapchainExtent);
+        procedural_wave_render = std::make_unique<render::procedural_wave_renderer>(device, allocator, win->swapchainExtent);
         monthly_background_render =
-            std::make_unique<openxmb::xmb::MonthlyBackgroundRenderer>(
-                device, win->swapchainExtent);
-        const auto captured_wave_directory =
-            config::CONFIG.asset_directory / "compat/xmb-ui-compat/wave";
-        try {
-            captured_wave_render->load_assets({
-                .geometry = captured_wave_directory / "wave_geo.bin",
-                .idle_sequence = captured_wave_directory / "wave_seq2.bin",
-                .idle_metadata = captured_wave_directory / "wave_seq2.json",
-                .boot_sequence = captured_wave_directory / "wave_boot.bin",
-                .boot_metadata = captured_wave_directory / "wave_boot.json",
-            });
-            spdlog::info("Loaded local captured-wave compatibility pack from {}",
-                         captured_wave_directory.string());
-        } catch(const std::exception& error) {
-            captured_wave_failed = true;
-            spdlog::warn(
-                "Captured-wave compatibility pack is unavailable ({}); Original will use the licensed Classic fallback",
-                error.what());
-        }
+            std::make_unique<openxmb::xmb::MonthlyBackgroundRenderer>(device, win->swapchainExtent);
 
         {
             std::array<vk::SubpassDependency, 2> deps{
                 vk::SubpassDependency(vk::SubpassExternal, 0,
-                    vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                    vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eColorAttachmentWrite),
+                    vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eLateFragmentTests,
+                    vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests,
+                    vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite,
+                    vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite),
                 vk::SubpassDependency(0, vk::SubpassExternal,
                     vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader,
                     vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead)
             };
+            const auto depth_attachment = vk::AttachmentDescription({}, vk::Format::eD32Sfloat,
+                win->config.sampleCount, vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
+                vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+                vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal);
             if(win->config.sampleCount == vk::SampleCountFlagBits::e1) {
                 const std::array attachments{
                     vk::AttachmentDescription({}, win->swapchainFormat.format,
                         vk::SampleCountFlagBits::e1,
                         vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
                         vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-                        vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal)
+                        vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal),
+                    depth_attachment
                 };
-                const vk::AttachmentReference color_ref(
-                    0, vk::ImageLayout::eColorAttachmentOptimal);
-                const vk::SubpassDescription subpass(
-                    {}, vk::PipelineBindPoint::eGraphics, {}, color_ref);
+                const vk::AttachmentReference color_ref(0, vk::ImageLayout::eColorAttachmentOptimal);
+                const vk::AttachmentReference depth_ref(1, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+                const vk::SubpassDescription subpass({}, vk::PipelineBindPoint::eGraphics,
+                    {}, color_ref, {}, &depth_ref);
                 backgroundRenderPass = device.createRenderPassUnique(
                     vk::RenderPassCreateInfo({}, attachments, subpass, deps));
             } else {
@@ -255,15 +256,14 @@ namespace app
                     vk::AttachmentDescription({}, win->swapchainFormat.format, vk::SampleCountFlagBits::e1,
                         vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eStore,
                         vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-                        vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal)
+                        vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal),
+                    depth_attachment
                 };
-                const vk::AttachmentReference color_ref(
-                    0, vk::ImageLayout::eColorAttachmentOptimal);
-                const vk::AttachmentReference resolve_ref(
-                    1, vk::ImageLayout::eColorAttachmentOptimal);
-                const vk::SubpassDescription subpass(
-                    {}, vk::PipelineBindPoint::eGraphics, {}, color_ref,
-                    resolve_ref);
+                const vk::AttachmentReference color_ref(0, vk::ImageLayout::eColorAttachmentOptimal);
+                const vk::AttachmentReference resolve_ref(1, vk::ImageLayout::eColorAttachmentOptimal);
+                const vk::AttachmentReference depth_ref(2, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+                const vk::SubpassDescription subpass({}, vk::PipelineBindPoint::eGraphics,
+                    {}, color_ref, resolve_ref, &depth_ref);
                 backgroundRenderPass = device.createRenderPassUnique(
                     vk::RenderPassCreateInfo({}, attachments, subpass, deps));
             }
@@ -350,16 +350,6 @@ namespace app
         simple_render->preload({shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
         wave_render->preload({backgroundRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
         try {
-            particles_render->preload(
-                {backgroundRenderPass.get()}, win->config.sampleCount,
-                win->pipelineCache.get());
-        } catch(const std::exception& error) {
-            original_particles_failed = true;
-            spdlog::error(
-                "Original-background particle pipeline initialization failed ({}); continuing without particles",
-                error.what());
-        }
-        try {
             monthly_background_render->preload(
                 {backgroundRenderPass.get()}, win->config.sampleCount,
                 win->pipelineCache.get());
@@ -369,18 +359,10 @@ namespace app
                 "Monthly-background Vulkan pipeline initialization failed ({}); using the safe clear-colour fallback",
                 error.what());
         }
-        if(captured_wave_render->assets_ready() && !captured_wave_failed) {
-            try {
-                captured_wave_render->preload(
-                    {backgroundRenderPass.get()}, win->config.sampleCount,
-                    win->pipelineCache.get());
-            } catch(const std::exception& error) {
-                captured_wave_failed = true;
-                spdlog::error(
-                    "Captured-wave Vulkan pipeline initialization failed ({}); Original will use Classic",
-                    error.what());
-            }
-        }
+#if OPENXMB_ENABLE_VIDEO_PLAYER
+        video_background_render->preload({backgroundRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
+#endif
+        procedural_wave_render->preload({backgroundRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
 
         if(config::CONFIG.backgroundType == config::config::background_type::image) {
             backgroundTexture = std::make_unique<texture>(device, allocator);
@@ -389,20 +371,20 @@ namespace app
         iconGlassAmbientTexture = std::make_unique<texture>(device, allocator);
         iconGlassEnvironmentTexture = std::make_unique<texture>(device, allocator);
         const auto glass_environment_directory =
-            config::CONFIG.asset_directory / "compat/xmb-ui-compat/environment";
+            config::CONFIG.asset_directory / "materials";
         loader->loadTexture(iconGlassAmbientTexture.get(),
                             glass_environment_directory / "icon_amb.png");
         loader->loadTexture(iconGlassEnvironmentTexture.get(),
                             glass_environment_directory / "texenv.png");
         config::CONFIG.addCallback("background-type", [this](const std::string&){
-            if(config::CONFIG.backgroundType == config::config::background_type::image) {
+            if(config::CONFIG.backgroundType == config::config::background_type::image || config::CONFIG.backgroundType == config::config::background_type::video) {
                 reload_background();
             } else {
                 backgroundTexture.reset();
             }
         });
         config::CONFIG.addCallback("background-image", [this](const std::string&){
-            if(config::CONFIG.backgroundType == config::config::background_type::image) {
+            if(config::CONFIG.backgroundType == config::config::background_type::image || config::CONFIG.backgroundType == config::config::background_type::video) {
                 reload_background();
             } else {
                 backgroundTexture.reset();
@@ -420,7 +402,9 @@ namespace app
             win->recreateSwapchain();
         });
 
+        reload_background();
         if(!background_only) {
+            if(auto saved = theme_library()->active()) apply_theme(*saved);
             preload_fixed_components();
         }
     }
@@ -435,13 +419,13 @@ namespace app
         news.preload(device, allocator, *loader);
 
         if(!win->config.headless) {
-            ok_sound = sdl::mix::unique_chunk{sdl::mix::LoadWAV((config::CONFIG.asset_directory/"sounds/ok.wav").string().c_str())};
+            ok_sound = sdl::mix::unique_chunk{sdl::mix::LoadWAV(config::CONFIG.resolve_sound(config::CONFIG.asset_directory/"sounds/ok.wav").string().c_str())};
             if(!ok_sound) {
                 spdlog::warn("sdl::mix::LoadWAV: {}", sdl::mix::GetError());
             }
             auto load_sound_multi = [&](sdl::mix::unique_chunk& slot, std::initializer_list<const char*> names){
                 for(const char* n : names) {
-                    auto p = (config::CONFIG.asset_directory/"sounds"/n).string();
+                    auto p = config::CONFIG.resolve_sound(config::CONFIG.asset_directory/"sounds"/n).string();
                     slot = sdl::mix::unique_chunk{sdl::mix::LoadWAV(p.c_str())};
                     if(slot) { spdlog::debug("Loaded sound {}", p); return; }
                 }
@@ -469,6 +453,7 @@ namespace app
         if(!win->config.headless || force_headless_startup_overlay()) {
             emplace_overlay<app::startup_overlay>();
         }
+        fixed_components_loaded = true;
     }
 
     void shell::prepare(std::vector<vk::Image> swapchainImages, std::vector<vk::ImageView> swapchainViews)
@@ -485,47 +470,36 @@ namespace app
         blurExtraDescriptorPool.reset();
         renderImages.clear();
         backgroundResolve.clear();
+        backgroundDepth.clear();
         blurFrames.clear();
+        procedural_wave_render->prepare(static_cast<int>(swapchainImages.size()));
+#if OPENXMB_ENABLE_VIDEO_PLAYER
+        video_background_render->prepare(imageCount);
+#endif
 
         if(imageCount == 0) {
             font_render->prepare(0);
             image_render->prepare(0);
             simple_render->prepare(0);
             wave_render->prepare(0);
-            particles_render->prepare(0);
             return;
         }
 
         const auto extent = win->swapchainExtent;
-        const vk::Extent2D halfExtent{
-            std::max(1u, extent.width/2u),
-            std::max(1u, extent.height/2u)
-        };
-        const vk::Extent2D quarterExtent{
-            std::max(1u, halfExtent.width/2u),
-            std::max(1u, halfExtent.height/2u)
-        };
-        const auto blurUsage = vk::ImageUsageFlagBits::eStorage
-            | vk::ImageUsageFlagBits::eTransferSrc
-            | vk::ImageUsageFlagBits::eTransferDst
-            | vk::ImageUsageFlagBits::eSampled;
-        auto makeBlurTexture = [&](vk::Extent2D imageExtent) {
-            return std::make_unique<texture>(device, allocator,
-                imageExtent, blurUsage,
-                vk::Format::eR16G16B16A16Sfloat, vk::SampleCountFlagBits::e1,
-                false, vk::ImageAspectFlagBits::eColor);
-        };
-
         framebuffers.reserve(imageCount);
         backgroundFramebuffers.reserve(imageCount);
         renderImages.reserve(imageCount);
         backgroundResolve.reserve(imageCount);
+        backgroundDepth.reserve(imageCount);
         blurFrames.reserve(imageCount);
 
         for(std::uint32_t i=0; i<imageCount; i++)
         {
+            backgroundDepth.push_back(std::make_unique<texture>(device, allocator, extent,
+                vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::Format::eD32Sfloat,
+                win->config.sampleCount, false, vk::ImageAspectFlagBits::eDepth));
             debugName(device, swapchainImages[i], "Swapchain Image #"+std::to_string(i));
-            {
+            if(win->config.sampleCount != vk::SampleCountFlagBits::e1) {
                 renderImages.push_back(std::make_unique<texture>(device, allocator,
                     extent, vk::ImageUsageFlagBits::eColorAttachment,
                     win->swapchainFormat.format, win->config.sampleCount,
@@ -541,28 +515,7 @@ namespace app
                 debugName(device, tex->image, ("Background Resolve #"+std::to_string(i)).c_str());
                 backgroundResolve.push_back(std::move(tex));
             }
-            {
-                blurFrames.emplace_back();
-                auto& blurFrame = blurFrames.back();
-
-                blurFrame.fullSrc = makeBlurTexture(extent);
-                debugName(device, blurFrame.fullSrc->image, "Blur Image Source #"+std::to_string(i));
-
-                blurFrame.fullDst = makeBlurTexture(extent);
-                debugName(device, blurFrame.fullDst->image, "Blur Image Destination #"+std::to_string(i));
-
-                blurFrame.halfSrc = makeBlurTexture(halfExtent);
-                debugName(device, blurFrame.halfSrc->image, "Blur Half Source #"+std::to_string(i));
-
-                blurFrame.halfDst = makeBlurTexture(halfExtent);
-                debugName(device, blurFrame.halfDst->image, "Blur Half Destination #"+std::to_string(i));
-
-                blurFrame.quarterSrc = makeBlurTexture(quarterExtent);
-                debugName(device, blurFrame.quarterSrc->image, "Blur Quarter Source #"+std::to_string(i));
-
-                blurFrame.quarterDst = makeBlurTexture(quarterExtent);
-                debugName(device, blurFrame.quarterDst->image, "Blur Quarter Destination #"+std::to_string(i));
-            }
+            blurFrames.emplace_back();
             {
                 if(win->config.sampleCount == vk::SampleCountFlagBits::e1) {
                     const std::array attachments{swapchainViews[i]};
@@ -581,14 +534,14 @@ namespace app
             {
                 if(win->config.sampleCount == vk::SampleCountFlagBits::e1) {
                     const std::array attachments{
-                        backgroundResolve[i]->imageView.get()};
+                        backgroundResolve[i]->imageView.get(), backgroundDepth[i]->imageView.get()};
                     backgroundFramebuffers.push_back(device.createFramebufferUnique(
                         vk::FramebufferCreateInfo({}, backgroundRenderPass.get(), attachments,
                             extent.width, extent.height, 1)));
                 } else {
                     const std::array attachments{
                         renderImages[i]->imageView.get(),
-                        backgroundResolve[i]->imageView.get()};
+                        backgroundResolve[i]->imageView.get(), backgroundDepth[i]->imageView.get()};
                     backgroundFramebuffers.push_back(device.createFramebufferUnique(
                         vk::FramebufferCreateInfo({}, backgroundRenderPass.get(), attachments,
                             extent.width, extent.height, 1)));
@@ -627,54 +580,46 @@ namespace app
             }
         }
 
-        std::vector<vk::DescriptorImageInfo> imageInfos(2*imageCount);
-        std::vector<vk::WriteDescriptorSet> writes(imageCount);
-        std::vector<vk::DescriptorImageInfo> extraInfos(12*imageCount);
-        std::vector<vk::WriteDescriptorSet> extraWrites(6*imageCount);
-
-        for(std::uint32_t i=0; i<imageCount; i++)
-        {
-            auto& blurFrame = blurFrames[i];
-            const auto imageInfoBase = 2*i;
-            imageInfos[imageInfoBase] = vk::DescriptorImageInfo({}, blurFrame.fullSrc->imageView.get(), vk::ImageLayout::eGeneral);
-            imageInfos[imageInfoBase+1] = vk::DescriptorImageInfo({}, blurFrame.fullDst->imageView.get(), vk::ImageLayout::eGeneral);
-            writes[i] = vk::WriteDescriptorSet(blurDescriptorSets[i], 0, 0, 2, vk::DescriptorType::eStorageImage, &imageInfos[imageInfoBase]);
-
-            const auto extraInfoBase = 12*i;
-            const auto extraWriteBase = 6*i;
-            // Downsample: input full src -> output half src
-            extraInfos[extraInfoBase+0] = vk::DescriptorImageInfo({}, blurFrame.fullSrc->imageView.get(), vk::ImageLayout::eGeneral);
-            extraInfos[extraInfoBase+1] = vk::DescriptorImageInfo({}, blurFrame.halfSrc->imageView.get(), vk::ImageLayout::eGeneral);
-            extraWrites[extraWriteBase+0] = vk::WriteDescriptorSet(blurFrame.downsampleSet, 0, 0, 2, vk::DescriptorType::eStorageImage, &extraInfos[extraInfoBase+0]);
-            // Half blur: input half src -> output half dst
-            extraInfos[extraInfoBase+2] = vk::DescriptorImageInfo({}, blurFrame.halfSrc->imageView.get(), vk::ImageLayout::eGeneral);
-            extraInfos[extraInfoBase+3] = vk::DescriptorImageInfo({}, blurFrame.halfDst->imageView.get(), vk::ImageLayout::eGeneral);
-            extraWrites[extraWriteBase+1] = vk::WriteDescriptorSet(blurFrame.halfBlurSet, 0, 0, 2, vk::DescriptorType::eStorageImage, &extraInfos[extraInfoBase+2]);
-            // Upsample: input half dst -> output full dst
-            extraInfos[extraInfoBase+4] = vk::DescriptorImageInfo({}, blurFrame.halfDst->imageView.get(), vk::ImageLayout::eGeneral);
-            extraInfos[extraInfoBase+5] = vk::DescriptorImageInfo({}, blurFrame.fullDst->imageView.get(), vk::ImageLayout::eGeneral);
-            extraWrites[extraWriteBase+2] = vk::WriteDescriptorSet(blurFrame.upsampleSet, 0, 0, 2, vk::DescriptorType::eStorageImage, &extraInfos[extraInfoBase+4]);
-            // Downsample2: input half src -> output quarter src
-            extraInfos[extraInfoBase+6] = vk::DescriptorImageInfo({}, blurFrame.halfSrc->imageView.get(), vk::ImageLayout::eGeneral);
-            extraInfos[extraInfoBase+7] = vk::DescriptorImageInfo({}, blurFrame.quarterSrc->imageView.get(), vk::ImageLayout::eGeneral);
-            extraWrites[extraWriteBase+3] = vk::WriteDescriptorSet(blurFrame.downsample2Set, 0, 0, 2, vk::DescriptorType::eStorageImage, &extraInfos[extraInfoBase+6]);
-            // Quarter blur: input quarter src -> output quarter dst
-            extraInfos[extraInfoBase+8] = vk::DescriptorImageInfo({}, blurFrame.quarterSrc->imageView.get(), vk::ImageLayout::eGeneral);
-            extraInfos[extraInfoBase+9] = vk::DescriptorImageInfo({}, blurFrame.quarterDst->imageView.get(), vk::ImageLayout::eGeneral);
-            extraWrites[extraWriteBase+4] = vk::WriteDescriptorSet(blurFrame.quarterBlurSet, 0, 0, 2, vk::DescriptorType::eStorageImage, &extraInfos[extraInfoBase+8]);
-            // Upsample2: input quarter dst -> output half dst
-            extraInfos[extraInfoBase+10] = vk::DescriptorImageInfo({}, blurFrame.quarterDst->imageView.get(), vk::ImageLayout::eGeneral);
-            extraInfos[extraInfoBase+11] = vk::DescriptorImageInfo({}, blurFrame.halfDst->imageView.get(), vk::ImageLayout::eGeneral);
-            extraWrites[extraWriteBase+5] = vk::WriteDescriptorSet(blurFrame.upsample2Set, 0, 0, 2, vk::DescriptorType::eStorageImage, &extraInfos[extraInfoBase+10]);
-        }
-        device.updateDescriptorSets(writes, {});
-        device.updateDescriptorSets(extraWrites, {});
-
         font_render->prepare(swapchainViews.size());
         image_render->prepare(swapchainViews.size());
         simple_render->prepare(swapchainViews.size());
         wave_render->prepare(swapchainViews.size());
-        particles_render->prepare(swapchainViews.size());
+    }
+
+    void shell::ensure_blur(int frame) {
+        auto& resources = blurFrames.at(frame);
+        if(resources.fullSrc) return;
+        const auto extent = win->swapchainExtent;
+        const vk::Extent2D half{std::max(1u, extent.width / 2), std::max(1u, extent.height / 2)};
+        const vk::Extent2D quarter{std::max(1u, half.width / 2), std::max(1u, half.height / 2)};
+        const auto usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc |
+            vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
+        const auto make = [&](vk::Extent2D size) {
+            return std::make_unique<texture>(device, allocator, size, usage,
+                vk::Format::eR16G16B16A16Sfloat, vk::SampleCountFlagBits::e1, false);
+        };
+        resources.fullSrc = make(extent); resources.fullDst = make(extent);
+        resources.halfSrc = make(half); resources.halfDst = make(half);
+        resources.quarterSrc = make(quarter); resources.quarterDst = make(quarter);
+        const std::array<vk::DescriptorSet, 7> sets{blurDescriptorSets[frame],
+            resources.downsampleSet, resources.halfBlurSet, resources.upsampleSet,
+            resources.downsample2Set, resources.quarterBlurSet, resources.upsample2Set};
+        const std::array<std::array<texture*, 2>, 7> pairs{{
+            {resources.fullSrc.get(), resources.fullDst.get()},
+            {resources.fullSrc.get(), resources.halfSrc.get()},
+            {resources.halfSrc.get(), resources.halfDst.get()},
+            {resources.halfDst.get(), resources.fullDst.get()},
+            {resources.halfSrc.get(), resources.quarterSrc.get()},
+            {resources.quarterSrc.get(), resources.quarterDst.get()},
+            {resources.quarterDst.get(), resources.halfDst.get()}}};
+        std::array<std::array<vk::DescriptorImageInfo, 2>, 7> infos;
+        std::array<vk::WriteDescriptorSet, 7> writes;
+        for(std::size_t i = 0; i < sets.size(); ++i) {
+            for(std::size_t j = 0; j < 2; ++j)
+                infos[i][j] = vk::DescriptorImageInfo({}, pairs[i][j]->imageView.get(), vk::ImageLayout::eGeneral);
+            writes[i] = vk::WriteDescriptorSet(sets[i], 0, 0, 2, vk::DescriptorType::eStorageImage, infos[i].data());
+        }
+        device.updateDescriptorSets(writes, {});
     }
 
     void shell::reload_language() {
@@ -726,7 +671,48 @@ namespace app
         auto& blurFrame = blurFrames[frame];
         auto now = std::chrono::steady_clock::now();
 
+        if(theme->active && !theme->active->animation.empty()) {
+            try {
+                const auto seconds = std::chrono::duration<double>(now-theme->started).count();
+                theme->frame = openxmb::themes::ThemeLibrary::sample_animation(*theme->active,
+                    fixed_wave_seconds_from_environment().value_or(seconds));
+                std::vector<std::filesystem::path> needed;
+                if(!theme->frame.background.empty()) needed.push_back(theme->frame.background);
+                for(const auto& layer : theme->frame.layers) needed.push_back(layer.image);
+                for(const auto& draw : theme->frame.draws) needed.push_back(draw.image);
+                for(const auto& path : needed) {
+                    const auto ext=path.extension().string();
+                    const bool video=ext==".mp4" || ext==".webm" || ext==".mkv" || ext==".mov" || ext==".avi";
+#if OPENXMB_ENABLE_VIDEO_PLAYER
+                    if(video && path==theme->frame.background) {
+                        if(background_video_path!=path) { video_background_render->set_path(path); background_video_path=path; }
+                        continue;
+                    }
+#endif
+                    if(path.empty() || video || theme->textures.contains(path)) continue;
+                    std::size_t bytes=0;
+                    for(const auto& [key, value] : theme->textures) if(value->loaded) bytes+=static_cast<std::size_t>(value->width)*value->height*4;
+                    if(theme->textures.size()>=128 || bytes>128u*1024u*1024u) {
+                        win->waitIdle();
+                        std::erase_if(theme->textures,[&](const auto& item) { return std::find(needed.begin(),needed.end(),item.first)==needed.end(); });
+                        if(theme->textures.size()>=128) break;
+                    }
+                    auto image=std::make_unique<texture>(device,allocator);
+                    loader->loadTexture(image.get(),path);
+                    theme->textures.emplace(path,std::move(image));
+                }
+            } catch(const std::exception& error) { spdlog::warn("Theme animation failed: {}",error.what()); }
+        }
+#if OPENXMB_ENABLE_VIDEO_PLAYER
+        const bool background_video_active=!background_video_path.empty() && !ingame_mode &&
+            (config::CONFIG.backgroundType==config::config::background_type::video || theme->frame.background==background_video_path);
+        video_background_render->set_active(background_video_active);
+        video_background_render->tick();
+#endif
         commandBuffer.begin(vk::CommandBufferBeginInfo());
+#if OPENXMB_ENABLE_VIDEO_PLAYER
+        video_background_render->prerender(commandBuffer,frame);
+#endif
         for(auto& overlay : std::views::reverse(overlays)) {
             overlay->prerender(commandBuffer, frame, this);
         }
@@ -778,8 +764,11 @@ namespace app
             if(ingame_mode) {
                 color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.5f});
             }
+            std::array<vk::ClearValue, 3> background_clears{color, color, color};
+            const auto depth_index = win->config.sampleCount == vk::SampleCountFlagBits::e1 ? 1u : 2u;
+            background_clears[depth_index] = vk::ClearDepthStencilValue(1.0F, 0);
             commandBuffer.beginRenderPass(vk::RenderPassBeginInfo(backgroundRenderPass.get(), backgroundFramebuffers[frame].get(),
-                vk::Rect2D({0, 0}, win->swapchainExtent), color), vk::SubpassContents::eInline);
+                vk::Rect2D({0, 0}, win->swapchainExtent), depth_index + 1, background_clears.data()), vk::SubpassContents::eInline);
             vk::Viewport viewport(0.0f, 0.0f,
                 static_cast<float>(win->swapchainExtent.width),
                 static_cast<float>(win->swapchainExtent.height), 0.0f, 1.0f);
@@ -824,79 +813,11 @@ namespace app
                                 error.what());
                         }
                     }
-                    bool rendered_captured_wave = false;
-                    if(captured_wave_render->assets_ready() &&
-                       captured_wave_render->pipelines_ready() &&
-                       !captured_wave_failed) {
-                        try {
-                            const bool boot_wave = seconds <
-                                openxmb::xmb::BootMilestones::identity_out_seconds;
-                            if(boot_wave) {
-                                captured_wave_render->update_boot(
-                                    boot.wave_geometry_progress);
-                            } else {
-                                static const auto fixed_wave_seconds =
-                                    fixed_wave_seconds_from_environment();
-                                captured_wave_render->update_idle(
-                                    fixed_wave_seconds.value_or(
-                                        seconds - openxmb::xmb::BootMilestones::identity_out_seconds));
-                            }
-                            openxmb::xmb::CapturedWaveParameters parameters{};
-                            parameters.gain = boot_wave
-                                ? static_cast<float>(boot.wave_gain)
-                                : 1.0F;
-                            parameters.fill_alpha = boot_wave
-                                ? parameters.fill_alpha
-                                : xmb_web_native_steady_wave_fill_alpha;
-                            // xmb-web's captured clip positions target WebGL,
-                            // where +Y reaches the top of the framebuffer. Our
-                            // positive-height Vulkan viewport maps +Y down, so
-                            // the imported cloth needs one explicit sign flip.
-                            parameters.y_flip = -1.0F;
-                            parameters.draw_fill = true;
-                            // The reference selects either its filled captured
-                            // cloth or the optional diagnostic line topology;
-                            // compositing both made the native ribbon opaque,
-                            // over-bright, and visibly wireframed.
-                            parameters.draw_lines = false;
-                            captured_wave_render->render(
-                                commandBuffer, backgroundRenderPass.get(),
-                                boot_wave
-                                    ? openxmb::xmb::CapturedWaveBlendMode::boot_alpha_over
-                                    : openxmb::xmb::CapturedWaveBlendMode::idle_additive,
-                                parameters);
-                            rendered_captured_wave = true;
-                            if(!original_particles_failed && particles_render) {
-                                try {
-                                    const float particle_brightness = std::clamp(
-                                        original_effect_brightness *
-                                            (boot_wave ? 0.35F : 0.58F),
-                                        0.0F, 1.0F);
-                                    particles_render->render(
-                                        commandBuffer, frame,
-                                        backgroundRenderPass.get(),
-                                        original_effect_tint, particle_brightness,
-                                        static_cast<float>(fixed_wave_seconds_from_environment().value_or(seconds)),
-                                        background_gradient.night_day_blend);
-                                } catch(const std::exception& particle_error) {
-                                    original_particles_failed = true;
-                                    spdlog::error(
-                                        "Original-background particle rendering failed ({}); continuing without particles",
-                                        particle_error.what());
-                                }
-                            }
-                        } catch(const std::exception& error) {
-                            captured_wave_failed = true;
-                            spdlog::error(
-                                "Captured-wave rendering failed ({}); switching Original to Classic",
-                                error.what());
-                        }
-                    }
-                    if(!rendered_captured_wave) {
-                        wave_render->waveColor = original_effect_tint;
-                        wave_render->render(
-                            commandBuffer, frame, backgroundRenderPass.get());
-                    }
+                    procedural_wave_render->render(
+                        commandBuffer, frame, backgroundRenderPass.get(),
+                        original_effect_tint, original_effect_brightness,
+                        static_cast<float>(fixed_wave_seconds_from_environment().value_or(seconds)));
+
                 }
                 else if(config::CONFIG.backgroundType == config::config::background_type::wave) {
                     wave_render->waveColor = baseThemeColour; // PS3 look: wave uses base, brightness on background only
@@ -913,6 +834,28 @@ namespace app
                 }
             }
 
+#if OPENXMB_ENABLE_VIDEO_PLAYER
+            if(background_video_active) video_background_render->render(commandBuffer,frame,backgroundRenderPass.get(),win->swapchainExtent);
+#endif
+            if(theme->active) {
+                gui_renderer theme_gui(commandBuffer,frame,backgroundRenderPass.get(),win->swapchainExtent,font_render.get(),image_render.get(),simple_render.get());
+                if(const auto it=theme->textures.find(theme->frame.background);it!=theme->textures.end() && it->second->loaded)
+                    image_render->renderImageSized(commandBuffer,frame,backgroundRenderPass.get(),*it->second,0,0,win->swapchainExtent.width,win->swapchainExtent.height);
+                for(const auto& layer : theme->frame.layers) {
+                    const auto it=theme->textures.find(layer.image);
+                    if(it!=theme->textures.end() && it->second->loaded)
+                        image_render->renderImageSized(commandBuffer,frame,backgroundRenderPass.get(),*it->second,layer.x,layer.y,
+                            layer.width*win->swapchainExtent.width,layer.height*win->swapchainExtent.height,glm::vec4(1,1,1,layer.opacity));
+                }
+                for(const auto& draw : theme->frame.draws) {
+                    const auto it=theme->textures.find(draw.image);
+                    if(it==theme->textures.end() || !it->second->loaded) continue;
+                    std::vector<image_renderer::textured_vertex> vertices;
+                    vertices.reserve(draw.vertices.size());
+                    for(const auto& v:draw.vertices) vertices.push_back({{v.x,v.y,v.z,v.w},{v.u,v.v},{v.color[0],v.color[1],v.color[2],v.color[3]}});
+                    theme_gui.draw_textured_triangles(*it->second,vertices,draw.additive,draw.depth);
+                }
+            }
             commandBuffer.endRenderPass();
         }
         double blur_background_progress = utils::progress(now, last_blur_background_change, blur_background_transition_duration);
@@ -925,6 +868,7 @@ namespace app
             use_startup_blur_background || use_menu_blur_background;
         vk::ImageView compositedBackgroundView = backgroundResolve[frame]->imageView.get();
         if(use_blur_background) {
+            ensure_blur(frame);
             compositedBackgroundView = blurFrame.fullDst->imageView.get();
             commandBuffer.pipelineBarrier(
                 vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader,
@@ -1478,10 +1422,28 @@ namespace app
 
         vk::PipelineStageFlags waitFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
         vk::SubmitInfo submit_info(imageAvailable, waitFlags, commandBuffer, renderFinished);
-        graphicsQueue.submit(submit_info, fence);
+        submit_graphics(submit_info, fence);
     }
 
     void shell::render_gui(gui_renderer& renderer) {
+        renderer.text_color = glm::vec4(config::CONFIG.textColor, 1.0F);
+        renderer.text_scale = static_cast<float>(config::CONFIG.textScale);
+        // Applying persisted settings here also covers a profile with no active
+        // imported theme. Unchanged parameters preserve the sampler's history.
+        if(procedural_wave_render) {
+            static const void* previous_renderer = nullptr;
+            static decltype(config::CONFIG.waveParameters) previous_parameters;
+            if(previous_renderer != procedural_wave_render.get() || previous_parameters != config::CONFIG.waveParameters) {
+                procedural_wave_render->reset_parameters();
+                for(const auto& [group, parameters] : config::CONFIG.waveParameters)
+                    for(const auto& [key, number] : parameters) procedural_wave_render->set_parameter(group, key, number);
+                previous_renderer = procedural_wave_render.get();
+                previous_parameters = config::CONFIG.waveParameters;
+            }
+            procedural_wave_render->waves_enabled = config::CONFIG.wavesEnabled;
+            procedural_wave_render->particles_enabled = config::CONFIG.particlesEnabled;
+            procedural_wave_render->particle_color = config::CONFIG.particleColor;
+        }
         bool render_menu = true;
         unsigned int overlay_begin = 0;
         bool has_overlay = !overlays.empty();
@@ -1523,6 +1485,9 @@ namespace app
             // Render the entire XMB UI (menu + time + news) within the zoom scope
             menu.render(renderer);
 
+            const auto text_color = renderer.text_color;
+            renderer.text_color = glm::vec4(1.0F);
+            renderer.push_color(glm::vec4(config::CONFIG.clockColor, 1.0F));
             if(!status_bar_render.render_local(
                    renderer, openxmb::xmb::wall_clock_now())) {
                 static bool status_bar_time_warning_logged = false;
@@ -1533,6 +1498,8 @@ namespace app
                 }
             }
 
+            renderer.pop_color();
+            renderer.text_color = text_color;
             // The reference root scene has no legacy placeholder ticker.
             if(pushed_zoom) renderer.pop_zoom();
             if(shell_fade_transition || fading_out_message) {
@@ -1543,6 +1510,7 @@ namespace app
 
         bool enable_cursor = false;
         for(unsigned int i=overlay_begin; i < overlays.size(); i++) {
+            renderer.text_scale = static_cast<float>(config::CONFIG.textScale) * overlays[i]->typography_scale();
             if(i == overlays.size()-1 && shell_fade_transition) {
                 renderer.push_color(glm::mix(glm::vec4(0.0), glm::vec4(1.0), dir_progress));
                 overlays[i]->render(renderer, this);
@@ -1555,6 +1523,7 @@ namespace app
         if(overlay_transition && overlay_fade_direction == transition_direction::out &&
            old_overlay && old_overlay->do_fade_out()) {
             renderer.push_color(glm::mix(glm::vec4(0.0), glm::vec4(1.0), dir_progress));
+            renderer.text_scale = static_cast<float>(config::CONFIG.textScale) * old_overlay->typography_scale();
             old_overlay->render(renderer, this);
             renderer.pop_color();
         } else if(old_overlay) {
@@ -1565,6 +1534,7 @@ namespace app
             old_overlay.reset();
         }
 
+        renderer.text_scale = static_cast<float>(config::CONFIG.textScale);
         if(enable_cursor) {
             constexpr float cursor_size = 0.05f;
             if(cursorTexture && cursorTexture->loaded) {
@@ -1601,7 +1571,144 @@ namespace app
         }
     }
 
+
+    std::shared_ptr<openxmb::themes::ThemeLibrary> shell::theme_library() {
+        const auto directory = config::CONFIG.profileConfigPath.empty()
+            ? openxmb::integrations::user_data_directory() / "themes"
+            : config::CONFIG.profileConfigPath.parent_path() / "themes";
+        if(!theme->library || theme->library->root() != directory) {
+            theme->library = std::make_shared<openxmb::themes::ThemeLibrary>(directory);
+            theme->library->set_baseline(nlohmann::json::parse(config::CONFIG.shell_snapshot()));
+        }
+        return theme->library;
+    }
+
+    void shell::reload_menu() {
+        if(!fixed_components_loaded) return;
+        win->waitIdle();
+        menu = app::main_menu(this);
+        menu.preload(device, allocator, *loader);
+    }
+
+    void shell::open_panel(const std::string& name) {
+        if(name == "themes") {
+            emplace_overlay<programs::theme_manager>(*loader, theme_library(),
+                [this](const openxmb::themes::AppliedTheme& value) { apply_theme(value); },
+                [] { return nlohmann::json::parse(config::CONFIG.shell_snapshot()); });
+        } else if(name == "settings") {
+            emplace_overlay<programs::settings_center>(*loader);
+        } else if(name == "users" || name == "games" || name == "custom" || name == "friends" || name == "account" || name == "trophies") {
+            emplace_overlay<programs::library_manager>(name, *loader,
+                [this](const std::filesystem::path& path) { switch_profile(path); });
+        } else {
+            emplace_overlay<programs::integration_center>(name, *loader);
+        }
+    }
+
+    void shell::open_media(const std::filesystem::path& path) {
+        const auto programs = programs::get_open_infos(path, programs::file_info(path));
+        if(programs.empty()) {
+            emplace_overlay<app::message_overlay>("Cannot open file", "No viewer is available for " + path.extension().string(), std::vector<std::string>{"OK"});
+            return;
+        }
+        spdlog::info("Opening media: {} ({})", path.string(), programs.front().name);
+        push_overlay(programs.front().create(path, *loader));
+    }
+
+    void shell::switch_profile(const std::filesystem::path& path) {
+        win->waitIdle();
+        config::CONFIG.switch_profile(path);
+        theme->library.reset(); theme->active.reset(); theme->textures.clear();
+        config::CONFIG.themeIcons.clear(); config::CONFIG.themeSounds.clear();
+        if(auto saved = theme_library()->active()) apply_theme(*saved);
+        else { reload_background(); reload_fonts(); reload_menu(); }
+    }
+
+    void shell::apply_theme(const openxmb::themes::AppliedTheme& theme) {
+        win->waitIdle();
+        const auto previous_font = config::CONFIG.fontPath;
+        this->theme->active = theme;
+        this->theme->frame = {};
+        this->theme->started = std::chrono::steady_clock::now();
+        this->theme->textures.clear();
+        config::CONFIG.themeIcons = theme.icons;
+        config::CONFIG.themeSounds = theme.sounds;
+        auto value = theme.shell;
+        const auto& source = theme.settings;
+        const auto inherit = [&](const char* from, const char* to) {
+            if(source.contains(from) && !source[from].is_null()) value[to] = source[from];
+        };
+        // Native captured packs and MaXMB packs share the same validated style
+        // setters. Disabled components retain the pre-theme baseline.
+        if(theme.components.colors) {
+            inherit("icon-color", "icon-color"); inherit("text-color", "text-color");
+            inherit("clock-color", "clock-color"); inherit("particle-color", "particle-color");
+            inherit("dotColor", "particle-color");
+        }
+        if(theme.components.icons) { inherit("icon-style", "icon-style"); inherit("icon-glass-refraction", "icon-glass-refraction"); }
+        if(theme.components.font) inherit("font-size", "font-size");
+        if(theme.components.background) {
+            inherit("theme-waves-enabled", "theme-waves-enabled"); inherit("wavesEnabled", "theme-waves-enabled");
+            inherit("theme-particles-enabled", "theme-particles-enabled"); inherit("dotsEnabled", "theme-particles-enabled");
+        }
+        const auto text = [&](const char* key, auto&& setter) {
+            if(value.contains(key) && value[key].is_string()) setter(value[key].get<std::string>());
+        };
+        text("background-image", [](const auto& v) { config::CONFIG.setBackgroundImage(v); });
+        text("background-type", [](const auto& v) { config::CONFIG.setBackgroundType(v); });
+        text("background-color", [](const auto& v) { config::CONFIG.setBackgroundColor(v); });
+        text("wave-color", [](const auto& v) { config::CONFIG.setWaveColor(v); });
+        text("theme-custom-colour", [](const auto& v) { config::CONFIG.setThemeCustomColour(v); });
+        text("theme-colour-mode", [](const auto& v) { config::CONFIG.setThemeOriginalColour(v == "original"); });
+        text("theme-day-night-mode", [](const auto& v) { config::CONFIG.setThemeDayNightMode(v); });
+        text("font-path", [](const auto& v) { config::CONFIG.setFontPath(v); });
+        text("icon-color", [](const auto& v) { config::CONFIG.setIconColor(v); });
+        text("text-color", [](const auto& v) { config::CONFIG.setTextColor(v); });
+        text("clock-color", [](const auto& v) { config::CONFIG.setClockColor(v); });
+        text("particle-color", [](const auto& v) { config::CONFIG.setParticleColor(v == "auto" ? "#ffffff" : v); });
+        if(value.contains("font-size") && value["font-size"].is_number()) config::CONFIG.setTextScale(value["font-size"].get<double>() / 100.0);
+        if(value.contains("icon-glass-refraction") && value["icon-glass-refraction"].is_boolean()) config::CONFIG.setIconGlassRefraction(value["icon-glass-refraction"].get<bool>());
+        text("icon-style", [](const auto& v) { config::CONFIG.setIconStyle(v); });
+        if(value.contains("theme-waves-enabled") && value["theme-waves-enabled"].is_boolean()) config::CONFIG.setWavesEnabled(value["theme-waves-enabled"].get<bool>());
+        if(value.contains("theme-particles-enabled") && value["theme-particles-enabled"].is_boolean()) config::CONFIG.setParticlesEnabled(value["theme-particles-enabled"].get<bool>());
+        if(value.contains("wave-parameters") && value["wave-parameters"].is_object()) config::CONFIG.setWaveParameters(value["wave-parameters"].dump());
+        else config::CONFIG.setWaveParameters("{}");
+        procedural_wave_render->reset_parameters();
+        for(const auto& [group, parameters] : config::CONFIG.waveParameters)
+            for(const auto& [key, number] : parameters) procedural_wave_render->set_parameter(group, key, number);
+        procedural_wave_render->waves_enabled = config::CONFIG.wavesEnabled;
+        procedural_wave_render->particles_enabled = config::CONFIG.particlesEnabled;
+        procedural_wave_render->particle_color = config::CONFIG.particleColor;
+        if(previous_font != config::CONFIG.fontPath) reload_fonts();
+        if(fixed_components_loaded) {
+            const auto load = [&](auto& sound, const std::filesystem::path& path) {
+                sound = sdl::mix::unique_chunk{sdl::mix::LoadWAV(config::CONFIG.resolve_sound(path).string().c_str())};
+            };
+            const auto dir = config::CONFIG.asset_directory / "sounds";
+            load(ok_sound, dir/"ok.wav"); load(confirm_sound, dir/"NSE.ui.Confirm.wav");
+            load(back_sound, dir/"NSE.clicker.Cancel.wav"); load(cancel_sound, dir/"NSE.ui.Cancel.wav");
+            load(question_sound, dir/"NSE.questionMark.wav");
+            reload_menu();
+        }
+        config::CONFIG.save_config();
+    }
+
+    void shell::reload_fonts() {
+        win->waitIdle();
+        auto replacement = std::make_unique<font_renderer>(config::CONFIG.fontPath.string(), 32, device, allocator, win->swapchainExtent, win->gpuFeatures);
+        replacement->preload(loader, {shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get(), nullptr, 0x20, 0x1ff).get();
+        replacement->prepare(win->swapchainImageCount);
+        font_render = std::move(replacement);
+    }
+
     void shell::reload_background() {
+#if OPENXMB_ENABLE_VIDEO_PLAYER
+        if(config::CONFIG.backgroundType == config::config::background_type::video) {
+            background_video_path=config::CONFIG.backgroundImage;
+            video_background_render->set_path(background_video_path);
+            video_background_render->set_active(true);
+        }
+#endif
         if(config::CONFIG.backgroundType == config::config::background_type::image) {
             backgroundTexture = std::make_unique<texture>(device, allocator);
             loader->loadTexture(backgroundTexture.get(), config::CONFIG.backgroundImage);
@@ -1644,16 +1751,25 @@ namespace app
                     return "steam";
                 }
             }
-            return "ouya"; // totally sensible default :P
+            return "xbox";
         }
         return type;
     }
 
     void shell::tick() {
+        openxmb::music::service().tick();
         if(background_only) {
             return;
         }
 
+        if(!pending_panel.empty()) {
+            const auto panel = std::exchange(pending_panel, {});
+            open_panel(panel);
+        }
+        if(!pending_media.empty()) {
+            const auto path = std::exchange(pending_media, {});
+            open_media(path);
+        }
         for(unsigned int i=0; i<2; i++) {
             if(last_controller_axis_input[i]) {
                 auto time_since_input = std::chrono::duration<double>(std::chrono::steady_clock::now() - last_controller_axis_input_time[i]);
@@ -1866,35 +1982,18 @@ namespace app
     void shell::key_down(sdl::Keysym key)
     {
         spdlog::trace("Key down: {}", key.sym);
-        switch(key.sym) {
-            case sdl::KeyCode::SDLK_LEFT:
-                dispatch(event{action::left, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
-                break;
-            case sdl::KeyCode::SDLK_RIGHT:
-                dispatch(event{action::right, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
-                break;
-            case sdl::KeyCode::SDLK_UP:
-                dispatch(event{action::up, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
-                break;
-            case sdl::KeyCode::SDLK_DOWN:
-                dispatch(event{action::down, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
-                break;
-            case sdl::KeyCode::SDLK_RETURN:
-                dispatch(event{action::ok, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
-                break;
-            case sdl::KeyCode::SDLK_ESCAPE:
-                dispatch(event{action::cancel, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
-                break;
-            case sdl::KeyCode::SDLK_TAB:
-                dispatch(event{action::options, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
-                break;
-            case sdl::KeyCode::SDLK_CAPSLOCK:
-                dispatch(event{action::extra, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
-                break;
-            default:
-                dispatch(event{action::none, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
-                break;
+        constexpr std::array<std::string_view,8> names{"left","right","up","down","ok","cancel","options","extra"};
+        constexpr std::array<unsigned,8> defaults{80,79,82,81,40,41,43,57};
+        const auto scan=static_cast<unsigned>(std::to_underlying(key.scancode));
+        for(std::size_t index=0;index<names.size();++index) {
+            unsigned binding=defaults[index];
+            if(const auto it=config::CONFIG.preferences.find("key."+std::string(names[index]));it!=config::CONFIG.preferences.end()) {
+                unsigned value{}; const auto [end,error]=std::from_chars(it->second.data(),it->second.data()+it->second.size(),value);
+                if(error==std::errc{} && end==it->second.data()+it->second.size() && value>=4 && value<=512) binding=value;
+            }
+            if(scan==binding) { dispatch(event{static_cast<action>(index+1),events::key_down{scan}}); return; }
         }
+        dispatch(event{action::none,events::key_down{scan}});
     }
 
     void shell::add_controller(sdl::GameController* controller)

@@ -125,7 +125,7 @@ endif()
 message(STATUS "${COLOR_CYAN}Building version ${BUILD_VERSION}${COLOR_RESET}")
 
 # --- Feature Options ---
-option(ENABLE_BROWSER "Enable CEF-based browser module" OFF)
+option(ENABLE_BROWSER "Enable native desktop browser integration" OFF)
 option(ENABLE_VIDEO_PLAYER "Enable FFmpeg video player" ON)
 option(ENABLE_DISC_MEDIA "Enable DVD/Blu-ray support" OFF)
 option(ENABLE_LIBRETRO "Enable libretro core host" OFF)
@@ -266,7 +266,7 @@ if(DREAMRENDER_LOCAL)
 else()
   FetchContent_Declare(dreamrender
     GIT_REPOSITORY https://github.com/phenom64/AuroreEngine.git
-    GIT_TAG        a55db74aab697a7642e439ebf0fa9222f40683ff
+    GIT_TAG        22e749dc8bad62f3263eb5a254475599fc0052f4
     OVERRIDE_FIND_PACKAGE
   )
   FetchContent_GetProperties(dreamrender)
@@ -328,6 +328,7 @@ endif()
 # the module/Vulkan graph makes the asset parser, clocks, and layout testable by
 # Clang, GCC, and MSVC in isolation.
 add_library(openxmb_shell_core STATIC
+  src/xmb/model/procedural_wave.cpp
   src/xmb/model/wave_data.cpp
   src/xmb/presentation/background.cpp
   src/xmb/presentation/boot_timeline.cpp
@@ -484,6 +485,7 @@ set(XMS_SOURCES
   src/programs.cpp
 )
 set(XMS_MODULE_SOURCES
+  src/app/components/text_entry.cppm
   src/app/module.cppm
   src/app/shell.cppm
   src/app/component.cppm
@@ -511,6 +513,7 @@ set(XMS_MODULE_SOURCES
   src/render/components/wave_renderer.cppm
   src/render/components/original_renderer.cppm
   src/render/components/original_particles.cppm
+  src/render/components/procedural_wave_renderer.cppm
   src/xmb/presentation/root_scene.cppm
   src/xmb/renderer/captured_wave_renderer.cppm
   src/xmb/renderer/monthly_background_renderer.cppm
@@ -548,6 +551,8 @@ else()
   add_compile_definitions(OPENXMB_ENABLE_DISC_MEDIA=0)
 endif()
 set(XMS_SHADERS
+  shaders/procedural_wave.vert
+  shaders/procedural_wave.frag
   shaders/blur.comp
   shaders/downsample.comp
   shaders/upsample.comp
@@ -638,6 +643,40 @@ if(TARGET Intl::Intl)
 endif()
 target_link_libraries(XMS PRIVATE fmt::fmt)
 
+include(cmake/Desktop.cmake)
+include(cmake/Music.cmake)
+include(cmake/Photos.cmake)
+include(cmake/Documents.cmake)
+include(cmake/Themes.cmake)
+include(cmake/Integrations.cmake)
+target_link_libraries(XMS PRIVATE OpenXMB::MusicCore OpenXMB::Integrations OpenXMB::DesktopCore)
+target_sources(XMS PRIVATE src/programs/library_manager.cpp)
+target_sources(XMS PUBLIC FILE_SET CXX_MODULES FILES
+  src/programs/music_player.cppm
+  src/programs/integration_center.cppm
+  src/programs/library_manager.cppm
+  src/programs/settings_center.cppm)
+
+if(ENABLE_VIDEO_PLAYER)
+  target_sources(XMS PRIVATE src/video.cpp src/video_worker.cpp)
+  target_sources(XMS PUBLIC FILE_SET CXX_MODULES FILES src/render/components/video_background.cppm)
+  dreams_add_shader(XMS shaders/video_background.vert)
+  dreams_add_shader(XMS shaders/video_background.frag)
+endif()
+
+if(OPENXMB_BUILD_NATIVE_TESTS AND ENABLE_VIDEO_PLAYER)
+  add_executable(openxmb_video_tests tests/video/video_playback_test.cpp src/video.cpp src/video_worker.cpp)
+  target_include_directories(openxmb_video_tests PRIVATE include ${OPENXMB_FFMPEG_INCLUDE_DIRS})
+  target_link_directories(openxmb_video_tests PRIVATE ${OPENXMB_FFMPEG_LIBRARY_DIRS})
+  target_link_libraries(openxmb_video_tests PRIVATE SDL2::SDL2 SDL2_mixer::SDL2_mixer ${OPENXMB_FFMPEG_LIBRARIES})
+  set_target_properties(openxmb_video_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  find_package(Python3 REQUIRED COMPONENTS Interpreter)
+  add_test(NAME openxmb_video_playback
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/video/run_video_playback_test.py"
+      --player "$<TARGET_FILE:openxmb_video_tests>" --output "${CMAKE_CURRENT_BINARY_DIR}/video-fixtures")
+  set_tests_properties(openxmb_video_playback PROPERTIES TIMEOUT 120 ENVIRONMENT "SDL_AUDIODRIVER=dummy")
+endif()
+
 if(WIN32 AND DEFINED _VCPKG_INSTALLED_DIR AND DEFINED VCPKG_TARGET_TRIPLET)
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(_openxmb_vcpkg_runtime_dir
@@ -684,15 +723,22 @@ if(OPENXMB_BUILD_NATIVE_TESTS)
   add_test(NAME openxmb_layout_timeline_tests
     COMMAND openxmb_layout_timeline_tests)
 
+  add_executable(openxmb_procedural_wave_tests tests/xmb/procedural_wave_tests.cpp)
+  target_link_libraries(openxmb_procedural_wave_tests PRIVATE OpenXMB::ShellCore)
+  set_target_properties(openxmb_procedural_wave_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  openxmb_configure_native_test(openxmb_procedural_wave_tests)
+  add_test(NAME openxmb_procedural_wave_tests COMMAND openxmb_procedural_wave_tests)
+
   add_executable(openxmb_wave_data_tests
     tests/xmb/wave_data_tests.cpp
   )
   target_link_libraries(openxmb_wave_data_tests PRIVATE OpenXMB::ShellCore)
   set_target_properties(openxmb_wave_data_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
   openxmb_configure_native_test(openxmb_wave_data_tests)
-  add_test(NAME openxmb_wave_data_tests
-    COMMAND openxmb_wave_data_tests
-      "${CMAKE_CURRENT_SOURCE_DIR}/../xmb-web")
+  add_test(NAME openxmb_wave_data_tests COMMAND openxmb_wave_data_tests)
+  if(OPENXMB_IMPORT_XMB_WEB_COMPAT)
+    add_test(NAME openxmb_wave_reference_tests COMMAND openxmb_wave_data_tests "${CMAKE_CURRENT_SOURCE_DIR}/../xmb-web")
+  endif()
 
   add_executable(openxmb_identity_tests
     tests/xmb/identity_tests.cpp
@@ -814,8 +860,12 @@ if(OPENXMB_BUILD_NATIVE_TESTS)
   set_target_properties(openxmb_icon_resolver_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
   openxmb_configure_native_test(openxmb_icon_resolver_tests)
   add_test(NAME openxmb_icon_resolver_tests
-    COMMAND openxmb_icon_resolver_tests
-      "${CMAKE_BINARY_DIR}/shell/compat/xmb-ui-compat")
+    COMMAND openxmb_icon_resolver_tests)
+  if(OPENXMB_IMPORT_XMB_WEB_COMPAT)
+    add_test(NAME openxmb_compat_icon_materials
+      COMMAND openxmb_icon_resolver_tests
+        "${CMAKE_BINARY_DIR}/shell/compat/xmb-ui-compat")
+  endif()
 
   add_executable(openxmb_visual_harness_tests
     tests/xmb/visual_harness_tests.cpp
@@ -1206,9 +1256,9 @@ endif()
 if(ENABLE_DISC_MEDIA)
   find_package(PkgConfig QUIET)
   if(PkgConfig_FOUND)
-    pkg_check_modules(BLURAY libbluray QUIET)
-    pkg_check_modules(DVDREAD libdvdread QUIET)
-    pkg_check_modules(DVDNAV libdvdnav QUIET)
+    pkg_check_modules(BLURAY QUIET IMPORTED_TARGET libbluray)
+    pkg_check_modules(DVDREAD QUIET IMPORTED_TARGET libdvdread)
+    pkg_check_modules(DVDNAV QUIET IMPORTED_TARGET libdvdnav)
     if(BLURAY_FOUND)
       target_link_libraries(XMS PRIVATE PkgConfig::BLURAY)
     endif()
@@ -1268,3 +1318,5 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/po/LINGUAS" AND GETTEXT_FOUND)
 elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/po/LINGUAS")
   message(STATUS "${COLOR_YELLOW}Gettext tools not found; skipping compiled locale catalogs.${COLOR_RESET}")
 endif()
+
+include(cmake/ShellAssets.cmake)

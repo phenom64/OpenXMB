@@ -21,6 +21,7 @@
 module;
 
 #include "openxmb/xmb/catalog.hpp"
+#include "openxmb/desktop/library.hpp"
 #include "openxmb/xmb/settings_actions.hpp"
 #include "openxmb/xmb/settings_controller.hpp"
 
@@ -145,6 +146,11 @@ struct contained_layout {
     std::string_view compatibility_name,
     std::string_view clean_name
 ) {
+    const auto bundled = asset_directory / "icons" / compatibility_name;
+    std::error_code bundled_error;
+    if(std::filesystem::is_regular_file(bundled, bundled_error) && !bundled_error) {
+        return bundled;
+    }
     const auto compatibility = asset_directory / "compat/xmb-ui-compat/icons" / compatibility_name;
     std::error_code error;
     if(std::filesystem::is_regular_file(compatibility, error) && !error) {
@@ -175,6 +181,8 @@ struct contained_layout {
         const auto filename = suffix == "psn"
             ? std::string{"xmb_icon_psn.png"}
             : std::string{"xmb_icon_"} + std::string{suffix} + ".png";
+        const auto bundled = asset_directory / "icons" / filename;
+        if(file_exists(bundled)) return bundled;
         const auto path = icon_directory / filename;
         if(file_exists(path)) {
             return path;
@@ -271,6 +279,7 @@ struct ps3_colour_entry {
             return "original";
         case background_type::wave:
             return "classic";
+        case background_type::video:
         case background_type::image:
             return "wallpaper";
         case background_type::color:
@@ -588,7 +597,7 @@ void draw_icon(
     const auto width = layout.width(extent);
     const auto height = layout.height(extent);
     const auto tint =
-        glm::vec4(1.0f, 1.0f, 1.0f,
+        glm::vec4(config::CONFIG.iconColor,
             static_cast<float>(alpha * xmb_web_icon_glass_alpha));
     if(config::CONFIG.iconGlassRefraction && glass_texture != nullptr && glass_texture->loaded) {
         renderer.draw_image_glass(*glass_texture, x, y, width, height, tint);
@@ -598,7 +607,7 @@ void draw_icon(
                 ? alpha * xmb_web_flat_active_icon_alpha
                 : alpha;
         const auto flat_tint =
-            glm::vec4(1.0f, 1.0f, 1.0f, static_cast<float>(flat_alpha));
+            glm::vec4(config::CONFIG.iconColor, static_cast<float>(flat_alpha));
         renderer.draw_image_a(texture, x, y, width, height, flat_tint);
     }
 }
@@ -613,6 +622,7 @@ void draw_normalized_icon(
     double height,
     glm::vec4 tint = glm::vec4{1.0F}
 ) {
+    tint *= glm::vec4(config::CONFIG.iconColor, 1.0F);
     if(config::CONFIG.iconGlassRefraction && glass_texture != nullptr && glass_texture->loaded) {
         renderer.draw_image_glass(*glass_texture, x, y,
             static_cast<float>(width), static_cast<float>(height), tint);
@@ -646,9 +656,23 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, dreamrender
     using ::menu::make_simple_of;
 
     const auto& asset_directory = config::CONFIG.asset_directory;
-    menus.reserve(9);
-    menus.push_back(make_simple<menu::users_menu>("Users"_(),
-        preferred_icon(asset_directory, "xmb_icon_000.png", "icon_category_users.png"), loader, xmb, loader));
+    menus.reserve(16);
+    const auto panel_entry = [&](std::string label, std::string section, std::string icon = "icon_category_settings.png") {
+        return make_simple<menu::action_menu_entry>(std::move(label), asset_directory/"icons"/icon, loader,
+            [xmb = this->xmb, section = std::move(section)] { xmb->open_panel(section); return result::success; });
+    };
+    const auto panel_menu = [&](std::string label, std::filesystem::path icon,
+                                std::vector<std::unique_ptr<menu::menu_entry>> rows) {
+        return make_simple<menu::simple_menu>(std::move(label), std::move(icon), loader, std::move(rows));
+    };
+    {
+        std::vector<std::unique_ptr<menu::menu_entry>> rows;
+        rows.push_back(panel_entry("Local Profiles", "users", "icon_category_users.png"));
+        rows.push_back(panel_entry("System Tools", "system", "icon_action_poweroff.png"));
+        rows.push_back(panel_entry("Custom Sections", "custom", "icon_files_folder.png"));
+        rows.push_back(make_simple<menu::users_menu>("Operating System Users", asset_directory/"icons/icon_category_users.png", loader, xmb, loader));
+        menus.push_back(panel_menu("Users", preferred_icon(asset_directory,"xmb_icon_000.png","icon_category_users.png"),std::move(rows)));
+    }
     menus.push_back(make_simple<menu::settings_menu>("Settings"_(),
         preferred_icon(asset_directory, "xmb_icon_001.png", "icon_category_settings.png"), loader, xmb, loader));
     menus.push_back(make_simple<menu::files_menu>("Photo"_(),
@@ -660,15 +684,40 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, dreamrender
     menus.push_back(make_simple<menu::files_menu>("Video"_(),
         preferred_icon(asset_directory, "xmb_icon_004.png", "icon_category_video.png"), loader, xmb,
         config::CONFIG.videosPath, loader, menu::files_menu_profile::video));
-    menus.push_back(make_simple<menu::applications_menu>("Game"_(),
-        preferred_icon(asset_directory, "xmb_icon_005.png", "icon_category_game.png"), loader,
-        xmb, loader, ::menu::categoryFilter("Game")));
-    menus.push_back(make_simple_of<menu::menu>("Network"_(),
-        preferred_icon(asset_directory, "xmb_icon_006.png", "icon_category_network.png"), loader));
-    menus.push_back(make_simple_of<menu::menu>("PlayStation Network"_(),
-        preferred_icon(asset_directory, "xmb_icon_psn.png", "icon_category_network.png"), loader));
-    menus.push_back(make_simple_of<menu::menu>("Friends"_(),
-        preferred_icon(asset_directory, "xmb_icon_007.png", "icon_category_friends.png"), loader));
+    {
+        std::vector<std::unique_ptr<menu::menu_entry>> rows;
+        rows.push_back(panel_entry("Game Library", "games", "icon_category_game.png"));
+        rows.push_back(panel_entry("Emulation", "emulation", "icon_category_game.png"));
+        rows.push_back(panel_entry("Disc Media", "discs", "icon_category_video.png"));
+        rows.push_back(make_simple<menu::applications_menu>("Installed Applications", asset_directory/"icons/icon_category_application.png", loader, xmb,loader,::menu::categoryFilter("Game")));
+        menus.push_back(panel_menu("Game",preferred_icon(asset_directory,"xmb_icon_005.png","icon_category_game.png"),std::move(rows)));
+    }
+    {
+        std::vector<std::unique_ptr<menu::menu_entry>> rows;
+        rows.push_back(panel_entry("Internet Browser", "browser", "icon_category_network.png"));
+        rows.push_back(panel_entry("System Tools", "system"));
+        rows.push_back(panel_entry("OpenXMB Settings", "settings"));
+        menus.push_back(panel_menu("Network",preferred_icon(asset_directory,"xmb_icon_006.png","icon_category_network.png"),std::move(rows)));
+    }
+    {
+        std::vector<std::unique_ptr<menu::menu_entry>> rows;
+        rows.push_back(panel_entry("Local Account", "account", "xmb_icon_psn.png"));
+        rows.push_back(panel_entry("Trophy Collection", "trophies", "theme/icon_trophy.png"));
+        menus.push_back(panel_menu("PlayStation Network",preferred_icon(asset_directory,"xmb_icon_psn.png","icon_category_network.png"),std::move(rows)));
+    }
+    {
+        std::vector<std::unique_ptr<menu::menu_entry>> rows;
+        rows.push_back(panel_entry("Local Friends", "friends", "icon_category_friends.png"));
+        rows.push_back(panel_entry("Local Account", "account", "xmb_icon_psn.png"));
+        menus.push_back(panel_menu("Friends",preferred_icon(asset_directory,"xmb_icon_007.png","icon_category_friends.png"),std::move(rows)));
+    }
+    try {
+        openxmb::desktop::Library library;
+        for(const auto& section : library.custom_sections())
+            menus.push_back(make_simple<menu::files_menu>(section.title,
+                section.icon.empty() ? asset_directory/"icons/icon_files_folder.png" : section.icon,
+                loader,xmb,section.folder,loader,menu::files_menu_profile::generic));
+    } catch(const std::exception& error) { spdlog::warn("Could not load custom sections: {}",error.what()); }
 
     if(const auto initial_category = initial_category_index_from_env()) {
         if(*initial_category >= 0 &&
@@ -696,8 +745,8 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, dreamrender
                     continue;
                 }
                 auto texture = std::make_unique<dreamrender::texture>(device, allocator);
-                const auto path = resolve_compat_icon_ref(asset_directory, node.icon_ref)
-                    .value_or(asset_directory / "icons/icon_category_settings.png");
+                const auto path = config::CONFIG.resolve_icon(resolve_compat_icon_ref(asset_directory, node.icon_ref)
+                    .value_or(asset_directory / "icons/icon_category_settings.png"));
                 try {
                     loader.loadTexture(texture.get(), path);
                     std::unique_ptr<dreamrender::texture> glass_texture;
@@ -746,6 +795,8 @@ result main_menu::on_action(action action) {
                 ? result::success | result::confirm_sound
                 : result::unsupported | result::error_rumble;
         case action::options:
+            if(settings_category_active()) { xmb->open_panel("settings"); return result::success; }
+            [[fallthrough]];
         case action::extra:
             return activate_current(action)
                 ? result::success | result::ok_sound
@@ -907,6 +958,7 @@ bool main_menu::select_settings_relative(direction dir) {
 }
 
 bool main_menu::activate_settings(action action) {
+    if(action == action::options) { xmb->open_panel("settings"); return true; }
     if(action != action::ok || !settings_catalog || !settings_controller) {
         return false;
     }
@@ -933,12 +985,12 @@ bool main_menu::activate_settings(action action) {
             return step && step.changed;
         }
         case openxmb::xmb::SettingsActionKind::open_dialog:
+            if(resolved.plan->target_id == "dialog.theme") { xmb->open_panel("themes"); return true; }
             if(open_settings_dialog_choice_overlay(*resolved.plan)) {
                 return true;
             }
-            spdlog::info("Settings dialog '{}' is catalog-backed but has no live presenter yet",
-                resolved.plan->target_id);
-            return false;
+            xmb->open_panel("settings");
+            return true;
         case openxmb::xmb::SettingsActionKind::simulated_setting:
             if(resolved.plan->may_update_settings_state) {
                 if(const auto* node = settings_catalog->find_node(resolved.plan->node_id);
@@ -946,13 +998,11 @@ bool main_menu::activate_settings(action action) {
                     return true;
                 }
             }
-            spdlog::info("Settings '{}' is catalog-backed but has no live value panel yet",
-                resolved.plan->node_id);
-            return false;
+            xmb->open_panel("settings");
+            return true;
         default:
-            spdlog::info("Settings action '{}' resolves to '{}', but dialog/wizard presentation is not live-wired yet",
-                resolved.plan->node_id, resolved.plan->target_id);
-            return false;
+            xmb->open_panel("settings");
+            return true;
     }
 }
 
@@ -997,6 +1047,8 @@ bool main_menu::open_settings_choice_overlay(const openxmb::xmb::CatalogNode& no
             settings_choice_panel_open = false;
             if(index < labels.size()) {
                 settings_value_labels[node_id] = labels[index];
+                config::CONFIG.preferences[node_id] = labels[index];
+                if(!config_override_read_only()) config::CONFIG.save_config();
             }
         },
         [this]() {

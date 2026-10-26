@@ -55,7 +55,7 @@ export namespace config
             config();
 
             enum class background_type {
-                original, wave, color, image
+                original, wave, color, image, video
             };
             enum class day_night_mode {
                 auto_time_of_day, day, morning, dusk, evening, night
@@ -103,6 +103,15 @@ export namespace config
             bool showFPS    = false;
             bool showMemory = false;
             bool iconGlassRefraction = true;
+            std::string iconStyle = "default";
+            double textScale = 1.0;
+            glm::vec3 iconColor{1.0f};
+            glm::vec3 textColor{1.0f};
+            glm::vec3 clockColor{1.0f};
+            bool wavesEnabled = true;
+            bool particlesEnabled = true;
+            glm::vec3 particleColor{1.0f};
+            std::map<std::string, std::map<std::string, float>> waveParameters;
 
             std::filesystem::path   fontPath;
             background_type			backgroundType = background_type::original;
@@ -136,6 +145,17 @@ export namespace config
 
             std::string controllerType;
 
+            std::map<std::string, std::filesystem::path> themeIcons;
+            std::map<std::string, std::filesystem::path> themeSounds;
+            std::map<std::string, std::string> preferences;
+            std::filesystem::path profileConfigPath;
+
+            std::filesystem::path resolve_icon(const std::filesystem::path& path) const;
+            std::filesystem::path resolve_sound(const std::filesystem::path& path) const;
+            void reset_to_defaults();
+            void switch_profile(const std::filesystem::path& path);
+            std::string shell_snapshot() const;
+
             void load();
             void reload();
             void save_config();
@@ -168,6 +188,15 @@ export namespace config
             void setShowFPS(bool show);
             void setShowMemory(bool show);
             void setIconGlassRefraction(bool enabled);
+            void setIconStyle(std::string_view style);
+            void setTextScale(double scale);
+            void setIconColor(std::string_view hex);
+            void setTextColor(std::string_view hex);
+            void setClockColor(std::string_view hex);
+            void setWavesEnabled(bool enabled);
+            void setParticlesEnabled(bool enabled);
+            void setParticleColor(std::string_view hex);
+            void setWaveParameters(std::string_view json);
             void setControllerRumble(bool enabled);
             void setControllerAnalogStick(bool enabled);
             void setControllerCursorSpeed(double speed);

@@ -200,9 +200,9 @@ void test_manifest_and_assets(const std::filesystem::path& repository) {
     const std::string manifest(manifest_bytes.begin(), manifest_bytes.end());
     expect(manifest.find("Syndromatic Limited Bharat Britannia") != std::string::npos,
            "identity manifest records canonical startup text");
-    expect(manifest.find("\"original_captured_assets_absent\": \"classic\"") !=
+    expect(manifest.find("\"original_captured_assets_absent\": \"procedural\"") !=
                std::string::npos,
-           "Original compatibility-pack fallback is explicitly Classic");
+           "Original uses the procedural renderer without captured assets");
     expect(manifest.find("\"provenance_classification\": \"unresolved/local\"") !=
                std::string::npos,
            "NSE provenance remains explicitly unresolved/local");
@@ -212,7 +212,21 @@ void test_manifest_and_assets(const std::filesystem::path& repository) {
            "RetroArch Classic files record GPL-3.0-only");
 
     for (const auto& expected : kIdentityAssets) {
-        const auto data = read_file(repository / expected.relative_path);
+        auto data = read_file(repository / expected.relative_path);
+        // Git may normalize source/license text to LF on Unix. The recorded
+        // identity hashes use CRLF; reconstruct those bytes only for text.
+        const auto extension = std::filesystem::path(expected.relative_path).extension();
+        const bool text = extension == ".vert" || extension == ".frag" ||
+            extension == ".txt" || expected.relative_path == "LICENSE.RetroArch";
+        if(text && data.size() != expected.bytes) {
+            std::vector<std::uint8_t> canonical;
+            canonical.reserve(data.size() + 128);
+            for(std::size_t i = 0; i < data.size(); ++i) {
+                if(data[i] == '\n' && (i == 0 || data[i - 1] != '\r')) canonical.push_back('\r');
+                canonical.push_back(data[i]);
+            }
+            data = std::move(canonical);
+        }
         expect(data.size() == expected.bytes,
                std::string(expected.relative_path) + " byte size matches Packet 02");
         if (data.size() == expected.bytes) {

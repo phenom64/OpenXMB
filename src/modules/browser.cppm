@@ -17,10 +17,25 @@
  */
 
 module;
+#include "openxmb/integrations/desktop.hpp"
 
 export module openxmb.modules.browser;
 
 export namespace modules::browser {
-    inline void init() {}
+  using Session = openxmb::integrations::BrowserSession;
+  inline openxmb::integrations::Result open(std::string_view url, Session& session) {
+    return openxmb::integrations::open_browser(url, session);
+  }
+  inline openxmb::integrations::Result close(Session& session) {
+    return openxmb::integrations::close_browser(session);
+  }
+  inline bool init() {
+#if defined(_WIN32) || defined(__APPLE__)
+    return true;
+#else
+    return openxmb::integrations::find_executable("chromium").has_value() ||
+      openxmb::integrations::find_executable("firefox").has_value() ||
+      openxmb::integrations::find_executable("xdg-open").has_value();
+#endif
+  }
 }
-

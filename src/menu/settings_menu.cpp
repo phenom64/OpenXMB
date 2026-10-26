@@ -37,6 +37,7 @@ module;
 #include <ranges>
 #include <string>
 #include <vector>
+#include "openxmb/integrations/desktop.hpp"
 
 #if __linux__
 #include <sys/wait.h>
@@ -206,12 +207,12 @@ namespace menu {
             } else if(key == "hide-power-options") {
                 current = config::CONFIG.hidePowerOptions ? 1u : 0u;
             } else if(key == "autostart") {
-                current = config::CONFIG.autostart ? 1u : 0u;
+                current = openxmb::integrations::autostart_enabled() ? 1u : 0u;
             }
 
             xmb->emplace_overlay<app::choice_overlay>(
                 std::vector<std::string>{"Off"_(), "On"_()}, current,
-                [key](unsigned int choice) {
+                [key, xmb](unsigned int choice) {
                     bool on = (choice == 1);
                     bool changed = false;
                     if(key == "vsync") {
@@ -240,7 +241,12 @@ namespace menu {
                         changed = (config::CONFIG.hidePowerOptions != on);
                         config::CONFIG.setHidePowerOptions(on);
                     } else if(key == "autostart") {
-                        changed = (config::CONFIG.autostart != on);
+                        const auto saved = openxmb::integrations::set_autostart(on, openxmb::integrations::executable_path());
+                        if(!saved) {
+                            xmb->emplace_overlay<app::message_overlay>("Startup at login", saved.message, std::vector<std::string>{"OK"});
+                            return;
+                        }
+                        changed = true;
                         config::CONFIG.setAutostart(on);
                     }
                     if(changed) {
@@ -377,7 +383,8 @@ namespace menu {
                         case config::config::background_type::original: return "original";
                         case config::config::background_type::wave:     return "wave";
                         case config::config::background_type::color:    return "color";
-                        case config::config::background_type::image:    return "image";
+                        case config::config::background_type::video:
+                case config::config::background_type::image:    return "image";
                     }
                 } else if(key == "language") {
                     return (config::CONFIG.language.empty() ? std::string{"auto"} : config::CONFIG.language);
@@ -555,7 +562,7 @@ namespace menu {
                     std::pair{"%m/%d/%Y %I:%M %p", "%m/%d/%Y %I:%M %p"},
                     std::pair{"%H:%M", "%H:%M"},
                 }),
-                entry_bool(loader, xmb, "Autostart"_(), "Save startup preference for future platform integration"_(), "re.jcm.xmbos.shell", "autostart"),
+                entry_bool(loader, xmb, "Autostart"_(), "Start OpenXMB when you sign in"_(), "re.jcm.xmbos.shell", "autostart"),
                 entry_bool(loader, xmb, "Hide Power Options"_(), "Hide shutdown and reboot entries where supported"_(), "re.jcm.xmbos.shell", "hide-power-options"),
                 entry_bool(loader, xmb, "Hide Login1 Options"_(), "Hide systemd login1 actions where supported"_(), "re.jcm.xmbos.shell", "hide-login1-options"),
             }
@@ -615,8 +622,7 @@ namespace menu {
         }));
         entries.push_back(make_simple<action_menu_entry>("Reset all Settings to default"_(), asset_dir/"icons/icon_settings_reset.png", loader, [](){
             spdlog::info("Settings reset request from XMB");
-            config::CONFIG.load();
-            config::CONFIG.save_config();
+            config::CONFIG.reset_to_defaults();
             return result::success;
         }));
 

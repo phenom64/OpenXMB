@@ -24,6 +24,9 @@
 module;
 
 #include <filesystem>
+#include <algorithm>
+#include <cctype>
+#include <set>
 #include <functional>
 #include <iterator>
 #include <memory>
@@ -108,7 +111,11 @@ export std::vector<open_info> get_open_infos(const std::filesystem::path& path, 
     std::vector<open_info> infos;
 
     program_registry::get_program_mime(info.fast_content_type, std::back_inserter(infos));
-    program_registry::get_program_ext(path.extension().string(), std::back_inserter(infos));
+    auto extension = path.extension().string();
+    std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    program_registry::get_program_ext(extension, std::back_inserter(infos));
+    std::set<std::string> names;
+    std::erase_if(infos, [&names](const open_info& info) { return !names.insert(info.name).second; });
 
     return infos;
 }

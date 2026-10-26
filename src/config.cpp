@@ -34,6 +34,7 @@ module;
 #include <system_error>
 #include <glm/vec3.hpp>
 #include <nlohmann/json.hpp>
+#include "openxmb/xmb/procedural_wave.hpp"
 #include <spdlog/spdlog.h>
 #include <cstdlib>
 
@@ -50,7 +51,7 @@ namespace config
 
 namespace
 {
-    constexpr int current_config_version = 4;
+    constexpr int current_config_version = 5;
     constexpr double min_controller_cursor_speed = 0.10;
     constexpr double max_controller_cursor_speed = 4.0;
 
@@ -453,6 +454,7 @@ void config::save_config() {
 }
 
 std::filesystem::path config::config_path_for_read() const {
+    if(!profileConfigPath.empty()) return profileConfigPath;
     if(auto path = env_path("OPENXMB_CONFIG"); !path.empty()) {
         return path;
     }
@@ -466,6 +468,7 @@ std::filesystem::path config::config_path_for_read() const {
 }
 
 std::filesystem::path config::config_path_for_write() const {
+    if(!profileConfigPath.empty()) return profileConfigPath;
     if(auto path = env_path("OPENXMB_CONFIG"); !path.empty()) {
         return path;
     }
@@ -476,6 +479,12 @@ void config::load_from_json() {
     set_default_user_dirs(*this);
     resetThemeColourStrings();
     setFontPath("default");
+    textScale = 1.0;
+    iconColor = textColor = clockColor = particleColor = glm::vec3(1.0f);
+    iconStyle = "default";
+    iconGlassRefraction = true;
+    wavesEnabled = particlesEnabled = true;
+    waveParameters.clear();
     std::filesystem::path config_path = config_path_for_read();
     
     if (!std::filesystem::exists(config_path)) {
@@ -518,6 +527,16 @@ void config::load_from_json() {
             if (shell.contains("font-path")) {
                 setFontPath(expand_user_path(shell["font-path"].get<std::string>()).string());
             }
+            if(shell.contains("font-size") && shell["font-size"].is_number()) setTextScale(shell["font-size"].get<double>() / 100.0);
+            if(shell.contains("text-scale") && shell["text-scale"].is_number()) setTextScale(shell["text-scale"].get<double>());
+            if(shell.contains("icon-color") && shell["icon-color"].is_string()) setIconColor(shell["icon-color"].get<std::string>());
+            if(shell.contains("text-color") && shell["text-color"].is_string()) setTextColor(shell["text-color"].get<std::string>());
+            if(shell.contains("clock-color") && shell["clock-color"].is_string()) setClockColor(shell["clock-color"].get<std::string>());
+            if(shell.contains("particle-color") && shell["particle-color"].is_string()) setParticleColor(shell["particle-color"].get<std::string>());
+            if(shell.contains("icon-style") && shell["icon-style"].is_string()) setIconStyle(shell["icon-style"].get<std::string>());
+            if(shell.contains("theme-waves-enabled") && shell["theme-waves-enabled"].is_boolean()) setWavesEnabled(shell["theme-waves-enabled"].get<bool>());
+            if(shell.contains("theme-particles-enabled") && shell["theme-particles-enabled"].is_boolean()) setParticlesEnabled(shell["theme-particles-enabled"].get<bool>());
+            if(shell.contains("wave-parameters") && shell["wave-parameters"].is_object()) setWaveParameters(shell["wave-parameters"].dump());
             
             if (shell.contains("date-time-format")) {
                 setDateTimeFormat(shell["date-time-format"].get<std::string>());
@@ -605,6 +624,11 @@ void config::load_from_json() {
             }
         }
         
+        preferences.clear();
+        if(config.contains("preferences") && config["preferences"].is_object())
+            for(const auto& [key, value] : config["preferences"].items())
+                if(value.is_string()) preferences[key] = value.get<std::string>();
+
         // Load controller settings
         if (config.contains("controller")) {
             auto& controller = config["controller"];
@@ -702,6 +726,7 @@ void config::save_to_json() {
             {"generated_at", "2025-08-20T00:00:00Z"}
         };
         
+        config["preferences"] = preferences;
         // Shell settings
         config["shell"]["background-color"] = colour_to_hex(backgroundColor);
         
@@ -712,10 +737,20 @@ void config::save_to_json() {
             case background_type::wave: config["shell"]["background-type"] = "wave"; break;
             case background_type::color: config["shell"]["background-type"] = "color"; break;
             case background_type::image: config["shell"]["background-type"] = "image"; break;
+            case background_type::video: config["shell"]["background-type"] = "video"; break;
         }
         
         config["shell"]["background-image"] = backgroundImage.string();
         config["shell"]["font-path"] = fontPath.string();
+        config["shell"]["font-size"] = static_cast<int>(std::lround(textScale * 100.0));
+        config["shell"]["icon-color"] = colour_to_hex(iconColor);
+        config["shell"]["text-color"] = colour_to_hex(textColor);
+        config["shell"]["clock-color"] = colour_to_hex(clockColor);
+        config["shell"]["particle-color"] = colour_to_hex(particleColor);
+        config["shell"]["icon-style"] = iconStyle;
+        config["shell"]["theme-waves-enabled"] = wavesEnabled;
+        config["shell"]["theme-particles-enabled"] = particlesEnabled;
+        config["shell"]["wave-parameters"] = waveParameters;
         config["shell"]["date-time-format"] = dateTimeFormat;
         config["shell"]["date-time-x-offset"] = dateTimeOffset;
         config["shell"]["language"] = language;
@@ -889,6 +924,7 @@ void config::setBackgroundType(background_type type) {
         case background_type::wave: value = "wave"; break;
         case background_type::color: value = "color"; break;
         case background_type::image: value = "image"; break;
+        case background_type::video: value = "video"; break;
     }
     notifyCallbacks("background-type", value);
 }
@@ -900,6 +936,8 @@ void config::setBackgroundType(std::string_view type) {
         setBackgroundType(background_type::wave);
     } else if(type == "color") {
         setBackgroundType(background_type::color);
+    } else if(type == "video") {
+        setBackgroundType(background_type::video);
     } else if(type == "image") {
         setBackgroundType(background_type::image);
     } else {
@@ -1071,11 +1109,101 @@ void config::setShowMemory(bool show) {
 }
 
 void config::setIconGlassRefraction(bool enabled) {
+    if(!enabled) iconStyle = "flat";
+    else if(iconStyle == "flat") iconStyle = "default";
     if(iconGlassRefraction == enabled) {
         return;
     }
     iconGlassRefraction = enabled;
     notifyCallbacks("icon-glass-refraction", iconGlassRefraction ? "true" : "false");
+}
+
+void config::setIconStyle(std::string_view style) {
+    if(style != "default" && style != "glossy" && style != "flat") return;
+    iconStyle = style;
+    setIconGlassRefraction(style != "flat");
+    notifyCallbacks("icon-style", iconStyle);
+}
+
+void config::setTextScale(double scale) {
+    if(!std::isfinite(scale)) return;
+    scale = std::clamp(scale, 0.5, 2.0);
+    if(textScale == scale) return;
+    textScale = scale;
+    notifyCallbacks("font-size", std::to_string(static_cast<int>(std::lround(scale * 100.0))));
+}
+
+void config::setIconColor(std::string_view hex) {
+    auto colour = parse_hex_colour(hex);
+    if(!colour || colour_equal(iconColor, *colour)) return;
+    iconColor = *colour;
+    notifyCallbacks("icon-color", colour_to_hex(iconColor));
+}
+void config::setTextColor(std::string_view hex) {
+    auto colour = parse_hex_colour(hex);
+    if(!colour || colour_equal(textColor, *colour)) return;
+    textColor = *colour;
+    notifyCallbacks("text-color", colour_to_hex(textColor));
+}
+void config::setClockColor(std::string_view hex) {
+    auto colour = parse_hex_colour(hex);
+    if(!colour || colour_equal(clockColor, *colour)) return;
+    clockColor = *colour;
+    notifyCallbacks("clock-color", colour_to_hex(clockColor));
+}
+void config::setParticleColor(std::string_view hex) {
+    auto colour = parse_hex_colour(hex);
+    if(!colour || colour_equal(particleColor, *colour)) return;
+    particleColor = *colour;
+    notifyCallbacks("particle-color", colour_to_hex(particleColor));
+}
+void config::setWavesEnabled(bool enabled) {
+    if(wavesEnabled == enabled) return;
+    wavesEnabled = enabled;
+    notifyCallbacks("theme-waves-enabled", enabled ? "true" : "false");
+}
+void config::setParticlesEnabled(bool enabled) {
+    if(particlesEnabled == enabled) return;
+    particlesEnabled = enabled;
+    notifyCallbacks("theme-particles-enabled", enabled ? "true" : "false");
+}
+
+void config::setWaveParameters(std::string_view encoded) {
+    try {
+        if(encoded.size() > 65536) return;
+        const auto source = nlohmann::json::parse(encoded);
+        if(!source.is_object() || source.size() > 128) return;
+        decltype(waveParameters) normalized;
+        const auto add = [&](const std::string& group, const std::string& key, const nlohmann::json& number) {
+            if(!number.is_number()) return;
+            float value = number.get<float>();
+            if(!std::isfinite(value)) return;
+            if(group == "spline") {
+                openxmb::xmb::ProceduralWaveSettings test;
+                if(!test.set(key, value)) return;
+            } else if(group == "particle") {
+                if(key == "count") value = std::floor(std::clamp(value, 0.0f, 4096.0f));
+                else if(key == "opacity") value = std::clamp(value, 0.0f, 1.0f);
+                else if(key == "sizeBase" || key == "sizeVar") value = std::clamp(value, 0.0f, 64.0f);
+                else if(key == "flowSpeed") value = std::clamp(value, -10.0f, 10.0f);
+                else if(key == "posY") value = std::clamp(value, -2.0f, 2.0f);
+                else if(key == "spreadY") value = std::clamp(value, 0.0f, 5.0f);
+                else return;
+            } else return;
+            normalized[group][key] = value;
+        };
+        for(const auto& [key, value] : source.items()) {
+            const auto separator = key.find(':');
+            if(separator != std::string::npos) add(key.substr(0, separator), key.substr(separator + 1), value);
+            else if(value.is_object() && value.size() <= 128)
+                for(const auto& [parameter, number] : value.items()) add(key, parameter, number);
+        }
+        if(normalized == waveParameters) return;
+        waveParameters = std::move(normalized);
+        notifyCallbacks("wave-parameters", nlohmann::json(waveParameters).dump());
+    } catch(const nlohmann::json::exception&) {
+        spdlog::warn("Ignoring invalid procedural wave parameters");
+    }
 }
 
 void config::setControllerRumble(bool enabled) {
@@ -1141,7 +1269,7 @@ void config::setAutostart(bool enabled) {
         return;
     }
     autostart = enabled;
-    spdlog::debug("Autostart preference changed; platform service integration is not implemented yet");
+    spdlog::debug("Autostart preference updated");
     notifyCallbacks("autostart", autostart ? "true" : "false");
 }
 
@@ -1152,6 +1280,88 @@ void config::excludeApplication(const std::string& application, bool exclude) {
         excludedApplications.erase(application);
     }
     notifyCallbacks("excluded-applications", application);
+}
+
+
+std::filesystem::path config::resolve_icon(const std::filesystem::path& path) const {
+    const auto find = [&](std::string name) -> std::filesystem::path {
+        if(auto it = themeIcons.find(name); it != themeIcons.end()) return it->second;
+        if(name.ends_with(".png")) name.resize(name.size()-4);
+        if(auto it = themeIcons.find(name); it != themeIcons.end()) return it->second;
+        return {};
+    };
+    if(auto result = find(path.filename().string()); !result.empty()) return result;
+    static const std::map<std::string, std::string> aliases{
+        {"icon_category_users", "icon_user"}, {"icon_category_settings", "icon_setting"},
+        {"icon_category_photo", "icon_photo"}, {"icon_category_music", "icon_music"},
+        {"icon_category_video", "icon_video"}, {"icon_category_tv", "icon_tv"},
+        {"icon_category_game", "icon_game"}, {"icon_category_application", "icon_game"},
+        {"icon_category_network", "icon_network"}, {"icon_category_friends", "icon_friend"},
+        {"xmb_icon_000", "icon_user"}, {"xmb_icon_001", "icon_setting"},
+        {"xmb_icon_002", "icon_photo"}, {"xmb_icon_003", "icon_music"},
+        {"xmb_icon_004", "icon_video"}, {"xmb_icon_005", "icon_game"},
+        {"xmb_icon_006", "icon_network"}, {"xmb_icon_007", "icon_friend"},
+        {"xmb_icon_psn", "icon_accountmanage"}, {"xmb_icon_008", "icon_update"},
+        {"xmb_icon_009", "icon_video_setting"}, {"xmb_icon_010", "icon_printer_setting"},
+        {"xmb_icon_012", "icon_system_setting"}, {"xmb_icon_014", "icon_datetime_setting"},
+        {"xmb_icon_015", "icon_accessory"}, {"xmb_icon_016", "icon_display_setting"},
+        {"xmb_icon_017", "icon_sound_setting"}, {"xmb_icon_018", "icon_security_setting"},
+        {"xmb_icon_020", "icon_remoteplay_setting"}, {"xmb_icon_023", "icon_theme_setting"}
+    };
+    if(auto alias = aliases.find(path.stem().string()); alias != aliases.end())
+        if(auto result = find(alias->second); !result.empty()) return result;
+    return path;
+}
+
+std::filesystem::path config::resolve_sound(const std::filesystem::path& path) const {
+    const auto name = path.stem().string();
+    if(auto it = themeSounds.find(name); it != themeSounds.end()) return it->second;
+    const auto semantic = name == "ok" ? "cursor" : name == "NSE.ui.Confirm" ? "enter" :
+        name == "NSE.ui.Cancel" || name == "NSE.clicker.Cancel" ? "back" :
+        name == "startup" || name == "NSE.startup.GameBoot" ? "coldboot" :
+        name == "NSE.questionMark" ? "options" : name;
+    if(auto it = themeSounds.find(semantic); it != themeSounds.end()) return it->second;
+    return path;
+}
+
+std::string config::shell_snapshot() const {
+    return nlohmann::json{
+        {"background-type", backgroundType == background_type::image ? "image" :
+          backgroundType == background_type::video ? "video" : backgroundType == background_type::wave ? "wave" :
+          backgroundType == background_type::color ? "color" : "original"},
+        {"background-image", backgroundImage.string()}, {"background-color", colour_to_hex(backgroundColor)},
+        {"wave-color", colour_to_hex(waveColor)}, {"font-path", fontPath.string()},
+        {"theme-colour-mode", themeOriginalColour ? "original" : "custom"},
+        {"theme-custom-colour", colour_to_hex(themeCustomColour)},
+        {"theme-day-night-mode", day_night_mode_to_string(themeDayNightMode)},
+        {"font-size", static_cast<int>(std::lround(textScale * 100.0))},
+        {"icon-color", colour_to_hex(iconColor)}, {"text-color", colour_to_hex(textColor)},
+        {"clock-color", colour_to_hex(clockColor)}, {"particle-color", colour_to_hex(particleColor)},
+        {"icon-style", iconStyle}, {"icon-glass-refraction", iconGlassRefraction},
+        {"theme-waves-enabled", wavesEnabled}, {"theme-particles-enabled", particlesEnabled},
+        {"wave-parameters", waveParameters}
+    }.dump();
+}
+
+void config::reset_to_defaults() {
+    auto retained_callbacks = std::move(callbacks);
+    const auto retained_profile = profileConfigPath;
+    *this = config{};
+    callbacks = std::move(retained_callbacks);
+    profileConfigPath = retained_profile;
+    set_default_user_dirs(*this);
+    setFontPath("default");
+    setLanguage("auto");
+    save_to_json();
+    for(const auto& [key, callback] : callbacks) callback("reset");
+}
+
+void config::switch_profile(const std::filesystem::path& path) {
+    if(path.empty() || path == profileConfigPath) return;
+    save_to_json();
+    profileConfigPath = path;
+    if(!std::filesystem::exists(path)) reset_to_defaults();
+    else load_from_json();
 }
 
 }

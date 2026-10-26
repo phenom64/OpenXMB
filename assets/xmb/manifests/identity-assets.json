@@ -219,7 +219,7 @@
     }
   ],
   "compatibility_fallback": {
-    "original_captured_assets_absent": "classic",
+    "original_captured_assets_absent": "procedural",
     "secondary_clean_fallback": "clean-static-background"
   },
   "schema_version": 1,

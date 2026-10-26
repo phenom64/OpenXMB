@@ -18,21 +18,21 @@
 
 module;
 
+#include <algorithm>
 #include <array>
-#include <cassert>
+#include <chrono>
+#include <cmath>
+#include <cctype>
 #include <filesystem>
-#include <future>
+#include <memory>
+#include <optional>
+#include <string>
 #include <string_view>
 #include <vector>
-
-extern "C" {
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-#include <libavutil/pixfmt.h>   // enum AVPixelFormat
-#include <libavutil/pixdesc.h>  // av_get_pix_fmt_string, av_get_pix_fmt_name
-#include <libavutil/imgutils.h> // av_image_get_buffer_size, av_image_fill_arrays
-#include <libswscale/swscale.h>
-}
+#include <SDL2/SDL_scancode.h>
+#include <openxmb/video.hpp>
+#include <openxmb/video_worker.hpp>
+#include <openxmb/music/player.hpp>
 
 export module openxmb.app:video_player;
 
@@ -48,454 +48,461 @@ import :programs;
 import :message_overlay;
 import :base_viewer;
 import openxmb.app;
-import openxmb.render;
 
 namespace programs {
-
 using namespace app;
 using namespace mfk::i18n::literals;
+namespace video = openxmb::video;
 
-export class video_player : private base_viewer, public component, public action_receiver, public event_receiver, public joystick_receiver, public mouse_receiver {
-    constexpr static auto preferred_format = AV_PIX_FMT_RGBA;
-    public:
-        video_player(std::filesystem::path path, dreamrender::resource_loader& loader) :
-            path(std::move(path)), device(loader.getDevice()), allocator(loader.getAllocator())
-        {
-            load_future = std::async(std::launch::async, [this, &loader] -> std::unique_ptr<video_decoding_context> {
-                auto ctx = std::make_unique<video_decoding_context>();
-                try {
-                    const auto input_path = this->path.string();
-                    if (avformat_open_input(&ctx->format_ctx, input_path.c_str(), nullptr, nullptr) != 0) {
-                        throw std::runtime_error("Could not open input file");
-                    }
-                    if (avformat_find_stream_info(ctx->format_ctx, nullptr) < 0) {
-                        throw std::runtime_error("Could not find stream information");
-                    }
+export class video_player : private base_viewer, public component, public action_receiver,
+                            public event_receiver, public joystick_receiver, public mouse_receiver {
+public:
+    float typography_scale() const override { return 2.5F; }
 
-                    ctx->video_stream_index = av_find_best_stream(ctx->format_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, &ctx->codec, 0);
-                    if (ctx->video_stream_index < 0) {
-                        throw std::runtime_error("No video stream found");
-                    }
+    video_player(std::filesystem::path file, dreamrender::resource_loader& loader)
+        : device(loader.getDevice()), allocator(loader.getAllocator()) {
+        image_width = image_height = 1;
+        openxmb::music::service().set_external_duck(true);
+        playback = std::make_unique<video::worker>();
+        discover_playlist(file);
+        open_path(std::move(file));
+    }
 
-                    ctx->codec_ctx = avcodec_alloc_context3(ctx->codec);
-                    if (!ctx->codec_ctx) {
-                        throw std::runtime_error("Could not allocate codec context");
-                    }
+    ~video_player() {
+        playback.reset();
+        if(texture) { try { wait_gpu(); } catch(...) {} }
+        staging_buffers.clear();
+        staging_allocations.clear();
+        texture.reset();
+        openxmb::music::service().set_external_duck(false);
+    }
 
-                    if (avcodec_parameters_to_context(ctx->codec_ctx, ctx->format_ctx->streams[ctx->video_stream_index]->codecpar) < 0) {
-                        throw std::runtime_error("Could not copy codec parameters to context");
-                    }
+    result tick(shell* xmb) override {
+        window = xmb->get_window();
+        auto snapshot = playback->snapshot();
+        if(snapshot->loading) return result::success;
+        if(!snapshot->ready || snapshot->status == video::state::failed) {
+            xmb->emplace_overlay<app::message_overlay>("Failed to open video"_(), snapshot->error.empty() ? "Video could not be loaded"_() : snapshot->error, std::vector<std::string>{"OK"_()});
+            return result::close;
+        }
+        if(!loaded) {
+            loaded = true;
+            playback->set_volume(volume);
+            playback->set_repeat(repetition == repeat_mode::file);
+            if(!snapshot->info.audio_tracks.empty() && snapshot->info.audio_status != "Audio output active") status_message = snapshot->info.audio_status;
+        }
+        if(!snapshot->error.empty()) status_message = snapshot->error;
+        if(auto frame = playback->take_frame()) pending_frame = std::move(frame);
+        if(playback->playback_state() == video::state::failed) {
+            xmb->emplace_overlay<app::message_overlay>("Video playback failed"_(), playback->error(), std::vector<std::string>{"OK"_()});
+            return result::close;
+        }
+        if(playback->playback_state() != video::state::ended) end_handled = false;
+        if(playback->playback_state() == video::state::ended && !end_handled) {
+            end_handled = true;
+            if(playlist_index + 1 < playlist.size() || repetition == repeat_mode::all) advance_file(1);
+        }
+        if(screen == screen_mode::zoom) base_viewer::tick();
+        return result::success;
+    }
 
-                    if (avcodec_open2(ctx->codec_ctx, ctx->codec, nullptr) < 0) {
-                        throw std::runtime_error("Could not open codec");
-                    }
+    void prerender(vk::CommandBuffer cmd, int frame_index, shell* xmb) override {
+        window = xmb->get_window();
+        if(!pending_frame) return;
+        auto& frame = *pending_frame;
+        if(!texture || texture->width != frame.width || texture->height != frame.height || staging_buffers.size() != xmb->get_window()->swapchainImageCount) {
+            // Resolution changes and file transitions retire resources only
+            // after submitted draws have stopped referencing their image views.
+            wait_gpu();
+            texture.reset();
+            staging_buffers.clear();
+            staging_allocations.clear();
+            texture = std::make_unique<dreamrender::texture>(device, allocator, frame.width, frame.height);
+            std::size_t count = xmb->get_window()->swapchainImageCount;
+            staging_allocations.resize(count);
+            staging_buffers.resize(count);
+            vk::BufferCreateInfo buffer_info({}, frame.rgba.size(), vk::BufferUsageFlagBits::eTransferSrc, vk::SharingMode::eExclusive);
+            vma::AllocationCreateInfo allocation_info({}, vma::MemoryUsage::eCpuToGpu);
+            for(std::size_t i = 0; i < count; ++i) std::tie(staging_buffers[i], staging_allocations[i]) = allocator.createBufferUnique(buffer_info, allocation_info);
+            image_initialized = false;
+        }
+        if(frame_index < 0 || static_cast<std::size_t>(frame_index) >= staging_buffers.size()) return;
+        allocator.copyMemoryToAllocation(frame.rgba.data(), staging_allocations[frame_index].get(), 0, frame.rgba.size());
+        vk::ImageSubresourceRange range(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+        cmd.pipelineBarrier(image_initialized ? vk::PipelineStageFlagBits::eFragmentShader : vk::PipelineStageFlagBits::eTopOfPipe,
+            vk::PipelineStageFlagBits::eTransfer, {}, {}, {},
+            vk::ImageMemoryBarrier(image_initialized ? vk::AccessFlags{vk::AccessFlagBits::eShaderRead} : vk::AccessFlags{}, vk::AccessFlagBits::eTransferWrite,
+                image_initialized ? vk::ImageLayout::eShaderReadOnlyOptimal : vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal,
+                vk::QueueFamilyIgnored, vk::QueueFamilyIgnored, texture->image, range));
+        cmd.copyBufferToImage(staging_buffers[frame_index].get(), texture->image, vk::ImageLayout::eTransferDstOptimal,
+            vk::BufferImageCopy(0, 0, 0, vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1), vk::Offset3D(0, 0, 0),
+                vk::Extent3D(static_cast<uint32_t>(frame.width), static_cast<uint32_t>(frame.height), 1)));
+        cmd.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader, {}, {}, {},
+            vk::ImageMemoryBarrier(vk::AccessFlagBits::eTransferWrite, vk::AccessFlagBits::eShaderRead,
+                vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+                vk::QueueFamilyIgnored, vk::QueueFamilyIgnored, texture->image, range));
+        image_initialized = true;
+        image_height = frame.height;
+        image_width = static_cast<unsigned int>(std::max(1.0, frame.aspect_ratio * frame.height));
+        pending_frame.reset();
+    }
 
-                } catch(const std::exception& e) {
-                    spdlog::error("Failed to load video: {}", e.what());
-                    ctx->error_message = e.what();
-                    return ctx;
-                }
-                return ctx;
+    void render(dreamrender::gui_renderer& renderer, shell* xmb) override {
+        renderer.draw_rect({0, 0}, {1, 1}, {0, 0, 0, 1});
+        if(!loaded) {
+            renderer.draw_text("Opening video…"_(), 0.5f, 0.5f, 0.025f, glm::vec4(1), true, true);
+            return;
+        }
+        if(texture && image_initialized) {
+            if(screen == screen_mode::stretch) renderer.draw_image(texture->imageView.get(), 0, 0, renderer.aspect_ratio, 1);
+            else if(screen == screen_mode::original) {
+                float h = std::min(1.0f, static_cast<float>(texture->height) / std::max(1u, xmb->get_window()->swapchainExtent.height));
+                float w = h * static_cast<float>(playback->info().aspect_ratio);
+                if(w > renderer.aspect_ratio) { h *= renderer.aspect_ratio / w; w = renderer.aspect_ratio; }
+                renderer.draw_image(texture->imageView.get(), (1 - w / renderer.aspect_ratio) / 2, (1 - h) / 2, w, h);
+            } else {
+                float saved_zoom = zoom;
+                if(screen == screen_mode::fit) zoom = 1;
+                base_viewer::render(texture->imageView.get(), 1.0f, renderer);
+                zoom = saved_zoom;
+            }
+        }
+        draw_subtitles(renderer);
+        bool controls = menu != menu_kind::none || playback->playback_state() != video::state::playing ||
+            std::chrono::steady_clock::now() - last_input < std::chrono::seconds(4);
+        if(controls) {
+            if(!status_message.empty()) renderer.draw_text(status_message, 0.05f, 0.06f, 0.016f);
+            renderer.draw_rect({0, 0.87f}, {1, 0.13f}, {0, 0, 0, 0.8f});
+            float progress = playback->info().duration > 0 ? static_cast<float>(std::clamp(playback->position() / playback->info().duration, 0.0, 1.0)) : 0;
+            renderer.draw_rect({0.05f, 0.885f}, {0.90f, 0.004f}, {0.3f, 0.3f, 0.3f, 1});
+            if(progress > 0) renderer.draw_rect({0.05f, 0.885f}, {0.90f * progress, 0.004f}, {0.72f, 0.81f, 0.96f, 1});
+            renderer.draw_text(path.filename().string(), 0.05f, 0.915f, 0.016f);
+            auto position_text = time_label(playback->position()) + " / " + time_label(playback->info().duration) + "   " + std::to_string(static_cast<int>(volume * 100)) + "%";
+            renderer.draw_text(position_text, 0.95f - renderer.measure_text(position_text, 0.016f).x, 0.915f, 0.016f);
+            render_controller_buttons(xmb, renderer, 0.5f, 0.965f, std::array{
+                std::pair{action::ok, playback->playback_state() == video::state::playing ? std::string_view{"Pause"} : std::string_view{"Play"}},
+                std::pair{action::left, std::string_view{"−10s"}}, std::pair{action::right, std::string_view{"+10s"}},
+                std::pair{action::options, std::string_view{"Controls"}}, std::pair{action::cancel, std::string_view{"Close"}}
             });
         }
-        ~video_player() {
-            if(loaded) {
-                device.waitIdle();
-            }
-            if(decode_packet) {
-                av_packet_free(&decode_packet);
-            }
-            if(video_frame) {
-                av_frame_free(&video_frame);
-            }
-            if(rgba_frame) {
-                av_frame_free(&rgba_frame);
+        if(menu != menu_kind::none) draw_menu(renderer);
+        if(show_information) {
+            const auto& info = playback->info();
+            renderer.draw_rect({0.03f, 0.05f}, {0.49f, 0.18f}, {0, 0, 0, 0.8f});
+            renderer.draw_text(std::to_string(info.width) + " × " + std::to_string(info.height) + " · " + utils::to_fixed_string(info.frame_rate, 2) + " fps", 0.05f, 0.09f, 0.018f);
+            renderer.draw_text(info.decoder, 0.05f, 0.13f, 0.016f);
+            renderer.draw_text(info.audio_status, 0.05f, 0.17f, 0.016f);
+            if(playback->rate() != 1.0) renderer.draw_text("Audio is muted during speed playback"_(), 0.05f, 0.21f, 0.014f);
+        }
+    }
+
+    result on_action(action command) override {
+        last_input = std::chrono::steady_clock::now();
+        if(menu != menu_kind::none) return menu_action(command);
+        if(command == action::cancel) return result::close;
+        if(!loaded) return result::success;
+        switch(command) {
+            case action::ok: playback->pause(playback->playback_state() == video::state::playing); break;
+            case action::left: playback->seek(playback->position() - 10); break;
+            case action::right: playback->seek(playback->position() + 10); break;
+            case action::up: set_volume(volume + 0.05f); break;
+            case action::down: set_volume(volume - 0.05f); break;
+            case action::extra: playback->replay(); break;
+            case action::options: open_menu(menu_kind::main); break;
+            default: return result::unsupported;
+        }
+        return result::success;
+    }
+
+    result on_event(const event& event) override {
+        if(auto* key = event.get<events::key_down>(); key && loaded) {
+            switch(key->keycode) {
+                case SDL_SCANCODE_SPACE: return on_action(action::ok);
+                case SDL_SCANCODE_N: advance_file(1); return result::success;
+                case SDL_SCANCODE_P: advance_file(-1); return result::success;
+                case SDL_SCANCODE_PERIOD: playback->step(1); return result::success;
+                case SDL_SCANCODE_COMMA: playback->step(-1); return result::success;
+                case SDL_SCANCODE_F: screen = static_cast<screen_mode>((static_cast<int>(screen) + 1) % 4); return result::success;
+                case SDL_SCANCODE_S: open_menu(menu_kind::subtitles); return result::success;
+                case SDL_SCANCODE_A: open_menu(menu_kind::audio); return result::success;
             }
         }
+        if(auto* button = event.get<events::controller_button_down>(); button && loaded) {
+            if(button->button == events::logical_controller_button::leftshoulder) { advance_file(-1); return result::success; }
+            if(button->button == events::logical_controller_button::rightshoulder) { advance_file(1); return result::success; }
+            if(button->button == events::logical_controller_button::start) return on_action(action::ok);
+        }
+        if(auto* axis = event.get<events::joystick_axis>()) return on_joystick(static_cast<unsigned int>(axis->index), axis->x, axis->y);
+        if(auto* move = event.get<events::mouse_move>()) return on_mouse_move(move->x, move->y);
+        if(auto* wheel = event.get<events::mouse_scroll>()) return on_mouse_scroll(wheel->x);
+        if(auto* button = event.get<events::mouse_button_down>(); button && button->button == events::logical_mouse_button::left) return on_action(action::ok);
+        return on_action(event.action);
+    }
 
-        result tick(shell* xmb) override {
-            if(!loaded && !utils::is_ready(load_future)) {
-                return result::success;
+    result on_joystick(unsigned int index, float x, float y) override {
+        if(screen == screen_mode::zoom && index == 0) return base_viewer::on_joystick(index, x, y);
+        return result::unsupported;
+    }
+    result on_mouse_move(float x, float y) override {
+        last_input = std::chrono::steady_clock::now();
+        return screen == screen_mode::zoom ? base_viewer::on_mouse_move(x, y) : result::success;
+    }
+    result on_mouse_scroll(float amount) override { set_volume(volume + amount * 0.05f); return result::success; }
+    bool is_opaque() const override { return true; }
+
+private:
+    enum class repeat_mode { off, file, all };
+    enum class screen_mode { fit, original, zoom, stretch };
+    enum class menu_kind { none, main, audio, subtitles, screen, speed, scenes, files };
+    vk::Device device;
+    vma::Allocator allocator;
+    std::filesystem::path path;
+    std::vector<std::filesystem::path> playlist;
+    std::size_t playlist_index = 0;
+    dreamrender::window* window = nullptr;
+    bool loaded = false;
+    std::unique_ptr<video::worker> playback;
+    std::optional<video::frame> pending_frame;
+    std::unique_ptr<dreamrender::texture> texture;
+    // Buffers must be destroyed before their backing allocations.
+    std::vector<vma::UniqueAllocation> staging_allocations;
+    std::vector<vma::UniqueBuffer> staging_buffers;
+    bool image_initialized = false;
+    bool end_handled = false;
+    float volume = 1;
+    repeat_mode repetition = repeat_mode::off;
+    screen_mode screen = screen_mode::fit;
+    menu_kind menu = menu_kind::none;
+    std::size_t selection = 0;
+    bool show_information = false;
+    double scene_return = 0;
+    bool scene_was_paused = false;
+    std::string status_message;
+    std::chrono::steady_clock::time_point last_input = std::chrono::steady_clock::now();
+
+    static std::string time_label(double value) {
+        int seconds = static_cast<int>(std::max(0.0, value));
+        std::string result = std::to_string(seconds / 60) + ":";
+        if(seconds % 60 < 10) result += '0';
+        return result + std::to_string(seconds % 60);
+    }
+
+    static bool video_file(const std::filesystem::path& file) {
+        auto ext = file.extension().string();
+        std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        constexpr std::array<std::string_view, 10> types{ ".mp4", ".mkv", ".avi", ".mov", ".webm", ".mpg", ".mpeg", ".m4v", ".ts", ".ogv" };
+        return std::find(types.begin(), types.end(), ext) != types.end();
+    }
+
+    void discover_playlist(const std::filesystem::path& current) {
+        std::error_code error;
+        auto directory = current.has_parent_path() ? current.parent_path() : std::filesystem::current_path(error);
+        for(std::filesystem::directory_iterator it(directory, std::filesystem::directory_options::skip_permission_denied, error), end; it != end && !error; it.increment(error)) {
+            if(it->is_regular_file(error) && video_file(it->path())) playlist.push_back(it->path());
+        }
+        if(std::find(playlist.begin(), playlist.end(), current) == playlist.end()) playlist.push_back(current);
+        std::sort(playlist.begin(), playlist.end());
+        playlist.erase(std::unique(playlist.begin(), playlist.end()), playlist.end());
+        playlist_index = static_cast<std::size_t>(std::find(playlist.begin(), playlist.end(), current) - playlist.begin());
+    }
+
+    void open_path(std::filesystem::path next) {
+        loaded = false;
+        status_message.clear();
+        if(texture) wait_gpu();
+        texture.reset();
+        staging_buffers.clear();
+        staging_allocations.clear();
+        path = std::move(next);
+        pending_frame.reset();
+        image_initialized = false;
+        end_handled = false;
+        menu = menu_kind::none;
+        video::options settings;
+        settings.hardware_acceleration = OPENXMB_HWACCEL_STR;
+        playback->set_path(path, std::move(settings));
+        last_input = std::chrono::steady_clock::now();
+    }
+
+    void advance_file(int direction) {
+        if(!loaded || playlist.empty()) return;
+        if(direction < 0) playlist_index = playlist_index == 0 ? playlist.size() - 1 : playlist_index - 1;
+        else playlist_index = (playlist_index + 1) % playlist.size();
+        open_path(playlist[playlist_index]);
+    }
+    void wait_gpu() {
+        if(window) window->waitIdle();
+        else device.waitIdle();
+    }
+
+    void set_volume(float value) {
+        volume = std::clamp(value, 0.0f, 1.0f);
+        if(playback) playback->set_volume(volume);
+        last_input = std::chrono::steady_clock::now();
+    }
+
+    void draw_subtitles(dreamrender::gui_renderer& renderer) {
+        auto text = playback->subtitle_text();
+        if(text.empty()) return;
+        std::vector<std::string> lines;
+        std::size_t offset = 0;
+        while(offset < text.size() && lines.size() < 5) {
+            auto end = text.find('\n', offset);
+            auto line = text.substr(offset, end == std::string::npos ? end : end - offset);
+            // Bound long dialogue to the available screen width without dropping
+            // trailing text. FFmpeg has already stripped ASS/HTML formatting.
+            while(line.size() > 75 && lines.size() < 5) {
+                auto split = line.rfind(' ', 75);
+                if(split == std::string::npos || split == 0) split = 75;
+                lines.push_back(line.substr(0, split));
+                line.erase(0, split + (line[split] == ' '));
             }
-            if(!loaded) {
-                ctx = load_future.get();
-                if(!ctx->codec_ctx) {
-                    spdlog::error("Failed to load video");
-                    xmb->emplace_overlay<app::message_overlay>("Failed to open video"_(),
-                        ctx->error_message.empty() ? "Unknown error"_() : ctx->error_message,
-                        std::vector<std::string>{"OK"_()});
-                    return result::close;
-                }
-                image_width = ctx->codec_ctx->width;
-                image_height = ctx->codec_ctx->height;
-                char buf[128];
-                spdlog::info("Video of size {}x{} loaded in pixel format {}", image_width, image_height,
-                    av_get_pix_fmt_string(buf, sizeof(buf), ctx->codec_ctx->pix_fmt));
-                yuv_conversion = ctx->codec_ctx->pix_fmt == AV_PIX_FMT_YUV420P;
-                if(yuv_conversion) {
-                    spdlog::info("Video is in YUV420P format, converting it to RGBA on GPU");
-                } else if(ctx->codec_ctx->pix_fmt != preferred_format) {
-                    char buf2[128];
-                    spdlog::warn("Video is not in preferred format, converting it to {}",
-                        av_get_pix_fmt_string(buf2, sizeof(buf2), preferred_format));
-                }
+            if(lines.size() < 5) lines.push_back(std::move(line));
+            if(end == std::string::npos) break;
+            offset = end + 1;
+        }
+        float y = 0.83f - static_cast<float>(lines.size()) * 0.035f;
+        for(const auto& line : lines) {
+            renderer.draw_text(line, 0.502f, y + 0.002f, 0.025f, {0, 0, 0, 1}, true, true);
+            renderer.draw_text(line, 0.5f, y, 0.025f, glm::vec4(1), true, true);
+            y += 0.035f;
+        }
+    }
 
-                {
-                    vk::ImageCreateInfo image_info(vk::ImageCreateFlagBits::eMutableFormat | vk::ImageCreateFlagBits::eExtendedUsage,
-                        vk::ImageType::e2D, vk::Format::eR8G8B8A8Srgb,
-                        vk::Extent3D(image_width, image_height, 1), 1, 1, vk::SampleCountFlagBits::e1,
-                        vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferDst,
-                        vk::SharingMode::eExclusive, 0, nullptr, vk::ImageLayout::eUndefined);
-                    vma::AllocationCreateInfo alloc_info({}, vma::MemoryUsage::eGpuOnly);
-                    std::tie(decoded_image, decoded_allocation) = allocator.createImageUnique(image_info, alloc_info);
-                }
-                {
-                    vk::ImageViewUsageCreateInfo view_usage(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
-                    vk::ImageViewCreateInfo view_info({}, decoded_image.get(), vk::ImageViewType::e2D, vk::Format::eR8G8B8A8Srgb,
-                        vk::ComponentMapping(), vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
-                    vk::StructureChain view_chain{view_info, view_usage};
-                    decoded_view = device.createImageViewUnique(view_chain.get<vk::ImageViewCreateInfo>());
-                }
+    void open_menu(menu_kind kind) {
+        menu = kind;
+        selection = 0;
+        last_input = std::chrono::steady_clock::now();
+        if(kind == menu_kind::scenes) {
+            scene_return = playback->position();
+            scene_was_paused = playback->playback_state() != video::state::playing;
+            playback->pause(true);
+            preview_scene();
+        }
+    }
+    void preview_scene() { playback->seek(playback->info().duration * static_cast<double>(selection) / 12.0); }
 
-                unsigned int staging_count = xmb->get_window()->swapchainImageCount;
-                staging_buffers.resize(staging_count);
-                staging_buffer_allocations.resize(staging_count);
-                rgba_buffer_size = av_image_get_buffer_size(preferred_format, ctx->codec_ctx->width, ctx->codec_ctx->height, 1);
-                if(rgba_buffer_size <= 0) {
-                    xmb->emplace_overlay<app::message_overlay>("Failed to open video"_(),
-                        "Could not allocate video frame buffer"_(),
-                        std::vector<std::string>{"OK"_()});
-                    return result::close;
-                }
-                vk::DeviceSize staging_size = static_cast<vk::DeviceSize>(rgba_buffer_size);
-                spdlog::debug("Allocating {} staging buffers of size {}", staging_count, staging_size);
-
-                vk::BufferCreateInfo buffer_info({}, staging_size, vk::BufferUsageFlagBits::eTransferSrc, vk::SharingMode::eExclusive);
-                vma::AllocationCreateInfo alloc_info({}, vma::MemoryUsage::eCpuToGpu);
-                for(unsigned int i = 0; i < staging_count; ++i) {
-                    std::tie(staging_buffers[i], staging_buffer_allocations[i]) = allocator.createBufferUnique(buffer_info, alloc_info);
-                }
-
-                decode_packet = av_packet_alloc();
-                video_frame = av_frame_alloc();
-                rgba_frame = av_frame_alloc();
-                if(!decode_packet || !video_frame || !rgba_frame) {
-                    xmb->emplace_overlay<app::message_overlay>("Failed to open video"_(),
-                        "Could not allocate decoder frames"_(),
-                        std::vector<std::string>{"OK"_()});
-                    return result::close;
-                }
-                rgba_frame_buffer.resize(static_cast<std::size_t>(rgba_buffer_size));
-                if(av_image_fill_arrays(rgba_frame->data, rgba_frame->linesize, rgba_frame_buffer.data(),
-                    preferred_format, ctx->codec_ctx->width, ctx->codec_ctx->height, 1) < 0)
-                {
-                    xmb->emplace_overlay<app::message_overlay>("Failed to open video"_(),
-                        "Could not initialize video frame buffer"_(),
-                        std::vector<std::string>{"OK"_()});
-                    return result::close;
-                }
-
-                if(yuv_conversion) {
-                    unormView = device.createImageViewUnique(vk::ImageViewCreateInfo({}, decoded_image.get(), vk::ImageViewType::e2D, vk::Format::eR8G8B8A8Unorm,
-                        vk::ComponentMapping(), vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1)));
-
-                    std::array<vk::DescriptorSetLayoutBinding, 4> bindings = {
-			            vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eStorageImage, 1, vk::ShaderStageFlagBits::eCompute),
-		            	vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eStorageImage, 1, vk::ShaderStageFlagBits::eCompute),
-		            	vk::DescriptorSetLayoutBinding(2, vk::DescriptorType::eStorageImage, 1, vk::ShaderStageFlagBits::eCompute),
-		            	vk::DescriptorSetLayoutBinding(3, vk::DescriptorType::eStorageImage, 1, vk::ShaderStageFlagBits::eCompute)
-		            };
-		            descriptorSetLayout = device.createDescriptorSetLayoutUnique(vk::DescriptorSetLayoutCreateInfo({}, bindings));
-
-                    vk::DescriptorPoolSize pool_size(vk::DescriptorType::eStorageImage, 4);
-                    descriptorPool = device.createDescriptorPoolUnique(vk::DescriptorPoolCreateInfo({}, 1, pool_size));
-                    descriptorSet = device.allocateDescriptorSets(vk::DescriptorSetAllocateInfo(descriptorPool.get(), descriptorSetLayout.get())).front();
-
-                    pipelineLayout = device.createPipelineLayoutUnique(vk::PipelineLayoutCreateInfo({}, descriptorSetLayout.get()));
-                    vk::UniqueShaderModule shaderModule = render::shaders::yuv420p::decode_comp(device);
-                    vk::PipelineShaderStageCreateInfo shaderInfo({}, vk::ShaderStageFlagBits::eCompute, shaderModule.get(), "main");
-                    auto [r, p] = device.createComputePipelineUnique({}, vk::ComputePipelineCreateInfo({}, shaderInfo, pipelineLayout.get())).asTuple();
-                    if(r != vk::Result::eSuccess) {
-                        throw std::runtime_error("Failed to create compute pipeline");
-                    }
-                    this->pipeline = std::move(p);
-
-                    plane_textures[0] = std::make_unique<dreamrender::texture>(device, allocator, image_width, image_height, vk::ImageUsageFlagBits::eStorage, vk::Format::eR8Unorm);
-                    plane_textures[1] = std::make_unique<dreamrender::texture>(device, allocator, image_width/2, image_height/2, vk::ImageUsageFlagBits::eStorage, vk::Format::eR8Unorm);
-                    plane_textures[2] = std::make_unique<dreamrender::texture>(device, allocator, image_width/2, image_height/2, vk::ImageUsageFlagBits::eStorage, vk::Format::eR8Unorm);
-
-                    vk::DescriptorImageInfo output_info({}, unormView.get(), vk::ImageLayout::eGeneral);
-                    vk::DescriptorImageInfo input_y_info({}, plane_textures[0]->imageView.get(), vk::ImageLayout::eGeneral);
-                    vk::DescriptorImageInfo input_cb_info({}, plane_textures[1]->imageView.get(), vk::ImageLayout::eGeneral);
-                    vk::DescriptorImageInfo input_cr_info({}, plane_textures[2]->imageView.get(), vk::ImageLayout::eGeneral);
-                    std::array<vk::WriteDescriptorSet, 4> writes = {
-                        vk::WriteDescriptorSet(descriptorSet, 0, 0, 1, vk::DescriptorType::eStorageImage, &output_info),
-                        vk::WriteDescriptorSet(descriptorSet, 1, 0, 1, vk::DescriptorType::eStorageImage, &input_y_info),
-                        vk::WriteDescriptorSet(descriptorSet, 2, 0, 1, vk::DescriptorType::eStorageImage, &input_cb_info),
-                        vk::WriteDescriptorSet(descriptorSet, 3, 0, 1, vk::DescriptorType::eStorageImage, &input_cr_info)
-                    };
-                    device.updateDescriptorSets(writes, {});
-                }
-
-                start_time = std::chrono::steady_clock::now();
-                state = play_state::playing;
-
-                loaded = true;
+    std::vector<std::string> menu_rows() const {
+        if(!playback) return {};
+        switch(menu) {
+            case menu_kind::main: return {
+                playback->playback_state() == video::state::playing ? "Pause"_() : "Play"_(),
+                "Replay 10 seconds"_(), "Play from beginning"_(), "Previous video"_(), "Next video"_(),
+                std::string("Repeat: ") + (repetition == repeat_mode::off ? "Off" : repetition == repeat_mode::file ? "This video" : "All videos"),
+                "Screen mode"_(), "Audio track"_(), "Subtitles"_(), "Playback speed"_(), "Scene search"_(),
+                "Previous frame"_(), "Next frame"_(), "Volume −"_(), "Volume +"_(), "Video information"_(), "Video list"_()
+            };
+            case menu_kind::screen: return {"Normal (fit)"_(), "Original size"_(), "Zoom"_(), "Full screen (stretch)"_(), "Zoom in"_(), "Zoom out"_()};
+            case menu_kind::speed: return {"¼ speed (muted)"_(), "½ speed (muted)"_(), "Normal speed"_(), "1½ speed (muted)"_(), "Double speed (muted)"_()};
+            case menu_kind::audio: {
+                std::vector<std::string> rows;
+                for(const auto& track : playback->info().audio_tracks) rows.push_back((track.index == playback->selected_audio() ? "✓ " : "") + track.label);
+                if(rows.empty()) rows.push_back("No audio tracks"_());
+                return rows;
             }
+            case menu_kind::subtitles: {
+                std::vector<std::string> rows{playback->selected_subtitle() == -1 ? "✓ Off"_() : "Off"_()};
+                for(const auto& track : playback->info().subtitle_tracks) rows.push_back((track.index == playback->selected_subtitle() ? "✓ " : "") + track.label);
+                return rows;
+            }
+            case menu_kind::scenes: {
+                std::vector<std::string> rows;
+                for(int i = 0; i < 12; ++i) rows.push_back(time_label(playback->info().duration * i / 12.0));
+                return rows;
+            }
+            case menu_kind::files: {
+                std::vector<std::string> rows;
+                for(std::size_t i = 0; i < playlist.size(); ++i) rows.push_back((i == playlist_index ? "✓ " : "") + playlist[i].filename().string());
+                return rows;
+            }
+            default: return {};
+        }
+    }
 
-            base_viewer::tick();
+    void draw_menu(dreamrender::gui_renderer& renderer) {
+        auto rows = menu_rows();
+        renderer.draw_rect({0.57f, 0.035f}, {0.40f, 0.81f}, {0.025f, 0.035f, 0.06f, 0.94f});
+        const auto title = menu == menu_kind::scenes ? "Scene search"_() :
+            menu == menu_kind::subtitles ? "Subtitles"_() :
+            menu == menu_kind::audio ? "Audio tracks"_() : "Video controls"_();
+        renderer.draw_text(title, 0.60f, 0.08f, 0.030f);
+        renderer.set_clip(0.585f, 0.105f, 0.37f, 0.70f);
+        std::size_t first = selection > 6 ? selection - 6 : 0;
+        if(rows.size() > 14) first = std::min(first, rows.size() - 14);
+        for(std::size_t i = first; i < rows.size() && i < first + 14; ++i) {
+            float y = 0.13f + static_cast<float>(i - first) * 0.047f;
+            if(i == selection) renderer.draw_rect({0.585f, y - 0.021f}, {0.37f, 0.041f}, {0.18f, 0.27f, 0.43f, 0.98f});
+            renderer.draw_text(rows[i], 0.605f, y, 0.024f);
+        }
+        renderer.reset_clip();
+    }
+
+    result menu_action(action command) {
+        auto rows = menu_rows();
+        if(rows.empty()) { menu = menu_kind::none; return result::success; }
+        if(command == action::cancel || command == action::options) {
+            if(menu == menu_kind::scenes) { playback->seek(scene_return); playback->pause(scene_was_paused); }
+            menu = menu == menu_kind::main ? menu_kind::none : menu_kind::main;
+            selection = 0;
             return result::success;
         }
-
-        void prerender(vk::CommandBuffer cmd, int frame, shell* xmb) override;
-        void render(dreamrender::gui_renderer& renderer, class shell* xmb) override;
-        result on_action(action action) override;
-
-        result on_joystick(unsigned int index, float x, float y) override {
-            return base_viewer::on_joystick(index, x, y);
+        if(command == action::up || command == action::down) {
+            selection = command == action::up ? (selection + rows.size() - 1) % rows.size() : (selection + 1) % rows.size();
+            if(menu == menu_kind::scenes) preview_scene();
+            return result::success;
         }
-
-        result on_mouse_move(float x, float y) override {
-            return base_viewer::on_mouse_move(x, y);
-        }
-
-        result on_event(const event& event) override {
-            if(auto* d = event.get<events::joystick_axis>()) {
-                return base_viewer::on_joystick(static_cast<unsigned int>(d->index), d->x, d->y);
+        if(command != action::ok) return result::success;
+        if(menu == menu_kind::main) {
+            switch(selection) {
+                case 0: playback->pause(playback->playback_state() == video::state::playing); menu = menu_kind::none; break;
+                case 1: playback->replay(); menu = menu_kind::none; break;
+                case 2: playback->seek(0); playback->pause(false); menu = menu_kind::none; break;
+                case 3: advance_file(-1); break;
+                case 4: advance_file(1); break;
+                case 5: repetition = static_cast<repeat_mode>((static_cast<int>(repetition) + 1) % 3); playback->set_repeat(repetition == repeat_mode::file); break;
+                case 6: open_menu(menu_kind::screen); break;
+                case 7: open_menu(menu_kind::audio); break;
+                case 8: open_menu(menu_kind::subtitles); break;
+                case 9: open_menu(menu_kind::speed); break;
+                case 10: if(playback->info().duration > 0) open_menu(menu_kind::scenes); break;
+                case 11: playback->step(-1); menu = menu_kind::none; break;
+                case 12: playback->step(1); menu = menu_kind::none; break;
+                case 13: set_volume(volume - 0.05f); break;
+                case 14: set_volume(volume + 0.05f); break;
+                case 15: show_information = !show_information; menu = menu_kind::none; break;
+                case 16: open_menu(menu_kind::files); selection = playlist_index; break;
             }
-            if(auto* d = event.get<events::mouse_move>()) {
-                return base_viewer::on_mouse_move(d->x, d->y);
+        } else {
+            if(menu == menu_kind::screen) {
+                if(selection < 4) screen = static_cast<screen_mode>(selection);
+                else { screen = screen_mode::zoom; zoom = std::clamp(zoom * (selection == 4 ? 1.2f : 1.0f / 1.2f), 0.25f, 8.0f); }
+            } else if(menu == menu_kind::speed) {
+                constexpr std::array<double, 5> rates{0.25, 0.5, 1.0, 1.5, 2.0};
+                playback->set_rate(rates[selection]);
+            } else if(menu == menu_kind::audio) {
+                if(selection < playback->info().audio_tracks.size()) playback->select_audio(playback->info().audio_tracks[selection].index);
+            } else if(menu == menu_kind::subtitles) {
+                playback->select_subtitle(selection == 0 ? -1 : playback->info().subtitle_tracks[selection - 1].index);
+            } else if(menu == menu_kind::scenes) {
+                preview_scene();
+                playback->pause(false);
+            } else if(menu == menu_kind::files) {
+                playlist_index = selection;
+                open_path(playlist[playlist_index]);
             }
-            return on_action(event.action);
+            menu = menu_kind::none;
         }
-
-        [[nodiscard]] bool is_opaque() const override {
-            return loaded;
-        }
-    private:
-        vk::Device device;
-        vma::Allocator allocator;
-
-        std::filesystem::path path;
-        bool loaded = false;
-        struct video_decoding_context {
-            AVFormatContext* format_ctx = nullptr;
-            const AVCodec* codec = nullptr;
-            AVCodecContext* codec_ctx = nullptr;
-            SwsContext* sws_ctx = nullptr;
-            int video_stream_index = -1;
-            std::string error_message;
-
-            ~video_decoding_context() {
-                if (codec_ctx) avcodec_free_context(&codec_ctx);
-                if (format_ctx) avformat_close_input(&format_ctx);
-                if (sws_ctx) sws_freeContext(sws_ctx);
-            }
-        };
-        std::unique_ptr<video_decoding_context> ctx;
-        vma::UniqueImage decoded_image;
-        vma::UniqueAllocation decoded_allocation;
-        vk::UniqueImageView decoded_view;
-        double decoded_timestamp = 0.0;
-
-        bool yuv_conversion = false;
-        std::array<std::unique_ptr<dreamrender::texture>, 3> plane_textures;
-        vk::UniquePipelineLayout pipelineLayout;
-        vk::UniquePipeline pipeline;
-        vk::UniqueDescriptorSetLayout descriptorSetLayout;
-        vk::UniqueDescriptorPool descriptorPool;
-        vk::DescriptorSet descriptorSet;
-        vk::UniqueImageView unormView;
-
-        std::future<std::unique_ptr<video_decoding_context>> load_future;
-
-        std::vector<vma::UniqueBuffer> staging_buffers;
-        std::vector<vma::UniqueAllocation> staging_buffer_allocations;
-        AVPacket* decode_packet = nullptr;
-        AVFrame* video_frame = nullptr;
-        AVFrame* rgba_frame = nullptr;
-        std::vector<uint8_t> rgba_frame_buffer;
-        int rgba_buffer_size = 0;
-
-        enum class play_state {
-            loading,
-            playing,
-            paused,
-            stopped,
-        };
-        play_state state = play_state::loading;
-        std::chrono::steady_clock::time_point start_time;
+        return result::success;
+    }
 };
 
 namespace {
 #if OPENXMB_ENABLE_VIDEO_PLAYER
 const inline register_program<video_player> video_player_program{
     "video_player",
-    {
-        "video/mp4", "video/x-matroska", "video/x-msvideo",
-        "video/quicktime", "video/webm", "video/mpeg"
-    },
-    {
-        ".mp4", ".mkv", ".avi", ".mov", ".webm", ".mpg", ".mpeg"
-    }
+    {"video/mp4", "video/x-matroska", "video/x-msvideo", "video/quicktime", "video/webm", "video/mpeg", "video/ogg", "video/mp2t"},
+    {".mp4", ".mkv", ".avi", ".mov", ".webm", ".mpg", ".mpeg", ".m4v", ".ts", ".ogv"}
 };
 #endif
 }
-
-void video_player::prerender(vk::CommandBuffer cmd, int frame, shell* xmb) {
-    if(!loaded || state != play_state::playing) {
-        return;
-    }
-
-    if(!decode_packet || !video_frame || !rgba_frame) {
-        return;
-    }
-
-    AVPacket* pkt = decode_packet;
-    AVFrame* videoFrame = video_frame;
-    AVFrame* rgbFrame = rgba_frame;
-    av_packet_unref(pkt);
-    av_frame_unref(videoFrame);
-
-    try {
-        while (av_read_frame(ctx->format_ctx, pkt) >= 0) {
-            if (pkt->stream_index != ctx->video_stream_index) {
-                av_packet_unref(pkt);
-                continue;
-            }
-
-            decoded_timestamp = (double)pkt->pts * av_q2d(ctx->format_ctx->streams[ctx->video_stream_index]->time_base);
-
-            if (avcodec_send_packet(ctx->codec_ctx, pkt) != 0) {
-                spdlog::warn("Failed to send packet to decoder");
-                av_packet_unref(pkt);
-                continue;
-            }
-
-            int ret = avcodec_receive_frame(ctx->codec_ctx, videoFrame);
-            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
-                av_packet_unref(pkt);
-                continue;
-            } else if (ret < 0) {
-                spdlog::warn("Failed to decode video frame");
-                av_packet_unref(pkt);
-                continue;
-            }
-
-            // Frame decoded successfully
-            if (yuv_conversion) {
-                // ... (YUV conversion logic remains the same)
-            } else {
-                if (!ctx->sws_ctx) {
-                    ctx->sws_ctx = sws_getContext(
-                        ctx->codec_ctx->width, ctx->codec_ctx->height, ctx->codec_ctx->pix_fmt,
-                        ctx->codec_ctx->width, ctx->codec_ctx->height, preferred_format,
-                        SWS_BILINEAR, nullptr, nullptr, nullptr
-                    );
-                    if(!ctx->sws_ctx) {
-                        spdlog::warn("Failed to create video scaler");
-                        av_frame_unref(videoFrame);
-                        av_packet_unref(pkt);
-                        break;
-                    }
-                }
-
-                sws_scale(ctx->sws_ctx, (const uint8_t* const*)videoFrame->data, videoFrame->linesize, 0, ctx->codec_ctx->height, rgbFrame->data, rgbFrame->linesize);
-
-                allocator.copyMemoryToAllocation(rgbFrame->data[0], staging_buffer_allocations[frame].get(), 0, rgba_buffer_size);
-
-                cmd.pipelineBarrier(
-                    vk::PipelineStageFlagBits::eFragmentShader, vk::PipelineStageFlagBits::eTransfer,
-                    {}, {}, {},
-                    vk::ImageMemoryBarrier(
-                        {}, vk::AccessFlagBits::eTransferWrite,
-                        vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal,
-                        vk::QueueFamilyIgnored, vk::QueueFamilyIgnored,
-                        decoded_image.get(), vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1)
-                    )
-                );
-                cmd.copyBufferToImage(staging_buffers[frame].get(), decoded_image.get(), vk::ImageLayout::eTransferDstOptimal,
-                    vk::BufferImageCopy(0, 0, 0, vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1),
-                        vk::Offset3D(0, 0, 0), vk::Extent3D(image_width, image_height, 1)));
-                cmd.pipelineBarrier(
-                    vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader,
-                    {}, {}, {},
-                    vk::ImageMemoryBarrier(
-                        vk::AccessFlagBits::eTransferWrite, vk::AccessFlagBits::eShaderRead,
-                        vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
-                        vk::QueueFamilyIgnored, vk::QueueFamilyIgnored,
-                        decoded_image.get(), vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1)
-                    )
-                );
-            }
-            av_frame_unref(videoFrame);
-            av_packet_unref(pkt);
-            break; // process one frame per call
-        }
-    } catch (...) {
-        // handle exceptions
-    }
 }
-
-void video_player::render(dreamrender::gui_renderer& renderer, class shell* xmb) {
-    if(!loaded) {
-        return;
-    }
-
-    render_controller_buttons(xmb, renderer, 0.5f, 0.95f, std::array{
-        std::pair{action::ok, state == play_state::playing ? std::string_view{"Pause"} : std::string_view{"Play"}},
-        std::pair{action::up, std::string_view{"Zoom In"}},
-        std::pair{action::down, std::string_view{"Zoom Out"}},
-        std::pair{action::extra, std::string_view{"Reset"}},
-        std::pair{action::cancel, std::string_view{"Close"}},
-    });
-
-    constexpr float size = 0.8;
-    base_viewer::render(decoded_view.get(), size, renderer);
-
-    { // progress bar
-        double duration = ctx->format_ctx->duration / (double)AV_TIME_BASE;
-        double progress = duration > 0.0f ? decoded_timestamp / duration : 0.5f;
-
-        simple_renderer::params border_radius{{}, {0.5f, 0.5f, 0.5f, 0.5f}};
-        simple_renderer::params blur{std::array{glm::vec2{0.0f, 0.0f}, glm::vec2{0.0f, 0.0f}, glm::vec2{0.0f, 0.5f}, glm::vec2{0.0f, 0.5f}}, {0.5f, 0.5f, 0.5f, 0.5f}};
-        renderer.draw_rect(glm::vec2(0.1f, 0.9125f), glm::vec2(0.8f, 0.01f), glm::vec4(0.2f, 0.2f, 0.2f, 1.0f), border_radius);
-        renderer.draw_rect(glm::vec2(0.1f, 0.9125f), glm::vec2(0.8f, 0.01f), glm::vec4(0.1f, 0.1f, 0.1f, 1.0f), blur);
-
-        constexpr glm::vec2 padding = glm::vec2{0.001f, 0.001f};
-        renderer.draw_rect(glm::vec2(0.1f, 0.9125f)+padding, glm::vec2(progress*0.8f, 0.01f)-2.0f*padding,
-            glm::vec4(0x83/255.0f, 0x8d/255.0f, 0x22/255.0f, 1.0f), border_radius);
-        renderer.draw_rect(glm::vec2(0.1f, 0.9125f)+padding, glm::vec2(progress*0.8f, 0.01f)-2.0f*padding,
-            glm::vec4(1.0f, 1.0f, 1.0f, 0.1f), blur);
-    }
-}
-
-result video_player::on_action(action action) {
-    switch(action) {
-        case action::cancel:
-            return result::close;
-        case action::ok:
-            if(state == play_state::playing) {
-                state = play_state::paused;
-            } else if(state == play_state::paused) {
-                state = play_state::playing;
-                start_time = std::chrono::floor<std::chrono::steady_clock::time_point::duration>(
-                    std::chrono::steady_clock::now() - decoded_timestamp * std::chrono::seconds(1));
-            } else if(state == play_state::stopped) {
-                state = play_state::playing;
-                start_time = std::chrono::steady_clock::now();
-            }
-            return result::success | result::ok_sound;
-        default: {
-            result r = base_viewer::on_action(action);
-            if(r != result::unsupported) {
-                return r;
-            }
-            break;
-        }
-    }
-    return result::failure;
-}
-
-}
-;

@@ -26,6 +26,7 @@
 #include <vector>
 
 #include <libintl.h>
+#include "openxmb/desktop/library.hpp"
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
@@ -138,6 +139,8 @@ int main(int argc, char *argv[])
     program.add_argument("--interfacefx-debug").flag()
         .help("Enable interface/UI graphics debug overlays (e.g., font atlas)");
 
+    program.add_argument("--open-media").default_value(std::string{}).help("Open a media file in its native viewer after startup");
+    program.add_argument("--open-panel").default_value(std::string{}).help("Open themes, browser, emulation, discs or system");
     try {
         program.parse_args(argc, argv);
     }
@@ -179,6 +182,16 @@ int main(int argc, char *argv[])
     setlocale(LC_ALL, "");
 
     config::CONFIG.load();
+    if(std::getenv("OPENXMB_CONFIG") == nullptr) {
+        try {
+            openxmb::desktop::Library library;
+            const auto path=library.config_path(library.active_profile().id);
+            if(!std::filesystem::exists(path) || std::filesystem::file_size(path)<32) {
+                config::CONFIG.profileConfigPath=path;
+                config::CONFIG.save_config();
+            } else config::CONFIG.switch_profile(path);
+        } catch(const std::exception& error) { spdlog::warn("Could not restore local profile: {}",error.what()); }
+    }
     // Initialize gettext/i18n: bind domain to our locale directory and use UTF-8
     // Note: even without compiled translations, gettext will fall back to the
     // original strings, so text should still render in English.
@@ -209,6 +222,8 @@ int main(int argc, char *argv[])
     }
     spdlog::debug("Installing OpenXMB shell phase");
     window.set_phase(shell, shell, shell);
+    shell->queue_panel(program.get<std::string>("--open-panel"));
+    shell->queue_media(program.get<std::string>("--open-media"));
 
     spdlog::debug("Entering OpenXMB main loop");
     window.loop();

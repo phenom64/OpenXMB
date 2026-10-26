@@ -30,6 +30,8 @@ module;
 #include <utility>
 #include <variant>
 #include <vector>
+#include <map>
+namespace openxmb::themes { class ThemeLibrary; struct AppliedTheme; }
 
 #include <glm/vec2.hpp>
 
@@ -88,6 +90,14 @@ namespace app
             void reload_fonts();
             void reload_button_icons();
             void reload_language();
+            void reload_menu();
+            void open_panel(const std::string& name);
+            void open_media(const std::filesystem::path& path);
+            void switch_profile(const std::filesystem::path& path);
+            void apply_theme(const openxmb::themes::AppliedTheme& theme);
+            std::shared_ptr<openxmb::themes::ThemeLibrary> theme_library();
+            void queue_panel(std::string name) { pending_panel = std::move(name); }
+            void queue_media(std::filesystem::path path) { pending_media = std::move(path); }
 
             void dispatch(const event& event);
             template<typename T, typename... Args>
@@ -243,18 +253,16 @@ namespace app
             std::unique_ptr<image_renderer> image_render;
             std::unique_ptr<simple_renderer> simple_render;
             std::unique_ptr<render::wave_renderer> wave_render;
-            std::unique_ptr<render::particles_renderer> particles_render;
-            std::unique_ptr<openxmb::xmb::CapturedWaveRenderer> captured_wave_render;
+            std::unique_ptr<render::procedural_wave_renderer> procedural_wave_render;
             std::unique_ptr<openxmb::xmb::MonthlyBackgroundRenderer> monthly_background_render;
             openxmb::xmb::StatusBarRenderer status_bar_render;
-            bool captured_wave_failed{};
             bool monthly_background_failed{};
-            bool original_particles_failed{};
 
             vk::UniqueRenderPass backgroundRenderPass, shellRenderPass;
 
             // Per-frame resolve target for background (offscreen, avoids reusing swapchain mid-frame)
             std::vector<std::unique_ptr<texture>> backgroundResolve;
+            std::vector<std::unique_ptr<texture>> backgroundDepth;
             std::vector<vk::UniqueFramebuffer> backgroundFramebuffers;
 
             vk::UniqueDescriptorSetLayout blurDescriptorSetLayout;
@@ -289,6 +297,15 @@ namespace app
             vk::UniqueDescriptorPool blurExtraDescriptorPool;
 
             std::unique_ptr<texture> backgroundTexture;
+#if OPENXMB_ENABLE_VIDEO_PLAYER
+            std::unique_ptr<render::video_background> video_background_render;
+            std::filesystem::path background_video_path;
+#endif
+            // Keep JSON-heavy theme state out of the exported shell BMI.
+            struct theme_state;
+            std::unique_ptr<theme_state> theme;
+            std::string pending_panel;
+            std::filesystem::path pending_media;
             main_menu menu{this};
             news_display news{this};
             std::array<std::unique_ptr<texture>, std::to_underlying(action::_length)> buttonTextures;
@@ -315,6 +332,7 @@ namespace app
             void preload_fixed_components();
 
             void render_gui(gui_renderer& renderer);
+            void ensure_blur(int frame);
 
             // input handling
             constexpr static int controller_axis_input_threshold = 10000;

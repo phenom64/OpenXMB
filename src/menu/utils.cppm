@@ -48,6 +48,7 @@ module;
 
 export module openxmb.app:menu_utils;
 import dreamrender;
+import openxmb.config;
 import :menu_base;
 
 #if !defined(_WIN32)
@@ -242,7 +243,7 @@ std::unique_ptr<Menu> make_simple(std::string name, std::filesystem::path icon_p
     Args&&... args)
 {
     auto menu = std::make_unique<Menu>(std::move(name), dreamrender::texture(loader.getDevice(), loader.getAllocator()), std::forward<Args>(args)...);
-    const auto resolved_icon = icon_or_fallback(std::move(icon_path));
+    const auto resolved_icon = icon_or_fallback(config::CONFIG.resolve_icon(icon_path));
     loader.loadTexture(&menu->get_icon(), resolved_icon);
     if(const auto normal_map = xmb_web_normal_map_for_icon(resolved_icon)) {
         auto& glass_icon = menu->emplace_glass_icon(

@@ -151,4 +151,34 @@ namespace original_particles {
     vk::UniqueShaderModule frag(vk::Device device) { return dreamrender::createShader(device, frag_shader); }
 }
 
+namespace procedural_wave {
+    constexpr unsigned char vert_data[] = {
+    #embed "shaders/procedural_wave.vert.spv"
+    };
+    constexpr unsigned char frag_data[] = {
+    #embed "shaders/procedural_wave.frag.spv"
+    };
+    vk::UniqueShaderModule vert(vk::Device device) {
+        return dreamrender::createShader(device, dreamrender::convert<std::to_array(vert_data), uint32_t>());
+    }
+    vk::UniqueShaderModule frag(vk::Device device) {
+        return dreamrender::createShader(device, dreamrender::convert<std::to_array(frag_data), uint32_t>());
+    }
+}
+
+namespace video_background {
+    constexpr unsigned char vert_data[] = {
+    #embed "shaders/video_background.vert.spv"
+    };
+    constexpr unsigned char frag_data[] = {
+    #embed "shaders/video_background.frag.spv"
+    };
+    vk::UniqueShaderModule vert(vk::Device device) {
+        return dreamrender::createShader(device, dreamrender::convert<std::to_array(vert_data), uint32_t>());
+    }
+    vk::UniqueShaderModule frag(vk::Device device) {
+        return dreamrender::createShader(device, dreamrender::convert<std::to_array(frag_data), uint32_t>());
+    }
+}
+
 }

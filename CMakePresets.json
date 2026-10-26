@@ -9,15 +9,15 @@
     {
       "name": "default",
       "displayName": "Release",
-      "description": "Portable Release build with optional alpha modules disabled.",
+      "description": "Native desktop Release build with media and desktop integrations.",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/default",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "ENABLE_BROWSER": "OFF",
+        "ENABLE_BROWSER": "ON",
         "ENABLE_VIDEO_PLAYER": "ON",
-        "ENABLE_DISC_MEDIA": "OFF",
-        "ENABLE_LIBRETRO": "OFF",
+        "ENABLE_DISC_MEDIA": "ON",
+        "ENABLE_LIBRETRO": "ON",
         "INTERFACE_FX_DEBUG": "OFF"
       }
     },

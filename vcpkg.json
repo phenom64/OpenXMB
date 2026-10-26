@@ -16,6 +16,9 @@
     "fmt",
     "gettext",
     "harfbuzz",
-    "pkgconf"
+    "pkgconf",
+    "libarchive",
+    "zlib",
+    "curl"
   ]
 }

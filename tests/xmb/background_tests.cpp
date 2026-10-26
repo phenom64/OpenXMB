@@ -126,6 +126,7 @@ int main() {
           "Original gradient bakes xmb-web's steady scene composite");
   require(monthly_fragment.contains("0.899181"),
           "Original gradient uses xmb-web HDR day white level");
-  require(shell.contains("compat/xmb-ui-compat/data/particle-cloud.bin"),
-          "OpenXMB shell loads the imported xmb-web particle cloud when present");
+  require(shell.contains("procedural_wave_render->render") &&
+              !shell.contains("particles_render->preload"),
+          "Original renders the procedural wave without initializing an unused captured particle renderer");
 }

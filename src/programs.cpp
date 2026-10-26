@@ -19,6 +19,8 @@
 module;
 
 #include <filesystem>
+#include <algorithm>
+#include <cctype>
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <map>
@@ -35,6 +37,7 @@ file_info::file_info(const std::filesystem::path& path) {
     
     // Determine MIME type based on file extension
     std::string ext = path.extension().string();
+    std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
     if (ext.empty()) {
         mime_type = "application/octet-stream";
         content_type = "unknown";
@@ -59,6 +62,10 @@ file_info::file_info(const std::filesystem::path& path) {
             {".svg", "image/svg+xml"},
             {".ico", "image/x-icon"},
             {".mp3", "audio/mpeg"},
+            {".flac", "audio/flac"}, {".opus", "audio/opus"}, {".m4a", "audio/mp4"},
+            {".m3u", "audio/x-mpegurl"}, {".m3u8", "audio/x-mpegurl"},
+            {".pls", "audio/x-scpls"}, {".cbz", "application/vnd.comicbook+zip"},
+            {".cbt", "application/x-cbt"},
             {".wav", "audio/wav"},
             {".ogg", "audio/ogg"},
             {".mp4", "video/mp4"},
