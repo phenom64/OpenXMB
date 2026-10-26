@@ -52,16 +52,22 @@ Before you begin, ensure you have the following tools and libraries installed (v
 - Libraries (names as found on Ubuntu 24.04-like distros):
   - Vulkan headers and loader: `libvulkan-dev`, `vulkan-utility-libraries-dev`
   - SDL2 core + image + mixer: `libsdl2-dev`, `libsdl2-image-dev`, `libsdl2-mixer-dev`
-  - FFmpeg (if `ENABLE_VIDEO_PLAYER=ON`): `libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev`
+  - FFmpeg (music, previews and optional video): `libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev`
   - Freetype: `libfreetype-dev`
   - glm: `libglm-dev`
   - fmt: `libfmt-dev`
   - gettext (i18n): `gettext`
+  - Theme/comic archives: `libarchive-dev`, `zlib1g-dev`
+  - Linux desktop integration: `libx11-dev`, `libxtst6`
+  - PDF viewing: Poppler tools (`pdfinfo`, `pdftoppm`); printing uses `lp` or `lpr`
+  - Optional online game metadata: libcurl and a user-supplied provider key
 - Optional (used by dependencies): `harfbuzz`, `glslang-tools`, `spirv-tools`, `pkg-config`
+
+See [desktop workflows and validation](docs/desktop-release.md) for the expanded shell, themes and native media tools.
 
 ### Build Instructions
 
-The default preset builds a Release configuration with optional alpha modules disabled:
+The default preset builds a Release configuration with native desktop media, browser, disc and emulation integrations enabled:
 
 ```bash
 cmake --preset default
@@ -105,7 +111,8 @@ For editor/debug work, use `cmake --preset dev && cmake --build --preset dev`.
         clang-18 clang-tools-18 libvulkan-dev vulkan-utility-libraries-dev glslang-tools spirv-tools \
         libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev \
         libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev \
-        libglm-dev libfreetype-dev gettext libfmt-dev
+        libglm-dev libfreetype-dev gettext libfmt-dev libarchive-dev zlib1g-dev \
+        libx11-dev libxtst6 poppler-utils
     ```
 
 2.  **Build OpenXMB:**

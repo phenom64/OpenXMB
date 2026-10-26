@@ -1,5 +1,7 @@
 # xmb-web Visual & Behavioral Parity — Multi-Repo Implementation Plan
 
+Historical plan. The desktop implementation and its current scope are documented in [desktop-release.md](../../desktop-release.md); handheld renderer work is deferred by the current task scope.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan phase-by-phase. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Bring OpenXMB to one-to-one visual and behavioral parity with the pinned xmb-web reference, using AuroreEngine as the Vulkan renderer substrate, while preserving clean-build fallbacks and GPL/MPL licensing boundaries.
