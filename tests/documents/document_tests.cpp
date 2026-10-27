@@ -24,6 +24,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <chrono>
+#include <array>
 #include <future>
 #include <thread>
 #include <cstdio>

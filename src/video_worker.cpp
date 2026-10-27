@@ -21,7 +21,7 @@ struct worker::implementation {
     std::vector<std::function<void(session&)>> commands;
     std::optional<frame> latest_frame;
     std::atomic<std::uint64_t> generation{0};
-    std::atomic<std::shared_ptr<const playback_snapshot>> latest{std::make_shared<const playback_snapshot>()};
+    std::shared_ptr<const playback_snapshot> latest{std::make_shared<const playback_snapshot>()};
     std::jthread thread;
 
     implementation() : thread([this](std::stop_token stop) { run(stop); }) {}
@@ -60,7 +60,7 @@ struct worker::implementation {
                     value->status = state::failed;
                     value->error = exception.what();
                     std::lock_guard lock(mutex);
-                    if(active_generation == generation.load()) latest.store(std::move(value));
+                    if(active_generation == generation.load()) latest = std::move(value);
                 }
             }
             if(!playback || active_generation != generation.load()) continue;
@@ -84,7 +84,7 @@ struct worker::implementation {
                 std::lock_guard lock(mutex);
                 if(active_generation != generation.load()) continue;
                 if(picture) latest_frame = std::move(picture);
-                latest.store(std::move(value));
+                latest = std::move(value);
             }
         }
     }
@@ -103,11 +103,14 @@ void worker::set_path(const std::filesystem::path& path, options settings) {
         impl->load = implementation::load_request{path, std::move(settings), next};
         impl->commands.clear();
         impl->latest_frame.reset();
-        impl->latest.store(std::move(value));
+        impl->latest = std::move(value);
     }
     impl->wake.notify_one();
 }
-std::shared_ptr<const playback_snapshot> worker::snapshot() const { return impl->latest.load(); }
+std::shared_ptr<const playback_snapshot> worker::snapshot() const {
+    std::lock_guard lock(impl->mutex);
+    return impl->latest;
+}
 std::optional<frame> worker::take_frame() {
     std::lock_guard lock(impl->mutex);
     return std::exchange(impl->latest_frame, std::nullopt);
