@@ -176,7 +176,9 @@ private:
     }
     void begin_load() {
         requested=false;
-        const auto selected=page,version=generation; const auto source=path; auto existing=document; const auto stop=cancellation.get_token();
+        const auto selected=page;
+        const auto version=generation;
+        const auto source=path; auto existing=document; const auto stop=cancellation.get_token();
         decoding=std::async(std::launch::async,[source,selected,version,existing,stop]() {
             auto document=existing?existing:documents::open(source,stop);
             auto raster=documents::render_page(*document,selected,stop);

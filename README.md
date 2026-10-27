@@ -44,10 +44,11 @@ Before you begin, ensure you have the following tools and libraries installed (v
 - Git
 - CMake 3.28+
 - Ninja build system
-- C++23-capable compiler:
-  - Linux: Clang 17+ (Clang 19 recommended) or GCC 13+
-  - macOS: Homebrew LLVM/Clang with `clang-scan-deps` + Vulkan loader/MoltenVK packages
-  - Windows: LLVM/Clang with `clang-scan-deps` (MSVC support is blocked by the current `#embed` shader/resource path)
+- LLVM/Clang with C++23 module scanning and a matching `clang-scan-deps`:
+  - Linux: Clang 19 with a recent C++ standard library (the CI setup uses GCC 14's library)
+  - macOS: Homebrew `llvm@20`
+  - Windows: LLVM/Clang 20 with Visual Studio Build Tools and the Windows SDK
+  - The current shader/resource embedding path uses `#embed`; GCC 13 and MSVC are not supported build paths.
 - Vulkan 1.2 capable GPU + drivers (MoltenVK on macOS)
 - Libraries (names as found on Ubuntu 24.04-like distros):
   - Vulkan headers and loader: `libvulkan-dev`, `vulkan-utility-libraries-dev`
@@ -58,7 +59,7 @@ Before you begin, ensure you have the following tools and libraries installed (v
   - fmt: `libfmt-dev`
   - gettext (i18n): `gettext`
   - Theme/comic archives: `libarchive-dev`, `zlib1g-dev`
-  - Linux desktop integration: `libx11-dev`, `libxtst6`
+  - Linux desktop integration: `libx11-dev`, `libxtst-dev`
   - Optional embedded Linux browser: `libwebkit2gtk-4.1-dev`, `libgtk-3-dev`
   - PDF viewing: Poppler tools (`pdfinfo`, `pdftoppm`); printing uses `lp` or `lpr`
   - Optional online game metadata: libcurl and a user-supplied provider key
@@ -81,9 +82,8 @@ For editor/debug work, use `cmake --preset dev && cmake --build --preset dev`.
 
 1.  **Install Dependencies (via Homebrew):**
     ```bash
-    brew install cmake ninja pkg-config llvm ffmpeg sdl2 sdl2_image sdl2_mixer gettext fmt freetype glm
-    # Install Vulkan loader, shader tools, and MoltenVK
-    brew install vulkan-loader glslang molten-vk
+    brew install cmake ninja pkg-config llvm@20 ffmpeg sdl2 sdl2_image sdl2_mixer \
+        gettext fmt freetype harfbuzz glm libarchive zlib vulkan-loader glslang molten-vk poppler
     ```
 
 2.  **Build OpenXMB:**
@@ -93,7 +93,8 @@ For editor/debug work, use `cmake --preset dev && cmake --build --preset dev`.
     cd OpenXMB
 
     # Configure and build the project
-    LLVM_PREFIX=$(brew --prefix llvm)
+    LLVM_PREFIX=$(brew --prefix llvm@20)
+    export PATH="$LLVM_PREFIX/bin:$PATH"
     CC="$LLVM_PREFIX/bin/clang" CXX="$LLVM_PREFIX/bin/clang++" cmake --preset default
     cmake --build --preset default
 
@@ -109,11 +110,11 @@ For editor/debug work, use `cmake --preset dev && cmake --build --preset dev`.
     ```bash
     sudo apt update
     sudo apt install build-essential git cmake ninja-build pkg-config \
-        clang-18 clang-tools-18 libvulkan-dev vulkan-utility-libraries-dev glslang-tools spirv-tools \
+        clang-19 clang-tools-19 g++-14 libvulkan-dev vulkan-utility-libraries-dev glslang-tools spirv-tools \
         libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev \
         libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev \
-        libglm-dev libfreetype-dev gettext libfmt-dev libarchive-dev zlib1g-dev \
-        libx11-dev libxtst6 poppler-utils
+        libglm-dev libfreetype-dev libharfbuzz-dev gettext libfmt-dev libarchive-dev zlib1g-dev \
+        libx11-dev libxtst-dev poppler-utils
     ```
 
 2.  **Build OpenXMB:**
@@ -123,7 +124,7 @@ For editor/debug work, use `cmake --preset dev && cmake --build --preset dev`.
     cd OpenXMB
 
     # Configure and build the project
-    CC=clang-18 CXX=clang++-18 cmake --preset default
+    CC=clang-19 CXX=clang++-19 cmake --preset default
     cmake --build --preset default
 
     # (Optional) Install the application system-wide

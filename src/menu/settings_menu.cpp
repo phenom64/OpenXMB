@@ -453,33 +453,34 @@ namespace menu {
 #    define OPENXMB_HAVE_SDBUS_CPP 1
 #  endif
 #endif
-#if _WIN32
         constexpr char glibmm[] = {
+#if _WIN32 && __has_embed("share/licenses/glibmm-2.68/COPYING")
             #embed "share/licenses/glibmm-2.68/COPYING"
-        };
-        constexpr char sdl2[] = {
-            #embed "share/licenses/SDL2/LICENSE.txt"
-        };
-        constexpr char freetype[] = {
-            #embed "share/licenses/freetype/FTL.TXT"
-        };
-        constexpr char glm[] = {
-            #embed "share/licenses/glm/copying.txt"
-        };
 #else
-        constexpr char glibmm[] = {
             "LGPL-2.1"
+#endif
         };
         constexpr char sdl2[] = {
+#if _WIN32 && __has_embed("share/licenses/SDL2/LICENSE.txt")
+            #embed "share/licenses/SDL2/LICENSE.txt"
+#else
             "Zlib License"
+#endif
         };
         constexpr char freetype[] = {
+#if _WIN32 && __has_embed("share/licenses/freetype/FTL.TXT")
+            #embed "share/licenses/freetype/FTL.TXT"
+#else
             "FreeType License"
+#endif
         };
         constexpr char glm[] = {
+#if _WIN32 && __has_embed("share/licenses/glm/copying.txt")
+            #embed "share/licenses/glm/copying.txt"
+#else
             "MIT License"
-        };
 #endif
+        };
         // NOLINTEND(*-avoid-c-arrays)
         #pragma clang diagnostic pop
     }
