@@ -79,6 +79,10 @@ jobs:
           run-id: ${{ steps.source.outputs.run_id }}
           github-token: ${{ github.token }}
           path: dist/windows-diagnostics/previous
+      - uses: actions/cache@v6.1.0
+        with:
+          path: ${{ runner.temp }}/openxmb-software-vulkan/*/chrome.zip
+          key: software-vulkan-156.0.8078.47-Windows-x86_64
       - name: Prepare software Vulkan
         run: python scripts/ci/software_vulkan.py
       - name: Compile and verify the native exception probe
