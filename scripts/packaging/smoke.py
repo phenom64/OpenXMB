@@ -7,8 +7,57 @@ from pathlib import Path
 import platform
 import subprocess
 import tempfile
+import wave
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def document_fixture(path):
+    stream = b'BT /F1 22 Tf 36 120 Td (OpenXMB package smoke) Tj ET\n'
+    objects = [b'<< /Type /Catalog /Pages 2 0 R >>',
+               b'<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+               b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 320 180] '
+               b'/Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
+               b'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+               b'<< /Length ' + str(len(stream)).encode() + b' >>\nstream\n' + stream + b'endstream']
+    contents = bytearray(b'%PDF-1.4\n')
+    offsets = [0]
+    for number, value in enumerate(objects, 1):
+        offsets.append(len(contents))
+        contents.extend(f'{number} 0 obj\n'.encode() + value + b'\nendobj\n')
+    start = len(contents)
+    contents.extend(f'xref\n0 {len(offsets)}\n0000000000 65535 f \n'.encode())
+    for offset in offsets[1:]:
+        contents.extend(f'{offset:010d} 00000 n \n'.encode())
+    contents.extend(f'trailer\n<< /Size {len(offsets)} /Root 1 0 R >>\nstartxref\n{start}\n%%EOF\n'.encode())
+    path.write_bytes(contents)
+
+
+def check_helpers(helpers, directory, environment):
+    def invoke(name, *arguments):
+        return subprocess.run([str(helpers[name]), *map(str, arguments)], env=environment,
+                              capture_output=True, timeout=45, check=True)
+
+    pdf = directory / 'document.pdf'
+    document_fixture(pdf)
+    invoke('pdftotext', pdf, directory / 'document.txt')
+    if 'OpenXMB package smoke' not in (directory / 'document.txt').read_text():
+        raise RuntimeError('The packaged PDF tools could not extract document text')
+    invoke('pdftoppm', '-singlefile', '-scale-to', '320', '-png', pdf, directory / 'document')
+    from PIL import Image, ImageStat
+    with Image.open(directory / 'document.png') as image:
+        if max(ImageStat.Stat(image.convert('RGB')).stddev) < 3:
+            raise RuntimeError('The packaged PDF tools rendered an empty page')
+    audio = directory / 'audio.wav'
+    with wave.open(str(audio), 'wb') as handle:
+        handle.setnchannels(1)
+        handle.setsampwidth(2)
+        handle.setframerate(22050)
+        handle.writeframes(b'\x00\x00' * 2205)
+    probe = json.loads(invoke('ffprobe', '-v', 'error', '-show_streams', '-of', 'json', audio).stdout)
+    if not any(stream.get('codec_name') == 'pcm_s16le' for stream in probe['streams']):
+        raise RuntimeError('The packaged media tools did not recognize PCM audio')
+    invoke('ffmpeg', '-v', 'error', '-i', audio, '-f', 'null', '-')
 
 
 def main():
@@ -49,16 +98,19 @@ def main():
     default_config = next((path for path in defaults if path.is_file()), None)
     if default_config is None:
         raise RuntimeError('Missing packaged default configuration')
+    helpers = {}
     for name in ['ffmpeg', 'ffprobe', 'pdftoppm', 'pdftotext', 'pdfinfo']:
         helper = app.parent / (name + ('.exe' if platform.system() == 'Windows' else ''))
         if platform.system() == 'Windows' and name.startswith('pdf'):
             helper = app.parent / 'tools/poppler/bin' / (name + '.exe')
         if platform.system() == 'Linux':
             helper = Path('/usr/bin') / name
+        helpers[name] = helper
         subprocess.run([str(helper), '-version' if name.startswith('ff') else '-v'],
                        env=environment, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                        timeout=30, check=True)
-    checks.append('packaged document and media tools')
+    check_helpers(helpers, args.output.resolve(), environment)
+    checks.append('packaged PDF rendering/text extraction and audio decoding')
     if args.render or args.background:
         with tempfile.TemporaryDirectory(prefix='openxmb-package-smoke-') as temporary:
             root = Path(temporary)
