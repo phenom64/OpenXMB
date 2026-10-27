@@ -86,8 +86,19 @@ class ReleaseArtifactTests(unittest.TestCase):
 
     def test_complete_artifacts_produce_release_checksums(self):
         paths = self.verify()
-        self.assertEqual({path.name for path in paths}, {*self.names, 'SHA256SUMS'})
+        self.assertEqual({path.name for path in paths},
+                         {*(name.replace('~', '.') for name in self.names), 'SHA256SUMS'})
         self.assertEqual(len((self.directory / 'SHA256SUMS').read_text().splitlines()), 3)
+
+    def test_published_filenames_match_manifest_and_preserve_package_bytes(self):
+        paths = self.verify()
+        manifest = (self.directory / 'SHA256SUMS').read_text().splitlines()
+        for path, line in zip(paths[:-1], manifest):
+            digest, name = line.split()
+            self.assertEqual(name, path.name)
+            self.assertNotIn('~', name)
+            self.assertEqual(digest, hashlib.sha256(path.read_bytes()).hexdigest())
+        self.assertEqual(paths[0].read_bytes(), (self.directory / self.names[0]).read_bytes())
 
     def test_missing_platform_blocks_release(self):
         (self.directory / self.names[1]).unlink()
@@ -106,16 +117,19 @@ class ReleaseArtifactTests(unittest.TestCase):
             self.verify()
 
 
-if __name__ == '__main__':
-    unittest.main()
-
-
 class ReleaseRecoveryTests(unittest.TestCase):
     def test_validated_master_descendant_retains_approved_release_intent(self):
         pr={'number':8,'merged_at':'approved','merge_commit_sha':'approved-sha','base':{'ref':'master'},'head':{'ref':'RSX-26','repo':{'full_name':'phenom64/OpenXMB'}}}
         environment={'GITHUB_REPOSITORY':'phenom64/OpenXMB','GITHUB_SHA':'fix-sha','GITHUB_EVENT_NAME':'push','GITHUB_REF':'refs/heads/master'}
-        with patch.dict(release.os.environ,environment), patch.object(release,'api',side_effect=[pr,{'status':'ahead'},None]):
+        with patch.dict(release.os.environ,environment), patch.object(release,'api',side_effect=[pr,{'status':'ahead'},None,[]]):
             self.assertTrue(release.context()[2])
+
+    def test_draft_on_another_validated_commit_does_not_move_the_tag(self):
+        pr={'number':8,'merged_at':'approved','merge_commit_sha':'approved-sha','base':{'ref':'master'},'head':{'ref':'RSX-26','repo':{'full_name':'phenom64/OpenXMB'}}}
+        environment={'GITHUB_REPOSITORY':'phenom64/OpenXMB','GITHUB_SHA':'fix-sha','GITHUB_EVENT_NAME':'push','GITHUB_REF':'refs/heads/master'}
+        draft={'draft':True,'tag_name':'v0.2.0-beta.2','target_commitish':'validated-sha'}
+        with patch.dict(release.os.environ,environment), patch.object(release,'api',side_effect=[pr,{'status':'ahead'},None,[draft]]):
+            self.assertFalse(release.context()[2])
 
     def test_diverged_master_cannot_publish(self):
         pr={'number':8,'merged_at':'approved','merge_commit_sha':'approved-sha','base':{'ref':'master'},'head':{'ref':'RSX-26','repo':{'full_name':'phenom64/OpenXMB'}}}
@@ -173,3 +187,7 @@ class DraftLookupTests(unittest.TestCase):
         draft={'id':123,'draft':True,'tag_name':'v0.2.0-beta.2'}
         with patch.object(release,'api',side_effect=[None,[draft]]):
             self.assertEqual(release.find_release('phenom64/OpenXMB','v0.2.0-beta.2'),draft)
+
+
+if __name__ == '__main__':
+    unittest.main()

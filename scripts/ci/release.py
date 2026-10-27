@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import urllib.error
 import urllib.request
@@ -49,7 +50,7 @@ def context():
             if (merge and merge != sha and eligible('push', 'refs/heads/master', merge, repository, [pr])):
                 comparison = api(f'repos/{repository}/compare/{merge}...{sha}')
                 if comparison.get('status') == 'ahead':
-                    existing = api(f'repos/{repository}/releases/tags/v0.2.0-beta.2', missing_ok=True)
+                    existing = find_release(repository, 'v0.2.0-beta.2')
                     if not existing or (existing.get('draft') and existing.get('target_commitish') == sha):
                         # Follow-up fixes retain the owner's approved release intent.
                         prs = [dict(pr, merge_commit_sha=sha)]
@@ -84,7 +85,7 @@ def validated_run_context(run_id):
 def verify_assets(directory, version):
     names = [f'openxmb_{version.replace("-beta.", "~beta.")}_amd64.deb',
              f'OpenXMB-{version}-windows-x86_64.zip', f'OpenXMB-{version}-macos-universal.dmg']
-    lines = []
+    lines, assets = [], []
     for name in names:
         path = directory / name
         if not path.is_file() or path.stat().st_size < 1024:
@@ -93,10 +94,16 @@ def verify_assets(directory, version):
         recorded = path.with_name(name + '.sha256').read_text().split()[0]
         if actual != recorded:
             raise RuntimeError('Artifact checksum mismatch: ' + name)
-        lines.append(actual + '  ' + name)
+        # GitHub normalizes '~' in uploaded asset names to '.'. Keep the Debian
+        # package version intact, but publish a stable filename and manifest.
+        asset = directory / name.replace('~', '.')
+        if asset != path:
+            shutil.copyfile(path, asset)
+        assets.append(asset)
+        lines.append(actual + '  ' + asset.name)
     checksum = directory / 'SHA256SUMS'
     checksum.write_text('\n'.join(lines) + '\n')
-    return [directory / name for name in names] + [checksum]
+    return assets + [checksum]
 
 
 def reserve_tag(repository, sha, tag):
