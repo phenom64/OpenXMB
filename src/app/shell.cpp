@@ -1567,6 +1567,9 @@ namespace app
             if(dynamic_cast<app::message_overlay*>(old_overlay.get()) != nullptr) {
                 set_blur_background(false);
             }
+            // Earlier submitted frames can still sample the retiring overlay's
+            // icon/artwork textures after its fade has finished on the CPU.
+            win->waitIdle();
             old_overlay.reset();
         }
 

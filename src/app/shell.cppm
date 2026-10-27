@@ -223,9 +223,11 @@ namespace app
                 if(index == overlays.size()-1 && overlays[index]->do_fade_out()) {
                     overlay_fade_direction = transition_direction::out;
                     overlay_fade_time = std::chrono::steady_clock::now();
+                    if(old_overlay) win->waitIdle();
                     old_overlay = std::move(overlays[index]);
                 } else {
                     overlay_fade_time = std::chrono::steady_clock::now() - overlay_transition_duration;
+                    win->waitIdle();
                 }
                 overlays.erase(overlays.begin()+index);
 
