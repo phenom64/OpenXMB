@@ -36,9 +36,15 @@ def notices(destination):
     shutil.copytree(ROOT / 'LICENSES', destination / 'LICENSES', dirs_exist_ok=True)
 
 
+def shared_assets(stage, destination):
+    for name in ['shell', 'OpenXMB', 'locale']:
+        shutil.copytree(stage / 'share' / name, destination / name, dirs_exist_ok=True)
+
+
 def linux(stage, destination):
     package = destination / 'deb-root'
-    shutil.copytree(stage, package / 'usr', dirs_exist_ok=True)
+    shutil.copytree(stage / 'bin', package / 'usr/bin', dirs_exist_ok=True)
+    shared_assets(stage, package / 'usr/share')
     control = package / 'DEBIAN'
     control.mkdir(parents=True)
     metadata = destination / 'shlibdeps'
@@ -86,7 +92,12 @@ def linux(stage, destination):
 
 def windows(stage, destination):
     app = destination / f'OpenXMB-{VERSION}-windows-x86_64'
-    shutil.copytree(stage, app, dirs_exist_ok=True)
+    app.mkdir(parents=True, exist_ok=True)
+    for path in stage.iterdir():
+        if path.is_file() and (path.suffix.lower() in ['.exe', '.dll'] or path.name == 'config.json'):
+            shutil.copy2(path, app / path.name)
+    for name in ['shell', 'locales']:
+        shutil.copytree(stage / name, app / name, dirs_exist_ok=True)
     (app / 'XMS.bin.exe').rename(app / 'OpenXMB.exe')
     prefix = Path(os.environ['VCPKG_INSTALLED_DIR']) / 'x64-windows'
     for path in (prefix / 'bin').glob('*.dll'):
@@ -139,7 +150,7 @@ def mac_thin(stage, destination, arch):
     binaries, resources, frameworks = [contents / name for name in ['MacOS', 'Resources', 'Frameworks']]
     for path in [binaries, resources, frameworks]:
         path.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(stage / 'share', resources / 'share', dirs_exist_ok=True)
+    shared_assets(stage, resources / 'share')
     for path in (stage / 'bin').iterdir():
         if is_macho(path):
             shutil.copy2(path, binaries / ('OpenXMB' if path.name == 'XMS.bin' else path.name))

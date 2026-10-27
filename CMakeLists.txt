@@ -269,7 +269,7 @@ if(AUROREENGINE_LOCAL)
 else()
   FetchContent_Declare(auroreengine
     GIT_REPOSITORY https://github.com/phenom64/AuroreEngine.git
-    GIT_TAG        52d3e030a1a58e705ca85074bb410d9b9c5914b2
+    GIT_TAG        b5ba92ab48375819bcc6dc2aeaf843fe1de6e999
     OVERRIDE_FIND_PACKAGE
   )
   FetchContent_GetProperties(auroreengine)

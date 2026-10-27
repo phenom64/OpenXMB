@@ -1,3 +1,21 @@
+/* This file is a part of the OpenXMB desktop experience project.
+ * Copyright (C) 2025-2026 Syndromatic Ltd. All rights reserved
+ * Designed by Kavish Krishnakumar in Manchester.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <gtk/gtk.h>
 #include <gdk/gdkx.h>
 #include <webkit2/webkit2.h>
@@ -37,7 +55,6 @@ struct Browser {
         std::error_code error;std::filesystem::rename(pending,state_path,error);
     }
 };
-int ignore_closed_parent(Display*,XErrorEvent*) {return 0;}
 GdkFilterReturn parent_lifecycle(GdkXEvent* native,GdkEvent*,gpointer data) {
     const auto& event=*static_cast<XEvent*>(native);
     const auto& b=*static_cast<Browser*>(data);
@@ -53,7 +70,17 @@ GdkFilterReturn parent_lifecycle(GdkXEvent* native,GdkEvent*,gpointer data) {
 gboolean update(gpointer data) {
     auto& b=*static_cast<Browser*>(data);
     XWindowAttributes a{};
-    if(!XGetWindowAttributes(b.display,b.parent,&a)||a.map_state==IsUnmapped) {gtk_main_quit();return G_SOURCE_REMOVE;}
+    XWindowAttributes child{};
+    const bool alive=XGetWindowAttributes(b.display,b.parent,&a)&&XGetWindowAttributes(b.display,b.child,&child);
+    auto* display=gdk_display_get_default();
+    const int error=gdk_x11_display_error_trap_pop(display);
+    gdk_x11_display_error_trap_push(display);
+    // The server can destroy both windows before GTK reads DestroyNotify.
+    // Keep errors trapped until this liveness check, then terminate before a
+    // pending Cairo paint or GTK cleanup touches the destroyed drawable.
+    if(!alive) std::_Exit(EXIT_SUCCESS);
+    if(error) {g_warning("Unexpected X11 error while the browser surface is alive: %d",error);std::_Exit(EXIT_FAILURE);}
+    if(a.map_state==IsUnmapped) {gtk_main_quit();return G_SOURCE_REMOVE;}
     if(a.width!=b.width||a.height!=b.height) {
         b.width=a.width;b.height=a.height;
         const double scale=std::min(a.width/1920.0,a.height/1080.0);
@@ -105,7 +132,7 @@ int main(int argc,char** argv) {
     try {b.parent=std::stoull(argv[2]);b.state_path=argv[4];}catch(...) {return 2;}
     if(!gtk_init_check(nullptr,nullptr)) return 3;
     b.display=GDK_DISPLAY_XDISPLAY(gdk_display_get_default());
-    XSetErrorHandler(ignore_closed_parent);
+    gdk_x11_display_error_trap_push(gdk_display_get_default());
     XWindowAttributes parent{};if(!b.parent||!XGetWindowAttributes(b.display,b.parent,&parent)) return 3;
     const auto profile=std::filesystem::path(argv[3]);
     std::filesystem::create_directories(profile/"cache");std::filesystem::create_directories(profile/"data");
@@ -132,5 +159,6 @@ int main(int argc,char** argv) {
     g_timeout_add(200,update,&b);
     b.reveal();
     gtk_main();
+    gdk_x11_display_error_trap_pop_ignored(gdk_display_get_default());
     return 0;
 }
