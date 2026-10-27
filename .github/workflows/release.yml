@@ -19,7 +19,7 @@ jobs:
     name: Release gate
     runs-on: ubuntu-24.04
     permissions:
-      contents: read
+      contents: write
       pull-requests: read
     outputs:
       version: ${{ steps.gate.outputs.version }}

@@ -1,0 +1,49 @@
+name: Publish validated release
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful master Build, test and release run ID
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Validate approved source and completed platform checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_RUN: ${{ inputs.run_id }}
+        run: |
+          python3 - <<'PY'
+          import importlib.util, os
+          spec = importlib.util.spec_from_file_location('release', 'scripts/ci/release.py')
+          release = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(release)
+          print(release.validated_run_context(os.environ['RELEASE_RUN']))
+          PY
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          pattern: release-*
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+          merge-multiple: true
+          path: dist/release
+      - name: Verify artifacts and publish the completed release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_RUN: ${{ inputs.run_id }}
+        run: python3 scripts/ci/release.py recover --run-id "$RELEASE_RUN" --artifacts dist/release
