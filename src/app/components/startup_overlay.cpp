@@ -20,13 +20,8 @@ module;
 
 #include <algorithm>
 #include <array>
-#include <fast_float/fast_float.h>
-#include <chrono>
-#include <cmath>
-#include <cstdlib>
 #include <filesystem>
 #include <iterator>
-#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -51,38 +46,6 @@ namespace {
 float smooth01(float value) {
   value = std::clamp(value, 0.0f, 1.0f);
   return value * value * (3.0f - 2.0f * value);
-}
-
-double elapsed_seconds(std::chrono::steady_clock::time_point start) {
-  return std::chrono::duration<double>(std::chrono::steady_clock::now() - start)
-      .count();
-}
-
-std::optional<double> fixed_boot_seconds_from_environment() {
-  const char* value = std::getenv("OPENXMB_FIXED_BOOT_SECONDS");
-  if(value == nullptr || *value == '\0') {
-    return std::nullopt;
-  }
-  const std::string_view text{value};
-  double seconds{};
-  const auto [end, error] = fast_float::from_chars(
-      text.data(), text.data() + text.size(), seconds,
-      fast_float::chars_format::general);
-  if(error != std::errc{} || end != text.data() + text.size() ||
-     !std::isfinite(seconds) || seconds < 0.0) {
-    spdlog::warn(
-        "Ignoring invalid OPENXMB_FIXED_BOOT_SECONDS value '{}'; expected a finite non-negative number",
-        text);
-    return std::nullopt;
-  }
-  return seconds;
-}
-
-double boot_elapsed_seconds(std::chrono::steady_clock::time_point start) {
-  if(const auto fixed = fixed_boot_seconds_from_environment()) {
-    return *fixed;
-  }
-  return elapsed_seconds(start);
 }
 
 std::vector<std::string> wrap_warning_body(
@@ -122,7 +85,8 @@ std::vector<std::string> wrap_warning_body(
 
 startup_overlay::~startup_overlay() {
   auto* chunk = static_cast<sdl::mix::Chunk*>(startup_sound);
-  if(startup_channel >= 0 && sdl::mix::Playing(startup_channel)) {
+  if(startup_channel >= 0 && sdl::mix::GetChunk(startup_channel) == chunk &&
+     sdl::mix::Playing(startup_channel)) {
     sdl::mix::HaltChannel(startup_channel);
   }
   if(chunk) {
@@ -131,6 +95,7 @@ startup_overlay::~startup_overlay() {
 }
 
 result startup_overlay::tick(app::shell* xmb) {
+  host = xmb;
   // Start audio on first tick to ensure mixer is ready
   if (!started_audio) {
     const std::array sound_paths{
@@ -155,6 +120,8 @@ result startup_overlay::tick(app::shell* xmb) {
       }
       if(startup_channel == -1) {
         spdlog::debug("startup_overlay: PlayChannel error for {}: {}", path_string, sdl::mix::GetError());
+      } else {
+        spdlog::debug("Startup cue started");
       }
       break;
     }
@@ -164,26 +131,50 @@ result startup_overlay::tick(app::shell* xmb) {
     started_audio = true;
   }
 
-  const auto elapsed = boot_elapsed_seconds(start_time);
-  const auto sample = openxmb::xmb::sample_boot_timeline(elapsed);
+  const auto sample = xmb->startup_sample();
+  warning_visible = sample.warning_opacity > 0.0;
+  if(sample.complete && !visual_complete) spdlog::debug("Startup UI reveal complete");
+  visual_complete = sample.complete;
+  revealing_menu = sample.ui_reveal > 0.0;
   if(xmb != nullptr) {
     xmb->set_startup_background_blur_px(static_cast<float>(
         sample.complete ? 0.0 : sample.warning_backdrop_blur_px));
   }
-  if(!fading_audio && elapsed >= openxmb::xmb::BootMilestones::identity_fade_seconds &&
-     startup_channel >= 0 && sdl::mix::Playing(startup_channel)) {
-    sdl::mix::FadeOutChannel(startup_channel, 900);
-    fading_audio = true;
+  // Visual transitions never own the audio lifetime. Keep a transparent,
+  // input-free component alive if a longer startup cue is still playing.
+  const bool audio_playing = startup_channel >= 0 &&
+      sdl::mix::GetChunk(startup_channel) == startup_sound &&
+      sdl::mix::Playing(startup_channel);
+  if(startup_channel >= 0 && !audio_playing && !audio_finished_logged) {
+    spdlog::debug("Startup cue finished");
+    audio_finished_logged = true;
   }
-  if (sample.complete) {
+  if (sample.complete && !audio_playing) {
     return result::close;
   }
   return result::success;
 }
 
-void startup_overlay::render(auroreengine::gui_renderer& renderer, app::shell*) {
-  const auto elapsed = boot_elapsed_seconds(start_time);
-  const auto sample = openxmb::xmb::sample_boot_timeline(elapsed);
+result startup_overlay::on_event(const event& input) {
+  if(visual_complete) return result::unsupported;
+  const bool enter = input.test<events::key_down>([](const auto& key) {
+    return key.keycode == 40 || key.keycode == 88; // Return / keypad Enter scancodes
+  });
+  const bool cross = input.test<events::controller_button_down>([](const auto& button) {
+    return button.button == events::logical_controller_button::a;
+  });
+  if(host != nullptr && warning_visible && (enter || cross || input.action == action::ok)) {
+    host->dismiss_startup_warning(input);
+    warning_visible = false;
+  }
+  // Consume intro input so the same confirm cannot activate the hidden menu.
+  return result::success;
+}
+
+void startup_overlay::render(auroreengine::gui_renderer& renderer, app::shell* xmb) {
+  const auto sample = xmb->startup_sample();
+  if(sample.complete) return;
+  const auto elapsed = sample.elapsed_seconds;
 
   const auto settle_start = openxmb::xmb::BootMilestones::warning_out_seconds;
   const auto settle_end = openxmb::xmb::BootMilestones::ui_in_seconds;

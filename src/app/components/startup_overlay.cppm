@@ -32,25 +32,28 @@ import :component;
 namespace app {
 
 // Simple boot splash: plays startup jingle and fades text in/out
-export class startup_overlay : public component {
+export class startup_overlay : public component, public event_receiver {
   public:
     startup_overlay() = default;
     ~startup_overlay() override;
 
     result tick(app::shell*) override;
+    result on_event(const event&) override;
     void render(auroreengine::gui_renderer& renderer, app::shell*) override;
     // Opaque so menus do not render behind the intro (PS3-like behavior)
-    [[nodiscard]] bool is_opaque() const override { return true; }
+    [[nodiscard]] bool is_opaque() const override { return !visual_complete && !revealing_menu; }
     [[nodiscard]] bool do_fade_in() const override { return true; }
-    [[nodiscard]] bool do_fade_out() const override { return true; }
+    [[nodiscard]] bool do_fade_out() const override { return false; }
 
   private:
-    using time_point = std::chrono::time_point<std::chrono::steady_clock>;
-    time_point start_time { std::chrono::steady_clock::now() };
     void* startup_sound { nullptr };
     int startup_channel { -1 };
     bool started_audio { false };
-    bool fading_audio { false };
+    bool audio_finished_logged { false };
+    bool visual_complete { false };
+    bool revealing_menu { false };
+    bool warning_visible { false };
+    app::shell* host { nullptr };
 };
 
 }

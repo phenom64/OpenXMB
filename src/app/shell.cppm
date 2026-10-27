@@ -37,6 +37,7 @@ module;
 namespace openxmb::themes { class ThemeLibrary; struct AppliedTheme; }
 
 #include <glm/vec2.hpp>
+#include "openxmb/xmb/boot_timeline.hpp"
 
 export module openxmb.app:main;
 
@@ -79,6 +80,8 @@ namespace app
             void prepare(std::vector<vk::Image> swapchainImages, std::vector<vk::ImageView> swapchainViews) override;
             void render(int frame, vk::Semaphore imageAvailable, vk::Semaphore renderFinished, vk::Fence fence) override;
             void tick();
+            openxmb::xmb::BootSample startup_sample();
+            void dismiss_startup_warning(const event& input);
 
             void key_up(sdl::Keysym key) override;
             void key_down(sdl::Keysym key) override;
@@ -373,5 +376,9 @@ namespace app
 
             // Monotonic start time for shader time uniforms (avoid epoch-based float precision loss)
             time_point shader_time_zero { std::chrono::steady_clock::now() };
+            openxmb::xmb::BootTimeline startup_timeline;
+            std::optional<events::logical_controller_button> startup_dismiss_button;
+            std::optional<unsigned int> startup_dismiss_key;
+            double startup_elapsed_seconds() const;
     };
 }

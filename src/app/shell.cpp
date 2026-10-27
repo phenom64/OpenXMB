@@ -452,6 +452,8 @@ namespace app
         // runs keep their settled-scene default unless visual verification
         // explicitly opts into the real boot overlay.
         if(!win->config.headless || force_headless_startup_overlay()) {
+            shader_time_zero = std::chrono::steady_clock::now();
+            startup_timeline.reset();
             emplace_overlay<app::startup_overlay>();
         }
         fixed_components_loaded = true;
@@ -787,22 +789,7 @@ namespace app
             commandBuffer.setViewport(0, viewport);
             commandBuffer.setScissor(0, scissor);
 
-            float seconds = std::chrono::duration<float>(
-                std::chrono::steady_clock::now() - shader_time_zero)
-                                .count();
-            if(win->config.headless && force_headless_startup_overlay()) {
-                if(const auto fixed_boot_seconds =
-                       fixed_boot_seconds_from_environment()) {
-                    seconds = static_cast<float>(*fixed_boot_seconds);
-                }
-            } else if(win->config.headless) {
-                // Headless visual verification intentionally omits the
-                // startup overlay, so begin in the same settled scene.
-                seconds += static_cast<float>(
-                    openxmb::xmb::BootMilestones::complete_seconds);
-            }
-            const auto boot =
-                openxmb::xmb::sample_boot_timeline(seconds);
+            const auto boot = startup_sample();
 
             if(!ingame_mode) {
                 if(music_scene||music_mix>0.001F||config::CONFIG.backgroundType == config::config::background_type::original) {
@@ -827,7 +814,7 @@ namespace app
                     procedural_wave_render->render(
                         commandBuffer, frame, backgroundRenderPass.get(),
                         original_effect_tint, original_effect_brightness,
-                        static_cast<float>(fixed_wave_seconds_from_environment().value_or(seconds)));
+                        static_cast<float>(fixed_wave_seconds_from_environment().value_or(boot.wave_boot_time_seconds)));
 
                 }
                 else if(config::CONFIG.backgroundType == config::config::background_type::wave) {
@@ -1483,6 +1470,8 @@ namespace app
         const bool shell_fade_transition = overlay_transition && top_uses_shell_fade;
         bool allow_menu = render_menu || ((top_is_message || fading_out_message) && shell_fade_transition);
         if(allow_menu){
+            const float startup_reveal = static_cast<float>(startup_sample().ui_reveal);
+            renderer.push_color(glm::vec4(startup_reveal));
             if(shell_fade_transition || fading_out_message) {
                 // Fade UI to transparency: scale RGB and A together by (1 - progress)
                 float s = 1.0f - static_cast<float>(dir_progress);
@@ -1517,6 +1506,7 @@ namespace app
             if(shell_fade_transition || fading_out_message) {
                 renderer.pop_color();
             }
+            renderer.pop_color();
 
         }
 
@@ -1821,7 +1811,51 @@ namespace app
         tick_cursor();
     }
 
+    double shell::startup_elapsed_seconds() const {
+        if(win->config.headless && force_headless_startup_overlay()) {
+            if(const auto fixed = fixed_boot_seconds_from_environment()) return *fixed;
+        }
+        const double elapsed = std::chrono::duration<double>(
+            std::chrono::steady_clock::now() - shader_time_zero).count();
+        return elapsed + (win->config.headless && !force_headless_startup_overlay()
+            ? openxmb::xmb::BootMilestones::complete_seconds : 0.0);
+    }
+
+    openxmb::xmb::BootSample shell::startup_sample() {
+        return startup_timeline.sample(startup_elapsed_seconds());
+    }
+
+    void shell::dismiss_startup_warning(const event& input) {
+        if(!startup_timeline.dismiss_warning(startup_elapsed_seconds())) return;
+        if(const auto* button = input.get<events::controller_button_down>())
+            startup_dismiss_button = button->button;
+        if(const auto* key = input.get<events::key_down>())
+            startup_dismiss_key = key->keycode;
+        spdlog::debug("Startup warning dismissed");
+    }
+
     void shell::dispatch(const event& event) {
+        // A held dismissal must not auto-repeat into the revealed menu.
+        if(startup_dismiss_button) {
+            if(const auto* up = event.get<events::controller_button_up>();
+               up && up->button == *startup_dismiss_button) {
+                startup_dismiss_button.reset();
+                return;
+            }
+            if(event.test<events::controller_button_down>([this](const auto& down) {
+                return down.button == *startup_dismiss_button;
+            })) return;
+        }
+        if(startup_dismiss_key) {
+            if(const auto* up = event.get<events::key_up>();
+               up && up->keycode == *startup_dismiss_key) {
+                startup_dismiss_key.reset();
+                return;
+            }
+            if(event.test<events::key_down>([this](const auto& down) {
+                return down.keycode == *startup_dismiss_key;
+            })) return;
+        }
         if(background_only) {
             return;
         }
