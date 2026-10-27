@@ -40,8 +40,23 @@ def main():
             raise RuntimeError('A software Vulkan ICD is required for the Windows graphics smoke')
         icd = candidates[0]
         print('Software Vulkan smoke driver from Chrome for Testing ' + channel['version'])
+    if system == 'Windows' and os.environ.get('GITHUB_ACTIONS') == 'true':
+        # Hosted Windows runners run elevated. The Vulkan loader deliberately
+        # ignores environment driver overrides in that case, so register this
+        # test-only ICD in the disposable runner's normal driver search path.
+        import winreg
+        try:
+            with winreg.CreateKeyEx(winreg.HKEY_LOCAL_MACHINE,
+                    r'SOFTWARE\Khronos\Vulkan\Drivers', 0,
+                    winreg.KEY_WRITE | winreg.KEY_WOW64_64KEY) as key:
+                winreg.SetValueEx(key, str(icd.resolve()), 0, winreg.REG_DWORD, 0)
+            print('Registered software Vulkan ICD for the elevated hosted runner')
+        except PermissionError:
+            print('Machine-wide ICD registration is unavailable; using the environment override')
     with Path(os.environ['GITHUB_ENV']).open('a') as environment:
-        environment.write('VK_ICD_FILENAMES=' + str(icd.resolve()) + '\nOPENXMB_SOFTWARE_VULKAN=1\n')
+        environment.write('VK_ICD_FILENAMES=' + str(icd.resolve()) + '\n'
+                          'VK_DRIVER_FILES=' + str(icd.resolve()) + '\n'
+                          'VK_LOADER_DEBUG=error,warn,driver\nOPENXMB_SOFTWARE_VULKAN=1\n')
 
 
 if __name__ == '__main__':

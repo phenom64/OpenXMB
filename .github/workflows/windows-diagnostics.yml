@@ -6,6 +6,7 @@ on:
     paths:
       - .github/workflows/windows-diagnostics.yml
       - scripts/ci/windows_startup_probe.cpp
+      - scripts/ci/software_vulkan.py
       - scripts/packaging/smoke.py
   workflow_dispatch:
     inputs:
