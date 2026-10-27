@@ -61,35 +61,41 @@ export struct file_info {
 };
 
 class program_registry {
-    static std::unordered_multimap<std::string, open_info> programs_by_mimetype;
-    static std::unordered_multimap<std::string, open_info> programs_by_file_extension;
+    using associations = std::unordered_multimap<std::string, open_info>;
+    // Viewer registrations run during module initialization. Construct each
+    // table on its first access rather than depending on global constructor order.
+    static associations& programs_by_mimetype() {
+        static associations table;
+        return table;
+    }
+    static associations& programs_by_file_extension() {
+        static associations table;
+        return table;
+    }
 
     protected:
         friend std::vector<open_info> get_open_infos(const std::filesystem::path& path, const file_info& info);
 
         void do_register_program_mime(std::string name, std::string mime_type, open_info info) {
-            programs_by_mimetype.emplace(mime_type, info);
+            programs_by_mimetype().emplace(mime_type, info);
         }
         void do_register_program_ext(std::string name, std::string ext, open_info info) {
-            programs_by_file_extension.emplace(ext, info);
+            programs_by_file_extension().emplace(ext, info);
         }
 
         static void get_program_mime(std::string mime_type, std::output_iterator<open_info> auto out) {
-            auto range = programs_by_mimetype.equal_range(mime_type);
+            auto range = programs_by_mimetype().equal_range(mime_type);
             for(auto it = range.first; it != range.second; ++it) {
                 *out++ = it->second;
             }
         }
         static void get_program_ext(std::string ext, std::output_iterator<open_info> auto out) {
-            auto range = programs_by_file_extension.equal_range(ext);
+            auto range = programs_by_file_extension().equal_range(ext);
             for(auto it = range.first; it != range.second; ++it) {
                 *out++ = it->second;
             }
         }
 };
-std::unordered_multimap<std::string, open_info> program_registry::programs_by_mimetype{};
-std::unordered_multimap<std::string, open_info> program_registry::programs_by_file_extension{};
-
 export template<typename T>
 struct register_program : program_registry {
     register_program(std::string name, std::initializer_list<std::string> mime_types,

@@ -22,10 +22,67 @@
 #include <windows.h>
 #include <dbghelp.h>
 #include <cstdio>
+#include <cstdint>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
 namespace {
+void load_symbols(HANDLE process, HANDLE file, const void* base)
+{
+    std::vector<wchar_t> path(32768);
+    const auto size = file ? GetFinalPathNameByHandleW(file, path.data(),
+        static_cast<DWORD>(path.size()), FILE_NAME_NORMALIZED) : 0;
+    std::wstring name = size && size < path.size() ? path.data() : L"";
+    if(name.starts_with(L"\\\\?\\")) name.erase(0, 4);
+    SetLastError(ERROR_SUCCESS);
+    if(!SymLoadModuleExW(process, file, name.empty() ? nullptr : name.c_str(), nullptr,
+                         reinterpret_cast<DWORD64>(base), 0, nullptr, 0) && GetLastError())
+        std::printf("Symbol loading failed: %lu, base %p\n", GetLastError(), base);
+}
+
+template<class T> bool read_value(HANDLE process, ULONG_PTR address, T& value)
+{
+    SIZE_T read{};
+    return ReadProcessMemory(process, reinterpret_cast<const void*>(address), &value,
+                             sizeof(value), &read) && read == sizeof(value);
+}
+
+std::string read_text(HANDLE process, ULONG_PTR address)
+{
+    std::string text;
+    for(unsigned i = 0; i < 2048; ++i) {
+        char character{};
+        if(!read_value(process, address + i, character)) return {};
+        if(!character) return text;
+        if(static_cast<unsigned char>(character) < 32 && character != '\n' && character != '\t') return {};
+        text += character;
+    }
+    return {};
+}
+
+bool print_cpp_exception(HANDLE process, const EXCEPTION_RECORD& exception)
+{
+    if(exception.ExceptionCode != 0xE06D7363 || exception.NumberParameters != 4) return false;
+    // The MSVC x64 exception record identifies the thrown object and relative
+    // RTTI. Read only its type name and standard exception message, never a dump.
+    const auto image = exception.ExceptionInformation[3];
+    const auto info = exception.ExceptionInformation[2];
+    std::uint32_t array{}, type{}, descriptor{};
+    if(read_value(process, info + 12, array) && read_value(process, image + array + 4, type) &&
+       read_value(process, image + type + 4, descriptor)) {
+        const auto name = read_text(process, image + descriptor + 2 * sizeof(void*));
+        if(!name.empty()) std::printf("C++ exception type: %s\n", name.c_str());
+    }
+    ULONG_PTR message{};
+    if(read_value(process, exception.ExceptionInformation[1] + sizeof(void*), message)) {
+        const auto text = read_text(process, message);
+        if(!text.empty()) std::printf("C++ exception message: %s\n", text.c_str());
+        return text == "OpenXMB native startup probe fixture";
+    }
+    return false;
+}
+
 void print_stack(HANDLE process, HANDLE thread)
 {
     CONTEXT context{};
@@ -68,8 +125,12 @@ void print_stack(HANDLE process, HANDLE thread)
 int wmain(int argc, wchar_t** argv)
 {
     if(argc == 2 && std::wstring(argv[1]) == L"--crash") {
+#ifdef _MSC_VER
+        throw std::runtime_error("OpenXMB native startup probe fixture");
+#else
         RaiseException(0xE042584D, EXCEPTION_NONCONTINUABLE, 0, nullptr);
         return 1;
+#endif
     }
     if(argc != 2) return 2;
     const bool self_test = std::wstring(argv[1]) == L"--self-test";
@@ -90,18 +151,21 @@ int wmain(int argc, wchar_t** argv)
     SymSetOptions(SYMOPT_LOAD_LINES | SYMOPT_UNDNAME | SYMOPT_DEFERRED_LOADS |
                   SYMOPT_FAIL_CRITICAL_ERRORS);
     bool recorded_crash = false;
+    [[maybe_unused]] bool recorded_fixture_message = false;
     DWORD exit_status = 1;
     DEBUG_EVENT event{};
     while(WaitForDebugEvent(&event, 30000)) {
         DWORD status = DBG_CONTINUE;
         switch(event.dwDebugEventCode) {
         case CREATE_PROCESS_DEBUG_EVENT:
-            SymInitialize(child.hProcess, nullptr, TRUE);
+            if(!SymInitialize(child.hProcess, nullptr, FALSE))
+                std::printf("Symbol initialization failed: %lu\n", GetLastError());
+            load_symbols(child.hProcess, event.u.CreateProcessInfo.hFile,
+                         event.u.CreateProcessInfo.lpBaseOfImage);
             if(event.u.CreateProcessInfo.hFile) CloseHandle(event.u.CreateProcessInfo.hFile);
             break;
         case LOAD_DLL_DEBUG_EVENT:
-            SymLoadModuleEx(child.hProcess, event.u.LoadDll.hFile, nullptr, nullptr,
-                            reinterpret_cast<DWORD64>(event.u.LoadDll.lpBaseOfDll), 0, nullptr, 0);
+            load_symbols(child.hProcess, event.u.LoadDll.hFile, event.u.LoadDll.lpBaseOfDll);
             if(event.u.LoadDll.hFile) CloseHandle(event.u.LoadDll.hFile);
             break;
         case UNLOAD_DLL_DEBUG_EVENT:
@@ -115,6 +179,7 @@ int wmain(int argc, wchar_t** argv)
             const auto& exception = event.u.Exception;
             const auto code = exception.ExceptionRecord.ExceptionCode;
             if(code == EXCEPTION_BREAKPOINT || code == EXCEPTION_SINGLE_STEP) break;
+            recorded_fixture_message |= print_cpp_exception(child.hProcess, exception.ExceptionRecord);
             status = DBG_EXCEPTION_NOT_HANDLED;
             if(!exception.dwFirstChance || code == 0xC0000409) {
                 recorded_crash = true;
@@ -136,7 +201,13 @@ int wmain(int argc, wchar_t** argv)
             CloseHandle(child.hThread);
             CloseHandle(child.hProcess);
             std::printf("Startup probe exit: 0x%08lX\n", exit_status);
-            return self_test ? (recorded_crash && exit_status != 0 ? 0 : 1) : (exit_status == 0 ? 0 : 1);
+            if(self_test) {
+#ifdef _MSC_VER
+                if(!recorded_fixture_message) return 1;
+#endif
+                return recorded_crash && exit_status != 0 ? 0 : 1;
+            }
+            return exit_status == 0 ? 0 : 1;
         }
         ContinueDebugEvent(event.dwProcessId, event.dwThreadId, status);
     }

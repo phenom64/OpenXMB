@@ -1,7 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
-sudo apt-get update
-sudo apt-get install -y --no-install-recommends \
+# Hosted Azure mirrors can serve packages extremely slowly. Use Ubuntu's signed
+# primary archive over HTTPS while preserving suites, components and keyrings.
+sudo python3 - <<'PY'
+from pathlib import Path
+import re
+for source in Path('/etc/apt').rglob('*'):
+    if source.is_file() and source.suffix in {'.list', '.sources'}:
+        text = source.read_text()
+        updated = re.sub(r'https?://azure\.archive\.ubuntu\.com/ubuntu',
+                         'https://archive.ubuntu.com/ubuntu', text)
+        if updated != text:
+            source.write_text(updated)
+PY
+apt_options=(-o DPkg::Lock::Timeout=180 -o Acquire::Retries=3
+             -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30)
+sudo env DEBIAN_FRONTEND=noninteractive apt-get "${apt_options[@]}" update
+sudo env DEBIAN_FRONTEND=noninteractive apt-get "${apt_options[@]}" install -y --no-install-recommends \
   clang-19 clang-tools-19 lld-19 g++-14 cmake ninja-build pkg-config \
   gettext libarchive-dev zlib1g-dev libx11-dev libxtst-dev libcurl4-openssl-dev \
   libavcodec-dev libavformat-dev libavutil-dev libswresample-dev libswscale-dev \

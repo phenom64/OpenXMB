@@ -196,6 +196,7 @@ jobs:
           name: windows-smoke-evidence
           path: |
             build/release/Testing/Temporary/LastTest.log
+            build/release/XMS.bin.pdb
             dist/*smoke/**
 
   macos:

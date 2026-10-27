@@ -727,6 +727,13 @@ if(WIN32 AND DEFINED _VCPKG_INSTALLED_DIR AND DEFINED VCPKG_TARGET_TRIPLET)
 endif()
 
 if(OPENXMB_BUILD_NATIVE_TESTS)
+  add_test(NAME openxmb_startup_help COMMAND XMS --help)
+  add_test(NAME openxmb_startup_version COMMAND XMS --version)
+  set_tests_properties(openxmb_startup_help openxmb_startup_version PROPERTIES
+    TIMEOUT 30 ENVIRONMENT "OPENXMB_STARTUP_TRACE=1" LABELS "startup")
+  set_tests_properties(openxmb_startup_help PROPERTIES PASS_REGULAR_EXPRESSION "--open-panel")
+  set_tests_properties(openxmb_startup_version PROPERTIES PASS_REGULAR_EXPRESSION "${OPENXMB_RELEASE_VERSION}")
+
   function(openxmb_configure_native_test target_name)
     target_compile_features(${target_name} PRIVATE cxx_std_23)
     target_include_directories(${target_name} PRIVATE include)
