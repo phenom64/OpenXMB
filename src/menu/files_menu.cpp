@@ -201,15 +201,14 @@ namespace menu {
         files_menu_profile profile)
     {
         if(profile == files_menu_profile::music) {
-            const auto name = info.is_directory ? "icon_files_folder.png" :
-                openxmb::music::supported_playlist(file_path) ? "theme/icon_playlist.png" : "theme/icon_music.png";
+            const auto name = info.is_directory ? "theme/icon_music_album_default.png" :
+                openxmb::music::supported_playlist(file_path) ? "theme/icon_playlist.png" : "theme/icon_music_default.png";
             return config::CONFIG.asset_directory / "icons" / name;
         }
-        if(profile != files_menu_profile::generic && info.is_directory) {
-            if(auto icon = xmb_web_media_icon("compat/xmb-ui-compat/images/icon_fw_folder.png")) {
-                return *icon;
-            }
-        }
+        if(profile==files_menu_profile::video)
+            return config::CONFIG.asset_directory/"icons/theme"/(info.is_directory?"icon_video_album_default.png":"icon_video_default.png");
+        if(profile==files_menu_profile::photo&&info.is_directory)
+            return config::CONFIG.asset_directory/"icons/theme/icon_photo_album_default.png";
 
         auto extension = lower_extension(file_path);
         if(info.content_type.starts_with("image/") ||
@@ -494,11 +493,11 @@ namespace menu {
                     else xmb->emplace_overlay<app::message_overlay>("Cannot Play Music",openxmb::music::service().snapshot().error);
                     return result::success;
                 });
-                loader.loadTexture(&entry->get_icon(),config::CONFIG.asset_directory/"icons/theme/icon_music.png");
+                loader.loadTexture(&entry->get_icon(),config::CONFIG.asset_directory/"icons/theme/icon_music_default.png");
                 children.push_back(std::move(entry));
             }
             auto group=std::make_unique<simple_menu>(label,auroreengine::texture(loader.getDevice(),loader.getAllocator()),std::move(children),std::to_string(items.size())+" songs");
-            loader.loadTexture(&group->get_icon(),config::CONFIG.asset_directory/"icons/theme"/(grouping=="Albums"?"icon_music_album_default.png":"icon_music.png"));
+            loader.loadTexture(&group->get_icon(),config::CONFIG.asset_directory/"icons/theme"/"icon_music_album_default.png");
             entries.push_back(std::move(group));
             file_info info{};info.name=label;info.display_name=label;info.is_directory=true;
             extra_data_entries.push_back({path/label,info,std::move(group_tracks)});

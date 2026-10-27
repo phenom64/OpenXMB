@@ -22,6 +22,7 @@
  */
 
 module;
+#include "input_timing.hpp"
 
 #include <array>
 #include <chrono>
@@ -94,10 +95,16 @@ namespace app
 
             void reload_background();
             void reload_fonts();
+            void set_font_file(const std::string& path);
+            void reset_settings();
+            void refresh_desktop_preferences();
             void reload_button_icons();
+            void reload_theme_sounds();
             void reload_language();
             void reload_menu();
             void open_panel(const std::string& name);
+            bool set_audio_device(const std::string& device);
+            std::string audio_device_name() const { return active_audio_device; }
             void open_media(const std::filesystem::path& path);
             void switch_profile(const std::filesystem::path& path);
             void apply_theme(const openxmb::themes::AppliedTheme& theme);
@@ -116,34 +123,25 @@ namespace app
             void handle(result result);
 
             std::string get_controller_type() const;
+            const texture* get_button_icon(action value) const { return buttonTextures[std::to_underlying(value)].get(); }
+            std::string get_button_label(action value) const { return button_labels[std::to_underlying(value)]; }
             void render_controller_buttons(gui_renderer& renderer, float x, float y, std::ranges::range auto buttons) {
-                constexpr float min_width = 0.15f;
-                constexpr float size = 0.05f;
-                constexpr float spacing_scale = 1.0f / 1.25f;
-                float size_x = static_cast<float>(size/renderer.aspect_ratio);
-                float space_x = size_x * spacing_scale;
-                float total_width = 0.0f;
-                float last_width = 0.0f;
-                for (const auto& [action, text] : buttons) {
-                    last_width = space_x + renderer.measure_text(text, size).x;
-                    total_width += std::max(min_width, last_width);
-                }
-                if(last_width < min_width) {
-                    total_width -= (min_width - last_width);
-                }
-
-                float current_x = x - total_width/2;
-                for (const auto& [action, text] : buttons) {
-                    auto icon = buttonTextures[std::to_underlying(action)].get();
-                float width = std::max(min_width, space_x + renderer.measure_text(text, size).x);
-                if(action != action::none && icon) {
-                    // Controller glyphs are flat UI assets, not xmb-web normal maps.
-                    // The glass shader intentionally expects normal-map inputs now,
-                    // so non-XMB utility glyphs stay on the ordinary image path.
-                    renderer.draw_image(*icon, current_x, y, size/2.0, size/2.0);
-                    renderer.draw_text(text, current_x+space_x, y+size*0.033f, size);
-                }
-                    current_x += width;
+                const float fw=static_cast<float>(renderer.frame_size.width),fh=static_cast<float>(renderer.frame_size.height);
+                const float scale=std::min(fw/1920.0F,fh/1080.0F),height=34*scale,gap=12*scale,spacing=64*scale;
+                const float font=28*scale*static_cast<float>(config::CONFIG.textScale),key_font=19*scale;
+                const auto glyph_width=[&](action a){const auto& label=button_labels[std::to_underlying(a)];return label.empty()?height:std::max(height,renderer.text_width_pixels(label,key_font)+14*scale);};
+                float total=0;for(const auto& [a,text]:buttons)if(a!=action::none)total+=glyph_width(a)+gap+renderer.text_width_pixels(text,font)+spacing;
+                if(total>0)total-=spacing;float current=x*fw-total*0.5F;
+                const auto metrics=renderer.text_line_metrics_pixels(font),key_metrics=renderer.text_line_metrics_pixels(key_font);
+                for(const auto& [a,text]:buttons) {
+                    if(a==action::none)continue;const auto i=std::to_underlying(a);const auto width=glyph_width(a);
+                    if(!button_labels[i].empty()) {
+                        renderer.draw_rect({current/fw,y-height/(2*fh)},{width/fw,height/fh},{1,1,1,0.75F});
+                        renderer.draw_rect({(current+scale)/fw,y-height/(2*fh)+scale/fh},{(width-2*scale)/fw,(height-2*scale)/fh},{0.08F,0.08F,0.08F,1});
+                        renderer.draw_text_pixels(button_labels[i],current+width*0.5F,y*fh+(key_metrics.x-key_metrics.y)*0.5F,key_font,{1,1,1,1},0.7F,0,true);
+                    } else if(auto* icon=buttonTextures[i].get())renderer.draw_image(*icon,current/fw,y-height/(2*fh),height/fh,height/fh);
+                    renderer.draw_text_pixels(text,current+width+gap,y*fh+(metrics.x-metrics.y)*0.5F,font,{1,1,1,1},0.7F,0,false);
+                    current+=width+gap+renderer.text_width_pixels(text,font)+spacing;
                 }
             }
 
@@ -316,6 +314,7 @@ namespace app
             main_menu menu{this};
             news_display news{this};
             std::array<std::unique_ptr<texture>, std::to_underlying(action::_length)> buttonTextures;
+            std::array<std::string,std::to_underlying(action::_length)> button_labels;
             std::unique_ptr<texture> cursorTexture;
             std::unique_ptr<texture> iconGlassAmbientTexture;
             std::unique_ptr<texture> iconGlassEnvironmentTexture;
@@ -354,6 +353,14 @@ namespace app
             constexpr static auto controller_button_input_duration = std::chrono::milliseconds(200);
 
             // state
+            std::string active_audio_device;
+            bool desktop_preferences_applied=false;
+            bool desktop_defaults_captured=false;
+            unsigned desktop_default_flags{};
+            int desktop_default_x{},desktop_default_y{},desktop_default_width{},desktop_default_height{};
+            std::array<bool,513> held_scancodes{};
+            ButtonTiming button_timing;
+            time_point last_activity=std::chrono::steady_clock::now();
             bool background_only = false;
             bool ingame_mode = false;
 

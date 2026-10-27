@@ -106,6 +106,7 @@ result startup_overlay::tick(app::shell* xmb) {
     };
 
     for(const auto& path : sound_paths) {
+      if(!config::CONFIG.enabled("audio.startup")) break;
       auto path_string = path.string();
       auto* chunk = sdl::mix::LoadWAV(path_string.c_str());
       if(!chunk) {
@@ -113,7 +114,7 @@ result startup_overlay::tick(app::shell* xmb) {
       }
 
       startup_sound = chunk;
-      sdl::mix::VolumeChunk(chunk, 112);
+      sdl::mix::VolumeChunk(chunk, static_cast<int>(112*std::clamp(config::CONFIG.number("audio.master",100)/100.0,0.0,1.0)));
       startup_channel = sdl::mix::FadeInChannel(-1, chunk, 0, 160);
       if(startup_channel == -1) {
         startup_channel = sdl::mix::PlayChannel(-1, chunk, 0);

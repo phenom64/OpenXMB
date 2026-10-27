@@ -6,6 +6,8 @@ module;
 #include <cstddef>
 #include <span>
 #include <string_view>
+#include <string>
+#include <ctime>
 
 #include "openxmb/xmb/status_bar.hpp"
 
@@ -13,13 +15,14 @@ export module openxmb.xmb.status_bar_renderer;
 
 import auroreengine;
 import glm;
+import openxmb.config;
 
 export namespace openxmb::xmb {
 
 class StatusBarRenderer {
 public:
   void render(auroreengine::gui_renderer &renderer, const StatusBarTime &time,
-              float opacity = 1.0F) const;
+              float opacity = 1.0F, std::string_view label = {}) const;
 
   // Convenience path for production. Deterministic tests and captures should
   // resolve their fixed civil time once and use the overload above.
@@ -225,7 +228,7 @@ void draw_clock_face(auroreengine::gui_renderer &renderer,
 
 void StatusBarRenderer::render(auroreengine::gui_renderer &renderer,
                                const StatusBarTime &time,
-                               float opacity) const {
+                               float opacity, std::string_view label) const {
   opacity = std::clamp(opacity, 0.0F, 1.0F);
   if (opacity <= 0.001F || !valid_status_bar_time(time)) {
     return;
@@ -236,7 +239,7 @@ void StatusBarRenderer::render(auroreengine::gui_renderer &renderer,
   if (text_size == 0) {
     return;
   }
-  const std::string_view time_text(text_buffer.data(), text_size);
+  const std::string_view time_text=label.empty()?std::string_view(text_buffer.data(), text_size):label;
   const auto layout = make_layout(renderer);
 
   renderer.draw_glass_frame(layout.x(StatusBarMetrics::frame_x),layout.y(StatusBarMetrics::frame_y),
@@ -267,11 +270,24 @@ void StatusBarRenderer::render(auroreengine::gui_renderer &renderer,
 bool StatusBarRenderer::render_local(
     auroreengine::gui_renderer &renderer,
     std::chrono::system_clock::time_point time, float opacity) const {
+  time+=std::chrono::seconds(static_cast<int>(config::CONFIG.number("time.offset",0)*3600));
   const auto local = resolve_local_status_bar_time(time);
   if (!local.has_value()) {
     return false;
   }
-  render(renderer, *local, opacity);
+  const auto civil=std::chrono::system_clock::to_time_t(time);std::tm tm{};
+#ifdef _WIN32
+  localtime_s(&tm,&civil);
+#else
+  localtime_r(&civil,&tm);
+#endif
+  const auto date=config::CONFIG.preference("date.format","DD/MM/YYYY");
+  std::string format=date=="YYYY-MM-DD"?"%Y-%m-%d":date=="MM/DD/YYYY"?"%m/%d/%Y":"%d/%m/%Y";
+  format+=config::CONFIG.preference("time.format","24-hour")=="12-hour"?" %I:%M":" %H:%M";
+  if(config::CONFIG.enabled("time.seconds",false))format+=":%S";
+  if(config::CONFIG.preference("time.format","24-hour")=="12-hour")format+=" %p";
+  std::array<char,64> formatted{};std::strftime(formatted.data(),formatted.size(),format.c_str(),&tm);
+  render(renderer, *local, opacity,formatted.data());
   return true;
 }
 

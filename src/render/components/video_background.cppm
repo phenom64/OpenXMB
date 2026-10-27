@@ -12,6 +12,8 @@ export module openxmb.render:video_background;
 
 import auroreengine;
 import :shaders;
+export import :video_texture;
+import openxmb.config;
 import vulkan_hpp;
 import vma;
 
@@ -25,8 +27,6 @@ public:
     ~video_background() {
         decoder.reset();
         try { wait_gpu(); } catch(...) {}
-        staging_buffers.clear();
-        staging_allocations.clear();
         texture.reset();
     }
 
@@ -63,14 +63,11 @@ public:
         image_count = count;
         descriptor_sets.clear();
         descriptor_pool.reset();
-        staging_buffers.clear();
-        staging_allocations.clear();
         if(count == 0) return;
         vk::DescriptorPoolSize size(vk::DescriptorType::eCombinedImageSampler, count);
         descriptor_pool = device.createDescriptorPoolUnique(vk::DescriptorPoolCreateInfo({}, count, size));
         std::vector<vk::DescriptorSetLayout> layouts(count, descriptor_layout.get());
         descriptor_sets = device.allocateDescriptorSets(vk::DescriptorSetAllocateInfo(descriptor_pool.get(), layouts));
-        if(texture) allocate_staging(texture->width, texture->height);
     }
 
     // set_path only posts a request. Opening files, decoding, seeking, and
@@ -90,13 +87,16 @@ public:
     }
 
     void set_active(bool value) {
-        if(active == value) return;
         active = value;
-        if(decoder) decoder->pause(!active);
+        sync_decoder_pause();
     }
 
     void tick() {
+        sync_decoder_pause();
         if(!decoder || !active) return;
+        // Motion policy pauses decoding, not visibility. Keep the last rendered
+        // image; a newly selected background may still produce its first frame.
+        if(motion_paused && initialized && displayed_generation) {pending.reset();return;}
         if(!playlist.empty() && decoder->snapshot()->status == openxmb::video::state::ended) {
             playlist_index = (playlist_index + 1) % playlist.size();
             begin_path(playlist[playlist_index], true);
@@ -109,36 +109,20 @@ public:
         if(frame < 0 || static_cast<unsigned int>(frame) >= image_count) return;
         if(pending) {
             auto& picture = *pending;
-            if(!texture || texture->width != picture.width || texture->height != picture.height) {
-                wait_gpu();
-                texture.reset();
-                staging_buffers.clear();
-                staging_allocations.clear();
-                texture = std::make_unique<auroreengine::texture>(device, allocator, picture.width, picture.height);
-                allocate_staging(picture.width, picture.height);
-                initialized = false;
-            }
-            allocator.copyMemoryToAllocation(picture.rgba.data(), staging_allocations[frame].get(), 0, picture.rgba.size());
-            vk::ImageSubresourceRange range(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
-            command.pipelineBarrier(initialized ? vk::PipelineStageFlagBits::eFragmentShader : vk::PipelineStageFlagBits::eTopOfPipe,
-                vk::PipelineStageFlagBits::eTransfer, {}, {}, {},
-                vk::ImageMemoryBarrier(initialized ? vk::AccessFlags{vk::AccessFlagBits::eShaderRead} : vk::AccessFlags{}, vk::AccessFlagBits::eTransferWrite,
-                    initialized ? vk::ImageLayout::eShaderReadOnlyOptimal : vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal,
-                    vk::QueueFamilyIgnored, vk::QueueFamilyIgnored, texture->image, range));
-            command.copyBufferToImage(staging_buffers[frame].get(), texture->image, vk::ImageLayout::eTransferDstOptimal,
-                vk::BufferImageCopy(0, 0, 0, vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1), vk::Offset3D{},
-                    vk::Extent3D(static_cast<uint32_t>(picture.width), static_cast<uint32_t>(picture.height), 1)));
-            command.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader, {}, {}, {},
-                vk::ImageMemoryBarrier(vk::AccessFlagBits::eTransferWrite, vk::AccessFlagBits::eShaderRead,
-                    vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
-                    vk::QueueFamilyIgnored, vk::QueueFamilyIgnored, texture->image, range));
+            try {
+                if(!texture) texture=std::make_unique<video_texture>(device,allocator,
+                    window&&video_texture::supports_native(window->physicalDevice,window->queueFamilyIndices.graphicsFamily.value()),
+                    [this] {return shaders::yuv420p::decode_comp(device);},[this] {wait_gpu();});
+                if(!texture->upload(command,frame,image_count,picture)) return;
+                upload_error.clear();
+            } catch(const std::exception& exception) {upload_error=exception.what();pending.reset();return;}
             source_aspect = picture.aspect_ratio;
             initialized = true;
             displayed_generation = true;
             pending.reset();
         }
         if(initialized && texture) {
-            vk::DescriptorImageInfo image(sampler.get(), texture->imageView.get(), vk::ImageLayout::eShaderReadOnlyOptimal);
+            vk::DescriptorImageInfo image(sampler.get(), texture->view(), vk::ImageLayout::eShaderReadOnlyOptimal);
             device.updateDescriptorSets(vk::WriteDescriptorSet(descriptor_sets[frame], 0, 0, 1, vk::DescriptorType::eCombinedImageSampler, &image), {});
         }
     }
@@ -160,7 +144,7 @@ public:
     }
 
     bool ready() const { return active && initialized && displayed_generation; }
-    std::string error() const { return decoder ? decoder->snapshot()->error : std::string{}; }
+    std::string error() const { if(!upload_error.empty()) return upload_error;return decoder ? decoder->snapshot()->error : std::string{}; }
     double position() const { return decoder ? decoder->snapshot()->position : 0; }
     double duration() const { return decoder ? decoder->snapshot()->info.duration : 0; }
 
@@ -173,9 +157,8 @@ private:
     std::size_t playlist_index = 0;
     std::unique_ptr<openxmb::video::worker> decoder;
     std::optional<openxmb::video::frame> pending;
-    std::unique_ptr<auroreengine::texture> texture;
-    std::vector<vma::UniqueAllocation> staging_allocations;
-    std::vector<vma::UniqueBuffer> staging_buffers;
+    std::unique_ptr<video_texture> texture;
+    std::string upload_error;
     vk::UniqueSampler sampler;
     vk::UniqueDescriptorSetLayout descriptor_layout;
     vk::UniquePipelineLayout pipeline_layout;
@@ -184,21 +167,29 @@ private:
     auroreengine::UniquePipelineMap pipelines;
     unsigned int image_count = 0;
     bool active = true;
+    bool motion_paused = false;
+    std::optional<bool> decoder_paused;
     bool initialized = false;
     bool displayed_generation = false;
     double source_aspect = 1;
 
     void wait_gpu() { if(window) window->waitIdle(); else device.waitIdle(); }
+    void sync_decoder_pause() {
+        motion_paused=config::CONFIG.enabled("power.reduced.motion",false);
+        const bool pause=!active||motion_paused;
+        if(decoder&&(!decoder_paused||*decoder_paused!=pause)) {decoder->pause(pause);decoder_paused=pause;}
+    }
 
     void begin_path(const std::filesystem::path& value, bool retain_frame) {
         path = value;
         if(!decoder) decoder = std::make_unique<openxmb::video::worker>();
         openxmb::video::options settings;
         settings.audio_output = false;
-        settings.hardware_acceleration = OPENXMB_HWACCEL_STR;
+        settings.hardware_acceleration = config::CONFIG.preference("video.hardware",OPENXMB_HWACCEL_STR);
+        settings.native_yuv=true;
         decoder->set_path(value, std::move(settings));
         decoder->set_repeat(playlist.size() <= 1);
-        decoder->pause(!active);
+        decoder_paused.reset();sync_decoder_pause();
         pending.reset();
         if(!retain_frame) displayed_generation = false;
     }
@@ -213,13 +204,7 @@ private:
             vk::SamplerAddressMode::eClampToEdge, vk::SamplerAddressMode::eClampToEdge, vk::SamplerAddressMode::eClampToEdge));
     }
 
-    void allocate_staging(int width, int height) {
-        staging_allocations.resize(image_count);
-        staging_buffers.resize(image_count);
-        vk::BufferCreateInfo buffer({}, static_cast<vk::DeviceSize>(width) * height * 4u, vk::BufferUsageFlagBits::eTransferSrc, vk::SharingMode::eExclusive);
-        vma::AllocationCreateInfo allocation({}, vma::MemoryUsage::eCpuToGpu);
-        for(unsigned int i = 0; i < image_count; ++i) std::tie(staging_buffers[i], staging_allocations[i]) = allocator.createBufferUnique(buffer, allocation);
-    }
+
 };
 
 }

@@ -19,6 +19,7 @@
 module;
 
 #include "openxmb/xmb/catalog.hpp"
+#include "desktop_settings_catalog.hpp"
 #include "openxmb/xmb/background.hpp"
 #include "openxmb/desktop/library.hpp"
 #include "openxmb/themes/library.hpp"
@@ -60,6 +61,9 @@ import :applications_menu;
 import :settings_menu;
 import :users_menu;
 import :files_menu;
+import :desktop_settings;
+import :message_overlay;
+import :text_entry;
 
 using namespace mfk::i18n::literals;
 
@@ -774,6 +778,7 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
     const auto catalog_path = asset_directory / "catalog/en.json";
     if(auto loaded = openxmb::xmb::load_catalog_file(catalog_path); loaded) {
         settings_catalog.emplace(std::move(*loaded.value));
+        desktop_settings::populate(*settings_catalog);
         if(auto created = openxmb::xmb::SettingsCatalogController::create(*settings_catalog); created) {
             settings_controller.emplace(std::move(*created.controller));
             std::unordered_set<std::string> loaded_icon_refs;
@@ -847,7 +852,7 @@ result main_menu::on_action(action action) {
                 ? result::success | result::confirm_sound
                 : result::unsupported | result::error_rumble;
         case action::options:
-            if(settings_category_active()) { xmb->open_panel("settings"); return result::success; }
+            if(settings_category_active()) return result::success;
             [[fallthrough]];
         case action::extra:
             return activate_current(action)
@@ -911,18 +916,21 @@ bool main_menu::activate_current(action action) {
         return activate_settings(action);
     }
     auto& menu = *menus[selected];
-    auto res = menu.activate(action);
+    auto res = current_submenu ? current_submenu->activate(action) : menu.activate(action);
     if(res == result::submenu) {
         auto& entry = current_submenu ? current_submenu->get_submenu(current_submenu->get_selected_submenu())
             : menu.get_submenu(menu.get_selected_submenu());
         if(auto submenu = dynamic_cast<menu::menu*>(&entry)) {
-            if(submenu->get_submenus_count() > 0) {
+            {
                 if(current_submenu) {
                     submenu_stack.push_back(current_submenu);
                 }
 
                 current_submenu = submenu;
+                last_submenu_transition=std::chrono::steady_clock::now();
                 current_submenu->on_open();
+                last_selected_submenu_item = current_submenu->get_selected_submenu();
+                last_selected_submenu_item_transition = std::chrono::steady_clock::now();
 
                 if(!in_submenu) {
                     in_submenu = true;
@@ -948,6 +956,9 @@ bool main_menu::back() {
         } else {
             current_submenu = submenu_stack.back();
             submenu_stack.pop_back();
+            last_selected_submenu_item=current_submenu->get_selected_submenu();
+            last_selected_submenu_item_transition=std::chrono::steady_clock::now();
+            last_submenu_transition=std::chrono::steady_clock::now();
         }
         return true;
     }
@@ -984,6 +995,9 @@ void main_menu::seed_settings_dialog_values() {
     }
     for(const auto& [node_id, node] : settings_catalog->nodes) {
         (void)node_id;
+        if(node.action_id.starts_with("desktop.")) {
+            settings_value_labels[node.id]=desktop_settings::value(node.action_id.substr(8),xmb);continue;
+        }
         if(node.action_id=="simulate.system.language") {
             for(const auto& choice:node.choices)
                 if(locale_for_catalog_value(choice.value)==config::CONFIG.language||
@@ -1022,7 +1036,7 @@ bool main_menu::select_settings_relative(direction dir) {
 }
 
 bool main_menu::activate_settings(action action) {
-    if(action == action::options) { xmb->open_panel("settings"); return true; }
+    if(action == action::options) return true;
     if(action != action::ok || !settings_catalog || !settings_controller) {
         return false;
     }
@@ -1036,6 +1050,10 @@ bool main_menu::activate_settings(action action) {
         return false;
     }
 
+    const auto* selected_node=settings_catalog->find_node(menu_node->children[route.selection]);
+    if(selected_node && selected_node->action_id.starts_with("desktop.")) {
+        desktop_settings::activate(xmb,*selected_node);return true;
+    }
     const auto resolved = openxmb::xmb::resolve_settings_action(
         *settings_catalog, menu_node->children[route.selection]);
     if(!resolved || !resolved.plan) {
@@ -1058,7 +1076,7 @@ bool main_menu::activate_settings(action action) {
             if(open_settings_dialog_choice_overlay(*resolved.plan)) {
                 return true;
             }
-            xmb->open_panel("settings");
+            xmb->emplace_overlay<message_overlay>("Unavailable", "This setting is not supported by this build.");
             return true;
         case openxmb::xmb::SettingsActionKind::simulated_setting:
             if(resolved.plan->may_update_settings_state) {
@@ -1067,10 +1085,10 @@ bool main_menu::activate_settings(action action) {
                     return true;
                 }
             }
-            xmb->open_panel("settings");
+            xmb->emplace_overlay<message_overlay>("Unavailable", "This setting is not supported by this build.");
             return true;
         default:
-            xmb->open_panel("settings");
+            xmb->emplace_overlay<message_overlay>("Unavailable", "This setting is not supported by this build.");
             return true;
     }
 }
@@ -1142,6 +1160,21 @@ bool main_menu::open_settings_dialog_choice_overlay(
     const openxmb::xmb::SettingsActionPlan& plan) {
     if(!settings_catalog) {
         return false;
+    }
+    if(plan.target_id=="dialog.font") {
+        settings_choice_panel_open=true;auto* host=xmb;
+        host->emplace_overlay<choice_overlay>(std::vector<std::string>{"Original","Choose Font File..."},0,
+            [this,host](unsigned i){settings_choice_panel_open=false;if(!i){host->set_font_file("default");config::CONFIG.save_config();}
+            else host->emplace_overlay<text_entry_overlay>("Font file",config::CONFIG.fontPath.string(),[host](std::string path){if(std::filesystem::is_regular_file(std::filesystem::u8path(path))){try{host->set_font_file(path);config::CONFIG.save_config();}catch(const std::exception& error){host->emplace_overlay<message_overlay>("Font",error.what());}}else host->emplace_overlay<message_overlay>("Font","Font file not found.");});},[this]{settings_choice_panel_open=false;});return true;
+    }
+    if(plan.target_id=="dialog.background") {
+        settings_choice_panel_open=true;auto* host=xmb;
+        host->emplace_overlay<choice_overlay>(std::vector<std::string>{"Original","Classic","Wallpaper","Brightness"},0,
+            [this,host](unsigned i){settings_choice_panel_open=false;
+                if(i<2){config::CONFIG.setBackgroundType(i?config::config::background_type::wave:config::config::background_type::original);config::CONFIG.save_config();return;}
+                openxmb::xmb::CatalogNode node;node.id="category.settings.desktop.background";node.action_id=i==2?"desktop.theme.wallpaper":"desktop.display.brightness";
+                if(i==3)for(const auto* value:{"0.6","0.8","1.0","1.2"})node.choices.push_back({value,value,value});
+                desktop_settings::activate(host,node);},[this]{settings_choice_panel_open=false;});return true;
     }
     if(plan.target_id=="dialog.theme") {
         const auto library=xmb->theme_library();
@@ -1506,6 +1539,7 @@ void main_menu::render(auroreengine::gui_renderer& renderer) {
         : (in_submenu ? submenu_progress : 1.0 - submenu_progress);
     bool in_submenu_now = in_submenu || partial > 0.0;
 
+    if(settings_catalog)for(const auto& [id,node]:settings_catalog->nodes)if(node.action_id.starts_with("desktop."))settings_value_labels[id]=desktop_settings::value(node.action_id.substr(8),xmb);
     render_crossbar(renderer, now);
     if(settings_category_active()) {
         render_settings_scene(renderer, now);
@@ -1707,61 +1741,52 @@ void main_menu::render_crossbar(auroreengine::gui_renderer& renderer, time_point
     }
 }
 
-void main_menu::render_submenu(auroreengine::gui_renderer& renderer, time_point now) {
-    double submenu_transition = std::clamp(
-        std::chrono::duration<double>(now - last_submenu_transition) / transition_submenu_activate_duration, 0.0, 1.0);
-    submenu_transition = in_submenu ? submenu_transition : 1.0 - submenu_transition;
-
-    constexpr auto offset = (0.1f-0.075f)/2.0f;
-    const glm::vec2 base_pos = glm::mix(
-        glm::vec2(0.35f/renderer.aspect_ratio, 0.25f),
-        glm::vec2((0.15f-offset)/renderer.aspect_ratio, 0.25f-2*offset),
-        submenu_transition);
-    const double base_size = 0.1;
-
-    const auto& selected_menu = *menus[selected];
-    const auto& selected_submenu = *current_submenu;
-
-    draw_normalized_icon(renderer, selected_menu.get_icon(), selected_menu.get_glass_icon(),
-        base_pos.x, base_pos.y, 0.1, 0.1);
-    draw_normalized_icon(renderer, selected_submenu.get_icon(), selected_submenu.get_glass_icon(),
-        base_pos.x, base_pos.y + 0.15F, 0.1, 0.1);
-
-    if(!in_submenu)
-        return;
-    if(const auto* submenu = dynamic_cast<const menu::menu*>(&selected_submenu)) {
-        double selected = submenu->get_selected_submenu();
-        auto time_since_transition = std::chrono::duration<double>(now - last_selected_submenu_item_transition);
-        if(time_since_transition < transition_submenu_item_duration) {
-            selected = last_selected_submenu_item + (selected - last_selected_submenu_item) *
-                time_since_transition / transition_submenu_item_duration;
-        }
-
-        double offsetY = 0.15f - selected*0.15f;
-
-        for(int i=0; i<submenu->get_submenus_count(); i++) {
-            double partial_selection = 0.0;
-            if(i == selected) {
-                partial_selection = std::clamp(time_since_transition / transition_submenu_item_duration, 0.0, 1.0);
-            }
-
-            double size = base_size*glm::mix(0.75, 1.0, partial_selection);
-            double offset = (base_size - size) / 4.0;
-
-            double y = base_pos.y+offsetY+0.15f*i;
-            if(y < -size || y > 1.0+size)
-                continue;
-
-            auto& entry = submenu->get_submenu(i);
-            draw_normalized_icon(renderer, entry.get_icon(), entry.get_glass_icon(),
-                static_cast<float>(base_pos.x + 0.1 + offset), static_cast<float>(y), size, size);
-            renderer.draw_text(entry.get_name(), base_pos.x + 0.2, y+size/2, size/2, glm::vec4(1, 1, 1, 1), false, true);
-            if(i == selected) {
-                auto s = renderer.measure_text(entry.get_name(), size/2);
-                renderer.draw_text(entry.get_description(), base_pos.x + 0.2, y+size/2 + s.y, size / 3);
-            }
-        }
+void main_menu::render_submenu(auroreengine::gui_renderer& renderer,time_point now) {
+    if(!current_submenu||!in_submenu)return;
+    const auto* parent=submenu_stack.empty()?menus[selected].get():submenu_stack.back();
+    const auto* child=current_submenu;
+    const auto count=child->get_submenus_count();
+    const auto selected_item=count?std::min<std::size_t>(child->get_selected_submenu(),count-1):0;
+    auto previous=count?std::min<std::size_t>(last_selected_submenu_item,count-1):0;
+    if(std::abs(static_cast<long long>(previous)-static_cast<long long>(selected_item))>10)previous=selected_item;
+    const auto first=std::min(selected_item,previous)>4?std::min(selected_item,previous)-4:0;
+    const auto last=count?std::min<std::size_t>(count-1,std::max(selected_item,previous)+12):0;
+    openxmb::xmb::Catalog presentation;
+    openxmb::xmb::CatalogNode root;root.id="category.settings.media";root.kind=openxmb::xmb::NodeKind::menu;
+    std::vector<openxmb::xmb::SettingsSceneIcon> icons;
+    // Live entries are projected into the same scene sampler and renderer used
+    // by Settings, preserving its geometry, focus animation and text treatment.
+    if(count)for(std::size_t i=first;i<=last;++i) {
+        auto& entry=child->get_submenu(static_cast<unsigned>(i));
+        openxmb::xmb::CatalogNode node;node.id="category.settings.media."+std::to_string(i);
+        node.label_key=node.id+".label";node.description_key=node.id+".description";node.icon_ref=node.id+".icon";
+        node.kind=dynamic_cast<const menu::menu*>(&entry)?openxmb::xmb::NodeKind::menu:openxmb::xmb::NodeKind::media;
+        presentation.strings[node.label_key]=entry.get_name();presentation.strings[node.description_key]=entry.get_description();
+        root.children.push_back(node.id);const auto id=node.id;presentation.nodes.emplace(id,std::move(node));
+        const auto& stored=presentation.nodes.at(id);icons.push_back({stored.icon_ref,&entry.get_icon(),entry.get_glass_icon()});
     }
+    presentation.nodes.emplace("category.settings.media",std::move(root));
+    const openxmb::xmb::NavigationRoute route{openxmb::xmb::NavigationLayer::nested_menu,"category.settings.media",selected_item-first};
+    const auto input=openxmb::xmb::make_settings_scene_input(route,previous-first,seconds_from_time_point(last_selected_submenu_item_transition),
+        openxmb::xmb::SettingsScenePresence::entering,seconds_from_time_point(last_submenu_transition));
+    const auto sampled=openxmb::xmb::sample_settings_scene(presentation,input,seconds_from_time_point(now));
+    const auto layout=make_contained_layout(renderer);
+    for(unsigned i=0;i<parent->get_submenus_count();++i) {
+        const auto delta=static_cast<int>(i)-static_cast<int>(parent->get_selected_submenu());
+        const auto y=openxmb::xmb::SettingsSceneMetrics::focus_y+delta*settings_parent_spacing;
+        if(y<-40||y>1120)continue;
+        const auto& entry=parent->get_submenu(i);const auto alpha=delta==0?0.92:std::max(0.12,0.42-(std::abs(delta)-1)*0.05);
+        draw_icon(renderer,entry.get_icon(),entry.get_glass_icon(),layout,delta==0?settings_parent_col_x:settings_sibling_col_x,y,
+            openxmb::xmb::SettingsSceneMetrics::icon_extent,alpha);
+    }
+    const std::array<auroreengine::simple_renderer::vertex_data,3> chevron{{
+        {{layout.x(430),layout.y(515)},{0.81F,0.81F,0.82F,0.95F},{0,0.5F}},
+        {{layout.x(462),layout.y(500)},{0.81F,0.81F,0.82F,0.95F},{1,0}},
+        {{layout.x(462),layout.y(530)},{0.47F,0.47F,0.49F,0.95F},{1,1}}}};
+    renderer.draw_generic(chevron);
+    if(sampled)settings_scene_renderer.render(renderer,sampled.snapshot,icons,{.glass_icons=config::CONFIG.iconGlassRefraction});
+    else if(!count)xmb_canvas(renderer).text("This folder is empty.",683,515,34);
+    if(progress(now,last_selected_submenu_item_transition,transition_submenu_item_duration)>=1)last_selected_submenu_item=static_cast<int>(selected_item);
 }
 
 }

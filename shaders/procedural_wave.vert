@@ -9,6 +9,7 @@ layout(push_constant) uniform Push {
     vec4 resolution_time_gain;
     vec4 particle_tint;
     vec4 mode_motion;
+    vec4 effect;
 } pc;
 
 layout(location=0) out vec3 position;
@@ -53,11 +54,58 @@ float seed(uint n) {
     n^=n>>16; n*=0x7feb352du; n^=n>>15; n*=0x846ca68bu; n^=n>>16;
     return float(n&0x00ffffffu)/16777216.0;
 }
+
+float flowWindow(float t,float start,float end,float fade) {return smoothstep(start,start+fade,t)*(1.0-smoothstep(end-fade,end,t));}
+float flowHash(vec2 p) {return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float flowNoise(vec2 p) {vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(flowHash(i),flowHash(i+vec2(1,0)),f.x),mix(flowHash(i+vec2(0,1)),flowHash(i+vec2(1,1)),f.x),f.y);}
+float flowFbm(vec2 p) {float value=0.0,gain=0.5;for(int i=0;i<4;++i){value+=gain*flowNoise(p);p=mat2(1.6,1.2,-1.2,1.6)*p;gain*=0.5;}return value;}
+vec4 flowWeights(float seconds) {float t=mod(seconds,128.0);return vec4(flowWindow(t,15.0,65.0,12.0),flowWindow(t,59.0,91.0,10.0),flowWindow(t,79.0,109.0,10.0),flowWindow(t,101.0,117.0,6.0));}
+float flowHeight(vec2 world,float seconds) {
+    vec4 w=flowWeights(seconds);
+    float bend=world.x*0.85+sin(world.y*0.28-seconds*0.11)*0.9+sin(world.x*0.21+world.y*0.19)*0.45;
+    float ridge=sin(bend*11.0-world.y*0.41)*0.072+sin(bend*22.0-world.y*0.72)*0.013;
+    ridge+=sin(world.x*0.35+world.y*0.12-seconds*0.05)*0.18;
+    float hills=(flowFbm(world*0.22)-0.32)*1.65+ridge*0.22;
+    float ocean=sin(world.y*0.6+seconds*0.22)*0.09+sin(world.x*0.65+world.y*0.35)*0.055;
+    float mountains=pow(flowFbm(world*0.17),1.6)*2.2-0.3;
+    float h=mix(ridge,hills,w.x);h=mix(h,ocean,w.y);h=mix(h,mountains,w.z);h=mix(h,ocean*0.25,w.w);
+    return h*(1.0+pc.effect.y*0.16);
+}
+vec3 flowSky(float seconds,float screenY) {
+    float t=mod(seconds,128.0);vec4 w=flowWeights(seconds);
+    float day=flowWindow(t,25.0,63.0,13.0),green=flowWindow(t,39.0,64.0,10.0);
+    vec3 sky=mix(vec3(0),mix(vec3(0.55,0.67,0.68),vec3(0.05,0.35,0.40),green),day);
+    sky=mix(sky,vec3(0.0,0.07,0.22),w.y*0.92);
+    sky=mix(sky,vec3(0.52,0.56,0.61),w.z*0.9);
+    sky=mix(sky,vec3(0.055,0.32,0.34),w.w);
+    return sky*mix(0.58,1.0,clamp(screenY,0.0,1.0));
+}
+
 void main() {
     particle_alpha=0.0;
+    if(pc.mode_motion.x>2.5) {
+        vec2 uv=vec2((gl_VertexIndex<<1)&2,gl_VertexIndex&2);
+        gl_Position=vec4(uv*2.0-1.0,0,1);position=vec3(uv,0);edge_sprite=uv;return;
+    }
+    if(pc.mode_motion.x>1.5) {
+        float seconds=pc.resolution_time_gain.z-100.0;
+        vec4 w=flowWeights(seconds);float phase=mod(seconds,128.0);
+        vec2 uv=vec2(float(gl_VertexIndex%512),float(gl_VertexIndex/512))/511.0;
+        float z=exp(mix(log(0.55),log(42.0),uv.y));
+        float x=(uv.x*2.0-1.0)*z*1.5;
+        vec2 world=vec2(x+0.4*sin(seconds*0.035),z+seconds*0.22);
+        float bend=world.x*0.85+sin(world.y*0.28-seconds*0.11)*0.9+sin(world.x*0.21+world.y*0.19)*0.45;
+        float h=flowHeight(world,seconds);
+        float camera=mix(0.42,0.66,max(w.x,w.z));
+        float horizon=0.02+0.035*sin(seconds*0.025);
+        position=vec3(world.x,h,z);edge_sprite=vec2(bend,world.y);
+        float aspect=pc.resolution_time_gain.x/pc.resolution_time_gain.y;
+        gl_Position=vec4(x/(z*0.8*aspect),horizon+(camera-h)/(z*0.65),0,1);return;
+    }
     if (pc.mode_motion.x<0.5) {
         vec2 a=vec2(float(gl_VertexIndex%100),float(gl_VertexIndex/100))/99.0*2.0-1.0;
         position=wavePosition(a);
+        if(pc.effect.w>0.5) {float center=wavePosition(vec2(a.x,0)).y;position.y=center+(position.y-center)*1.65;}
         edge_sprite=vec2(a.y,0);
         // Vulkan's framebuffer Y axis is downward. Depth is unused, so avoid
         // clipping the reference's eye-space ribbon against Vulkan's Z plane.

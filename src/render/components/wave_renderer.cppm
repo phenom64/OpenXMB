@@ -82,6 +82,7 @@ export class wave_renderer {
         static constexpr int grid_quality = 128;
         glm::vec3 waveColor = {0.5, 0.5, 0.5};
         float speed = 0.78f;
+        bool paused=false;
 
         wave_renderer(vk::Device device, vma::Allocator allocator, vk::Extent2D frameSize) : device(device), allocator(allocator), frameSize(frameSize),
             aspectRatio(static_cast<double>(frameSize.width)/frameSize.height) {}
@@ -172,7 +173,7 @@ export class wave_renderer {
 
             push_constants push{
                 .color=glm::vec4(waveColor, 1.0),
-                .time=(static_cast<float>(seconds.count()) + partialSeconds.count())*speed
+                .time=paused?36.0F:(static_cast<float>(seconds.count()) + partialSeconds.count())*speed
             };
             cmd.pushConstants(pipelineLayout.get(), vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, sizeof(push_constants), &push);
 

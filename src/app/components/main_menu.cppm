@@ -50,6 +50,7 @@ class main_menu : public action_receiver {
         [[nodiscard]] float background_dim_alpha() const;
 
         result on_action(action action) override;
+        void show_settings() { if(in_submenu) { current_submenu=nullptr;submenu_stack.clear();in_submenu=false; } select(1); }
     private:
         using time_point = std::chrono::time_point<std::chrono::steady_clock>;
 

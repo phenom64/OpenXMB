@@ -299,3 +299,7 @@ msgstr "Aucun programme correspondant trouvé"
 
 msgid "No matching program found for file of type \"{}\": {}"
 msgstr "Aucun programme correspondant pour le type \"{}\" : {}"
+
+#: src/app/components/desktop_settings.cppm
+msgid "This feature is not available yet. This will be implemented in a future beta. Sorry!"
+msgstr "Cette fonctionnalité n’est pas encore disponible. Elle sera intégrée dans une prochaine version bêta. Désolé !"

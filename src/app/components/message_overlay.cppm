@@ -61,6 +61,11 @@ export class message_overlay : public component, public action_receiver {
         std::function<void()> cancel_callback;
 
         unsigned int selected = 0;
+        std::size_t scroll_line = 0, line_count = 0, visible_lines = 1;
+        float wrapped_pixels = -1;
+        std::string wrapped_font;
+        std::vector<std::string> title_lines, body_lines;
+        std::vector<std::vector<std::string>> choice_lines;
         using time_point = std::chrono::time_point<std::chrono::steady_clock>;
         time_point start_time { std::chrono::steady_clock::now() };
 };

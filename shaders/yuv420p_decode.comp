@@ -1,67 +1,31 @@
-/* XMBShell, a console-like desktop shell
- * Copyright (C) 2025 - JCM
- *
- * This file (or substantial portions of it) is derived from XMBShell:
- *   https://github.com/JnCrMx/xmbshell
- *
- * Modified by Syndromatic Ltd for OpenXMB.
- * Portions Copyright (C) 2025 Syndromatic Ltd, Kavish Krishnakumar.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 #version 450
-
-layout(local_size_x = 16, local_size_y = 16) in;
-
-layout(binding = 0, rgba8) uniform writeonly image2D outputImage;
-layout(binding = 1, r8) uniform readonly image2D inputImageY;
-layout(binding = 2, r8) uniform readonly image2D inputImageCb;
-layout(binding = 3, r8) uniform readonly image2D inputImageCr;
-
-vec4 toRGB(float y, float cb, float cr)
-{
-    float r = y + 1.402 * (cr - 0.5);
-    float g = y - 0.344136 * (cb - 0.5) - 0.714136 * (cr - 0.5);
-    float b = y + 1.772 * (cb - 0.5);
-
-    return vec4(r, g, b, 1.0);
-}
-
-void conditional_store(ivec2 coord, ivec2 size, vec4 color)
-{
-    if(coord.x < size.x && coord.y < size.y) {
-        imageStore(outputImage, coord, color);
-    } else {
-        imageStore(outputImage, coord, vec4(0.0));
-    }
-}
-
-void main()
-{
-	uvec2 coord = gl_GlobalInvocationID.xy;
-    ivec2 size = imageSize(inputImageY);
-
-    float y00 = imageLoad(inputImageY, ivec2(coord.x*2+0, coord.y*2+0)).r;
-    float y01 = imageLoad(inputImageY, ivec2(coord.x*2+0, coord.y*2+1)).r;
-    float y10 = imageLoad(inputImageY, ivec2(coord.x*2+1, coord.y*2+0)).r;
-    float y11 = imageLoad(inputImageY, ivec2(coord.x*2+1, coord.y*2+1)).r;
-    float cb = imageLoad(inputImageCb, ivec2(coord.x, coord.y)).r;
-    float cr = imageLoad(inputImageCr, ivec2(coord.x, coord.y)).r;
-
-    conditional_store(ivec2(coord.x*2+0, coord.y*2+0), size, toRGB(y00, cb, cr));
-    conditional_store(ivec2(coord.x*2+0, coord.y*2+1), size, toRGB(y01, cb, cr));
-    conditional_store(ivec2(coord.x*2+1, coord.y*2+0), size, toRGB(y10, cb, cr));
-    conditional_store(ivec2(coord.x*2+1, coord.y*2+1), size, toRGB(y11, cb, cr));
+layout(local_size_x=16,local_size_y=16) in;
+layout(binding=0,rgba8) uniform writeonly image2D outputImage;
+layout(binding=1) uniform sampler2D inputY;
+layout(binding=2) uniform sampler2D inputU;
+layout(binding=3) uniform sampler2D inputV;
+layout(push_constant) uniform Conversion {
+    float kr;
+    float kb;
+    float yOffset;
+    float yScale;
+    float chromaScale;
+    uint nv12;
+    uint width;
+    uint height;
+} c;
+void main() {
+    ivec2 p=ivec2(gl_GlobalInvocationID.xy);
+    if(p.x>=int(c.width)||p.y>=int(c.height)) return;
+    vec2 uv=texelFetch(inputU,p/2,0).rg*255.0;
+    float y=(texelFetch(inputY,p,0).r*255.0-c.yOffset)*c.yScale;
+    float u=(uv.r-128.0)*c.chromaScale;
+    float v=((c.nv12!=0?uv.g:texelFetch(inputV,p/2,0).r*255.0)-128.0)*c.chromaScale;
+    float kg=1.0-c.kr-c.kb;
+    vec3 rgb=vec3(y+2.0*(1.0-c.kr)*v,
+        y-2.0*c.kb*(1.0-c.kb)/kg*u-2.0*c.kr*(1.0-c.kr)/kg*v,
+        y+2.0*(1.0-c.kb)*u);
+    // UNORM storage preserves encoded RGB; the retained sRGB sampling view
+    // follows the same transfer behavior as the software RGBA upload path.
+    imageStore(outputImage,p,vec4(clamp(rgb,0.0,1.0),1.0));
 }

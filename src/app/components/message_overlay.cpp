@@ -18,6 +18,7 @@
 
 module;
 
+#include "dialog_text_layout.hpp"
 #include <algorithm>
 #include <array>
 #include <functional>
@@ -35,6 +36,7 @@ import auroreengine;
 import :xmb_presentation;
 import glm;
 import spdlog;
+import openxmb.config;
 
 namespace app {
     namespace {
@@ -61,41 +63,61 @@ namespace app {
         using clock = std::chrono::steady_clock;
         float age = std::chrono::duration<float>(clock::now() - start_time).count();
         float settle = smooth01(age / 0.28f);
-        float lift = (1.0f - settle) * 0.018f;
         renderer.push_color(glm::vec4(1.0f, 1.0f, 1.0f, settle));
 
         xmb_canvas c(renderer);
         c.rect(0,0,1920,1080,{0,0,0,0.25F});
         c.rect(0,199,1920,680,{0,0,0,0.12F});
         c.rect(0,199,1920,1,{1,1,1,0.75F});c.rect(0,879,1920,1,{1,1,1,0.75F});
-        c.text(title,960,382,28,{1,1,1,1},0,true);
-        std::vector<std::string> lines;
-        std::string line;
-        for(const auto part:std::views::split(message,' ')) {
-            std::string word(part.begin(),part.end());
-            const auto candidate=line.empty()?word:line+" "+word;
-            if(!line.empty()&&renderer.text_width_pixels(candidate,24*c.scale)>1150*c.scale) {lines.push_back(line);line=word;}
-            else line=candidate;
-            if(line.find('\n')!=std::string::npos) {
-                for(auto position=line.find('\n');position!=std::string::npos;position=line.find('\n')) {lines.push_back(line.substr(0,position));line.erase(0,position+1);}
+        const float ui=config::CONFIG.textScale;
+        const float pixels=24*c.scale*ui;
+        const auto font=config::CONFIG.fontPath.string();
+        if(wrapped_pixels!=pixels||wrapped_font!=font) {
+            wrapped_pixels=pixels;wrapped_font=font;
+            title_lines=dialog_text::wrap(title,1150*c.scale,[&](auto v){return renderer.text_width_pixels(v,28*c.scale*ui);});
+            if(title_lines.size()>2) {title_lines.resize(2);title_lines.back()=dialog_text::ellipsize(title_lines.back()+"…",1150*c.scale,[&](auto v){return renderer.text_width_pixels(v,28*c.scale*ui);});}
+            body_lines=dialog_text::wrap(message,1150*c.scale,[&](auto v){return renderer.text_width_pixels(v,pixels);});
+            choice_lines.clear();
+            const float width=1320*c.scale/std::max(std::size_t{1},choices.size())-40*c.scale;
+            for(const auto& choice:choices) {
+                auto lines=dialog_text::wrap(choice,width,[&](auto v){return renderer.text_width_pixels(v,26*c.scale*ui);});
+                if(lines.size()>2){lines.resize(2);lines.back()=dialog_text::ellipsize(lines.back()+"…",width,[&](auto v){return renderer.text_width_pixels(v,26*c.scale*ui);});}
+                choice_lines.push_back(std::move(lines));
             }
         }
-        if(!line.empty()) lines.push_back(std::move(line));
-        float baseline=500-(static_cast<int>(std::min(lines.size(),std::size_t{8}))-1)*17.0F;
-        for(std::size_t i=0;i<std::min(lines.size(),std::size_t{8});++i) {c.text(lines[i],960,baseline,24,{1,1,1,1},0,true);baseline+=34;}
-        float total=0;for(const auto& choice:choices) total+=renderer.text_width_pixels(choice,26*c.scale)/c.scale+120;
-        float x=960-(total-120)*0.5F;
-        for(std::size_t i=0;i<choices.size();++i) {
-            const float width=renderer.text_width_pixels(choices[i],26*c.scale)/c.scale;
-            c.text(choices[i],x+width*0.5F,650,26,{1,1,1,1},i==selected?xmb_canvas::pulse():0,true);x+=width+120;
+        const auto title_metrics=renderer.text_line_metrics_pixels(28*c.scale*ui)/c.scale;
+        const auto body_metrics=renderer.text_line_metrics_pixels(pixels)/c.scale;
+        const auto choice_metrics=renderer.text_line_metrics_pixels(26*c.scale*ui)/c.scale;
+        const auto page=dialog_text::message_layout(title_lines.size(),body_lines.size(),choices.size(),
+            {title_metrics.x,title_metrics.y},{body_metrics.x,body_metrics.y},{choice_metrics.x,choice_metrics.y},ui);
+        const float title_pitch=title_metrics.x+title_metrics.y+8*ui;
+        for(std::size_t i=0;i<title_lines.size();++i)c.text(title_lines[i],960,page.title_last_baseline-(title_lines.size()-1-i)*title_pitch,28,{1,1,1,1},0,true);
+        line_count=body_lines.size();visible_lines=page.capacity;
+        scroll_line=std::min(scroll_line,line_count>visible_lines?line_count-visible_lines:0);
+        for(std::size_t i=0;i<visible_lines&&i+scroll_line<line_count;++i)
+            c.text(body_lines[i+scroll_line],960,page.body_first_baseline+i*page.body_pitch,24,{1,1,1,1},0,true);
+        const float column=1320.0F/std::max(std::size_t{1},choices.size());
+        for(std::size_t i=0;i<choices.size();++i)for(std::size_t line=0;line<choice_lines[i].size();++line)
+            c.text(choice_lines[i][line],300+column*(i+0.5F),page.choice_first_baseline+line*(choice_metrics.x+choice_metrics.y+8*ui),26,{1,1,1,1},i==selected?xmb_canvas::pulse():0,true);
+        if(line_count>visible_lines) {
+            if(scroll_line)c.text("▲",1540,page.body_top+body_metrics.x,20);
+            if(scroll_line+visible_lines<line_count)c.text("▼",1540,page.body_bottom,20);
         }
+        const auto previous_scale=renderer.text_scale;renderer.text_scale=1.0F;
         xmb->render_controller_buttons(renderer,0.5F,0.84F,std::array{
             std::pair{action::ok,"Enter"},std::pair{cancelable?action::cancel:action::none,"Back"}});
+        renderer.text_scale=previous_scale;
         renderer.pop_color();
     }
 
     result message_overlay::on_action(action action) {
         switch(action) {
+            case action::up:
+                if(scroll_line) --scroll_line;
+                return result::success;
+            case action::down:
+                if(scroll_line+visible_lines<line_count) ++scroll_line;
+                return result::success;
             case action::cancel:
                 if(cancelable) {
                     if(cancel_callback) {
@@ -103,7 +125,7 @@ namespace app {
                     }
                     return result::success | result::close | result::cancel_sound;
                 }
-                return result::unsupported;
+                return result::success;
             case action::ok:
                 if(confirm_callback) {
                     confirm_callback(selected);
@@ -111,24 +133,24 @@ namespace app {
                 return result::success | result::close | result::confirm_sound;
             case action::left:
                 if(choices.empty()) {
-                    return result::unsupported | result::error_rumble;
+                    return result::success | result::error_rumble;
                 }
                 if(selected > 0) {
                     selected--;
                     return result::success | result::ok_sound;
                 }
-                return result::unsupported | result::error_rumble;
+                return result::success | result::error_rumble;
             case action::right:
                 if(choices.empty()) {
-                    return result::unsupported | result::error_rumble;
+                    return result::success | result::error_rumble;
                 }
                 if(selected + 1 < choices.size()) {
                     selected++;
                     return result::success | result::ok_sound;
                 }
-                return result::unsupported | result::error_rumble;
+                return result::success | result::error_rumble;
             default:
-                return result::unsupported;
+                return result::success;
         }
     }
 }

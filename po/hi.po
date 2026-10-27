@@ -299,3 +299,7 @@ msgstr "कोई मिलान करता प्रोग्राम न�
 
 msgid "No matching program found for file of type \"{}\": {}"
 msgstr "प्रकार \"{}\" की फ़ाइल के लिए कोई प्रोग्राम नहीं मिला: {}"
+
+#: src/app/components/desktop_settings.cppm
+msgid "This feature is not available yet. This will be implemented in a future beta. Sorry!"
+msgstr "यह सुविधा अभी उपलब्ध नहीं है। इसे भविष्य के बीटा संस्करण में लागू किया जाएगा। क्षमा करें!"

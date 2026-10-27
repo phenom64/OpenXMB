@@ -289,7 +289,7 @@ if(AUROREENGINE_LOCAL)
 else()
   FetchContent_Declare(auroreengine
     GIT_REPOSITORY https://github.com/phenom64/AuroreEngine.git
-    GIT_TAG        e6fdf88985d15a385673184d72308fc1f8ddf406
+    GIT_TAG        a57ca6aa7f17647244a034c05a3863126615997d
     OVERRIDE_FIND_PACKAGE
   )
   FetchContent_GetProperties(auroreengine)
@@ -516,6 +516,8 @@ set(XMS_SOURCES
   src/programs.cpp
 )
 set(XMS_MODULE_SOURCES
+  src/app/components/desktop_settings.cppm
+  src/programs/about.cppm
   src/app/components/text_entry.cppm
   src/app/module.cppm
   src/app/shell.cppm
@@ -680,6 +682,9 @@ include(cmake/Photos.cmake)
 include(cmake/Documents.cmake)
 include(cmake/Themes.cmake)
 include(cmake/Integrations.cmake)
+if(ENABLE_BROWSER AND WIN32)
+  include(cmake/OpenXMBBrowserWindows.cmake)
+endif()
 target_link_libraries(XMS PRIVATE OpenXMB::MusicCore OpenXMB::Integrations OpenXMB::DesktopCore)
 target_sources(XMS PRIVATE src/programs/library_manager.cpp)
 target_sources(XMS PUBLIC FILE_SET CXX_MODULES FILES
@@ -687,11 +692,11 @@ target_sources(XMS PUBLIC FILE_SET CXX_MODULES FILES
   src/programs/music_player.cppm
   src/programs/integration_center.cppm
   src/programs/library_manager.cppm
-  src/programs/settings_center.cppm)
+  )
 
 if(ENABLE_VIDEO_PLAYER)
   target_sources(XMS PRIVATE src/video.cpp src/video_worker.cpp)
-  target_sources(XMS PUBLIC FILE_SET CXX_MODULES FILES src/render/components/video_background.cppm)
+  target_sources(XMS PUBLIC FILE_SET CXX_MODULES FILES src/render/components/video_background.cppm src/render/components/video_texture.cppm)
   auroreengine_add_shader(XMS shaders/video_background.vert)
   auroreengine_add_shader(XMS shaders/video_background.frag)
 endif()
@@ -705,7 +710,14 @@ if(OPENXMB_BUILD_NATIVE_TESTS AND ENABLE_VIDEO_PLAYER)
   find_package(Python3 REQUIRED COMPONENTS Interpreter)
   add_test(NAME openxmb_video_playback
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/video/run_video_playback_test.py"
-      --player "$<TARGET_FILE:openxmb_video_tests>" --output "${CMAKE_CURRENT_BINARY_DIR}/video-fixtures")
+      --ffmpeg "${OPENXMB_MUSIC_FFMPEG_EXECUTABLE}" --player "$<TARGET_FILE:openxmb_video_tests>" --output "${CMAKE_CURRENT_BINARY_DIR}/video-fixtures")
+  add_executable(openxmb_video_native_tests tests/video/native_pipeline_tests.cpp src/video.cpp)
+  target_include_directories(openxmb_video_native_tests PRIVATE include ${OPENXMB_FFMPEG_INCLUDE_DIRS})
+  target_link_directories(openxmb_video_native_tests PRIVATE ${OPENXMB_FFMPEG_LIBRARY_DIRS})
+  target_link_libraries(openxmb_video_native_tests PRIVATE SDL2::SDL2 SDL2_mixer::SDL2_mixer ${OPENXMB_FFMPEG_LIBRARIES})
+  set_target_properties(openxmb_video_native_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  add_test(NAME openxmb_video_native_pipeline COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/video/native_pipeline_fixtures.py" --ffmpeg "${OPENXMB_MUSIC_FFMPEG_EXECUTABLE}" --player "$<TARGET_FILE:openxmb_video_native_tests>")
+  set_tests_properties(openxmb_video_native_pipeline PROPERTIES TIMEOUT 120 ENVIRONMENT "SDL_AUDIODRIVER=dummy")
   set_tests_properties(openxmb_video_playback PROPERTIES TIMEOUT 120 ENVIRONMENT "SDL_AUDIODRIVER=dummy")
 endif()
 
@@ -1359,3 +1371,72 @@ elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/po/LINGUAS")
 endif()
 
 include(cmake/ShellAssets.cmake)
+
+# Native desktop artwork and notices override the minimal development fallbacks.
+if(WIN32)
+  file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets/shell/" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/shell")
+endif()
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/assets/shell/" DESTINATION "${OPENXMB_SHELL_INSTALL_DIR}")
+
+if(OPENXMB_BUILD_NATIVE_TESTS)
+  add_executable(openxmb_desktop_settings_tests tests/xmb/desktop_settings_tests.cpp)
+  target_link_libraries(openxmb_desktop_settings_tests PRIVATE OpenXMB::CatalogCore)
+  set_target_properties(openxmb_desktop_settings_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  openxmb_configure_native_test(openxmb_desktop_settings_tests)
+  add_test(NAME openxmb_desktop_settings_tests COMMAND openxmb_desktop_settings_tests "${CMAKE_CURRENT_SOURCE_DIR}/assets/xmb/catalog/en.json")
+endif()
+
+if(OPENXMB_BUILD_NATIVE_TESTS)
+  add_executable(openxmb_input_bindings_tests tests/xmb/input_bindings_tests.cpp)
+  set_target_properties(openxmb_input_bindings_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  add_test(NAME openxmb_input_bindings_tests COMMAND openxmb_input_bindings_tests)
+endif()
+
+if(OPENXMB_BUILD_NATIVE_TESTS AND ENABLE_VIDEO_PLAYER)
+  add_executable(openxmb_video_texture_tests tests/video/video_texture_tests.cpp)
+  target_include_directories(openxmb_video_texture_tests PRIVATE include)
+  set_target_properties(openxmb_video_texture_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  add_test(NAME openxmb_video_texture_tests COMMAND openxmb_video_texture_tests)
+  option(OPENXMB_BUILD_GPU_TESTS "Build real Vulkan video upload validation" OFF)
+  if(OPENXMB_BUILD_GPU_TESTS)
+    add_executable(openxmb_video_texture_gpu_tests tests/video/video_texture_gpu_tests.cpp)
+    target_include_directories(openxmb_video_texture_gpu_tests PRIVATE include "${vulkanmemoryallocator-hpp_SOURCE_DIR}/include" "${vulkanmemoryallocator-hpp_SOURCE_DIR}/VulkanMemoryAllocator/include")
+    target_link_libraries(openxmb_video_texture_gpu_tests PRIVATE Vulkan::Vulkan)
+    set_target_properties(openxmb_video_texture_gpu_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+    add_test(NAME openxmb_video_texture_gpu COMMAND openxmb_video_texture_gpu_tests "${CMAKE_CURRENT_BINARY_DIR}/shaders/yuv420p_decode.comp.spv")
+  endif()
+endif()
+
+if(OPENXMB_BUILD_NATIVE_TESTS)
+  add_executable(openxmb_input_timing_tests tests/xmb/input_timing_tests.cpp)
+  set_target_properties(openxmb_input_timing_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  add_test(NAME openxmb_input_timing_tests COMMAND openxmb_input_timing_tests)
+endif()
+
+if(OPENXMB_BUILD_NATIVE_TESTS)
+  add_executable(openxmb_dialog_input_layout_tests tests/dialogs/ui_input_layout_tests.cpp)
+  set_target_properties(openxmb_dialog_input_layout_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  add_test(NAME openxmb_dialog_input_layout_tests COMMAND openxmb_dialog_input_layout_tests)
+endif()
+
+if(OPENXMB_BUILD_NATIVE_TESTS AND ENABLE_VIDEO_PLAYER)
+  foreach(video_target IN ITEMS interleave_tests clock_diagnostics)
+    add_executable(openxmb_video_${video_target} tests/video/${video_target}.cpp src/video.cpp)
+    target_include_directories(openxmb_video_${video_target} PRIVATE include ${OPENXMB_FFMPEG_INCLUDE_DIRS})
+    target_link_directories(openxmb_video_${video_target} PRIVATE ${OPENXMB_FFMPEG_LIBRARY_DIRS})
+    target_link_libraries(openxmb_video_${video_target} PRIVATE SDL2::SDL2 SDL2_mixer::SDL2_mixer ${OPENXMB_FFMPEG_LIBRARIES})
+    set_target_properties(openxmb_video_${video_target} PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  endforeach()
+  add_test(NAME openxmb_video_interleave COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/video/interleave_fixtures.py" --ffmpeg "${OPENXMB_MUSIC_FFMPEG_EXECUTABLE}" --player "$<TARGET_FILE:openxmb_video_interleave_tests>")
+  set_tests_properties(openxmb_video_interleave PROPERTIES TIMEOUT 90 ENVIRONMENT "SDL_AUDIODRIVER=dummy")
+endif()
+
+if(OPENXMB_BUILD_NATIVE_TESTS AND ENABLE_VIDEO_PLAYER)
+  add_executable(openxmb_video_reduced_motion_tests tests/video/video_reduced_motion_tests.cpp src/video.cpp src/video_worker.cpp)
+  target_include_directories(openxmb_video_reduced_motion_tests PRIVATE include ${OPENXMB_FFMPEG_INCLUDE_DIRS})
+  target_link_directories(openxmb_video_reduced_motion_tests PRIVATE ${OPENXMB_FFMPEG_LIBRARY_DIRS})
+  target_link_libraries(openxmb_video_reduced_motion_tests PRIVATE SDL2::SDL2 SDL2_mixer::SDL2_mixer ${OPENXMB_FFMPEG_LIBRARIES})
+  set_target_properties(openxmb_video_reduced_motion_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  add_test(NAME openxmb_video_reduced_motion COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/video/run_video_playback_test.py" --ffmpeg "${OPENXMB_MUSIC_FFMPEG_EXECUTABLE}" --player "$<TARGET_FILE:openxmb_video_reduced_motion_tests>" --output "${CMAKE_CURRENT_BINARY_DIR}/video-reduced-motion-fixtures")
+  set_tests_properties(openxmb_video_reduced_motion PROPERTIES TIMEOUT 30 ENVIRONMENT "SDL_AUDIODRIVER=dummy")
+endif()

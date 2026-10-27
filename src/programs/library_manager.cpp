@@ -7,6 +7,8 @@ module;
 #include "openxmb/video_worker.hpp"
 #endif
 
+#include <SDL2/SDL.h>
+#undef main
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -375,7 +377,7 @@ void library_manager::refresh() {
     break;
   case Page::game: {
     auto game = find(library_->games(), chosen_id_);
-    add("Launch " + game.title, game.executable.string(), [this, game] { preview_suspended_ = true; preview_->stop(); desktop::launch_game(game); library_->mark_played(game.id); message_ = "Started " + game.title; refresh(); }, game.icon);
+    add("Launch " + game.title, game.executable.string(), [this, game] { preview_suspended_ = true; preview_->stop(); desktop::launch_game(game); pending_=[](app::shell* shell){if(config::CONFIG.preference("games.launch","Keep Running")=="Minimise")SDL_MinimizeWindow(shell->get_window()->win.get());}; library_->mark_played(game.id); message_ = "Started " + game.title; refresh(); }, game.icon);
     add("Title", game.title, [this, game] { game_field("Game title", game.title, [](auto &g, auto v) { g.title = std::move(v); }); });
     add("Executable", game.executable.string(), [this, game] { game_field("Executable path or command", game.executable.string(), [](auto &g, auto v) { g.executable = std::move(v); }); });
     add("Launch arguments", desktop::format_arguments(game.arguments), [this, game] { game_field("Arguments (quote values containing spaces)", desktop::format_arguments(game.arguments), [](auto &g, auto v) { g.arguments = desktop::parse_arguments(v); }); });

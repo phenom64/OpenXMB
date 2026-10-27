@@ -1,3 +1,4 @@
+#include "desktop/log_path.hpp"
 /* This file is a part of the OpenXMB desktop experience project.
  * Copyright (C) 2025-2026 Syndromatic Ltd. All rights reserved
  * Designed by Kavish Krishnakumar in Manchester.
@@ -73,13 +74,7 @@ void startup_trace(const char* phase)
 namespace {
 std::filesystem::path openxmb_log_path()
 {
-    const char* base = std::getenv("LOCALAPPDATA");
-    if(!base || !*base) {
-        base = std::getenv("APPDATA");
-    }
-    auto dir = base && *base
-        ? std::filesystem::path(base) / "OpenXMB" / "logs"
-        : std::filesystem::temp_directory_path() / "OpenXMB" / "logs";
+    auto dir=openxmb::desktop::log_directory();
     std::filesystem::create_directories(dir);
     return dir / "openxmb.log";
 }

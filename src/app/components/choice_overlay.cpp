@@ -18,6 +18,7 @@
 
 module;
 
+#include "dialog_text_layout.hpp"
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -30,6 +31,7 @@ module;
 module openxmb.app;
 import :choice_overlay;
 import :xmb_presentation;
+import openxmb.config;
 
 import auroreengine;
 import glm;
@@ -65,18 +67,24 @@ result choice_overlay::on_action(action action) {
             return result::close | result::back_sound;
         case action::ok:
             if(choices.empty()) {
-                return result::unsupported | result::error_rumble;
+                return result::success | result::error_rumble;
             }
             if(confirm_callback) {
                 confirm_callback(selection_index);
             }
             return result::close | result::confirm_sound;
+        case action::left:
+            text_scroll_line=text_scroll_line>selected_page_lines?text_scroll_line-selected_page_lines:0;
+            return result::success;
+        case action::right:
+            if(selected_total_lines>selected_page_lines)text_scroll_line=std::min(text_scroll_line+selected_page_lines,selected_total_lines-selected_page_lines);
+            return result::success;
         case action::up:
-            return select_relative(action::up) ? result::success | result::ok_sound : result::unsupported | result::error_rumble;
+            return select_relative(action::up) ? result::success | result::ok_sound : result::success | result::error_rumble;
         case action::down:
-            return select_relative(action::down) ? result::success | result::ok_sound : result::unsupported | result::error_rumble;
+            return select_relative(action::down) ? result::success | result::ok_sound : result::success | result::error_rumble;
         default:
-            return result::unsupported | result::error_rumble;
+            return result::success | result::error_rumble;
     }
 }
 
@@ -102,6 +110,7 @@ bool choice_overlay::select_relative(action dir) {
     } else {
         return false;
     }
+    text_scroll_line=0;
     if(preview_callback) {
         preview_callback(selection_index);
     }
@@ -164,96 +173,60 @@ void choice_overlay::render(auroreengine::gui_renderer& renderer, class shell* x
         selected = last_selection_index + (selected - last_selection_index) * p;
     }
 
-    constexpr double item_height = 40.0 / 1080.0;
-    constexpr double list_top_y = 510.0 / 1080.0;
-    constexpr float text_x = 1340.0F / 1920.0F;
-    constexpr float swatch_x = 1341.0F / 1920.0F;
-    constexpr float swatch_extent = 27.0F / 1080.0F;
-    constexpr double panel_bottom = 1020.0 / 1080.0;
+    xmb_canvas canvas(renderer);
+    const float ui=config::CONFIG.textScale;
+    const float pixels=28*canvas.scale*ui;
+    const auto font=config::CONFIG.fontPath.string();
+    const auto metrics=renderer.text_line_metrics_pixels(pixels)/canvas.scale;
+    const float line_height=metrics.x+metrics.y,pitch=line_height+8*ui;
+    constexpr float available_width=337;
+    if(wrapped_pixels!=pixels||wrapped_font!=font) {
+        wrapped_pixels=pixels;wrapped_font=font;
+        wrapped_choices.clear();row_heights.clear();
+        for(const auto& entry:choices) {
+            auto lines=dialog_text::wrap(entry,available_width*canvas.scale,[&](auto v){return renderer.text_width_pixels(v,pixels);});
+            row_heights.push_back(line_height+(lines.size()-1)*pitch+12*ui);
+            wrapped_choices.push_back(std::move(lines));
+        }
+    }
+    const float x=1340+(1-open_alpha)*12;
+    float top=518-metrics.x;
     if(!top_action.empty()) {
-        renderer.draw_text(top_action, text_x + x_shift, top_action_y, 0.044,
-            glm::vec4(1.0F, 1.0F, 1.0F, 0.90F * open_alpha), false, true);
-        const auto arrow_offset = std::clamp(
-            (14.0F + static_cast<float>(top_action.size()) * 10.4F) / 1920.0F,
-            0.035F,
-            0.072F);
-        const float ax = text_x + x_shift + arrow_offset;
-        const float aw = 8.0F / 1920.0F;
-        const float ah = 6.0F / 1080.0F;
-        const auto arrow_colour = glm::vec4(1.0F, 1.0F, 1.0F, 0.78F * open_alpha);
-        renderer.draw_quad(std::array{
-            auroreengine::simple_renderer::vertex_data{{ax, top_action_y - ah}, arrow_colour, {0.0F, 0.0F}},
-            auroreengine::simple_renderer::vertex_data{{ax, top_action_y + ah}, arrow_colour, {0.0F, 1.0F}},
-            auroreengine::simple_renderer::vertex_data{{ax + aw, top_action_y}, arrow_colour, {1.0F, 0.5F}},
-            auroreengine::simple_renderer::vertex_data{{ax + aw, top_action_y}, arrow_colour, {1.0F, 0.5F}},
-        }, auroreengine::simple_renderer::params{});
+        auto labels=dialog_text::wrap(top_action,available_width*canvas.scale,[&](auto v){return renderer.text_width_pixels(v,pixels);});
+        if(labels.size()>2){labels.resize(2);labels.back()=dialog_text::ellipsize(labels.back()+"…",available_width*canvas.scale,[&](auto v){return renderer.text_width_pixels(v,pixels);});}
+        const float baseline=top_action_y*1080;
+        for(std::size_t i=0;i<labels.size();++i)canvas.text(labels[i],x,baseline+i*pitch,28,{1,1,1,0.9F*open_alpha});
+        top=std::max(top,baseline+(labels.size()-1)*pitch+metrics.y+24*ui);
     }
-
-    const auto visible_capacity = static_cast<std::size_t>(std::max(
-        1.0, std::floor((panel_bottom - list_top_y) / item_height)));
-
-    std::size_t first_visible = 0;
-    if(choices.size() > visible_capacity) {
-        const std::size_t selected_index = static_cast<std::size_t>(selection_index);
-        if(selected_index >= visible_capacity - 1) {
-            first_visible = selected_index - (visible_capacity - 2);
+    const float bottom=1000,viewport=std::max(line_height,bottom-top);
+    const auto window=dialog_text::choice_window(row_heights,selection_index,viewport,first_visible);
+    first_visible=window.first;
+    selected_page_lines=dialog_text::line_capacity(viewport,pitch,line_height);
+    selected_total_lines=wrapped_choices.empty()?0:wrapped_choices[selection_index].size();
+    text_scroll_line=std::min(text_scroll_line,selected_total_lines>selected_page_lines?selected_total_lines-selected_page_lines:0);
+    renderer.set_clip((canvas.ox+1334*canvas.scale)/renderer.frame_size.width,
+        (canvas.oy+top*canvas.scale)/renderer.frame_size.height,
+        363*canvas.scale/renderer.frame_size.width,viewport*canvas.scale/renderer.frame_size.height);
+    float y=top+metrics.x;
+    for(std::size_t i=window.first;i<window.last;++i) {
+        const double focus=1-std::clamp(std::abs(static_cast<double>(i)-selected),0.0,1.0);
+        const float eased=static_cast<float>(focus*focus*(3-2*focus));
+        const bool focused=i==selection_index;
+        if(!swatches.empty()&&!focused&&i<swatches.size()) {
+            canvas.rect(x,y-metrics.x,27,27,{swatches[i],open_alpha});
+        } else {
+            const std::size_t start=focused?text_scroll_line:0;
+            const auto& lines=wrapped_choices[i];
+            const auto count=std::min(lines.size()-start,selected_page_lines);
+            for(std::size_t line=0;line<count;++line)
+                canvas.text(lines[start+line],x,y+line*pitch,24+4*eased,{1,1,1,(0.84F+0.16F*eased)*open_alpha},focused?xmb_canvas::pulse():0);
         }
-        if(first_visible + visible_capacity > choices.size()) {
-            first_visible = choices.size() - visible_capacity;
-        }
+        y+=row_heights[i];
     }
-    const std::size_t last_visible = choices.empty()
-        ? 0
-        : std::min(choices.size() - 1, first_visible + visible_capacity - 1);
-    const bool colour_chooser = !swatches.empty();
-
-    for(size_t i = first_visible; i <= last_visible && i < choices.size(); i++) {
-        const double focus = 1.0 - std::clamp(std::abs(static_cast<double>(i) - selected), 0.0, 1.0);
-        const double eased_focus = focus * focus * (3.0 - 2.0 * focus);
-        const bool focused = i == selection_index;
-
-        const double size = glm::mix(0.044, 0.052, eased_focus);
-        const float alpha = static_cast<float>(glm::mix(0.84, 1.0, eased_focus));
-
-        const float y = static_cast<float>(
-            list_top_y + static_cast<double>(i - first_visible) * item_height);
-        if(colour_chooser && !focused && i < swatches.size()) {
-            glm::vec3 c = swatches[i];
-            glm::vec2 swatch_pos{
-                swatch_x + x_shift,
-                y - swatch_extent * 0.5F,
-            };
-            glm::vec2 swatch_size{
-                swatch_extent / static_cast<float>(renderer.aspect_ratio),
-                swatch_extent,
-            };
-            renderer.draw_rect(
-                swatch_pos - glm::vec2{0.0015F, 0.0015F},
-                swatch_size + glm::vec2{0.003F, 0.003F},
-                glm::vec4(0.0F, 0.0F, 0.0F, 0.34F));
-            renderer.draw_rect(swatch_pos, swatch_size, glm::vec4(c, open_alpha));
-            continue;
-        }
-        const std::string& entry = choices[i];
-        renderer.draw_text_pixels(entry,(text_x+x_shift)*renderer.frame_size.width,
-            y*renderer.frame_size.height+8.0F*renderer.frame_size.height/1080.0F,
-            static_cast<float>(glm::mix(24.0,28.0,eased_focus))*renderer.frame_size.height/1080.0F,
-            {1,1,1,alpha*open_alpha},0.7F,focused?xmb_canvas::pulse():0.0F);
-
-    }
-
-    constexpr float arrow_size = 0.035F;
-    if(first_visible > 0) {
-        renderer.draw_text("▲", text_x + x_shift,
-            static_cast<float>(list_top_y - item_height),
-            arrow_size, glm::vec4(1.0F, 1.0F, 1.0F, 0.85F * open_alpha), false, true);
-    }
-    if(!choices.empty() && last_visible + 1 < choices.size()) {
-        renderer.draw_text("▼", text_x + x_shift,
-            static_cast<float>(list_top_y +
-                static_cast<double>(last_visible - first_visible + 1) * item_height),
-            arrow_size, glm::vec4(1.0F, 1.0F, 1.0F, 0.85F * open_alpha), false, true);
-    }
+    renderer.reset_clip();
+    if(window.first)canvas.text("▲",x,top-12*ui,20,{1,1,1,open_alpha});
+    if(window.last<choices.size())canvas.text("▼",x,1034,20,{1,1,1,open_alpha});
+    if(selected_total_lines>selected_page_lines)canvas.text("← More text →",x,1064,16,{1,1,1,open_alpha});
 }
 
 }

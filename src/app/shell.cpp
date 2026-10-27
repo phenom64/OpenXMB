@@ -41,13 +41,18 @@ module;
 // gettext
 #include <libintl.h>
 #include <ctime>
-#include <SDL2/SDL_mouse.h>
+#include <SDL2/SDL.h>
+#undef main
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 #include <glm/vec2.hpp>
 
 #include "openxmb/xmb/boot_timeline.hpp"
 #include "openxmb/xmb/background.hpp"
 #include "openxmb/music/player.hpp"
+#include "input_bindings.hpp"
 #include "openxmb/integrations/desktop.hpp"
 #include "openxmb/themes/library.hpp"
 #include <map>
@@ -74,7 +79,8 @@ import :programs;
 import :theme_manager;
 import :integration_center;
 import :library_manager;
-import :settings_center;
+import :about;
+import :desktop_settings;
 
 using namespace mfk::i18n::literals;
 
@@ -85,6 +91,8 @@ namespace app
         std::optional<openxmb::themes::AppliedTheme> active;
         std::chrono::steady_clock::time_point started=std::chrono::steady_clock::now();
         openxmb::themes::AnimationFrame frame;
+        double animation_seconds=0;
+        std::chrono::steady_clock::time_point sampled=std::chrono::steady_clock::now();
         std::map<std::filesystem::path,std::unique_ptr<texture>> textures;
     };
 
@@ -680,7 +688,9 @@ namespace app
 
         if(theme->active && !theme->active->animation.empty()) {
             try {
-                const auto seconds = std::chrono::duration<double>(now-theme->started).count();
+                if(!config::CONFIG.enabled("power.reduced.motion",false))theme->animation_seconds+=std::chrono::duration<double>(now-theme->sampled).count();
+                theme->sampled=now;
+                const auto seconds=theme->animation_seconds;
                 theme->frame = openxmb::themes::ThemeLibrary::sample_animation(*theme->active,
                     fixed_wave_seconds_from_environment().value_or(seconds));
                 std::vector<std::filesystem::path> needed;
@@ -756,12 +766,21 @@ namespace app
             // forcing the older OpenXMB theme colour (which made the scene feel
             // stuck on June/cyan).
             const bool music_scene=std::any_of(overlays.begin(),overlays.end(),[](const auto& overlay){return overlay->music_background();});
+            const bool reactive_scene=std::any_of(overlays.begin(),overlays.end(),[](const auto& overlay){return overlay->music_reactive();});
+            const bool flow_scene=reactive_scene&&config::CONFIG.preference("music.visualizer","Wave")=="Flow";
+            procedural_wave_render->flow_mode=flow_scene;
+            procedural_wave_render->visualizer_time=flow_scene?static_cast<float>(config::CONFIG.enabled("power.reduced.motion",false)?36.0:fixed_wave_seconds_from_environment().value_or(-1.0)):-1.0F;
+            procedural_wave_render->music_vertical=reactive_scene?-0.02F:0.26F;
+            float energy=0;for(const auto band:openxmb::music::service().snapshot().spectrum)energy+=band;
+            energy/=static_cast<float>(openxmb::music::service().snapshot().spectrum.size());
+            procedural_wave_render->audio_energy+=(reactive_scene?energy-procedural_wave_render->audio_energy:-procedural_wave_render->audio_energy)*0.08F;
             procedural_wave_render->set_music_mode(music_scene);
             const float music_mix=procedural_wave_render->music_mix();background_gradient.music_mix=music_mix;
+            if(flow_scene) {background_gradient.top_rgb={0,0,0};background_gradient.bottom_rgb={0,0,0};background_gradient.music_mix=0;}
             glm::vec3 effect_color{background_gradient.bottom_rgb[0],background_gradient.bottom_rgb[1],background_gradient.bottom_rgb[2]};
             effect_color=glm::mix(glm::min(effect_color*1.6F,glm::vec3(1.0F)),glm::vec3(1.0F),0.35F);
             const glm::vec3 original_effect_tint=glm::mix(effect_color,glm::vec3(192.0F/255,108.0F/255,200.0F/255),music_mix);
-            constexpr float original_effect_brightness = 1.0F;
+            const float original_effect_brightness = 1.0F;
             const bool can_render_monthly_background =
                 (music_scene||music_mix>0.001F||config::CONFIG.backgroundType ==
                     config::config::background_type::original) &&
@@ -814,12 +833,13 @@ namespace app
                     procedural_wave_render->render(
                         commandBuffer, frame, backgroundRenderPass.get(),
                         original_effect_tint, original_effect_brightness,
-                        static_cast<float>(fixed_wave_seconds_from_environment().value_or(boot.wave_boot_time_seconds)));
+                        static_cast<float>(config::CONFIG.enabled("power.reduced.motion",false)?36.0:fixed_wave_seconds_from_environment().value_or(boot.wave_boot_time_seconds)));
 
                 }
                 else if(config::CONFIG.backgroundType == config::config::background_type::wave) {
                     wave_render->waveColor = baseThemeColour; // PS3 look: wave uses base, brightness on background only
-                    wave_render->render(commandBuffer, frame, backgroundRenderPass.get());
+                    wave_render->paused=config::CONFIG.enabled("power.reduced.motion",false);
+                    if(config::CONFIG.wavesEnabled)wave_render->render(commandBuffer, frame, backgroundRenderPass.get());
                 }
                 else if(config::CONFIG.backgroundType == config::config::background_type::image) {
                     if(backgroundTexture) {
@@ -1377,8 +1397,12 @@ namespace app
             commandBuffer.setViewport(0, viewport);
             commandBuffer.setScissor(0, scissor);
 
+            const auto dim_setting=config::CONFIG.preference("power.dim","Off");
+            const double dim_seconds=dim_setting=="1 minute"?60:dim_setting=="5 minutes"?300:dim_setting=="10 minutes"?600:0;
+            const bool dimmed=dim_seconds>0&&std::chrono::duration<double>(std::chrono::steady_clock::now()-last_activity).count()>dim_seconds;
+            const float brightness=std::clamp(static_cast<float>(config::CONFIG.number("display.brightness",1))*(dimmed?0.3F:1.0F),0.0F,1.2F);
             image_render->renderImageSized(commandBuffer, frame, shellRenderPass.get(), compositedBackgroundView,
-                0.0f, 0.0f, static_cast<int>(win->swapchainExtent.width), static_cast<int>(win->swapchainExtent.height));
+                0.0f, 0.0f, static_cast<int>(win->swapchainExtent.width), static_cast<int>(win->swapchainExtent.height),glm::vec4(brightness,brightness,brightness,1.0F));
             gui_renderer ctx(commandBuffer, frame, shellRenderPass.get(), win->swapchainExtent, font_render.get(), image_render.get(), simple_render.get());
             if(menu_dim_alpha > 0.001F) {
                 ctx.draw_rect(glm::vec2{0.0F, 0.0F}, glm::vec2{1.0F, 1.0F},
@@ -1440,7 +1464,7 @@ namespace app
                 previous_parameters = config::CONFIG.waveParameters;
             }
             procedural_wave_render->waves_enabled = config::CONFIG.wavesEnabled;
-            procedural_wave_render->particles_enabled = config::CONFIG.particlesEnabled;
+            procedural_wave_render->particles_enabled = config::CONFIG.particlesEnabled&&!config::CONFIG.enabled("power.reduced.motion",false);
             procedural_wave_render->particle_color = config::CONFIG.particleColor;
         }
         bool render_menu = true;
@@ -1599,13 +1623,42 @@ namespace app
         menu.preload(device, allocator, *loader);
     }
 
+    void shell::reload_theme_sounds() {
+        const auto load=[&](sdl::mix::unique_chunk& chunk,std::initializer_list<const char*> names){for(const auto* name:names){const auto file=config::CONFIG.resolve_sound(config::CONFIG.asset_directory/"sounds"/name);if(auto* replacement=sdl::mix::LoadWAV(file.string().c_str())){chunk=sdl::mix::unique_chunk{replacement};return;}}};
+        load(ok_sound,{"ok.wav"});
+        load(confirm_sound,{"NSE.ui.Confirm.wav","NSE.ui.Confirm.ogg","confirm.wav"});
+        load(cancel_sound,{"NSE.ui.Cancel.wav","NSE.ui.Cancel.ogg","cancel.wav"});
+        load(back_sound,{"NSE.clicker.Cancel.wav","NSE.clicker.Cancel.ogg","back.wav"});
+    }
+    bool shell::set_audio_device(const std::string& name) {
+        // Settings is reached after closing foreground playback; retire the
+        // background decoder before resetting the shared SDL mixer device.
+        win->waitIdle();
+        #if OPENXMB_ENABLE_VIDEO_PLAYER
+        video_background_render.reset();
+        #endif
+        const bool changed=openxmb::music::service().set_output_device(name);
+        if(changed)active_audio_device=name;
+        #if OPENXMB_ENABLE_VIDEO_PLAYER
+        video_background_render=std::make_unique<render::video_background>(device,allocator,win);
+        video_background_render->preload({backgroundRenderPass.get()},win->config.sampleCount,win->pipelineCache.get());
+        video_background_render->prepare(win->swapchainImageCount);
+        #endif
+        reload_background();return changed;
+    }
     void shell::open_panel(const std::string& name) {
-        if(name == "themes") {
+        if(name.starts_with("bind.")) {
+            emplace_overlay<app::binding_capture>(name.substr(5));
+        } else if(name == "licenses") {
+            emplace_overlay<programs::licenses_screen>(*loader);
+        } else if(name == "about") {
+            emplace_overlay<programs::about_screen>(*loader);
+        } else if(name == "themes") {
             emplace_overlay<programs::theme_manager>(*loader, theme_library(),
                 [this](const openxmb::themes::AppliedTheme& value) { apply_theme(value); },
                 [] { return nlohmann::json::parse(config::CONFIG.shell_snapshot()); });
         } else if(name == "settings") {
-            emplace_overlay<programs::settings_center>(*loader);
+            menu.show_settings();
         } else if(name == "users" || name == "games" || name == "custom" || name == "friends" || name == "account" || name == "trophies") {
             emplace_overlay<programs::library_manager>(name, *loader,
                 [this](const std::filesystem::path& path) { switch_profile(path); });
@@ -1624,24 +1677,39 @@ namespace app
         push_overlay(programs.front().create(path, *loader));
     }
 
+    void shell::refresh_desktop_preferences() {
+        desktop_preferences_applied=false;
+        // Profile and reset callbacks run in input handling, before the engine
+        // acquires a swapchain image. Rebuild here, never inside render/tick.
+            if(win->config.sampleCount!=config::CONFIG.sampleCount) {
+                const auto supported=win->physicalDevice.getProperties().limits.framebufferColorSampleCounts;
+                if(supported&config::CONFIG.sampleCount) {win->waitIdle();win->config.sampleCount=config::CONFIG.sampleCount;win->recreateSwapchain();}
+                else {spdlog::warn("Restored MSAA level is unsupported; retaining active level");config::CONFIG.sampleCount=win->config.sampleCount;}
+            }
+    }
+
+    void shell::reset_settings() {
+        win->waitIdle();
+        static_cast<void>(theme_library()->revert());
+        theme->active.reset();theme->frame={};theme->textures.clear();theme->library.reset();
+        config::CONFIG.reset_to_defaults();
+        refresh_desktop_preferences();reload_background();reload_fonts();reload_menu();reload_button_icons();reload_theme_sounds();
+    }
+
     void shell::switch_profile(const std::filesystem::path& path) {
         win->waitIdle();
         config::CONFIG.switch_profile(path);
+        refresh_desktop_preferences();
         theme->library.reset(); theme->active.reset(); theme->textures.clear();
         config::CONFIG.themeIcons.clear(); config::CONFIG.themeSounds.clear();
         if(auto saved = theme_library()->active()) apply_theme(*saved);
         else { reload_background(); reload_fonts(); reload_menu(); }
+        reload_button_icons();reload_theme_sounds();
     }
 
     void shell::apply_theme(const openxmb::themes::AppliedTheme& theme) {
         win->waitIdle();
         const auto previous_font = config::CONFIG.fontPath;
-        this->theme->active = theme;
-        this->theme->frame = {};
-        this->theme->started = std::chrono::steady_clock::now();
-        this->theme->textures.clear();
-        config::CONFIG.themeIcons = theme.icons;
-        config::CONFIG.themeSounds = theme.sounds;
         auto value = theme.shell;
         const auto& source = theme.settings;
         const auto inherit = [&](const char* from, const char* to) {
@@ -1660,6 +1728,29 @@ namespace app
             inherit("theme-waves-enabled", "theme-waves-enabled"); inherit("wavesEnabled", "theme-waves-enabled");
             inherit("theme-particles-enabled", "theme-particles-enabled"); inherit("dotsEnabled", "theme-particles-enabled");
         }
+        std::unique_ptr<font_renderer> validated_font;
+        if(value.contains("font-path")&&value["font-path"].is_string()) {
+            const auto requested=value["font-path"].get<std::string>();
+            const auto path=requested=="default"?config::CONFIG.fallback_font:std::filesystem::u8path(requested);
+            if(path!=previous_font)try {
+                validated_font=std::make_unique<font_renderer>(path.string(),32,device,allocator,win->swapchainExtent,win->gpuFeatures);
+                validated_font->preload(loader,{shellRenderPass.get()},win->config.sampleCount,win->pipelineCache.get(),nullptr,0x20,0x1ff).get();
+                validated_font->prepare(win->swapchainImageCount);
+            } catch(...) {
+                // The library may have persisted its selection before handing
+                // it to the renderer. Restore that selection on load failure.
+                try {if(this->theme->active&&!this->theme->active->reverted)static_cast<void>(theme_library()->apply(this->theme->active->id,this->theme->active->components));else static_cast<void>(theme_library()->revert());}
+                catch(const std::exception& error){spdlog::error("Could not restore the previous theme selection: {}",error.what());}
+                throw;
+            }
+        }
+        this->theme->active = theme;
+        this->theme->frame = {};
+        this->theme->started = std::chrono::steady_clock::now();
+        this->theme->sampled=this->theme->started;this->theme->animation_seconds=0;
+        this->theme->textures.clear();
+        config::CONFIG.themeIcons = theme.icons;
+        config::CONFIG.themeSounds = theme.sounds;
         const auto text = [&](const char* key, auto&& setter) {
             if(value.contains(key) && value[key].is_string()) setter(value[key].get<std::string>());
         };
@@ -1686,9 +1777,9 @@ namespace app
         for(const auto& [group, parameters] : config::CONFIG.waveParameters)
             for(const auto& [key, number] : parameters) procedural_wave_render->set_parameter(group, key, number);
         procedural_wave_render->waves_enabled = config::CONFIG.wavesEnabled;
-        procedural_wave_render->particles_enabled = config::CONFIG.particlesEnabled;
+        procedural_wave_render->particles_enabled = config::CONFIG.particlesEnabled&&!config::CONFIG.enabled("power.reduced.motion",false);
         procedural_wave_render->particle_color = config::CONFIG.particleColor;
-        if(previous_font != config::CONFIG.fontPath) reload_fonts();
+        if(validated_font)font_render=std::move(validated_font);
         if(fixed_components_loaded) {
             const auto load = [&](auto& sound, const std::filesystem::path& path) {
                 sound = sdl::mix::unique_chunk{sdl::mix::LoadWAV(config::CONFIG.resolve_sound(path).string().c_str())};
@@ -1702,6 +1793,14 @@ namespace app
         config::CONFIG.save_config();
     }
 
+    void shell::set_font_file(const std::string& value) {
+        const auto path=value=="default"?config::CONFIG.fallback_font:std::filesystem::u8path(value);
+        win->waitIdle();
+        auto replacement=std::make_unique<font_renderer>(path.string(),32,device,allocator,win->swapchainExtent,win->gpuFeatures);
+        replacement->preload(loader,{shellRenderPass.get()},win->config.sampleCount,win->pipelineCache.get(),nullptr,0x20,0x1ff).get();
+        replacement->prepare(win->swapchainImageCount);
+        config::CONFIG.setFontPath(path.string());font_render=std::move(replacement);
+    }
     void shell::reload_fonts() {
         win->waitIdle();
         auto replacement = std::make_unique<font_renderer>(config::CONFIG.fontPath.string(), 32, device, allocator, win->swapchainExtent, win->gpuFeatures);
@@ -1724,20 +1823,20 @@ namespace app
         }
     }
     void shell::reload_button_icons() {
-        auto controller_type = get_controller_type();
-
-        for(std::underlying_type_t<action> i = std::to_underlying(action::none)+1; i < std::to_underlying(action::_length); i++) {
-            auto a = static_cast<action>(i);
-            if(controller_type == "none") {
-                continue;
+        const auto family=get_controller_type();
+        for(std::size_t i=1;i<std::to_underlying(action::_length);++i) {
+            button_labels[i].clear();buttonTextures[i].reset();if(family=="none")continue;
+            const bool keyboard=family=="keyboard";const auto index=input_bindings::glyph_index(config::CONFIG.preferences,!keyboard,i-1);
+            const auto code=input_bindings::read(config::CONFIG.preferences,!keyboard,i-1);
+            if(index<0||family=="default") {
+                if(keyboard)button_labels[i]=SDL_GetScancodeName(static_cast<SDL_Scancode>(code));
+                else {switch(code){case 0:button_labels[i]="South";break;case 1:button_labels[i]="East";break;case 2:button_labels[i]="West";break;case 3:button_labels[i]="North";break;case 4:button_labels[i]=family=="playstation"?"Select":"View";break;case 6:button_labels[i]=family=="playstation"?"Start":"Menu";break;case 9:button_labels[i]=family=="playstation"?"L1":"LB";break;case 10:button_labels[i]=family=="playstation"?"R1":"RB";break;default:button_labels[i]="Button "+std::to_string(code);}}
+                if(button_labels[i].empty())button_labels[i]="Key "+std::to_string(code);continue;
             }
-
-            std::string_view name = utils::enum_name(a);
-            std::filesystem::path icon_name = config::CONFIG.asset_directory / "icons" / std::format("icon_button_{}_{}.png", controller_type, name);
-            std::filesystem::path fallback_icon = config::CONFIG.asset_directory / "icons" / std::format("icon_button_default_{}.png", name);
-
-            buttonTextures[i] = std::make_unique<texture>(device, allocator);
-            loader->loadTexture(buttonTextures[i].get(), existing_asset_or_fallback(std::move(icon_name), std::move(fallback_icon)));
+            const auto name=input_bindings::actions[static_cast<std::size_t>(index)];
+            const auto icon=config::CONFIG.asset_directory/"icons"/std::format("icon_button_{}_{}.png",family,name);
+            buttonTextures[i]=std::make_unique<texture>(device,allocator);
+            loader->loadTexture(buttonTextures[i].get(),icon);
         }
     }
     std::string shell::get_controller_type() const {
@@ -1748,7 +1847,8 @@ namespace app
             }
             for(const auto& [id, controller] : win->controllers) {
                 sdl::GameControllerType ctype = sdl::GameControllerGetType(controller.get());
-                if(ctype == sdl::GameControllerTypeValues::PS4 ||
+                if(ctype == sdl::GameControllerTypeValues::PS3 ||
+                   ctype == sdl::GameControllerTypeValues::PS4 ||
                    ctype == sdl::GameControllerTypeValues::PS5) {
                     return "playstation";
                 } else if(ctype == sdl::GameControllerTypeValues::XBOX360 ||
@@ -1760,13 +1860,49 @@ namespace app
                     return "steam";
                 }
             }
-            return "xbox";
+            return "default";
         }
         return type;
     }
 
     void shell::tick() {
-        openxmb::music::service().tick();
+        if(!desktop_preferences_applied) {
+            desktop_preferences_applied=true;
+            if(!win->config.headless) {
+                if(!desktop_defaults_captured) {
+                    desktop_defaults_captured=true;desktop_default_flags=SDL_GetWindowFlags(win->win.get())&(SDL_WINDOW_FULLSCREEN_DESKTOP|SDL_WINDOW_FULLSCREEN);
+                    SDL_GetWindowPosition(win->win.get(),&desktop_default_x,&desktop_default_y);
+                    SDL_GetWindowSize(win->win.get(),&desktop_default_width,&desktop_default_height);
+                }
+                if(const auto name=config::CONFIG.preference("system.name","OpenXMB system");!name.empty())SDL_SetWindowTitle(win->win.get(),name.c_str());
+                const auto mode=config::CONFIG.preference("display.mode");
+                SDL_SetWindowFullscreen(win->win.get(),mode.empty()?desktop_default_flags:mode=="Windowed"?0:mode=="Borderless"?SDL_WINDOW_FULLSCREEN_DESKTOP:SDL_WINDOW_FULLSCREEN);
+                if(config::CONFIG.preference("display.monitor").empty())SDL_SetWindowPosition(win->win.get(),desktop_default_x,desktop_default_y);
+                if(config::CONFIG.preference("display.resolution").empty()){SDL_SetWindowDisplayMode(win->win.get(),nullptr);SDL_SetWindowSize(win->win.get(),desktop_default_width,desktop_default_height);}
+                if(const auto monitor=config::CONFIG.preference("display.monitor");!monitor.empty()) {SDL_Rect bounds{};if(SDL_GetDisplayBounds(static_cast<int>(config::CONFIG.number("display.monitor",0)),&bounds)==0)SDL_SetWindowPosition(win->win.get(),bounds.x,bounds.y);}
+                if(const auto resolution=config::CONFIG.preference("display.resolution");!resolution.empty()) {const auto x=resolution.find('x');if(x!=std::string::npos)try{SDL_DisplayMode display{};display.w=std::stoi(resolution.substr(0,x));display.h=std::stoi(resolution.substr(x+1));if(display.w>0&&display.h>0){SDL_SetWindowDisplayMode(win->win.get(),&display);SDL_SetWindowSize(win->win.get(),display.w,display.h);}}catch(const std::exception&) {spdlog::warn("Ignoring invalid saved resolution");}}
+                const auto requested_device=config::CONFIG.preference("audio.device");
+                const auto wanted_device=requested_device=="System Default"?std::string{}:requested_device;
+                if(wanted_device!=active_audio_device)set_audio_device(wanted_device);
+            }
+        }
+        const bool focused=win->config.headless||(SDL_GetWindowFlags(win->win.get())&SDL_WINDOW_INPUT_FOCUS)!=0;
+        const auto cap=config::CONFIG.maxFPS>10000?0:config::CONFIG.maxFPS;
+        win->config.fpsLimit=focused?cap:config::CONFIG.number("power.background.fps",30);
+        auto& player=openxmb::music::service();
+        static bool focus_paused=false;
+        if(!focused&&!config::CONFIG.enabled("audio.background")&&player.snapshot().status==openxmb::music::Status::playing) {player.pause();focus_paused=true;}
+        if(focused&&focus_paused) {player.play();focus_paused=false;}
+        const bool keep_awake=config::CONFIG.enabled("power.keep.awake")&&(player.snapshot().status==openxmb::music::Status::playing || std::any_of(overlays.begin(),overlays.end(),[](const auto& overlay){return overlay->keeps_awake();}));
+        static bool awake=false;
+        if(awake!=keep_awake) {awake=keep_awake;if(awake) SDL_DisableScreenSaver();else SDL_EnableScreenSaver();
+#ifdef _WIN32
+            SetThreadExecutionState(ES_CONTINUOUS|(awake?ES_DISPLAY_REQUIRED|ES_SYSTEM_REQUIRED:0));
+#endif
+        }
+        player.set_output_gain(static_cast<float>(config::CONFIG.number("audio.master",100)*config::CONFIG.number("audio.music",100)/10000.0));
+        player.set_background_enabled(config::CONFIG.enabled("music.background"));
+        player.tick();
         if(background_only) {
             return;
         }
@@ -1782,7 +1918,7 @@ namespace app
         for(unsigned int i=0; i<2; i++) {
             if(last_controller_axis_input[i]) {
                 auto time_since_input = std::chrono::duration<double>(std::chrono::steady_clock::now() - last_controller_axis_input_time[i]);
-                if(time_since_input > controller_axis_input_duration) {
+                if(time_since_input > std::chrono::milliseconds(static_cast<int>(config::CONFIG.number("input.repeat",180)))) {
                     auto [controller, dir] = *last_controller_axis_input[i];
                     dispatch<events::joystick_axis>(dir, i,
                         controller_axis_position[i].x,
@@ -1791,12 +1927,9 @@ namespace app
                 }
             }
         }
-        if(last_controller_button_input) {
-            auto time_since_input = std::chrono::duration<double>(std::chrono::steady_clock::now() - last_controller_button_input_time);
-            if(time_since_input > controller_button_input_duration) {
-                auto [controller, button] = *last_controller_button_input;
-                button_down(controller, button);
-            }
+        const double button_seconds=std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        if(const auto repeated=button_timing.repeat(button_seconds,config::CONFIG.number("input.repeat",180)/1000.0)) {
+            for(std::size_t i=0;i<4;++i)if(static_cast<int>(*repeated)==input_bindings::read(config::CONFIG.preferences,true,i))dispatch(event{static_cast<action>(i+1),events::controller_button_down{to_logical_button(static_cast<sdl::GameControllerButton>(*repeated))}});
         }
 
         for(unsigned int i=0; i<overlays.size(); i++) {
@@ -1817,12 +1950,16 @@ namespace app
         }
         const double elapsed = std::chrono::duration<double>(
             std::chrono::steady_clock::now() - shader_time_zero).count();
+        if(!config::CONFIG.enabled("startup.intro")) return elapsed+(config::CONFIG.enabled("startup.warning")?openxmb::xmb::BootMilestones::warning_in_seconds:openxmb::xmb::BootMilestones::complete_seconds);
         return elapsed + (win->config.headless && !force_headless_startup_overlay()
             ? openxmb::xmb::BootMilestones::complete_seconds : 0.0);
     }
 
     openxmb::xmb::BootSample shell::startup_sample() {
-        return startup_timeline.sample(startup_elapsed_seconds());
+        const auto elapsed=startup_elapsed_seconds();
+        auto sample=startup_timeline.sample(elapsed);
+        if(!config::CONFIG.enabled("startup.warning") && sample.warning_opacity>0) {static_cast<void>(startup_timeline.dismiss_warning(elapsed));sample=startup_timeline.sample(elapsed);}
+        return sample;
     }
 
     void shell::dismiss_startup_warning(const event& input) {
@@ -1835,6 +1972,7 @@ namespace app
     }
 
     void shell::dispatch(const event& event) {
+        if(event.action!=action::none||event.get<events::key_down>()||event.get<events::controller_button_down>()||event.get<events::mouse_move>()) last_activity=std::chrono::steady_clock::now();
         // A held dismissal must not auto-repeat into the revealed menu.
         if(startup_dismiss_button) {
             if(const auto* up = event.get<events::controller_button_up>();
@@ -1997,6 +2135,10 @@ namespace app
     }
 
     void shell::handle(result result) {
+        const auto& music=openxmb::music::service().snapshot();
+        const float quiet=music.status==openxmb::music::Status::playing && config::CONFIG.enabled("audio.duck")?0.22F:1.0F;
+        const int effect_volume=static_cast<int>(128*quiet*config::CONFIG.number("audio.master",100)*config::CONFIG.number("audio.effects",100)/10000.0);
+        for(auto* sound:{ok_sound.get(),confirm_sound.get(),cancel_sound.get(),back_sound.get(),question_sound.get()}) if(sound)sdl::mix::VolumeChunk(sound,effect_volume);
         if(result & result::error_rumble) {
             if(config::CONFIG.controllerRumble) {
                 for(const auto& [id, controller] : win->controllers) {
@@ -2029,24 +2171,20 @@ namespace app
     void shell::key_up(sdl::Keysym key)
     {
         spdlog::trace("Key up: {}", key.sym);
+        const auto scan=static_cast<unsigned>(std::to_underlying(key.scancode));if(scan<held_scancodes.size())held_scancodes[scan]=false;
         dispatch(event{
             action::none,
             events::key_up{static_cast<unsigned int>(std::to_underlying(key.scancode))}
         });
     }
-    void shell::key_down(sdl::Keysym key)
-    {
-        spdlog::trace("Key down: {}", key.sym);
-        constexpr std::array<std::string_view,8> names{"left","right","up","down","ok","cancel","options","extra"};
-        constexpr std::array<unsigned,8> defaults{80,79,82,81,40,41,43,57};
+    void shell::key_down(sdl::Keysym key) {
+        spdlog::trace("Key down: symbol={} scancode={}",key.sym,std::to_underlying(key.scancode));
         const auto scan=static_cast<unsigned>(std::to_underlying(key.scancode));
-        for(std::size_t index=0;index<names.size();++index) {
-            unsigned binding=defaults[index];
-            if(const auto it=config::CONFIG.preferences.find("key."+std::string(names[index]));it!=config::CONFIG.preferences.end()) {
-                unsigned value{}; const auto [end,error]=std::from_chars(it->second.data(),it->second.data()+it->second.size(),value);
-                if(error==std::errc{} && end==it->second.data()+it->second.size() && value>=4 && value<=512) binding=value;
-            }
-            if(scan==binding) { dispatch(event{static_cast<action>(index+1),events::key_down{scan}}); return; }
+        const bool held=scan<held_scancodes.size()&&held_scancodes[scan];
+        if(scan<held_scancodes.size())held_scancodes[scan]=true;
+        for(std::size_t i=0;i<input_bindings::actions.size();++i) if(scan==static_cast<unsigned>(input_bindings::read(config::CONFIG.preferences,false,i))) {
+            if(held&&i>=4)return;
+            dispatch(event{static_cast<action>(i+1),events::key_down{scan}});return;
         }
         dispatch(event{action::none,events::key_down{scan}});
     }
@@ -2059,40 +2197,24 @@ namespace app
     }
     void shell::remove_controller(sdl::GameController* controller)
     {
+        button_timing.clear();
         if(config::CONFIG.controllerType == "auto") {
             reload_button_icons();
         }
     }
-    void shell::button_down(sdl::GameController* controller, sdl::GameControllerButton button)
-    {
-        spdlog::trace("Button down: {}", fmt::underlying(button));
-        last_controller_button_input = std::make_tuple(controller, button);
-        last_controller_button_input_time = std::chrono::steady_clock::now();
-
-        if(button == sdl::GameControllerButtonValues::DPAD_LEFT) {
-            dispatch(event{action::left, events::controller_button_down{to_logical_button(button)}});
-        } else if(button == sdl::GameControllerButtonValues::DPAD_RIGHT) {
-            dispatch(event{action::right, events::controller_button_down{to_logical_button(button)}});
-        } else if(button == sdl::GameControllerButtonValues::DPAD_UP) {
-            dispatch(event{action::up, events::controller_button_down{to_logical_button(button)}});
-        } else if(button == sdl::GameControllerButtonValues::DPAD_DOWN) {
-            dispatch(event{action::down, events::controller_button_down{to_logical_button(button)}});
-        } else if(button == sdl::GameControllerButtonValues::A) {
-            dispatch(event{action::ok, events::controller_button_down{to_logical_button(button)}});
-        } else if(button == sdl::GameControllerButtonValues::B) {
-            dispatch(event{action::cancel, events::controller_button_down{to_logical_button(button)}});
-        } else if(button == sdl::GameControllerButtonValues::Y) {
-            dispatch(event{action::options, events::controller_button_down{to_logical_button(button)}});
-        } else if(button == sdl::GameControllerButtonValues::X) {
-            dispatch(event{action::extra, events::controller_button_down{to_logical_button(button)}});
-        } else {
-            dispatch(event{action::none, events::controller_button_down{to_logical_button(button)}});
+    void shell::button_down(sdl::GameController* controller,sdl::GameControllerButton button) {
+        const auto code=static_cast<unsigned>(button);
+        const auto seconds=std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        for(std::size_t i=0;i<input_bindings::actions.size();++i)if(static_cast<int>(button)==input_bindings::read(config::CONFIG.preferences,true,i)) {
+            if(button_timing.press(code,i<4,seconds))dispatch(event{static_cast<action>(i+1),events::controller_button_down{to_logical_button(button)}});return;
         }
+        if(button_timing.press(code,false,seconds))dispatch(event{action::none,events::controller_button_down{to_logical_button(button)}});
     }
+
     void shell::button_up(sdl::GameController* controller, sdl::GameControllerButton button)
     {
         spdlog::trace("Button up: {}", fmt::underlying(button));
-        last_controller_button_input = std::nullopt;
+        button_timing.release(static_cast<unsigned>(button));
         dispatch(event{action::none, events::controller_button_up{to_logical_button(button)}});
     }
     void shell::axis_motion(sdl::GameController* controller, sdl::GameControllerAxis axis, int16_t value)

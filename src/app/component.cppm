@@ -175,6 +175,8 @@ export class component {
         [[nodiscard]] virtual float typography_scale() const { return 1.0F; }
     virtual bool is_opaque() const { return true; }
     virtual bool music_background() const { return false; }
+      virtual bool music_reactive() const { return false; }
+      virtual bool keeps_awake() const { return false; }
     virtual bool show_status_bar() const { return false; }
         [[nodiscard]] virtual bool do_fade_in() const { return false; }
         [[nodiscard]] virtual bool do_fade_out() const { return false; }

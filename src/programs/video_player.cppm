@@ -30,9 +30,11 @@ module;
 #include <string_view>
 #include <vector>
 #include <SDL2/SDL_scancode.h>
+#include <SDL2/SDL_video.h>
 #include <openxmb/video.hpp>
 #include <openxmb/video_worker.hpp>
 #include <openxmb/music/player.hpp>
+#include "video_preferences.hpp"
 
 export module openxmb.app:video_player;
 
@@ -43,12 +45,14 @@ import vulkan_hpp;
 import vma;
 import i18n;
 import openxmb.utils;
+import openxmb.config;
+import openxmb.render;
 import :component;
 import :programs;
 import :message_overlay;
 import :base_viewer;
 import :xmb_presentation;
-import openxmb.app;
+import :main;
 
 namespace programs {
 using namespace app;
@@ -71,10 +75,9 @@ public:
     }
 
     ~video_player() {
+        remember_position(true);
         playback.reset();
         if(texture) { try { wait_gpu(); } catch(...) {} }
-        staging_buffers.clear();
-        staging_allocations.clear();
         texture.reset();
         openxmb::music::service().set_external_duck(false);
     }
@@ -89,10 +92,21 @@ public:
         }
         if(!loaded) {
             loaded = true;
-            playback->set_volume(volume);
+            apply_volume();
             playback->set_repeat(repetition == repeat_mode::file);
+            if(config::CONFIG.enabled("video.resume")) {
+                const double position=config::CONFIG.number(resume_key(),0);
+                if(position>3&&position<snapshot->info.duration-3) playback->seek(position);
+            }
             if(!snapshot->info.audio_tracks.empty() && snapshot->info.audio_status != "Audio output active") status_message = snapshot->info.audio_status;
         }
+        apply_volume();
+        apply_preferences();
+        const bool focused=window->config.headless||(SDL_GetWindowFlags(window->win.get())&SDL_WINDOW_INPUT_FOCUS)!=0;
+        const auto focus=focus_pause.update(focused,config::CONFIG.enabled("audio.background"),snapshot->status);
+        if(focus==video_preferences::focus_action::pause) playback->pause(true);
+        else if(focus==video_preferences::focus_action::resume) playback->pause(false);
+        if(std::chrono::steady_clock::now()-last_resume_save>std::chrono::seconds(10)) remember_position(true);
         if(!snapshot->error.empty()) status_message = snapshot->error;
         if(auto frame = playback->take_frame()) pending_frame = std::move(frame);
         if(playback->playback_state() == video::state::failed) {
@@ -112,40 +126,16 @@ public:
         window = xmb->get_window();
         if(!pending_frame) return;
         auto& frame = *pending_frame;
-        if(!texture || texture->width != frame.width || texture->height != frame.height || staging_buffers.size() != xmb->get_window()->swapchainImageCount) {
-            // Resolution changes and file transitions retire resources only
-            // after submitted draws have stopped referencing their image views.
-            wait_gpu();
-            texture.reset();
-            staging_buffers.clear();
-            staging_allocations.clear();
-            texture = std::make_unique<auroreengine::texture>(device, allocator, frame.width, frame.height);
-            std::size_t count = xmb->get_window()->swapchainImageCount;
-            staging_allocations.resize(count);
-            staging_buffers.resize(count);
-            vk::BufferCreateInfo buffer_info({}, frame.rgba.size(), vk::BufferUsageFlagBits::eTransferSrc, vk::SharingMode::eExclusive);
-            vma::AllocationCreateInfo allocation_info({}, vma::MemoryUsage::eCpuToGpu);
-            for(std::size_t i = 0; i < count; ++i) std::tie(staging_buffers[i], staging_allocations[i]) = allocator.createBufferUnique(buffer_info, allocation_info);
-            image_initialized = false;
-        }
-        if(frame_index < 0 || static_cast<std::size_t>(frame_index) >= staging_buffers.size()) return;
-        allocator.copyMemoryToAllocation(frame.rgba.data(), staging_allocations[frame_index].get(), 0, frame.rgba.size());
-        vk::ImageSubresourceRange range(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
-        cmd.pipelineBarrier(image_initialized ? vk::PipelineStageFlagBits::eFragmentShader : vk::PipelineStageFlagBits::eTopOfPipe,
-            vk::PipelineStageFlagBits::eTransfer, {}, {}, {},
-            vk::ImageMemoryBarrier(image_initialized ? vk::AccessFlags{vk::AccessFlagBits::eShaderRead} : vk::AccessFlags{}, vk::AccessFlagBits::eTransferWrite,
-                image_initialized ? vk::ImageLayout::eShaderReadOnlyOptimal : vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal,
-                vk::QueueFamilyIgnored, vk::QueueFamilyIgnored, texture->image, range));
-        cmd.copyBufferToImage(staging_buffers[frame_index].get(), texture->image, vk::ImageLayout::eTransferDstOptimal,
-            vk::BufferImageCopy(0, 0, 0, vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1), vk::Offset3D(0, 0, 0),
-                vk::Extent3D(static_cast<uint32_t>(frame.width), static_cast<uint32_t>(frame.height), 1)));
-        cmd.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader, {}, {}, {},
-            vk::ImageMemoryBarrier(vk::AccessFlagBits::eTransferWrite, vk::AccessFlagBits::eShaderRead,
-                vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
-                vk::QueueFamilyIgnored, vk::QueueFamilyIgnored, texture->image, range));
-        image_initialized = true;
-        image_height = frame.height;
-        image_width = static_cast<unsigned int>(std::max(1.0, frame.aspect_ratio * frame.height));
+        try {
+            if(!texture) texture=std::make_unique<render::video_texture>(device,allocator,
+                render::video_texture::supports_native(window->physicalDevice,window->queueFamilyIndices.graphicsFamily.value()),
+                [this] {return render::shaders::yuv420p::decode_comp(device);},[this] {wait_gpu();});
+            if(texture->upload(cmd,frame_index,window->swapchainImageCount,frame)) {
+                image_initialized=true;
+                image_height=frame.height;
+                image_width=static_cast<unsigned int>(std::max(1.0,frame.aspect_ratio*frame.height));
+            }
+        } catch(const std::exception& error) {status_message=std::string("Video upload failed: ")+error.what();}
         pending_frame.reset();
     }
 
@@ -155,17 +145,23 @@ public:
             renderer.draw_text("Opening video…"_(), 0.5f, 0.5f, 0.025f, glm::vec4(1), true, true);
             return;
         }
-        if(texture && image_initialized) {
-            if(screen == screen_mode::stretch) renderer.draw_image(texture->imageView.get(), 0, 0, renderer.aspect_ratio, 1);
+        if(texture && texture->ready() && image_initialized) {
+            if(screen == screen_mode::stretch) renderer.draw_image(texture->view(), 0, 0, renderer.aspect_ratio, 1);
+            else if(screen==screen_mode::fill) {
+                const float aspect=static_cast<float>(playback->info().aspect_ratio);
+                const float height=std::max(1.0F,static_cast<float>(renderer.aspect_ratio)/std::max(0.01F,aspect));
+                const float width=height*aspect;
+                renderer.draw_image(texture->view(),(1-width/renderer.aspect_ratio)/2,(1-height)/2,width,height);
+            }
             else if(screen == screen_mode::original) {
-                float h = std::min(1.0f, static_cast<float>(texture->height) / std::max(1u, xmb->get_window()->swapchainExtent.height));
+                float h = std::min(1.0f, static_cast<float>(texture->height()) / std::max(1u, xmb->get_window()->swapchainExtent.height));
                 float w = h * static_cast<float>(playback->info().aspect_ratio);
                 if(w > renderer.aspect_ratio) { h *= renderer.aspect_ratio / w; w = renderer.aspect_ratio; }
-                renderer.draw_image(texture->imageView.get(), (1 - w / renderer.aspect_ratio) / 2, (1 - h) / 2, w, h);
+                renderer.draw_image(texture->view(), (1 - w / renderer.aspect_ratio) / 2, (1 - h) / 2, w, h);
             } else {
                 float saved_zoom = zoom;
                 if(screen == screen_mode::fit) zoom = 1;
-                base_viewer::render(texture->imageView.get(), 1.0f, renderer);
+                base_viewer::render(texture->view(), 1.0f, renderer);
                 zoom = saved_zoom;
             }
         }
@@ -193,6 +189,11 @@ public:
             renderer.draw_text(std::to_string(info.width) + " × " + std::to_string(info.height) + " · " + utils::to_fixed_string(info.frame_rate, 2) + " fps", 0.05f, 0.09f, 0.018f);
             renderer.draw_text(info.decoder, 0.05f, 0.13f, 0.016f);
             renderer.draw_text(info.audio_status, 0.05f, 0.17f, 0.016f);
+            if(texture) {
+                const auto& stats=texture->stats();
+                const auto pipeline=std::string(texture->gpu_conversion()?"Native YUV GPU conversion":"RGBA upload")+" · "+std::to_string(stats.uploaded_bytes)+" upload bytes";
+                renderer.draw_text(pipeline,0.05F,0.25F,0.014F);
+            }
             if(playback->rate() != 1.0) renderer.draw_text("Audio is muted during speed playback"_(), 0.05f, 0.21f, 0.014f);
         }
     }
@@ -203,7 +204,7 @@ public:
         if(command == action::cancel) return result::close;
         if(!loaded) return result::success;
         switch(command) {
-            case action::ok: playback->pause(playback->playback_state() == video::state::playing); break;
+            case action::ok: focus_pause.cancel();playback->pause(playback->playback_state() == video::state::playing); break;
             case action::left: playback->seek(playback->position() - 10); break;
             case action::right: playback->seek(playback->position() + 10); break;
             case action::up: set_volume(volume + 0.05f); break;
@@ -216,6 +217,7 @@ public:
     }
 
     result on_event(const event& event) override {
+        if(event.action!=action::none) return on_action(event.action);
         if(auto* key = event.get<events::key_down>(); key && loaded) {
             switch(key->keycode) {
                 case SDL_SCANCODE_SPACE: return on_action(action::ok);
@@ -223,7 +225,7 @@ public:
                 case SDL_SCANCODE_P: advance_file(-1); return result::success;
                 case SDL_SCANCODE_PERIOD: playback->step(1); return result::success;
                 case SDL_SCANCODE_COMMA: playback->step(-1); return result::success;
-                case SDL_SCANCODE_F: screen = static_cast<screen_mode>((static_cast<int>(screen) + 1) % 4); return result::success;
+                case SDL_SCANCODE_F: screen = static_cast<screen_mode>((static_cast<int>(screen) + 1) % 5); return result::success;
                 case SDL_SCANCODE_S: open_menu(menu_kind::subtitles); return result::success;
                 case SDL_SCANCODE_A: open_menu(menu_kind::audio); return result::success;
             }
@@ -250,11 +252,12 @@ public:
     }
     result on_mouse_scroll(float amount) override { set_volume(volume + amount * 0.05f); return result::success; }
     bool is_opaque() const override { return true; }
+    bool keeps_awake() const override {return playback&&loaded&&playback->playback_state()==video::state::playing;}
 
 private:
     app::media_icons icons_;
     enum class repeat_mode { off, file, all };
-    enum class screen_mode { fit, original, zoom, stretch };
+    enum class screen_mode { fit, original, zoom, stretch, fill };
     enum class menu_kind { none, main, audio, subtitles, screen, speed, scenes, files };
     vk::Device device;
     vma::Allocator allocator;
@@ -265,13 +268,14 @@ private:
     bool loaded = false;
     std::unique_ptr<video::worker> playback;
     std::optional<video::frame> pending_frame;
-    std::unique_ptr<auroreengine::texture> texture;
-    // Buffers must be destroyed before their backing allocations.
-    std::vector<vma::UniqueAllocation> staging_allocations;
-    std::vector<vma::UniqueBuffer> staging_buffers;
+    std::unique_ptr<render::video_texture> texture;
     bool image_initialized = false;
     bool end_handled = false;
     float volume = 1;
+    float applied_volume=-1;
+    video_preferences::focus_policy focus_pause;
+    std::string applied_audio_language,applied_subtitle_language,applied_fit;
+    std::chrono::steady_clock::time_point last_resume_save=std::chrono::steady_clock::now();
     repeat_mode repetition = repeat_mode::off;
     screen_mode screen = screen_mode::fit;
     menu_kind menu = menu_kind::none;
@@ -289,39 +293,26 @@ private:
         return result + std::to_string(seconds % 60);
     }
 
-    static bool video_file(const std::filesystem::path& file) {
-        auto ext = file.extension().string();
-        std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-        constexpr std::array<std::string_view, 10> types{ ".mp4", ".mkv", ".avi", ".mov", ".webm", ".mpg", ".mpeg", ".m4v", ".ts", ".ogv" };
-        return std::find(types.begin(), types.end(), ext) != types.end();
-    }
-
     void discover_playlist(const std::filesystem::path& current) {
-        std::error_code error;
-        auto directory = current.has_parent_path() ? current.parent_path() : std::filesystem::current_path(error);
-        for(std::filesystem::directory_iterator it(directory, std::filesystem::directory_options::skip_permission_denied, error), end; it != end && !error; it.increment(error)) {
-            if(it->is_regular_file(error) && video_file(it->path())) playlist.push_back(it->path());
-        }
-        if(std::find(playlist.begin(), playlist.end(), current) == playlist.end()) playlist.push_back(current);
-        std::sort(playlist.begin(), playlist.end());
-        playlist.erase(std::unique(playlist.begin(), playlist.end()), playlist.end());
-        playlist_index = static_cast<std::size_t>(std::find(playlist.begin(), playlist.end(), current) - playlist.begin());
+        std::tie(playlist,playlist_index)=video_preferences::discover_playlist(current);
     }
 
     void open_path(std::filesystem::path next) {
+        remember_position(true);
         loaded = false;
         status_message.clear();
         if(texture) wait_gpu();
         texture.reset();
-        staging_buffers.clear();
-        staging_allocations.clear();
         path = std::move(next);
         pending_frame.reset();
         image_initialized = false;
         end_handled = false;
         menu = menu_kind::none;
+        applied_volume=-1;applied_audio_language.clear();applied_subtitle_language.clear();applied_fit.clear();
+        focus_pause.cancel();
         video::options settings;
-        settings.hardware_acceleration = OPENXMB_HWACCEL_STR;
+        settings.hardware_acceleration = config::CONFIG.preference("video.hardware",OPENXMB_HWACCEL_STR);
+        settings.native_yuv=true;
         playback->set_path(path, std::move(settings));
         last_input = std::chrono::steady_clock::now();
     }
@@ -339,13 +330,45 @@ private:
 
     void set_volume(float value) {
         volume = std::clamp(value, 0.0f, 1.0f);
-        if(playback) playback->set_volume(volume);
+        apply_volume();
         last_input = std::chrono::steady_clock::now();
+    }
+    void apply_volume() {
+        const float gain=video_preferences::output_gain(volume,config::CONFIG.number("audio.master",100),config::CONFIG.number("audio.video",100));
+        if(playback&&std::abs(gain-applied_volume)>0.0001F) {playback->set_volume(gain);applied_volume=gain;}
+    }
+    void apply_preferences() {
+        const auto audio=config::CONFIG.preference("video.audio.language","Default");
+        if(audio!=applied_audio_language) {
+            if(auto track=video_preferences::language_track(playback->info().audio_tracks,audio)) playback->select_audio(*track);
+            applied_audio_language=audio;
+        }
+        const auto subtitle=config::CONFIG.preference("video.subtitle.language","Off");
+        if(subtitle!=applied_subtitle_language) {
+            const auto tracks=playback->info().subtitle_tracks;
+            if(subtitle=="Off") playback->select_subtitle(-1);
+            else if(subtitle=="Default"&&!tracks.empty()) playback->select_subtitle(tracks.front().index);
+            else if(auto track=video_preferences::language_track(tracks,subtitle)) playback->select_subtitle(*track);
+            applied_subtitle_language=subtitle;
+        }
+        const auto fit=config::CONFIG.preference("video.fit","Fit");
+        if(fit!=applied_fit) {screen=fit=="Fill"?screen_mode::fill:fit=="Original"?screen_mode::original:screen_mode::fit;applied_fit=fit;}
+    }
+    std::string resume_key() const {const auto encoded=path.lexically_normal().generic_u8string();return "video.position."+std::string(encoded.begin(),encoded.end());}
+    void remember_position(bool save) {
+        if(!loaded||!playback||!config::CONFIG.enabled("video.resume")||path.empty()) return;
+        const auto position=playback->position(),duration=playback->info().duration;
+        if(position>3&&position<duration-3) config::CONFIG.preferences[resume_key()]=std::to_string(position);
+        else config::CONFIG.preferences.erase(resume_key());
+        if(save) {try {config::CONFIG.save_config();}catch(const std::exception& error) {status_message=std::string("Cannot save video position: ")+error.what();}}
+        last_resume_save=std::chrono::steady_clock::now();
     }
 
     void draw_subtitles(auroreengine::gui_renderer& renderer) {
         auto text = playback->subtitle_text();
         if(text.empty()) return;
+        const auto scale=static_cast<float>(std::clamp(config::CONFIG.number("video.subtitle.size",1),0.5,2.0));
+        const auto columns=static_cast<std::size_t>(75/scale);
         std::vector<std::string> lines;
         std::size_t offset = 0;
         while(offset < text.size() && lines.size() < 5) {
@@ -353,9 +376,9 @@ private:
             auto line = text.substr(offset, end == std::string::npos ? end : end - offset);
             // Bound long dialogue to the available screen width without dropping
             // trailing text. FFmpeg has already stripped ASS/HTML formatting.
-            while(line.size() > 75 && lines.size() < 5) {
-                auto split = line.rfind(' ', 75);
-                if(split == std::string::npos || split == 0) split = 75;
+            while(line.size() > columns && lines.size() < 5) {
+                auto split = line.rfind(' ', columns);
+                if(split == std::string::npos || split == 0) split = columns;
                 lines.push_back(line.substr(0, split));
                 line.erase(0, split + (line[split] == ' '));
             }
@@ -363,11 +386,11 @@ private:
             if(end == std::string::npos) break;
             offset = end + 1;
         }
-        float y = 0.83f - static_cast<float>(lines.size()) * 0.035f;
+        float y = 0.85f - static_cast<float>(lines.size()) * 0.035f*scale;
         for(const auto& line : lines) {
-            renderer.draw_text(line, 0.502f, y + 0.002f, 0.025f, {0, 0, 0, 1}, true, true);
-            renderer.draw_text(line, 0.5f, y, 0.025f, glm::vec4(1), true, true);
-            y += 0.035f;
+            renderer.draw_text(line, 0.502f, y + 0.002f, 0.025f*scale, {0, 0, 0, 1}, true, true);
+            renderer.draw_text(line, 0.5f, y, 0.025f*scale, glm::vec4(1), true, true);
+            y += 0.035f*scale;
         }
     }
 
@@ -378,6 +401,7 @@ private:
         if(kind == menu_kind::scenes) {
             scene_return = playback->position();
             scene_was_paused = playback->playback_state() != video::state::playing;
+            focus_pause.cancel();
             playback->pause(true);
             preview_scene();
         }
@@ -468,9 +492,9 @@ private:
         if(command != action::ok) return result::success;
         if(menu == menu_kind::main) {
             switch(selection) {
-                case 0: playback->pause(playback->playback_state() == video::state::playing); menu = menu_kind::none; break;
+                case 0: focus_pause.cancel();playback->pause(playback->playback_state() == video::state::playing); menu = menu_kind::none; break;
                 case 1: playback->replay(); menu = menu_kind::none; break;
-                case 2: playback->seek(0); playback->pause(false); menu = menu_kind::none; break;
+                case 2: focus_pause.cancel();playback->seek(0); playback->pause(false); menu = menu_kind::none; break;
                 case 3: advance_file(-1); break;
                 case 4: advance_file(1); break;
                 case 5: repetition = static_cast<repeat_mode>((static_cast<int>(repetition) + 1) % 3); playback->set_repeat(repetition == repeat_mode::file); break;

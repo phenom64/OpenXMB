@@ -300,3 +300,7 @@ msgstr "Nie znaleziono pasującego programu"
 
 msgid "No matching program found for file of type \"{}\": {}"
 msgstr "Nie znaleziono programu dla pliku typu \"{}\": {}"
+
+#: src/app/components/desktop_settings.cppm
+msgid "This feature is not available yet. This will be implemented in a future beta. Sorry!"
+msgstr "Ta funkcja nie jest jeszcze dostępna. Zostanie dodana w przyszłej wersji beta. Przepraszamy!"

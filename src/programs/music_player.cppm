@@ -2,6 +2,9 @@ module;
 
 #include "openxmb/music/player.hpp"
 #include "openxmb/music/library.hpp"
+#include "../app/input_bindings.hpp"
+#include <SDL2/SDL_keyboard.h>
+#include <SDL2/SDL_gamecontroller.h>
 
 #include <algorithm>
 #include <array>
@@ -148,6 +151,7 @@ private:
   std::filesystem::path path_;
   std::vector<music::QueueEntry> tracks_;
   shell* xmb_{};
+  std::array<bool,2> trigger_pressed_{};
   std::size_t selected_{};
   bool dirty_{}, close_{}, valid_{true};
   std::string notice_;
@@ -161,12 +165,14 @@ public:
   music_player(std::filesystem::path path, auroreengine::resource_loader &loader)
       : loader_(loader) {
     for(const auto* name:{"volume","visual","addplaylist","delete","display","prev","next","frev","ffwd","play","pause","stop","repeat","shuffle"}) icons_.load(loader_,std::string("system/mp_")+name);
+    for(const auto* hint:{"start","select","l1","r1","l2","r2","square"})icons_.load(loader_,std::string("system/btn_mp_")+hint);
+    icons_.load(loader_,"theme/icon_music_default");
     for(const auto* name:{"flac","wav","mp3","aac","opus","vorbis","pcm","wma","alac","atrac"}) icons_.load(loader_,std::string("vp/fmt/")+name);
     auto &player = music::service();
     player.set_shuffle(config::CONFIG.preference("music.shuffle","Off")=="On");
     const auto repeat=config::CONFIG.preference("music.repeat","Off");
     player.set_repeat(repeat=="One"?music::Repeat::one:repeat=="All"?music::Repeat::all:music::Repeat::off);
-    player.set_background_enabled(config::CONFIG.preference("music.background","On")=="On" && config::CONFIG.preference("audio.background","On")=="On");
+    player.set_background_enabled(config::CONFIG.enabled("music.background"));
     const auto *current = player.queue().current();
     std::error_code error;
     if (!current || !std::filesystem::equivalent(current->path, path, error))
@@ -179,6 +185,13 @@ public:
   }
   result tick(shell *xmb) override {
     xmb_ = xmb;
+    std::array<bool,2> pressed{};
+    for(const auto& [id,controller]:xmb->get_window()->controllers) {
+      pressed[0]=pressed[0]||SDL_GameControllerGetAxis(controller.get(),SDL_CONTROLLER_AXIS_TRIGGERLEFT)>16000;
+      pressed[1]=pressed[1]||SDL_GameControllerGetAxis(controller.get(),SDL_CONTROLLER_AXIS_TRIGGERRIGHT)>16000;
+    }
+    for(unsigned i=0;i<2;++i)if(pressed[i]&&!trigger_pressed_[i])music::service().seek(music::service().snapshot().position+(i?10.0:-10.0));
+    trigger_pressed_=pressed;
     // The shell also ticks this service while the viewer is closed.
     auto &player = music::service();
     player.tick();
@@ -235,15 +248,13 @@ public:
       c.rect(1419,968,383*progress,8,{0.30f,0.49f,0.008f,1},std::min(4.0F,191.5F*progress));c.rect(1419,968,383*progress,2,{0.78f,0.92f,0.35f,1});
     }
     if(artwork_&&artwork_->loaded) c.image(*artwork_,123,897,88,88);
-    else icons_.draw(c,"system/mp_visual",167,941,88,0.85f);
+    else icons_.draw(c,"theme/icon_music_default",167,941,88,0.85f);
     c.text(elide(metadata.title.empty()?"Music":metadata.title,58),243,941,34);
     c.text(elide(metadata.artist+(metadata.album.empty()?"":"  /  "+metadata.album),90),243,981,25);
     if(!state.error.empty()) c.text(elide(state.error,100),123,785,24,{1,0.7f,0.5f,1});
     else if(!notice_.empty()) c.text(elide(notice_,100),123,785,24);
     if(volume_open_) c.text("Volume  "+std::to_string(static_cast<int>(state.volume*100))+"%",524,682,25,{1,1,1,1},0,true);
-    render_controller_buttons(xmb,renderer,0.5F,0.97F,std::array{
-      std::pair{action::ok,std::string_view{"Select"}},std::pair{action::cancel,std::string_view{"Back"}},
-      std::pair{action::options,std::string_view{panel_==Panel::queue?"Queue Options":"Controls"}},std::pair{action::extra,std::string_view{"Wave / Flow"}}});
+
   }
   result on_action(action value) override {
     auto &player = music::service();
@@ -399,7 +410,41 @@ private:
         icons_.draw(c,names[index],524+(col-(count-1)*0.5f)*pitch,412+row*65,74,focus?1:0.85f,focus?1.3f:1);
       }
     }
-    c.text(labels[selected],524,616,25,{1,1,1,1},app::xmb_canvas::pulse(),true);
+    const auto family=xmb_?xmb_->get_controller_type():std::string{"keyboard"};
+    const bool keyboard=family=="keyboard",playstation=family=="playstation";
+    std::string hint_asset,hint_text;const auroreengine::texture* direct{};
+    const auto use_action=[&](action value){if(xmb_){direct=xmb_->get_button_icon(value);hint_text=xmb_->get_button_label(value);}};
+    const auto shortcut_available=[&](int code,bool pad){for(std::size_t i=0;i<app::input_bindings::actions.size();++i)if(app::input_bindings::read(config::CONFIG.preferences,pad,i)==code&&i!=4)return false;return true;};
+    if(selected==1)use_action(action::extra);
+    else if(selected==4||selected==5||selected==6||selected==9||selected==10) {
+      if(keyboard) {
+        const int code=selected==4?7:selected==5?19:selected==6?17:44;
+        if(shortcut_available(code,false))hint_text=SDL_GetScancodeName(static_cast<SDL_Scancode>(code));else use_action(action::ok);
+      } else {
+        const int code=selected==4?4:selected==5?9:selected==6?10:6;
+        if(!shortcut_available(code,true))use_action(action::ok);
+        else if(playstation)hint_asset=std::string("system/btn_mp_")+(selected==4?"select":selected==5?"l1":selected==6?"r1":"start");
+        else hint_text=selected==4?"View":selected==5?"LB":selected==6?"RB":"Menu";
+      }
+    } else if(selected==7||selected==8) {
+      if(keyboard)use_action(action::ok);
+      else if(playstation)hint_asset=selected==7?"system/btn_mp_l2":"system/btn_mp_r2";
+      else hint_text=selected==7?"LT":"RT";
+    }
+    constexpr float size=25,height=29.16F,gap=9.6F,center=616;
+    const float pixels=size*c.scale*config::CONFIG.textScale;
+    const auto metrics=renderer.text_line_metrics_pixels(pixels)/c.scale;
+    const float width=renderer.text_width_pixels(labels[selected],pixels)/c.scale;
+    float hint_width=0;
+    if(direct)hint_width=height*direct->width/std::max(1,direct->height);
+    else if(!hint_asset.empty())hint_width=icons_.scaled_width(hint_asset,height);
+    else if(!hint_text.empty())hint_width=std::max(height,renderer.text_width_pixels(hint_text,18*c.scale)/c.scale+14);
+    const float left=524-(width+(hint_width?gap+hint_width:0))*0.5F;
+    c.text(labels[selected],left,center+(metrics.x-metrics.y)*0.5F,size,{1,1,1,1},app::xmb_canvas::pulse());
+    const auto hint_x=left+width+gap;
+    if(direct)c.image(*direct,hint_x,center-height*0.5F,hint_width,height);
+    else if(!hint_asset.empty())icons_.draw(c,hint_asset,hint_x+hint_width*0.5F,center,height,0.95F);
+    else if(!hint_text.empty()) {c.rect(hint_x,center-height*0.5F,hint_width,height,{0.8F,0.8F,0.8F,0.9F},4);c.rect(hint_x+1,center-height*0.5F+1,hint_width-2,height-2,{0.06F,0.06F,0.06F,1},3);c.text(hint_text,hint_x+hint_width*0.5F,center+6,18,{1,1,1,1},0,true);}
   }
   void draw_queue(auroreengine::gui_renderer &renderer) {
     const auto &queue = music::service().queue();
@@ -418,6 +463,7 @@ private:
   app::media_icons icons_;
   bool display_on_{true},volume_open_{false},artwork_enabled_{true};
   shell* xmb_{};
+  std::array<bool,2> trigger_pressed_{};
   std::size_t control_row_{1},control_col_{4},queue_row_{};
   std::uint64_t generation_{~std::uint64_t{}};
   std::shared_ptr<auroreengine::texture> artwork_;

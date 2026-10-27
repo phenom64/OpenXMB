@@ -95,6 +95,17 @@ public:
             vma::AllocationCreateInfo({},vma::MemoryUsage::eCpuToGpu));
         allocator_.copyMemoryToAllocation(indices.data(),indexAllocation_.get(),0,indices.size()*sizeof(indices[0]));
         allocator_.flushAllocation(indexAllocation_.get(),0,indices.size()*sizeof(indices[0]));
+        constexpr unsigned flow_grid=512;
+        std::vector<std::uint32_t> flow_indices;
+        flow_indices.reserve((flow_grid-1)*(flow_grid-1)*6);
+        for(unsigned row=0;row+1<flow_grid;++row)for(unsigned col=0;col+1<flow_grid;++col) {
+            const auto a=row*flow_grid+col,b=a+1,c=a+flow_grid,d=c+1;
+            flow_indices.insert(flow_indices.end(),{a,b,d,a,d,c});
+        }
+        flowIndexCount_=static_cast<std::uint32_t>(flow_indices.size());
+        std::tie(flowIndexBuffer_,flowIndexAllocation_)=allocator_.createBufferUnique(vk::BufferCreateInfo({},flow_indices.size()*sizeof(flow_indices[0]),vk::BufferUsageFlagBits::eIndexBuffer),vma::AllocationCreateInfo({},vma::MemoryUsage::eCpuToGpu));
+        allocator_.copyMemoryToAllocation(flow_indices.data(),flowIndexAllocation_.get(),0,flow_indices.size()*sizeof(flow_indices[0]));
+        allocator_.flushAllocation(flowIndexAllocation_.get(),0,flow_indices.size()*sizeof(flow_indices[0]));
     }
 
     void prepare(int imageCount) {
@@ -154,6 +165,10 @@ public:
     bool particles_enabled{true};
     glm::vec3 particle_color{1.0F};
     glm::vec2 motion{};
+    float audio_energy{};
+    bool flow_mode{};
+    float music_vertical{-0.02F};
+    float visualizer_time{-1};
 
     void render(vk::CommandBuffer command,int frameIndex,vk::RenderPass renderPass,
                 glm::vec3 tint,float brightness,float seconds) {
@@ -164,7 +179,7 @@ public:
         const float blend=music_blend_*music_blend_*(3.0F-2.0F*music_blend_);
         auto settings=waveSettings_;auto particles=particleSettings_;
         const auto toward=[blend](float value,float music){return value+(music-value)*blend;};
-        settings.posY=toward(settings.posY,-0.02F);settings.tilt=toward(settings.tilt,0.12F);
+        settings.posY=toward(settings.posY,music_vertical);settings.tilt=toward(settings.tilt,0.12F);
         settings.thickness=toward(settings.thickness,2.8F);settings.rowSpread=toward(settings.rowSpread,1.3F);
         settings.fill=toward(settings.fill,0.6F);settings.edgeSoft=toward(settings.edgeSoft,0.8F);
         settings.bandAmplitude=toward(settings.bandAmplitude,0.07F);settings.bandFrequency=toward(settings.bandFrequency,1.0F);
@@ -172,6 +187,7 @@ public:
         particles.count=static_cast<std::uint32_t>(toward(static_cast<float>(particles.count),260));
         particles.posY=toward(particles.posY,0.4F);particles.spreadY=toward(particles.spreadY,1.5F);
         particles.sizeBase=toward(particles.sizeBase,2.4F);particles.sizeVar=toward(particles.sizeVar,2.0F);particles.opacity=toward(particles.opacity,0.8F);
+        settings.bandAmplitude*=1.0F+audio_energy*0.18F;
         sampler_.update(static_cast<double>(seconds)+36.0,settings,particles);
         const auto& data=sampler_.frame();
         allocator_.copyMemoryToAllocation(&data,frame.allocation.get(),0,sizeof(data));
@@ -181,16 +197,29 @@ public:
         command.setViewport(0,viewport); command.setScissor(0,scissor);
         command.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,pipelineLayout_.get(),0,frame.set,{});
         Push push{glm::vec4(tint,1),glm::vec4(extent_.width,extent_.height,seconds+100.0F,std::max(0.0F,brightness)),
-                  glm::vec4(glm::mix(particle_color,glm::vec3(1.0F,238.0F/255,252.0F/255),blend),1),glm::vec4(0,motion.x,motion.y,waves_enabled?1.0F:0.0F)};
+                  glm::vec4(glm::mix(particle_color,glm::vec3(1.0F,238.0F/255,252.0F/255),blend),1),glm::vec4(flow_mode?2.0F:0.0F,motion.x,motion.y,waves_enabled?1.0F:0.0F),glm::vec4(blend,audio_energy,flow_mode?1.0F:0.0F,0)};
+        if(flow_mode&&!flow_previous_)flow_started_=std::chrono::steady_clock::now();
+        flow_previous_=flow_mode;
+        if(flow_mode)push.resolution_time_gain.z=100.0F+(visualizer_time>=0?visualizer_time:std::chrono::duration<float>(std::chrono::steady_clock::now()-flow_started_).count());
         constexpr auto stages=vk::ShaderStageFlagBits::eVertex|vk::ShaderStageFlagBits::eFragment;
         if(waves_enabled) {
             command.bindPipeline(vk::PipelineBindPoint::eGraphics,waveIt->second.get());
             command.pushConstants(pipelineLayout_.get(),stages,0,sizeof(push),&push);
-            command.bindIndexBuffer(indexBuffer_.get(),0,vk::IndexType::eUint16);
-            command.drawIndexed(indexCount_,1,0,0,0);
+            if(flow_mode) {
+                push.mode_motion.x=3;command.pushConstants(pipelineLayout_.get(),stages,0,sizeof(push),&push);command.draw(3,1,0,0);
+                push.mode_motion.x=2;command.pushConstants(pipelineLayout_.get(),stages,0,sizeof(push),&push);
+            }
+            command.bindIndexBuffer(flow_mode?flowIndexBuffer_.get():indexBuffer_.get(),0,flow_mode?vk::IndexType::eUint32:vk::IndexType::eUint16);
+            if(blend>0.001F&&!flow_mode) {
+                push.effect.w=1;command.pushConstants(pipelineLayout_.get(),stages,0,sizeof(push),&push);
+                command.drawIndexed(indexCount_,1,0,0,0);
+                push.effect.w=0;command.pushConstants(pipelineLayout_.get(),stages,0,sizeof(push),&push);
+            }
+            command.drawIndexed(flow_mode?flowIndexCount_:indexCount_,1,0,0,0);
         }
-        if(particles_enabled && particleSettings_.count>0) {
+        if((flow_mode||particles_enabled) && particleSettings_.count>0) {
             push.mode_motion.x=1;
+            if(flow_mode)push.mode_motion.w=0;
             command.bindPipeline(vk::PipelineBindPoint::eGraphics,particleIt->second.get());
             command.pushConstants(pipelineLayout_.get(),stages,0,sizeof(push),&push);
             command.draw(6,std::min(particles.count,4096u),0,0);
@@ -198,7 +227,7 @@ public:
     }
 
 private:
-    struct Push { glm::vec4 tint,resolution_time_gain,particle_tint,mode_motion; };
+    struct Push { glm::vec4 tint,resolution_time_gain,particle_tint,mode_motion,effect; };
     struct Frame { vma::UniqueBuffer buffer; vma::UniqueAllocation allocation; vk::DescriptorSet set; };
     vk::Device device_;
     vma::Allocator allocator_;
@@ -211,6 +240,9 @@ private:
     vma::UniqueBuffer indexBuffer_;
     vma::UniqueAllocation indexAllocation_;
     std::uint32_t indexCount_{};
+    vma::UniqueBuffer flowIndexBuffer_;vma::UniqueAllocation flowIndexAllocation_;
+    std::uint32_t flowIndexCount_{};bool flow_previous_{};
+    std::chrono::steady_clock::time_point flow_started_=std::chrono::steady_clock::now();
     bool music_target_{};
     float music_blend_{};
     std::chrono::steady_clock::time_point music_updated_=std::chrono::steady_clock::now();

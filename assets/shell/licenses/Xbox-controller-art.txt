@@ -1,0 +1,21 @@
+Xbox controller face-button artwork
+
+A button: https://commons.wikimedia.org/wiki/File:Xbox_button_A.svg
+Author: VictorPines
+License: CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0)
+Changes: rasterised SVG at 256x256 for the OpenXMB renderer.
+
+B button: https://commons.wikimedia.org/wiki/File:Xbox_button_B.svg
+Author: VictorPines
+License: CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0)
+Changes: rasterised SVG at 256x256 for the OpenXMB renderer.
+
+X button: https://commons.wikimedia.org/wiki/File:Xbox_button_X.svg
+Author: VictorPines
+License: CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0)
+Changes: rasterised SVG at 256x256 for the OpenXMB renderer.
+
+Y button: https://commons.wikimedia.org/wiki/File:Xbox_button_Y.svg
+Author: VictorPines
+License: CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0)
+Changes: rasterised SVG at 256x256 for the OpenXMB renderer.

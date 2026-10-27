@@ -1320,6 +1320,13 @@ std::filesystem::path config::resolve_icon(const std::filesystem::path& path) co
 }
 
 std::filesystem::path config::resolve_sound(const std::filesystem::path& path) const {
+    if(const auto folder=preference("theme.sounds");!folder.empty()) {
+        auto name=path.filename().string();const auto stem=path.stem().string();
+        if(stem=="NSE.ui.Confirm")name="confirm.wav";
+        else if(stem=="NSE.ui.Cancel")name="cancel.wav";
+        else if(stem=="NSE.clicker.Cancel")name="back.wav";
+        const auto custom=std::filesystem::u8path(folder)/name;std::error_code error;if(std::filesystem::is_regular_file(custom,error))return custom;
+    }
     const auto name = path.stem().string();
     if(auto it = themeSounds.find(name); it != themeSounds.end()) return it->second;
     const auto semantic = name == "ok" ? "cursor" : name == "NSE.ui.Confirm" ? "enter" :

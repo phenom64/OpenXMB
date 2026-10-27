@@ -18,6 +18,7 @@
 
 module;
 
+#include "../app/components/dialog_input.hpp"
 #include <openxmb/photos/photo_library.hpp>
 #include <openxmb/integrations/desktop.hpp>
 #include <fstream>
@@ -64,6 +65,8 @@ public:
     image_viewer(std::filesystem::path selected, auroreengine::resource_loader& resources)
         : path(std::filesystem::absolute(std::move(selected)).lexically_normal()), loader(&resources) {
         image_width = image_height = 1;
+        slide_interval=std::chrono::seconds(static_cast<int>(config::CONFIG.number("photo.duration",5)));
+        effect_fade=config::CONFIG.preference("photo.transition","Fade")=="Fade";
         if(path.extension()==".xmbphotos") {
             std::ifstream stream(path);std::string line;
             while(std::getline(stream,line)) if(!line.empty()&&line[0]!='#') {std::filesystem::path entry(line);if(entry.is_relative()) entry=path.parent_path()/entry;if(photo::supported_image(entry)&&std::filesystem::is_regular_file(entry)) images.push_back(entry);}
@@ -159,7 +162,11 @@ public:
                 }
             } catch(const std::exception& error) { notify("Photo operation failed",error.what()); }
         }
-        if(slideshow && !modal_open && !cropping && !busy() && images.size()>1 && now-last_slide>=slide_interval) navigate(1);
+        if(slideshow && !modal_open && !cropping && !busy() && images.size()>1 && now-last_slide>=slide_interval) {
+            if(!config::CONFIG.enabled("photo.repeat")&&selected_index+1>=images.size())slideshow=false;
+            else if(config::CONFIG.enabled("photo.shuffle",false))navigate(1+static_cast<int>(now.time_since_epoch().count()%std::max(std::size_t{1},images.size()-1)));
+            else navigate(1);
+        }
         if(previous_image&&now-transition_started>std::chrono::milliseconds(500)) {wait_gpu();previous_image.reset();}
         if(close_pending && !modal_open) return result::close;
         return result::success;
@@ -252,6 +259,9 @@ public:
         return result::success;
     }
     result on_event(const event& event) override {
+        return app::dialog_input::dispatch(event.action,
+            event.is<events::key_down>()||event.is<events::controller_button_down>(),
+            [this](action mapped){return on_action(mapped);},[&]() -> result {
         if(auto* key=event.get<events::key_down>()) {
             switch(static_cast<sdl::Scancode>(key->keycode)) {
                 case sdl::Scancode::SDL_SCANCODE_R: pending_action=command::rotate_right; return result::success;
@@ -276,6 +286,7 @@ public:
         if(auto* mouse=event.get<events::mouse_button_down>(); mouse && mouse->button==events::logical_mouse_button::left) { dragging=true; return result::success; }
         if(event.is<events::mouse_button_up>()) { dragging=false; return result::success; }
         return on_action(event.action);
+        });
     }
     [[nodiscard]] bool is_opaque() const override { return true; }
     [[nodiscard]] bool enable_cursor() const override { return true; }
@@ -315,6 +326,7 @@ private:
         const float picture=static_cast<float>(image_width)/std::max(1u,image_height);
         float width=1.0f, height=width*aspect/picture;
         if(height>1.0f) { height=1.0f; width=height*picture/aspect; }
+        if(!cropping&&config::CONFIG.preference("photo.fit","Fit")=="Fill") {const float factor=std::max(1.0F/width,1.0F/height);width*=factor;height*=factor;}
         const float scale=cropping?1.0f:zoom;
         const glm::vec2 pan=cropping?glm::vec2(0):offset;
         return {0.5f-width*scale*0.5f+pan.x/aspect,0.5f-height*scale*0.5f+pan.y,width*scale,height*scale};

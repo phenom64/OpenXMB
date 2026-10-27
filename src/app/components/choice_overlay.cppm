@@ -79,6 +79,11 @@ export class choice_overlay : public component, public action_receiver {
         constexpr static auto open_duration = std::chrono::milliseconds(250);
         constexpr static auto transition_duration = std::chrono::milliseconds(100);
 
+        std::size_t first_visible = 0, text_scroll_line = 0, selected_page_lines = 1, selected_total_lines = 0;
+        float wrapped_pixels = -1;
+        std::string wrapped_font;
+        std::vector<std::vector<std::string>> wrapped_choices;
+        std::vector<float> row_heights;
         std::vector<glm::vec3> swatches;
         std::string top_action;
         float top_action_y = 390.0F / 1080.0F;
