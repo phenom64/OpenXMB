@@ -2,7 +2,6 @@
 """Exercise the real native shell with generated, isolated desktop fixtures.
 
 Run after building XMS, for example:
-  . /workspace/.openxmb-env/activate.sh
   python3 scripts/desktop-smoke.py --app build/default/XMS.bin
 
 Screenshots, fixture inputs, logs, configuration and report.json are retained in

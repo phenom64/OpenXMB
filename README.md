@@ -14,12 +14,12 @@ The rendering backend is powered by [**AuroreEngine**](https://github.com/phenom
 ## Screenshots
 
 <p align="center">
-  <img src="interfaceFX/GraphicsServer/Screenshot 2025-09-02 203702.png" alt="OpenXMB main menu and settings" width="300"/>
-  <img src="interfaceFX/GraphicsServer/Screenshot 2025-08-30 201458.png" alt="Dynamic XMB colour schemes" width="300"/>
+  <img src="docs/screenshots/rsx26/desktop.png" alt="OpenXMB home menu with a red wave background" width="300"/>
+  <img src="docs/screenshots/rsx26/music.png" alt="OpenXMB music player and visualizer" width="300"/>
 </p>
 
 <p align="center">
-  <em>Left: OpenXMB main menu & settings (pre-alpha) · Right: Dynamic XMB colour schemes adapting to time/month</em>
+  <em>Left: Home menu and settings · Right: Music playback and visualizer</em>
 </p>
 
 ## Features
@@ -169,9 +169,10 @@ For editor/debug work, use `cmake --preset dev && cmake --build --preset dev`.
 
 ### Build Options
 
-You can customize the build using the following CMake options:
+The default preset enables desktop integrations. Direct CMake builds use the following options and defaults:
+
 *   `-DENABLE_VIDEO_PLAYER=ON/OFF`: Enable the FFmpeg-based video player (Default: ON)
-*   `-DENABLE_BROWSER=ON/OFF`: Enable the CEF-based browser module [ALPHA] (Default: OFF)
+*   `-DENABLE_BROWSER=ON/OFF`: Enable desktop browser integration (Default: OFF)
 *   `-DENABLE_DISC_MEDIA=ON/OFF`: Enable DVD/Blu-ray support [ALPHA] (Default: OFF)
 *   `-DENABLE_LIBRETRO=ON/OFF`: Enable the libretro core host for emulation [ALPHA] (Default: OFF)
 *   `-DINTERFACE_FX_DEBUG=ON/OFF`: Enable interface/UI graphics+text debug overlays (Default: OFF)
@@ -194,46 +195,6 @@ scripts/headless-smoke.sh
 It configures, builds, installs into `build/ci/stage`, and verifies the launcher, binary, default config, font, representative icons, and OK sound were staged.
 On Windows, use the `windows-vcpkg` preset and verify both a windowed launch and an app-local install layout.
 
-### xmb-web Parity Development (RSX-26)
-
-Native parity work targets one-to-one visual and behavioral match with the pinned [xmb-web](https://github.com/TheGammaSqueeze/xmb-web) reference (`5d4675366ad50deca14fe3d70a2aa646c341aee0`). Implementation plan: `docs/superpowers/plans/2026-06-29-xmb-web-parity.md`.
-
-**Three-repo layout (local):**
-
-| Checkout | Branch | Path |
-|----------|--------|------|
-| OpenXMB | `RSX-26` | `%USERPROFILE%/Developer/OpenXMB` |
-| AuroreEngine | `RSX-26` | `%USERPROFILE%/Developer/AuroreEngine` |
-| xmb-web | pinned commit | `%USERPROFILE%/Developer/xmb-web` |
-
-**Windows native preset** links all three and imports the local-only compat asset pack:
-
-```powershell
-$env:VCPKG_ROOT = "$env:USERPROFILE/Developer/vcpkg"   # if not already set
-cmake --preset windows-native
-cmake --build --preset windows-native
-ctest --test-dir build/native -R openxmb_ --output-on-failure
-```
-
-**Compat import verify** (no files written):
-
-```powershell
-python tools/xmb/import_xmb_web.py --source $env:USERPROFILE/Developer/xmb-web `
-  --output $env:TEMP/xmb-compat-verify --verify-only
-```
-
-**Visual regression harness** (Phase 1):
-
-```powershell
-.\tools\xmb\install_reference_frames.ps1
-.\tools\xmb\capture_frame.ps1 -Scene all
-.\tools\xmb\run_visual_regression.ps1 -Heatmap
-```
-
-Background-only wave tuning: `.\tools\xmb\capture_background_audit.ps1`
-
-See `tools/xmb/capture_native_frame.md` for scene presets, env vars, and CTest usage.
-
 ## Configuration
 
 OpenXMB is configured using the `config.json` file. At runtime it checks `OPENXMB_CONFIG` first, then `config.json` beside the executable, and finally a per-user config location such as `%LOCALAPPDATA%/OpenXMB/config.json` on Windows. You can edit this file to change settings like:
@@ -247,28 +208,20 @@ The Unix launcher sets `XMB_ASSET_DIR` and `XMB_LOCALE_DIR` when they are not al
 
 ## Roadmap
 
-The desktop shell has moved beyond the original scaffold and menu milestones. The
-items below describe implementation progress; they are not release acceptance or
-claims of complete visual fidelity. See [milestones.txt](milestones.txt) and
-[desktop workflows and validation](docs/desktop-release.md) for remaining work.
+| Milestone | Status | Remaining work |
+| --- | --- | --- |
+| M1: Shell and configuration | ✅ Implemented | Platform installation and runtime validation. |
+| M2: Menus, fonts and icons | ✅ Implemented | Continue visual and platform refinements. |
+| M3: Music and visualizer | ✅ Implemented | Expand audio management and validate sustained playback. |
+| M4: Video player | 🏗️ Partially implemented | Add hardware decoding and bitmap subtitles. |
+| M5: Emulation | 🏗️ Partially implemented | Extend software libretro support to hardware-context cores. |
+| M6: Browser | 🏗️ Partially implemented | Expand platform support and validate native Wayland input. |
+| M7: Disc media | 🏗️ Partially implemented | Expand optical-device and format coverage. |
+| M8: Performance and release | 🏗️ Partially implemented | Complete release checks and target-hardware measurements. |
 
-* **M1–M2: Shell and menus:** JSON configuration, navigable crossbar, native
-  1920×1080 layout, text effects, icons, dialogs and keyboard are implemented;
-  visual and platform validation continues.
-* **M3: Music:** Playback, playlists, visualizers and native controls are
-  implemented; sustained playback and audio behavior need target-system testing.
-* **M4: Video:** Playback, audio, text subtitles and native controls are
-  implemented; hardware decoding and bitmap subtitles remain open.
-* **M5: Emulation:** A software libretro host is integrated; hardware-context
-  cores and broader validation remain open.
-* **M6: Browser:** An optional Linux/X11 WebKitGTK child view and a system-browser
-  fallback are implemented; end-to-end integration and platform validation continue.
-* **M7: Disc media:** Mounted-disc workflows are implemented; full optical-media
-  and device coverage remain open.
-* **M8: Performance and release:** Build and smoke-test tooling and resource
-  improvements are in place; release checks and target-hardware measurements remain.
-
-OpenGL ES, H700/RG34XX support and a handheld distribution are deferred.
+OpenGL ES, H700/RG34XX support and a handheld distribution are deferred. See
+[milestones.txt](milestones.txt) and [desktop workflows](docs/desktop-release.md)
+for details.
 
 ### Notes on AuroreEngine
 

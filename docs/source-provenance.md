@@ -28,7 +28,7 @@ history records the OpenXMB rename in `fd364ca`.
 
 | Current path | Similarity | Rule result | Applied template |
 | --- | ---: | --- | --- |
-| `src/app/components/main_menu.cpp` | 21.655% | original template | OpenXMB original |
+| `src/app/components/main_menu.cpp` | 21.357% | original template | OpenXMB original |
 | `src/app/shell.cpp` | 31.720% | original template | OpenXMB original |
 | `src/app/shell.cppm` | 63.124% | XMBShell modified template | XMBShell modified |
 | `src/programs/image_viewer.cppm` | 11.278% | original template | OpenXMB original |
@@ -46,3 +46,18 @@ An earlier matching-path scan found `src/app/module.cppm` (75.0%),
 `src/render/shaders.cppm` (58.3%) with OpenXMB-original notices. Those results
 need history and source review before applying a classification; common
 boilerplate, moved code and upstream revisions can affect the scores.
+
+## Header inventory snapshot
+
+A tracked C++ source and header inventory identified 126 files without leading
+license headers, 50 project files with exact template headers, two project files
+with SPDX-only license headers and one separately classified bundled third-party
+file. The two SPDX-only files, `src/programs/document_viewer.cppm` and
+`src/render/components/procedural_wave_renderer.cppm`, were introduced in
+`fd0bac8`; their GPL-3.0-or-later terms remain in the applied exact OpenXMB
+original template. After that change the project counts are 52 exact headers,
+zero identified nonmatching license headers and 126 without leading license
+headers. Three of the headerless files are empty legacy placeholders. The
+remaining files require individual provenance review; missing an upstream path
+does not by itself establish original authorship. Bundled third-party material
+remains separate from the XMBShell comparison.
