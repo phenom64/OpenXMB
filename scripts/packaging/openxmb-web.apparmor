@@ -1,0 +1,5 @@
+abi <abi/4.0>,
+
+profile openxmb-web /usr/bin/openxmb-web flags=(unconfined) {
+  userns,
+}

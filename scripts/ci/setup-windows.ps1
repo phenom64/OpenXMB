@@ -33,4 +33,12 @@ Expand-Archive $popplerZip -DestinationPath $poppler -Force
 $popplerBin = (Get-ChildItem $poppler -Filter pdftoppm.exe -Recurse | Select-Object -First 1).Directory.FullName
 if (!$popplerBin) { throw 'Poppler tools missing' }
 $popplerBin | Out-File $env:GITHUB_PATH -Append -Encoding utf8
+$gettextZip = Join-Path $env:RUNNER_TEMP 'gettext-tools.zip'
+Invoke-WebRequest 'https://github.com/mlocati/gettext-iconv-windows/releases/download/v1.0-v1.19/gettext1.0-iconv1.19-static-64.zip' -OutFile $gettextZip
+if ((Get-FileHash $gettextZip -Algorithm SHA256).Hash.ToLower() -ne '2b999bc37b56fa052ff98578e9cb188152009f634e3a66aa8ff263a016e9c466') { throw 'Gettext checksum mismatch' }
+$gettext = Join-Path $env:RUNNER_TEMP 'openxmb-gettext'
+Expand-Archive $gettextZip -DestinationPath $gettext -Force
+$gettextBin = (Get-ChildItem $gettext -Filter msgfmt.exe -Recurse | Select-Object -First 1).Directory.FullName
+if (!$gettextBin -or !(Test-Path "$gettextBin/msgmerge.exe")) { throw 'Gettext catalog tools missing' }
+$gettextBin | Out-File $env:GITHUB_PATH -Append -Encoding utf8
 @("VCPKG_ROOT=$vcpkg", "VCPKG_INSTALLED_DIR=$installed", "OPENXMB_POPPLER_BIN=$popplerBin", 'CMAKE_BUILD_PARALLEL_LEVEL=2', 'SDL_AUDIODRIVER=dummy') | Out-File $env:GITHUB_ENV -Append -Encoding utf8

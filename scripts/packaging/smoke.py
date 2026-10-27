@@ -88,6 +88,10 @@ def main():
                      'normalmaps/theme/icon_setting.png', 'sounds/ok.wav']:
         if not (assets / relative).is_file():
             raise RuntimeError('Missing packaged asset: ' + relative)
+    locales = app.parent / 'locales' if platform.system() == 'Windows' else assets.parent / 'locale'
+    for language in (ROOT / 'po/LINGUAS').read_text().split():
+        if not (locales / language / 'LC_MESSAGES/shell.mo').is_file():
+            raise RuntimeError('Missing compiled translation catalog: ' + language)
     for option in ['--help', '--version']:
         result = subprocess.run([str(app), option], env=environment, cwd=args.output,
                                 text=True, capture_output=True, timeout=45, check=True)

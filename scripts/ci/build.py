@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import shutil
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -36,6 +37,11 @@ def main():
     for name in ['CXX', 'CC']:
         if os.environ.get(name):
             config.append(f'-DCMAKE_{"CXX" if name == "CXX" else "C"}_COMPILER={os.environ[name]}')
+    for name in ['msgfmt', 'msgmerge']:
+        executable = shutil.which(name)
+        if not executable:
+            raise RuntimeError('Release builds require the gettext catalog tool: ' + name)
+        config.append(f'-DGETTEXT_{name.upper()}_EXECUTABLE={executable}')
     if platform.system() == 'Windows':
         prefix = Path(os.environ['VCPKG_INSTALLED_DIR']) / 'x64-windows'
         config += [f'-DCMAKE_TOOLCHAIN_FILE={os.environ["VCPKG_ROOT"]}/scripts/buildsystems/vcpkg.cmake',

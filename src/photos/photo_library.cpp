@@ -192,7 +192,13 @@ static Metadata image_metadata(const std::filesystem::path& path,int width,int h
     std::error_code ec;
     auto modified = std::filesystem::last_write_time(path, ec);
     if(!ec) {
-        auto seconds = std::chrono::system_clock::to_time_t(std::chrono::file_clock::to_sys(modified));
+#if defined(_WIN32)
+        const auto system_modified = std::chrono::clock_cast<std::chrono::system_clock>(modified);
+#else
+        const auto system_modified = std::chrono::file_clock::to_sys(modified);
+#endif
+        auto seconds = std::chrono::system_clock::to_time_t(
+            std::chrono::time_point_cast<std::chrono::system_clock::duration>(system_modified));
         std::tm value{};
 #if defined(_WIN32)
         localtime_s(&value, &seconds);

@@ -8,8 +8,15 @@ sudo apt-get install -y --no-install-recommends \
   libfmt-dev libfreetype-dev libglm-dev libharfbuzz-dev \
   libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libvulkan-dev \
   glslang-tools spirv-tools vulkan-utility-libraries-dev mesa-vulkan-drivers \
-  libgtk-3-dev libwebkit2gtk-4.1-dev bubblewrap xdg-dbus-proxy \
+  libgtk-3-dev libwebkit2gtk-4.1-dev bubblewrap xdg-dbus-proxy apparmor \
   ffmpeg poppler-utils xvfb xauth imagemagick dpkg-dev file patchelf
+# Allow only the CI helper to create WebKit's private sandbox namespaces.
+# Keep the host's AppArmor policy and WebKit's bubblewrap/seccomp sandbox active.
+if [ "${GITHUB_ACTIONS:-}" = 'true' ] && sudo aa-enabled --quiet; then
+  printf 'abi <abi/4.0>,\nprofile openxmb-ci-web "%s/**/openxmb-web" flags=(unconfined) {\n  userns,\n}\n' "$PWD" \
+    | sudo tee /etc/apparmor.d/openxmb-ci-web >/dev/null
+  sudo apparmor_parser -r /etc/apparmor.d/openxmb-ci-web
+fi
 {
   echo 'CC=clang-19'
   echo 'CXX=clang++-19'

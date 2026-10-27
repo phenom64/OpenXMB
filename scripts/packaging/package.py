@@ -52,7 +52,14 @@ def linux(stage, destination):
     command = ['dpkg-shlibdeps', '-O', *['-e' + str(p) for p in executables]]
     result = subprocess.check_output(command, cwd=metadata, text=True).strip()
     dependencies = result.removeprefix('shlibs:Depends=').split(', ')
-    dependencies += ['libvulkan1', 'ffmpeg', 'poppler-utils', 'xdg-utils', 'ca-certificates']
+    dependencies += ['libvulkan1', 'ffmpeg', 'poppler-utils', 'xdg-utils', 'ca-certificates', 'apparmor']
+    profile = package / 'etc/apparmor.d/openxmb-web'
+    profile.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(ROOT / 'scripts/packaging/openxmb-web.apparmor', profile)
+    (control / 'conffiles').write_text('/etc/apparmor.d/openxmb-web\n')
+    for name in ['postinst', 'postrm']:
+        shutil.copy2(ROOT / f'scripts/packaging/deb-{name}.sh', control / name)
+        (control / name).chmod(0o755)
     (control / 'control').write_text(
         f'Package: openxmb\nVersion: {VERSION.replace("-beta.", "~beta.")}\n'
         'Section: graphics\nPriority: optional\nArchitecture: amd64\n'

@@ -65,6 +65,12 @@ jobs:
         run: python scripts/packaging/smoke.py --app dist/stage/bin/XMS.bin --assets dist/stage/share/shell --background dist/dmg-wave.png --output dist/stage-smoke
       - name: Build Debian package
         run: python scripts/packaging/package.py linux
+      - name: Test the installed browser with its packaged AppArmor profile
+        env:
+          WEBKIT_DISABLE_COMPOSITING_MODE: '1'
+        run: |
+          sudo dpkg -i dist/packages/*.deb
+          python tests/integrations/web_view_smoke.py --helper /usr/bin/openxmb-web --output dist/installed-browser-smoke
       - name: Install and render in a clean Ubuntu container
         run: |
           docker run --rm -v "$PWD:/src:ro" ubuntu:24.04 bash -ec '
