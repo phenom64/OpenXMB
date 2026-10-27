@@ -74,6 +74,12 @@ public:
     void box(const xmb_canvas& c,std::string_view name,float x,float y,float width,float height,float alpha=1) const {
         const auto it=images.find(name);if(it!=images.end()&&it->second.image->loaded) c.image(*it->second.image,x,y,width,height,{1,1,1,alpha});
     }
+    float scaled_width(std::string_view name,float height) const {
+        const auto it=images.find(name);
+        if(it==images.end()||!it->second.image->loaded) return height;
+        const auto& image=*it->second.image;
+        return height*image.width/std::max(1,image.height);
+    }
     void draw(const xmb_canvas& c,std::string_view name,float cx,float cy,float height,float alpha=0.85f,float focus=1) const {
         const auto it=images.find(name);if(it==images.end()||!it->second.image->loaded) return;
         const auto& t=*it->second.image;

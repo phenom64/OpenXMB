@@ -175,6 +175,7 @@ public:
       if (button->button == events::logical_controller_button::leftshoulder) return player.previous() ? result::success : result::failure;
       if (button->button == events::logical_controller_button::rightshoulder) return player.next() ? result::success : result::failure;
       if (button->button == events::logical_controller_button::start) { toggle_pause(); return result::success; }
+      if (button->button == events::logical_controller_button::back) { display_on_=!display_on_; return result::success; }
     }
     if (const auto *scroll = value.get<events::mouse_scroll>()) {
       player.set_volume(player.snapshot().volume + scroll->x * 0.05f);
@@ -238,7 +239,7 @@ private:
   }
   void draw_controls(auroreengine::gui_renderer& renderer) {
     app::xmb_canvas c(renderer);
-    static constexpr std::array<std::string_view,14> names{"volume","visual","addplaylist","delete","display","prev","next","frev","ffwd","play","pause","stop","repeat","shuffle"};
+    static constexpr std::array<std::string_view,14> names{"system/mp_volume","system/mp_visual","system/mp_addplaylist","system/mp_delete","system/mp_display","system/mp_prev","system/mp_next","system/mp_frev","system/mp_ffwd","system/mp_play","system/mp_pause","system/mp_stop","system/mp_repeat","system/mp_shuffle"};
     static constexpr std::array<std::string_view,14> labels{"Volume Control","Visual Player","Play Queue","Remove from Queue","Display","Previous","Next","Fast Reverse","Fast Forward","Play","Pause","Stop","Repeat","Shuffle"};
     const auto selected=control_row_==0?control_col_:control_row_==1?5+control_col_:12+control_col_;
     for(int row=0;row<3;++row) {
@@ -246,14 +247,19 @@ private:
       const float pitch=row==2?95:64;
       for(int col=0;col<count;++col) {
         const int index=first+col;const bool focus=selected==static_cast<std::size_t>(index);
-        icons_.draw(c,std::string("system/mp_")+std::string(names[index]),524+(col-(count-1)*0.5f)*pitch,412+row*65,74,focus?1:0.85f,focus?1.3f:1);
+        icons_.draw(c,names[index],524+(col-(count-1)*0.5f)*pitch,412+row*65,74,focus?1:0.85f,focus?1.3f:1);
       }
     }
-    static constexpr std::array<std::string_view,14> hints{"","select","","","square","l1","r1","l2","r2","start","start","","",""};
-    const float label_width=renderer.text_width_pixels(std::string(labels[selected]),25*c.scale);
+    static constexpr std::array<std::string_view,14> hints{"","system/btn_mp_square","","","system/btn_mp_select","system/btn_mp_l1","system/btn_mp_r1","system/btn_mp_l2","system/btn_mp_r2","system/btn_mp_start","system/btn_mp_start","","",""};
+    constexpr float font_size=25, row_center=616, hint_height=29.16f, hint_gap=9.6f;
+    const float pixels=font_size*c.scale*config::CONFIG.textScale;
+    const float label_width=renderer.text_width_pixels(labels[selected],pixels)/c.scale;
+    const auto metrics=renderer.text_line_metrics_pixels(pixels)/c.scale;
     const bool has_hint=!hints[selected].empty();
-    c.text(labels[selected],has_hint?524-31:524,632,25,{1,1,1,1},app::xmb_canvas::pulse(),true);
-    if(has_hint) icons_.draw(c,"system/btn_mp_"+std::string(hints[selected]),524+label_width/(2*c.scale)+18,616,28,0.9f);
+    const float hint_width=has_hint?icons_.scaled_width(hints[selected],hint_height):0;
+    const float left=524-(label_width+(has_hint?hint_gap+hint_width:0))*0.5f;
+    c.text(labels[selected],left,row_center+(metrics.x-metrics.y)*0.5f,font_size,{1,1,1,1},app::xmb_canvas::pulse());
+    if(has_hint) icons_.draw(c,hints[selected],left+label_width+hint_gap+hint_width*0.5f,row_center,hint_height,0.9f);
   }
   void draw_queue(auroreengine::gui_renderer &renderer) {
     const auto &queue = music::service().queue();
