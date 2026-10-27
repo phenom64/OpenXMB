@@ -108,3 +108,61 @@ class ReleaseArtifactTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class ReleaseRecoveryTests(unittest.TestCase):
+    def test_validated_master_descendant_retains_approved_release_intent(self):
+        pr={'number':8,'merged_at':'approved','merge_commit_sha':'approved-sha','base':{'ref':'master'},'head':{'ref':'RSX-26','repo':{'full_name':'phenom64/OpenXMB'}}}
+        environment={'GITHUB_REPOSITORY':'phenom64/OpenXMB','GITHUB_SHA':'fix-sha','GITHUB_EVENT_NAME':'push','GITHUB_REF':'refs/heads/master'}
+        with patch.dict(release.os.environ,environment), patch.object(release,'api',side_effect=[pr,{'status':'ahead'},None]):
+            self.assertTrue(release.context()[2])
+
+    def test_diverged_master_cannot_publish(self):
+        pr={'number':8,'merged_at':'approved','merge_commit_sha':'approved-sha','base':{'ref':'master'},'head':{'ref':'RSX-26','repo':{'full_name':'phenom64/OpenXMB'}}}
+        environment={'GITHUB_REPOSITORY':'phenom64/OpenXMB','GITHUB_SHA':'other-sha','GITHUB_EVENT_NAME':'push','GITHUB_REF':'refs/heads/master'}
+        with patch.dict(release.os.environ,environment), patch.object(release,'api',side_effect=[pr,{'status':'diverged'}]):
+            self.assertFalse(release.context()[2])
+
+    def test_published_release_is_not_republished_by_followup(self):
+        pr={'number':8,'merged_at':'approved','merge_commit_sha':'approved-sha','base':{'ref':'master'},'head':{'ref':'RSX-26','repo':{'full_name':'phenom64/OpenXMB'}}}
+        environment={'GITHUB_REPOSITORY':'phenom64/OpenXMB','GITHUB_SHA':'fix-sha','GITHUB_EVENT_NAME':'push','GITHUB_REF':'refs/heads/master'}
+        with patch.dict(release.os.environ,environment), patch.object(release,'api',side_effect=[pr,{'status':'ahead'},{'draft':False}]):
+            self.assertFalse(release.context()[2])
+
+    def test_existing_correct_tag_is_preserved(self):
+        with patch.object(release,'api',return_value={'object':{'sha':'approved-sha'}}), patch.object(release.subprocess,'run') as run:
+            release.reserve_tag('phenom64/OpenXMB','approved-sha','v0.2.0-beta.2')
+            run.assert_not_called()
+
+    def test_conflicting_tag_is_never_moved(self):
+        with patch.object(release,'api',return_value={'object':{'sha':'other-sha'}}), patch.object(release.subprocess,'run') as run:
+            with self.assertRaises(RuntimeError):release.reserve_tag('phenom64/OpenXMB','approved-sha','v0.2.0-beta.2')
+            run.assert_not_called()
+
+    def test_missing_tag_is_reserved_explicitly(self):
+        with patch.object(release,'api',return_value=None), patch.object(release.subprocess,'run') as run:
+            release.reserve_tag('phenom64/OpenXMB','approved-sha','v0.2.0-beta.2')
+            self.assertIn('sha=approved-sha',run.call_args.args[0])
+
+
+class ValidatedRunRecoveryTests(unittest.TestCase):
+    def invoke(self, failed=False, event='workflow_dispatch', status='ahead'):
+        environment={'GITHUB_REPOSITORY':'phenom64/OpenXMB','GITHUB_SHA':'workflow-sha','GITHUB_EVENT_NAME':event,'GITHUB_REF':'refs/heads/master'}
+        run={'status':'completed','conclusion':'success','head_branch':'master','event':'push','path':'.github/workflows/release.yml','head_sha':'validated-sha'}
+        names=['Release gate','Release readiness','Ubuntu x86-64 DEB','Windows x86-64 portable ZIP','macOS x86_64','macOS arm64','Universal macOS DMG']
+        jobs={'jobs':[{'name':name,'conclusion':'failure' if failed and name=='Release readiness' else 'success'} for name in names]}
+        pr={'number':8,'merged_at':'approved','merge_commit_sha':'approved-sha','base':{'ref':'master'},'head':{'ref':'RSX-26','repo':{'full_name':'phenom64/OpenXMB'}}}
+        with patch.dict(release.os.environ,environment), patch.object(release,'api',side_effect=[run,jobs,pr,{'status':status}]):
+            return release.validated_run_context('123')
+
+    def test_fully_validated_master_build_can_be_recovered(self):
+        self.assertEqual(self.invoke(),('phenom64/OpenXMB','validated-sha',True))
+
+    def test_failed_required_check_blocks_recovery(self):
+        with self.assertRaises(RuntimeError):self.invoke(failed=True)
+
+    def test_pull_request_cannot_publish_through_recovery(self):
+        with self.assertRaises(RuntimeError):self.invoke(event='pull_request')
+
+    def test_unrelated_source_cannot_publish(self):
+        with self.assertRaises(RuntimeError):self.invoke(status='diverged')
