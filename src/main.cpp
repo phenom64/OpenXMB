@@ -126,8 +126,11 @@ int main(int argc, char *argv[])
     if(!std::getenv("VK_ICD_FILENAMES")&&std::filesystem::is_regular_file(icd))
         setenv("VK_ICD_FILENAMES",icd.c_str(),1);
     const auto loader=contents/"Frameworks/libvulkan.1.dylib";
-    if(std::filesystem::is_regular_file(loader))
+    if(std::filesystem::is_regular_file(loader)) {
+        if(!std::getenv("SDL_VULKAN_LIBRARY")) setenv("SDL_VULKAN_LIBRARY",loader.c_str(),1);
+        if(!std::getenv("AUROREENGINE_VULKAN_LIBRARY")) setenv("AUROREENGINE_VULKAN_LIBRARY",loader.c_str(),1);
         static_cast<void>(dlopen(loader.c_str(),RTLD_NOW|RTLD_GLOBAL));
+    }
     const auto fontconfig=contents/"Resources/fonts/fonts.conf";
     if(!std::getenv("FONTCONFIG_FILE")&&std::filesystem::is_regular_file(fontconfig))
         setenv("FONTCONFIG_FILE",fontconfig.c_str(),1);
