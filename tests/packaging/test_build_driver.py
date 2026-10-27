@@ -23,7 +23,7 @@ class BuildDriverTests(unittest.TestCase):
         self.stage = self.root / 'stage'
         self.outputs = self.root / 'outputs'
 
-    def invoke(self, test_status=0, fail_command=None):
+    def invoke(self, test_status=0, build_status=0, fail_command=None):
         def command(*args):
             if fail_command and fail_command in map(str, args):
                 raise subprocess.CalledProcessError(1, list(args))
@@ -36,7 +36,9 @@ class BuildDriverTests(unittest.TestCase):
              patch.object(build.shutil, 'which', return_value='/tools/gettext'), \
              patch.object(build, 'validate_media_tools'), \
              patch.object(build, 'run', side_effect=command), \
-             patch.object(build.subprocess, 'run', return_value=subprocess.CompletedProcess(['ctest'], test_status)), \
+             patch.object(build.subprocess, 'run', side_effect=[
+                 subprocess.CompletedProcess(['cmake', '--build'], build_status),
+                 subprocess.CompletedProcess(['ctest'], test_status)]), \
              patch.object(build.subprocess, 'check_output', return_value='tested-sha\n'):
             build.main()
 
@@ -51,10 +53,16 @@ class BuildDriverTests(unittest.TestCase):
         self.assertTrue((self.stage / 'build-info.json').is_file())
         self.assertEqual(self.outputs.read_text(), 'installed=true\n')
 
-    def test_failed_compilation_cannot_enable_packaging(self):
+    def test_missing_product_after_failed_compilation_cannot_enable_packaging(self):
         with self.assertRaises(subprocess.CalledProcessError):
-            self.invoke(fail_command='--build')
+            self.invoke(build_status=1, fail_command='--install')
         self.assertFalse(self.outputs.exists())
+
+    def test_failed_test_compilation_can_stage_complete_product_but_still_fails(self):
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.invoke(build_status=1, test_status=8)
+        self.assertTrue((self.stage / 'build-info.json').is_file())
+        self.assertEqual(self.outputs.read_text(), 'installed=true\n')
 
     def test_failed_installation_cannot_enable_packaging(self):
         with self.assertRaises(subprocess.CalledProcessError):

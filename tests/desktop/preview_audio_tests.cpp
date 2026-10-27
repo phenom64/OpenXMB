@@ -16,6 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#define SDL_MAIN_HANDLED
 #include "openxmb/desktop/preview_audio.hpp"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
@@ -39,6 +40,7 @@ void fixture(const fs::path &path) {
 }
 }
 int main() {
+  SDL_SetMainReady();
   const auto folder = fs::temp_directory_path() / ("openxmb-preview-audio-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
   try {
     fs::create_directories(folder); fixture(folder / "SND0.AT3");

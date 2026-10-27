@@ -1,3 +1,4 @@
+#define SDL_MAIN_HANDLED
 #include <openxmb/video.hpp>
 #include <openxmb/video_worker.hpp>
 
@@ -45,6 +46,7 @@ void run_for(video::session& player, std::chrono::milliseconds duration) {
 }
 
 int main(int argc, char** argv) {
+    SDL_SetMainReady();
     try {
         check(argc == 2, "fixture path is required");
         std::filesystem::path fixture = argv[1];

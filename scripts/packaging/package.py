@@ -100,9 +100,11 @@ def linux(stage, destination):
 def windows(stage, destination):
     app = destination / f'OpenXMB-{VERSION}-windows-x86_64'
     app.mkdir(parents=True, exist_ok=True)
-    for path in stage.iterdir():
-        if path.is_file() and (path.suffix.lower() in ['.exe', '.dll'] or path.name == 'config.json'):
-            shutil.copy2(path, app / path.name)
+    for directory in [stage, stage / 'bin']:
+        if directory.is_dir():
+            for path in directory.iterdir():
+                if path.is_file() and (path.suffix.lower() in ['.exe', '.dll'] or path.name == 'config.json'):
+                    shutil.copy2(path, app / path.name)
     for name in ['shell', 'locales']:
         shutil.copytree(stage / name, app / name, dirs_exist_ok=True)
     (app / 'XMS.bin.exe').rename(app / 'OpenXMB.exe')
@@ -157,6 +159,12 @@ def rpaths(path):
                              for i, line in enumerate(lines) if line.strip() == 'cmd LC_RPATH'))
 
 
+def write_mac_icon(destination):
+    from PIL import Image
+    with Image.open(ROOT / 'interfaceFX/GraphicsServer/SyndromaticOrb.png') as source:
+        source.convert('RGBA').save(destination, format='ICNS')
+
+
 def mac_thin(stage, destination, arch):
     app = destination / 'OpenXMB.app'
     contents = app / 'Contents'
@@ -179,9 +187,7 @@ def mac_thin(stage, destination, arch):
             'LSApplicationCategoryType': 'public.app-category.utilities',
             'NSHighResolutionCapable': True, 'NSPrincipalClass': 'NSApplication',
         }, handle)
-    from PIL import Image
-    image = Image.open(ROOT / 'interfaceFX/GraphicsServer/SyndromaticOrb.png').convert('RGBA')
-    image.save(resources / 'OpenXMB.icns', format='ICNS')
+    write_mac_icon(resources / 'OpenXMB.icns')
     notices(resources / 'Licenses')
     brew = Path(output('brew', '--prefix'))
     certificates = resources / 'certs'
@@ -295,6 +301,10 @@ def universal(intel, arm, background, destination):
         counterpart = roots[1] / relative
         if not counterpart.is_file():
             raise RuntimeError('Architecture bundles differ: ' + str(relative))
+        # Generate this derived image once below. Different CPU/image-encoder
+        # builds can encode the same source artwork into different ICNS bytes.
+        if relative == Path('Contents/Resources/OpenXMB.icns'):
+            continue
         if is_macho(path):
             thin_files = []
             for root, arch in zip(roots, ['x86_64', 'arm64']):
@@ -316,6 +326,7 @@ def universal(intel, arm, background, destination):
         p.relative_to(roots[0]) for p in roots[0].rglob('*') if p.is_file() and '_CodeSignature' not in p.parts}
     if extra:
         raise RuntimeError('ARM-only bundle resources: ' + str(extra))
+    write_mac_icon(app / 'Contents/Resources/OpenXMB.icns')
     sign_and_verify(app)
     art = destination / 'dmg-background.png'
     run('python3', ROOT / 'scripts/packaging/dmg_background.py', '--wave', background, '--output', art)

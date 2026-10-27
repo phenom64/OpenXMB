@@ -24,7 +24,7 @@ class PortableZipTests(unittest.TestCase):
         self.prefix = self.root / 'vcpkg/x64-windows'
         self.poppler = self.root / 'poppler'
         self.redist = self.root / 'redist/x64/Microsoft.VC143.CRT'
-        for name in ['XMS.bin.exe', 'openxmb-retro.exe', 'config.json',
+        for name in ['XMS.bin.exe', 'bin/openxmb-retro.exe', 'bin/openxmb-integrations.exe', 'config.json',
                      'shell/catalog/en.json', 'locales/en/LC_MESSAGES/shell.mo',
                      'include/development.h', 'share/cmake/internal.cmake', 'build-info.json']:
             self.write(self.stage / name)
@@ -53,7 +53,7 @@ class PortableZipTests(unittest.TestCase):
         with zipfile.ZipFile(artifact) as archive:
             prefix = f'OpenXMB-{package.VERSION}-windows-x86_64/'
             names = {name.removeprefix(prefix) for name in archive.namelist()}
-        required = {'OpenXMB.exe', 'openxmb-retro.exe', 'config.json', 'SDL2.dll',
+        required = {'OpenXMB.exe', 'openxmb-retro.exe', 'openxmb-integrations.exe', 'config.json', 'SDL2.dll',
                     'ffmpeg.exe', 'ffprobe.exe', 'shell/catalog/en.json',
                     'locales/en/LC_MESSAGES/shell.mo', 'tools/poppler/bin/pdftoppm.exe',
                     'tools/poppler/bin/poppler.dll', 'tools/poppler/share/poppler/cMap/data',

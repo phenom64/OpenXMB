@@ -80,10 +80,11 @@ def main():
     else:
         config += ['-DCMAKE_LINKER_TYPE=LLD']
     run(*config)
-    run('cmake', '--build', build, '--parallel', os.environ.get('CMAKE_BUILD_PARALLEL_LEVEL', '2'))
-    # Stage a successfully compiled application even if a regression test fails.
-    # The job still fails below, while independent packaging checks can expose
-    # their own errors in the same CI run instead of hiding behind that failure.
+    compilation = subprocess.run(['cmake', '--build', str(build), '--parallel',
+                                  os.environ.get('CMAKE_BUILD_PARALLEL_LEVEL', '2'),
+                                  '--', '-k', '0'], cwd=ROOT)
+    # Collect independent compilation/test failures in one run. Installing the
+    # actual product is still required before enabling packaging diagnostics.
     tests = subprocess.run(['ctest', '--test-dir', str(build), '--output-on-failure',
                             '--no-tests=error', '-j', '1'], cwd=ROOT)
     run('cmake', '--install', build)
@@ -95,6 +96,7 @@ def main():
     if os.environ.get('GITHUB_OUTPUT'):
         with Path(os.environ['GITHUB_OUTPUT']).open('a') as handle:
             handle.write('installed=true\n')
+    compilation.check_returncode()
     tests.check_returncode()
 
 

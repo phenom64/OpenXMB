@@ -98,6 +98,13 @@ def main():
         if option == '--version' and version not in result.stdout + result.stderr:
             raise RuntimeError('Packaged executable reports the wrong release version')
     checks = ['packaged assets', 'clean-environment startup and version']
+    for name, arguments in [('openxmb-integrations', []), ('openxmb-retro', ['--help'])]:
+        helper = app.parent / (name + ('.exe' if platform.system() == 'Windows' else ''))
+        if not helper.is_file():
+            raise RuntimeError('Missing packaged integration helper: ' + name)
+        subprocess.run([str(helper), *arguments], env=environment, cwd=args.output,
+                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=30, check=True)
+    checks.append('packaged integration and emulator helpers')
     defaults = [app.parent / 'config.json', app.parent / '../Resources/share/OpenXMB/config.json',
                 app.parent / '../share/OpenXMB/config.json']
     default_config = next((path for path in defaults if path.is_file()), None)

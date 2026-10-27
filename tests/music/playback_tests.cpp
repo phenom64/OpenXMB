@@ -16,6 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#define SDL_MAIN_HANDLED
 #include "openxmb/music/player.hpp"
 
 #include <SDL2/SDL.h>
@@ -107,6 +108,7 @@ void playback(const std::filesystem::path &root) {
 }
 }
 int main(int argc, char **argv) {
+  SDL_SetMainReady();
   const auto root = std::filesystem::temp_directory_path() / ("openxmb-music-playback-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
   try {
     require(SDL_InitSubSystem(SDL_INIT_AUDIO) == 0, SDL_GetError());
