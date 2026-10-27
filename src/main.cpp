@@ -20,8 +20,11 @@
 #include <thread>
 #include <cstdlib>
 #include <cstdio>
+#include <clocale>
+#include <exception>
 #include <filesystem>
 #include <memory>
+#include <string>
 #include <string_view>
 #include <vector>
 #ifdef __APPLE__
@@ -33,6 +36,8 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
+
+static_assert(FMT_VERSION == 110200, "OpenXMB requires its pinned fmt headers");
 
 #ifdef _WIN32
 #ifndef NOMINMAX
@@ -53,6 +58,16 @@ import openxmb.app;
 import openxmb.debug;
 import openxmb.config;
 import openxmb.constants;
+
+namespace {
+void startup_trace(const char* phase)
+{
+    if(std::getenv("OPENXMB_STARTUP_TRACE")) {
+        std::fprintf(stderr, "OpenXMB startup: %s\n", phase);
+        std::fflush(stderr);
+    }
+}
+}
 
 #ifdef _WIN32
 namespace {
@@ -112,6 +127,21 @@ LONG WINAPI log_windows_exception(EXCEPTION_POINTERS* exception_info)
 #undef main
 int main(int argc, char *argv[])
 {
+    startup_trace("entered main");
+    std::set_terminate([]() {
+        std::fputs("OpenXMB terminated with an uncaught exception\n", stderr);
+        if(const auto exception = std::current_exception()) {
+            try {
+                std::rethrow_exception(exception);
+            } catch(const std::exception& error) {
+                std::fprintf(stderr, "%s\n", error.what());
+            } catch(...) {
+                std::fputs("Unknown exception\n", stderr);
+            }
+        }
+        std::fflush(stderr);
+        std::abort();
+    });
 #if defined(__APPLE__) || defined(_WIN32)
     const auto binary_directory=config::CONFIG.exe_directory;
     const char* previous_path=std::getenv("PATH");
@@ -141,6 +171,7 @@ int main(int argc, char *argv[])
     }
 #endif
 #endif
+    startup_trace("runtime paths configured");
 #ifndef NDEBUG
     spdlog::set_level(spdlog::level::trace);
 #endif
@@ -152,6 +183,7 @@ int main(int argc, char *argv[])
     spdlog::flush_on(spdlog::level::err);
     spdlog::cfg::load_env_levels();
     spdlog::cfg::load_argv_levels(argc, argv);
+    startup_trace("logging initialized");
 
     argparse::ArgumentParser program("OpenXMB", OPENXMB_VERSION_STRING);
     program.add_argument("--width")
@@ -174,6 +206,7 @@ int main(int argc, char *argv[])
     program.add_argument("--open-media").default_value(std::string{}).help("Open a media file in its native viewer after startup");
     program.add_argument("--open-panel").default_value(std::string{}).help("Open themes, browser, emulation, discs or system");
     try {
+        startup_trace("parsing arguments");
         program.parse_args(argc, argv);
     }
     catch (const std::exception& err) {
@@ -196,21 +229,6 @@ int main(int argc, char *argv[])
     if(program.get<bool>("--interfacefx-debug")) {
         openxmb::debug::interfacefx_debug = true;
     }
-    std::set_terminate([]() {
-        spdlog::critical("Uncaught exception");
-
-        try {
-            std::rethrow_exception(std::current_exception());
-        } catch(const std::exception& e) {
-            spdlog::critical("Exception: {}", e.what());
-        } catch(...) {
-            spdlog::critical("Unknown exception");
-        }
-
-        spdlog::default_logger()->flush();
-        std::abort();
-    });
-
     setlocale(LC_ALL, "");
 
     config::CONFIG.load();

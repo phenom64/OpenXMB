@@ -256,6 +256,10 @@ set(FMT_INSTALL OFF CACHE BOOL "Do not install formatter development files" FORC
 set(FMT_TEST OFF CACHE BOOL "Disable dependency tests" FORCE)
 set(FMT_DOC OFF CACHE BOOL "Disable dependency documentation" FORCE)
 FetchContent_MakeAvailable(fmt)
+# SDK include roots (notably vcpkg's FFmpeg/Vulkan directory) can also contain
+# another fmt release. Keep the pinned headers first in every consuming target,
+# including the logging module; matching inline namespaces do not ensure ABI compatibility.
+include_directories(BEFORE "${fmt_SOURCE_DIR}/include")
 set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "Use the application's pinned formatter" FORCE)
 
 if(APPLE)

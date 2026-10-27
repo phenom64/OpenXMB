@@ -12,6 +12,18 @@ import wave
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def checked_output(command, environment, directory, log, timeout=45):
+    """Save process output even when a relocated binary crashes before startup."""
+    with log.open('wb') as handle:
+        result = subprocess.run(list(map(str, command)), env=environment, cwd=directory,
+                                stdout=handle, stderr=subprocess.STDOUT, timeout=timeout)
+    output = log.read_text(errors='replace')
+    if result.returncode:
+        print(output, flush=True)
+        raise subprocess.CalledProcessError(result.returncode, result.args, output=output)
+    return output
+
+
 def document_fixture(path):
     stream = b'BT /F1 22 Tf 36 120 Td (OpenXMB package smoke) Tj ET\n'
     objects = [b'<< /Type /Catalog /Pages 2 0 R >>',
@@ -77,6 +89,8 @@ def main():
     if platform.system() == 'Windows':
         environment['PATH'] = os.pathsep.join([str(app.parent), str(app.parent / 'tools/poppler/bin'),
                                               os.environ['SystemRoot'] + '\\System32', os.environ['SystemRoot']])
+        environment['LOCALAPPDATA'] = str(args.output.resolve() / 'user')
+        environment['APPDATA'] = str(args.output.resolve() / 'user/roaming')
     elif platform.system() == 'Darwin':
         environment['PATH'] = str(app.parent) + ':/usr/bin:/bin:/usr/sbin:/sbin'
         environment['FONTCONFIG_FILE'] = str(app.parent / '../Resources/fonts/fonts.conf')
@@ -92,10 +106,20 @@ def main():
     for language in (ROOT / 'po/LINGUAS').read_text().split():
         if not (locales / language / 'LC_MESSAGES/shell.mo').is_file():
             raise RuntimeError('Missing compiled translation catalog: ' + language)
+    environment['OPENXMB_STARTUP_TRACE'] = '1'
     for option in ['--help', '--version']:
-        result = subprocess.run([str(app), option], env=environment, cwd=args.output,
-                                text=True, capture_output=True, timeout=45, check=True)
-        if option == '--version' and version not in result.stdout + result.stderr:
+        try:
+            output = checked_output([app, option], environment, args.output,
+                                    args.output / (option.removeprefix('--') + '.log'))
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            if probe := environment.get('OPENXMB_STARTUP_PROBE'):
+                try:
+                    checked_output([probe, app], environment, args.output,
+                                   args.output / 'native-startup-stack.log', timeout=90)
+                except (OSError, subprocess.SubprocessError) as error:
+                    print('Native startup probe: ' + str(error), flush=True)
+            raise
+        if option == '--version' and version not in output:
             raise RuntimeError('Packaged executable reports the wrong release version')
     checks = ['packaged assets', 'clean-environment startup and version']
     for name, arguments in [('openxmb-integrations', []), ('openxmb-retro', ['--help'])]:

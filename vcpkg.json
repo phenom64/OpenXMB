@@ -30,7 +30,6 @@
     },
     "freetype",
     "glm",
-    "fmt",
     "gettext",
     "harfbuzz",
     "pkgconf",

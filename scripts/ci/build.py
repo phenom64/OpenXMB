@@ -72,7 +72,9 @@ def main():
                    f'-DVCPKG_INSTALLED_DIR={os.environ["VCPKG_INSTALLED_DIR"]}',
                    f'-DVCPKG_OVERLAY_TRIPLETS={ROOT}/scripts/ci/triplets',
                    '-DVCPKG_TARGET_TRIPLET=x64-windows',
-                   f'-DVulkan_INCLUDE_DIR={prefix}/include', f'-DVulkan_LIBRARY={prefix}/lib/vulkan-1.lib']
+                   f'-DVulkan_INCLUDE_DIR={prefix}/include', f'-DVulkan_LIBRARY={prefix}/lib/vulkan-1.lib',
+                   '-DCMAKE_CXX_FLAGS=-gcodeview -gline-tables-only',
+                   '-DCMAKE_EXE_LINKER_FLAGS=-Xlinker /DEBUG:FULL']
     elif platform.system() == 'Darwin':
         sdk = subprocess.check_output(['xcrun', '--sdk', 'macosx', '--show-sdk-path'], text=True).strip()
         config += [f'-DCMAKE_OSX_ARCHITECTURES={args.arch}', '-DCMAKE_OSX_DEPLOYMENT_TARGET=15.0',

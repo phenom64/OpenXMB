@@ -161,6 +161,16 @@ jobs:
         if: ${{ !cancelled() && steps.package.outcome == 'success' }}
         id: vulkan
         run: python scripts/ci/software_vulkan.py
+      - name: Prepare and verify native startup diagnostics
+        if: ${{ !cancelled() && steps.package.outcome == 'success' }}
+        shell: pwsh
+        run: |
+          $probe = Join-Path $env:RUNNER_TEMP 'openxmb-startup-probe.exe'
+          & $env:CXX -std=c++20 -O1 scripts/ci/windows_startup_probe.cpp -o $probe -ldbghelp
+          if ($LASTEXITCODE) { throw 'Could not compile native startup diagnostics' }
+          & $probe --self-test
+          if ($LASTEXITCODE) { throw 'Native startup diagnostics self-test failed' }
+          "OPENXMB_STARTUP_PROBE=$probe" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
       - name: Extract and test the portable package
         if: ${{ !cancelled() && steps.vulkan.outcome == 'success' }}
         id: smoke
@@ -173,7 +183,7 @@ jobs:
           python scripts/packaging/smoke.py --app $app.FullName --assets (Join-Path $app.Directory.FullName 'shell') --render --output dist/package-smoke
           if ($LASTEXITCODE) { throw 'Portable package smoke failed' }
       - uses: actions/upload-artifact@v7.0.2
-        if: ${{ !cancelled() && steps.smoke.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.package.outcome == 'success' }}
         with:
           name: release-windows
           path: |
