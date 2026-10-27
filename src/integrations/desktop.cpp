@@ -398,7 +398,12 @@ BrowserPage browser_page(const BrowserSession& session) {
     page.hover=state.value("hover",std::string{});page.loading=state.value("loading",false);page.address_requested=state.value("address_requested",false);
     page.back=state.value("back",false);page.forward=state.value("forward",false);
     page.ready=state.value("ready",false);page.error=state.value("error",std::string{});
+    page.options_requested=state.value("options_requested",false);
     page.status=state.value("status",std::string{});
+    page.edit_token=state.value("edit_token",std::uint64_t{});page.edit_requested=state.value("edit_requested",false);
+    page.edit_password=state.value("edit_password",false);page.edit_multiline=state.value("edit_multiline",false);
+    page.edit_label=state.value("edit_label",std::string{});
+    if(!page.edit_password) page.edit_value=state.value("edit_value",std::string{});
   }catch(...) {}
   return page;
 }
@@ -407,7 +412,7 @@ Result browser_view_command(BrowserSession& session,std::string_view command,std
   if(command=="navigate") {const auto result=validate_browser_url(value);if(!result) return result;}
   else if(command!="hide"&&command!="show"&&command!="back"&&command!="forward"&&command!="reload"&&command!="text"
 #ifdef _WIN32
-    &&command!="close"&&command!="input"&&command!="address"&&command!="return"&&command!="configure"&&command!="clear_site_data"
+    &&command!="close"&&command!="input"&&command!="address"&&command!="return"&&command!="configure"&&command!="clear_site_data"&&command!="menu"&&command!="edit"
 #endif
     ) return {false,"Unknown browser command"};
   if(value.size()>16384) return {false,"Browser command is too long"};

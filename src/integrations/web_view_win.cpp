@@ -9,6 +9,8 @@
 #include "openxmb/integrations/desktop.hpp"
 #include <nlohmann/json.hpp>
 #include "browser_ipc_win.hpp"
+#include "browser_keys.hpp"
+#include "browser_document.hpp"
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
@@ -47,10 +49,19 @@ struct Browser {
   ComPtr<ICoreWebView2Environment> environment;
   ComPtr<ICoreWebView2Controller> controller;
   ComPtr<ICoreWebView2> view;
+  ComPtr<ICoreWebView2Frame2> edit_frame;
   std::string uri,title{"Opening Internet Browser"},hover,error,popup,status,clear_token;
   std::filesystem::path downloads;
   double zoom{1.0};
   bool clearing{},pending_clear{};
+  bool options_requested{},menu_active{};
+  bool osk_enabled{true},edit_requested{},edit_password{},edit_multiline{};
+  std::uint64_t edit_token{};
+  std::string edit_id,last_edit_id,edit_value,edit_label;
+  unsigned script_messages{},editable_messages{};
+  std::string edit_diagnostic;
+  int options_scancode{43};
+  std::wstring options_script_id;
   std::int64_t sequence{};
   bool loading{true},address_requested{},back{},forward{},visible{true},closing{},ready{};
   bool waiting_for_runtime{},runtime_exited{},finished{};
@@ -64,9 +75,13 @@ struct Browser {
       {"address_requested",address_requested},{"back",back},{"forward",forward},{"error",error},
       {"ready",ready},{"command_sequence",sequence},{"window",reinterpret_cast<std::uintptr_t>(host)},
       {"status",status},{"clearing_site_data",clearing},{"site_data_token",clear_token},{"zoom",zoom*100}};
+    auto output=state;output["options_requested"]=options_requested;
+    output.update(nlohmann::json{{"edit_token",edit_token},{"edit_requested",edit_requested},{"edit_password",edit_password},
+      {"edit_multiline",edit_multiline},{"edit_value",edit_password?std::string{}:edit_value},{"edit_label",edit_label},{"osk_enabled",osk_enabled}});
+    output["edit_debug"]={{"messages",script_messages},{"editable",editable_messages},{"result",edit_diagnostic}};
     auto pending=state_path;pending+=L".tmp";
     std::ofstream file(pending,std::ios::binary|std::ios::trunc);
-    file<<state.dump(-1,' ',false,nlohmann::json::error_handler_t::replace);file.close();
+    file<<output.dump(-1,' ',false,nlohmann::json::error_handler_t::replace);file.close();
     if(file) openxmb::integrations::detail::replace_browser_file(pending,state_path);
   }
   void fail(const std::string& operation,HRESULT code) {
@@ -90,6 +105,7 @@ struct Browser {
     if(attached) AttachThreadInput(current,thread,FALSE);
   }
   void reveal() {
+    menu_active=false;EnableWindow(host,TRUE);
     visible=true;ShowWindow(host,SW_SHOWNA);
     if(controller&&error.empty()) {
       controller->put_IsVisible(TRUE);
@@ -125,6 +141,13 @@ struct Browser {
   }
   void configure(const std::string& encoded) {
     const auto settings=nlohmann::json::parse(encoded);
+    const auto scancode=settings.value("options_scancode",43);
+    const auto osk=settings.value("osk",true);
+    if(scancode!=options_scancode||osk!=osk_enabled) {
+      options_scancode=scancode;osk_enabled=osk;
+      if(!osk&&edit_requested) finish_edit(false,{});
+      if(view) install_options_script(false);
+    }
     const double percent=settings.value("zoom",100.0);
     if(!std::isfinite(percent)||percent<25||percent>500) {status="Browser zoom must be between 25% and 500%.";return;}
     zoom=percent/100.0;
@@ -189,7 +212,7 @@ struct Browser {
     SendInput(static_cast<UINT>(events.size()),events.data(),sizeof(INPUT));
   }
   void input(const std::string& encoded) {
-    if(!visible||!controller||!error.empty()||GetAncestor(GetForegroundWindow(),GA_ROOT)!=GetAncestor(parent,GA_ROOT)) return;
+    if(!visible||menu_active||!controller||!error.empty()||GetAncestor(GetForegroundWindow(),GA_ROOT)!=GetAncestor(parent,GA_ROOT)) return;
     const auto data=nlohmann::json::parse(encoded);
     const auto control=static_cast<BrowserControl>(data.at("control").get<int>());
     const double x=data.value("x",0.5),y=data.value("y",0.5);
@@ -198,8 +221,13 @@ struct Browser {
     POINT point{static_cast<LONG>(std::clamp(x,0.0,1.0)*std::max(0L,bounds.right-1)),
       static_cast<LONG>(std::clamp(y,0.0,1.0)*std::max(0L,bounds.bottom-1))};
     if(control==BrowserControl::pointer) {ClientToScreen(host,&point);SetCursorPos(point.x,point.y);return;}
-    if(control==BrowserControl::tab) {key(VK_TAB);return;}
-    if(control==BrowserControl::reverse_tab) {key(VK_TAB,VK_SHIFT);return;}
+    if(control==BrowserControl::tab||control==BrowserControl::reverse_tab) {
+      // Page traversal is a distinct controller command. Do not inject the
+      // keyboard Options binding back into our own accelerator handler.
+      const auto direction=control==BrowserControl::reverse_tab?"-1":"1";
+      const auto script=std::string("(()=>{const a=[...document.querySelectorAll('a[href],button,input,select,textarea,[tabindex]')].filter(e=>!e.disabled&&e.tabIndex>=0&&e.getClientRects().length);a.sort((x,y)=>(x.tabIndex||32768)-(y.tabIndex||32768));const n=a.length;if(n)a[(a.indexOf(document.activeElement)+")+direction+"+n)%n].focus();})();";
+      view->ExecuteScript(wide(script).c_str(),nullptr);return;
+    }
     if(control==BrowserControl::confirm) {key(VK_RETURN);return;}
     if(control==BrowserControl::escape) {PostMessageW(dispatcher,close_message,0,0);return;}
     // A controller click must stay inside this visible child; never click an
@@ -218,18 +246,88 @@ struct Browser {
       SendInput(2,events,sizeof(INPUT));
     }
   }
+  void receive_message(ICoreWebView2WebMessageReceivedEventArgs* args,ICoreWebView2Frame2* frame=nullptr) {
+        LPWSTR raw{};
+        if(SUCCEEDED(args->TryGetWebMessageAsString(&raw))) {
+          const auto message=take(raw);
+          ++script_messages;
+          if(message=="openxmb-options") {options_requested=true;publish();}
+          else if(!closing&&message.size()<=24000) {
+            try {
+              const auto request=nlohmann::json::parse(message);
+              if(request.value("type",std::string{})=="openxmb-edit") {
+                ++editable_messages;edit_diagnostic="received";
+                const auto id=request.value("id",std::string{});
+                if(!id.empty()&&id.size()<=128&&id!=last_edit_id) {
+                  if(!osk_enabled||!visible||menu_active||edit_requested) {
+                    edit_diagnostic=!osk_enabled?"disabled":!visible?"hidden":menu_active?"menu":"pending";
+                    const auto declined=nlohmann::json{{"openxmbEditReply",{{"id",id},{"accepted",false}}}}.dump();
+                    if(frame) frame->PostWebMessageAsJson(wide(declined).c_str());
+                    else if(view) view->PostWebMessageAsJson(wide(declined).c_str());
+                    return;
+                  }
+                  edit_frame=frame;edit_id=id;last_edit_id=id;++edit_token;
+                  edit_password=request.value("password",false);edit_multiline=request.value("multiline",false);
+                  edit_value=edit_password?std::string{}:request.value("value",std::string{});
+                  edit_label=request.value("label",std::string{});
+                  if(edit_value.size()>16384||edit_label.size()>1024) {edit_value.clear();edit_label.clear();return;}
+                  edit_requested=true;publish();
+                }
+              }
+            }catch(const nlohmann::json::exception&) {edit_diagnostic="invalid JSON";}
+          }
+        }
+  }
+  void monitor_frame(ICoreWebView2Frame* frame) {
+    ComPtr<ICoreWebView2Frame2> messages;
+    if(!frame||FAILED(frame->QueryInterface(IID_PPV_ARGS(&messages)))) return;
+    EventRegistrationToken token{};
+    messages->add_WebMessageReceived(Callback<ICoreWebView2FrameWebMessageReceivedEventHandler>(
+      [this](ICoreWebView2Frame* sender,ICoreWebView2WebMessageReceivedEventArgs* args)->HRESULT {
+        ComPtr<ICoreWebView2Frame2> source;
+        if(SUCCEEDED(sender->QueryInterface(IID_PPV_ARGS(&source)))) receive_message(args,source.Get());
+        return S_OK;
+      }).Get(),&token);
+    frame->add_Destroyed(Callback<ICoreWebView2FrameDestroyedEventHandler>(
+      [this](ICoreWebView2Frame* sender,IUnknown*)->HRESULT {
+        ComPtr<ICoreWebView2Frame2> source;
+        if(edit_frame&&SUCCEEDED(sender->QueryInterface(IID_PPV_ARGS(&source)))&&source.Get()==edit_frame.Get()) {
+          edit_requested=false;edit_value.clear();edit_label.clear();edit_frame.Reset();publish();
+        }
+        return S_OK;
+      }).Get(),&token);
+    ComPtr<ICoreWebView2Frame7> nested;
+    if(SUCCEEDED(frame->QueryInterface(IID_PPV_ARGS(&nested)))) nested->add_FrameCreated(
+      Callback<ICoreWebView2FrameChildFrameCreatedEventHandler>([this](ICoreWebView2Frame*,ICoreWebView2FrameCreatedEventArgs* args)->HRESULT {
+        ComPtr<ICoreWebView2Frame> child;args->get_Frame(&child);monitor_frame(child.Get());return S_OK;
+      }).Get(),&token);
+  }
+  void finish_edit(bool accepted,const std::string& text) {
+    if(!edit_requested||!view) return;
+    const auto reply=nlohmann::json{{"openxmbEditReply",{{"id",edit_id},{"accepted",accepted},{"text",accepted?text:std::string{}}}}}.dump();
+    edit_requested=false;edit_value.clear();edit_label.clear();
+    const auto result=edit_frame?edit_frame->PostWebMessageAsJson(wide(reply).c_str()):view->PostWebMessageAsJson(wide(reply).c_str());
+    edit_frame.Reset();if(FAILED(result)) status="The text field is no longer available.";
+    publish();
+  }
   void command(const nlohmann::json& message) {
     const auto next=message.value("sequence",std::int64_t{});
     if(next<=sequence) return;
     sequence=next;
     const auto name=message.value("command",std::string{}),value=message.value("value",std::string{});
-    if(name=="hide"||name=="show"||name=="navigate") address_requested=false;
+    if(name=="hide"||name=="show"||name=="navigate"||name=="menu") {address_requested=false;options_requested=false;}
     if(name=="close") {PostMessageW(dispatcher,close_message,0,0);return;}
     if(name=="hide") {visible=false;if(controller) controller->put_IsVisible(FALSE);ShowWindow(host,SW_HIDE);}
     else if(name=="show") reveal();
     else if(name=="return") return_focus();
+    else if(name=="menu") {menu_active=true;EnableWindow(host,FALSE);return_focus();}
     else if(name=="address") {address_requested=true;return_focus();}
     else if(name=="configure") configure(value);
+    else if(name=="edit") {
+      const auto response=nlohmann::json::parse(value);
+      if(response.value("token",std::uint64_t{})==edit_token&&edit_requested)
+        finish_edit(response.value("accepted",false),response.value("text",std::string{}));
+    }
     else if(name=="clear_site_data") {
       std::ifstream saved(profile/"cleared-site-data-token",std::ios::binary);
       const std::string previous((std::istreambuf_iterator<char>(saved)),{});
@@ -276,7 +374,7 @@ struct Browser {
       [this](ICoreWebView2*,ICoreWebView2NavigationStartingEventArgs* args)->HRESULT {
         LPWSTR target{};args->get_Uri(&target);const auto requested=take(target);
         if(!web_uri(requested)&&requested!="about:blank") {args->put_Cancel(TRUE);error="This address cannot be opened in Internet Browser.";publish();return S_OK;}
-        loading=true;error.clear();hover.clear();publish();return S_OK;
+        loading=true;error.clear();hover.clear();edit_requested=false;edit_value.clear();edit_label.clear();edit_id.clear();edit_frame.Reset();publish();return S_OK;
       });
     REGISTER_EVENT(NavigationCompleted,ICoreWebView2NavigationCompletedEventHandler,
       [this](ICoreWebView2*,ICoreWebView2NavigationCompletedEventArgs* args)->HRESULT {
@@ -302,6 +400,11 @@ struct Browser {
       });
     REGISTER_EVENT(WindowCloseRequested,ICoreWebView2WindowCloseRequestedEventHandler,
       [this](ICoreWebView2*,IUnknown*)->HRESULT {PostMessageW(dispatcher,close_message,0,0);return S_OK;});
+    REGISTER_EVENT(WebMessageReceived,ICoreWebView2WebMessageReceivedEventHandler,
+      [this](ICoreWebView2*,ICoreWebView2WebMessageReceivedEventArgs* args)->HRESULT {
+        receive_message(args);
+        return S_OK;
+      });
     REGISTER_EVENT(ProcessFailed,ICoreWebView2ProcessFailedEventHandler,
       [this](ICoreWebView2*,ICoreWebView2ProcessFailedEventArgs* args)->HRESULT {
         COREWEBVIEW2_PROCESS_FAILED_KIND kind{};args->get_ProcessFailedKind(&kind);
@@ -320,7 +423,13 @@ struct Browser {
         return S_OK;
       }).Get(),&token);
     ComPtr<ICoreWebView2_4> download_view;
-    if(SUCCEEDED(view.As(&download_view))) download_view->add_DownloadStarting(
+    if(SUCCEEDED(view.As(&download_view))) {
+      download_view->add_FrameCreated(Callback<ICoreWebView2FrameCreatedEventHandler>(
+        [this](ICoreWebView2*,ICoreWebView2FrameCreatedEventArgs* args)->HRESULT {
+          ComPtr<ICoreWebView2Frame> frame;args->get_Frame(&frame);monitor_frame(frame.Get());return S_OK;
+        }).Get(),&token);
+    }
+    if(download_view) download_view->add_DownloadStarting(
       Callback<ICoreWebView2DownloadStartingEventHandler>([this](ICoreWebView2*,ICoreWebView2DownloadStartingEventArgs* args)->HRESULT {
         LPWSTR raw{};args->get_ResultFilePath(&raw);auto path=std::filesystem::path(wide(take(raw)));
         if(!downloads.empty()) {
@@ -340,6 +449,11 @@ struct Browser {
         COREWEBVIEW2_KEY_EVENT_KIND kind{};args->get_KeyEventKind(&kind);
         if(kind!=COREWEBVIEW2_KEY_EVENT_KIND_KEY_DOWN&&kind!=COREWEBVIEW2_KEY_EVENT_KIND_SYSTEM_KEY_DOWN) return S_OK;
         UINT key{};args->get_VirtualKey(&key);const bool ctrl=GetKeyState(VK_CONTROL)<0,alt=GetKeyState(VK_MENU)<0;
+        // Tab is an accelerator. Reserve Options before WebView's focus traversal.
+        const auto options_key=openxmb::integrations::detail::browser_virtual_key(options_scancode);
+        if(options_key&&key==options_key) {
+          args->put_Handled(TRUE);options_requested=true;publish();return S_OK;
+        }
         int action{};
         if(key==VK_ESCAPE&&!ctrl) action=1;
         else if(ctrl&&key=='L') action=2;
@@ -349,6 +463,23 @@ struct Browser {
         if(action) {args->put_Handled(TRUE);PostMessageW(dispatcher,action_message,action,0);}
         return S_OK;
       }).Get(),&accelerator);
+  }
+  void install_options_script(bool initial) {
+    const auto script=openxmb::integrations::detail::browser_document_script(
+      openxmb::integrations::detail::browser_key_code(options_scancode),osk_enabled);
+    if(!options_script_id.empty()) {view->RemoveScriptToExecuteOnDocumentCreated(options_script_id.c_str());options_script_id.clear();}
+    view->ExecuteScript(wide(script).c_str(),nullptr);
+    const auto result=view->AddScriptToExecuteOnDocumentCreated(wide(script).c_str(),
+      Callback<ICoreWebView2AddScriptToExecuteOnDocumentCreatedCompletedHandler>([this,initial](HRESULT result,PCWSTR id)->HRESULT {
+        if(closing) return S_OK;
+        if(SUCCEEDED(result)&&id) options_script_id=id;
+        if(initial) {
+          if(FAILED(result)) {fail("Unable to install browser input bridge",result);return S_OK;}
+          ready=true;publish();navigate(uri);clear_data();if(visible) reveal();
+        }
+        return S_OK;
+      }).Get());
+    if(FAILED(result)) fail("Unable to install browser input bridge",result);
   }
   void start() {
     const auto result=CreateCoreWebView2EnvironmentWithOptions(nullptr,profile.c_str(),nullptr,
@@ -375,8 +506,8 @@ struct Browser {
                 controller=created;const auto obtained=controller->get_CoreWebView2(&view);
                 if(FAILED(obtained)||!view) {fail("Unable to obtain WebView2 page",FAILED(obtained)?obtained:E_FAIL);return S_OK;}
                 const auto events=install_events();if(FAILED(events)) {fail("Unable to register browser events",events);return S_OK;}
-                resize(true);controller->put_ZoomFactor(zoom);ready=true;publish();navigate(uri);clear_data();
-                if(visible) reveal();else controller->put_IsVisible(FALSE);
+                resize(true);controller->put_ZoomFactor(zoom);install_options_script(true);
+                if(!visible) controller->put_IsVisible(FALSE);
                 return S_OK;
               }).Get());
           if(FAILED(started)) fail("Unable to create WebView2 controller",started);
@@ -390,7 +521,7 @@ struct Browser {
     // Close disconnects event handlers, child windows and WebView processes.
     if(controller) {controller->remove_AcceleratorKeyPressed(accelerator);controller->Close();}
     const bool had_view=bool(view);
-    view.Reset();controller.Reset();
+    edit_frame.Reset();view.Reset();controller.Reset();
     loading=false;ready=false;publish();return_focus();
     if(IsWindow(host)) ShowWindow(host,SW_HIDE);
     if(had_view&&waiting_for_runtime&&!runtime_exited) SetTimer(dispatcher,2,1500,nullptr);

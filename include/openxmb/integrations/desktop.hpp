@@ -49,8 +49,11 @@ struct BrowserSession {
 struct BrowserPage {
   std::string title,url,hover;
   bool loading{},address_requested{};
-  bool back{},forward{},ready{};
+  bool back{},forward{},ready{},options_requested{};
   std::string error,status;
+  std::uint64_t edit_token{};
+  bool edit_requested{},edit_password{},edit_multiline{};
+  std::string edit_value,edit_label;
 };
 [[nodiscard]] BrowserPage browser_page(const BrowserSession& session);
 [[nodiscard]] Result browser_view_command(BrowserSession& session,std::string_view command,std::string_view value={});

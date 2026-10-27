@@ -34,7 +34,7 @@ class integration_center : public app::component, public action_receiver, public
 public:
     float typography_scale() const override { return 2.5F; }
 
-    integration_center(std::string section, auroreengine::resource_loader&)
+    integration_center(std::string section, auroreengine::resource_loader& loader)
         : section_(std::move(section)), preferences_(openxmb::integrations::load_preferences()) {
         if (section_ == "disc") section_ = "discs";
         if (section_ == "libretro" || section_ == "games") section_ = "emulation";
@@ -43,6 +43,7 @@ public:
         if (preferences_.core.empty() && !cores_.empty()) preferences_.core = cores_.front();
         if (section_ == "discs") discs_ = openxmb::integrations::discover_discs();
         if (section_ == "browser") {
+            browser_icons_.load(loader,"theme/icon_browser");
             const auto homepage=browser_preference("browser.homepage","https://duckduckgo.com");
             if(openxmb::integrations::validate_browser_url(homepage)) preferences_.browser_url=homepage;
         }
@@ -67,6 +68,7 @@ public:
             shell->set_blur_background(true);
             const auto opened=openxmb::integrations::open_browser(preferences_.browser_url,browser_);message_=opened.message;
             browser_settings_signature_.clear();browser_clear_token_.clear();
+            browser_edit_token_=0;
             if(opened&&browser_.dedicated_window) {sdl::SetHint("SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS","1");background_input_=true;browser_controlling_=true;}
         }
         if(browser_.embedded_view&&now-page_updated_>std::chrono::milliseconds(200)) {
@@ -75,6 +77,8 @@ public:
             if(!page_.error.empty()) message_=page_.error;
             else if(!page_.status.empty()) message_=page_.status;
             if(page_.address_requested&&!browser_editing_) browser_text(true);
+            if(page_.options_requested&&!browser_editing_&&!browser_options_open_) toggle_browser_options();
+            if(page_.edit_requested&&page_.edit_token!=browser_edit_token_&&!browser_editing_&&!browser_options_open_) browser_editable();
         }
         const auto elapsed = std::clamp(std::chrono::duration<double>(now - input_updated_).count(), 0.0, 0.1);
         input_updated_ = now;
@@ -110,6 +114,10 @@ public:
         return result::success;
     }
     result on_event(const app::event& event) override {
+        // A remapped Options action owns the event before any raw key/button
+        // handling. Tab must open the shell menu rather than advance page focus.
+        if(section_=="browser"&&event.action==action::options&&!browser_editing_) return on_action(action::options);
+        if(browser_options_open_) return browser_options_action(event.action);
         if (browser_controlling_) {
             if (const auto* axis = event.get<app::events::joystick_axis>()) {
                 if (axis->index == app::events::logical_joystick_index::left) { pointer_axis_x_ = axis->x; pointer_axis_y_ = axis->y; }
@@ -132,6 +140,8 @@ public:
         return on_action(event.action);
     }
     result on_action(action selected_action) override {
+        if(section_=="browser"&&selected_action==action::options&&!browser_editing_) {toggle_browser_options();return result::success;}
+        if(browser_options_open_) return browser_options_action(selected_action);
         if(section_=="browser"&&!browser_controlling_&&(selected_action==action::options||selected_action==action::ok)) {
             if(selected_action==action::options) {
                 if(browser_.process_id>0) browser_text(true);
@@ -161,7 +171,6 @@ public:
             case action::left: return send_control(Control::back);
             case action::right: return send_control(Control::forward);
             case action::extra: return send_control(Control::tab);
-            case action::options: browser_text(false); return result::success;
             default: return result::success;
             }
         }
@@ -240,14 +249,23 @@ public:
             app::xmb_canvas c(renderer);
             c.rect(0,0,1920,74,{0,0,0,0.22F});c.rect(0,74,1920,2,{1,1,1,0.42F});
             c.rect(0,1004,1920,76,{1,1,1,0.12F});c.rect(0,1004,1920,2,{1,1,1,0.5F});
-            c.text("www",58,61,17,{1,1,1,0.7F});
+            browser_icons_.draw(c,"theme/icon_browser",53,38,42,0.85F);
             const auto title=page_.title.empty()?std::string("Internet Browser"):page_.title.substr(0,55);
-            c.text(title,106,60,22,{1,1,1,0.88F});
-            const float url_x=std::min(780.0F,136+renderer.text_width_pixels(title,22*c.scale)/c.scale);
-            c.text(page_.url.empty()?preferences_.browser_url:page_.url.substr(0,125),url_x,60,22,{1,1,1,0.7F});
+            c.text(title,92,33,22,{1,1,1,0.92F});
+            c.text(page_.url.empty()?preferences_.browser_url:page_.url.substr(0,125),92,63,20,{1,1,1,0.72F});
+            if(page_.loading) c.text("◌",1815,48,32,{1,1,1,0.85F},app::xmb_canvas::pulse());
             const auto footer=!page_.error.empty()?page_.error:!page_.status.empty()?page_.status:page_.hover;
             c.text(footer.substr(0,140),70,1030,22,{1,1,1,0.8F});
-            c.text(page_.loading?"Loading…":"Start: Address / Search    B / Esc: Return",70,1065,20,{1,1,1,0.7F});
+            render_controller_buttons(shell,renderer,0.72F,0.965F,std::array{
+                std::pair{action::options,std::string_view{"Options"}},std::pair{action::cancel,std::string_view{browser_options_open_?"Close menu":"Return"}}});
+            if(browser_options_open_) render_browser_options(c);
+            if(browser_info_) {
+                c.text("Page Information",44,180,26,{1,1,1,0.9F});c.rect(44,200,320,1,{1,1,1,0.4F});
+                c.text("Title",44,245,20,{1,1,1,0.55F});c.text(page_.title.substr(0,26),44,280,22);
+                c.text("Address",44,335,20,{1,1,1,0.55F});
+                for(std::size_t line=0;line<7&&line*27<page_.url.size();++line) c.text(page_.url.substr(line*27,27),44,370+line*30,19);
+                c.text(page_.loading?"Loading page…":"Page loaded",44,650,22,{1,1,1,0.75F});
+            }
             if(!browser_.embedded_view) {
                 c.text(message_.empty()?"Opening Internet Browser…":message_,960,450,26,{1,1,1,1},0,true);
                 render_controller_buttons(shell,renderer,0.5F,0.9F,std::array{std::pair{action::ok,std::string_view{"Open / Resume"}},std::pair{action::options,std::string_view{"Address"}},std::pair{action::cancel,std::string_view{"Back"}}});
@@ -281,6 +299,68 @@ public:
     }
     bool is_opaque() const override { return section_=="browser"; }
 private:
+    void toggle_browser_options() {
+        if(browser_options_open_) {close_browser_options();return;}
+        browser_options_open_=true;browser_option_=0;browser_controlling_=false;
+        pointer_axis_x_=pointer_axis_y_=scroll_axis_=0;
+        if(browser_.embedded_view) {
+#ifdef _WIN32
+            dismiss_browser_edit_request();
+            static_cast<void>(openxmb::integrations::browser_view_command(browser_,"menu"));
+#else
+            static_cast<void>(openxmb::integrations::browser_view_command(browser_,"hide"));
+            static_cast<void>(openxmb::integrations::browser_input(browser_,{openxmb::integrations::BrowserControl::return_to_shell}));
+#endif
+        }
+    }
+    void close_browser_options(bool resume=true) {
+        browser_options_open_=false;browser_controlling_=browser_.process_id>0;
+        if(resume&&browser_.embedded_view) static_cast<void>(openxmb::integrations::browser_view_command(browser_,"show"));
+    }
+    result browser_options_action(action selected) {
+        if(selected==action::cancel||selected==action::options||selected==action::left) {close_browser_options();return result::success;}
+        if(selected==action::up) browser_option_=(browser_option_+8)%9;
+        if(selected==action::down) browser_option_=(browser_option_+1)%9;
+        if(selected!=action::ok) return result::success;
+        using namespace openxmb::integrations;
+        const auto option=browser_option_;
+#ifdef _WIN32
+        if((option==0&&!page_.back)||(option==1&&!page_.forward)) return result::success;
+#endif
+        close_browser_options(option!=4&&option!=5&&option!=6);
+        if(option==0||option==1||option==2) {
+            const auto sent=browser_view_command(browser_,option==0?"back":option==1?"forward":"reload");message_=sent.message;
+        } else if(option==3) {
+            const auto sent=browser_view_command(browser_,"navigate",browser_preference("browser.homepage","https://duckduckgo.com"));message_=sent.message;
+        } else if(option==4||option==6) browser_text(option==4);
+        else if(option==5) {
+            browser_editing_=true;browser_controlling_=false;
+            static_cast<void>(browser_view_command(browser_,"hide"));
+            shell_->emplace_overlay<app::text_entry_overlay>("Internet Search",std::string{},[this](std::string query) {
+                const auto url=browser_address_url(query,browser_preference("browser.search","DuckDuckGo"));
+                const auto sent=browser_view_command(browser_,"navigate",url);message_=sent.message;
+                if(!sent) static_cast<void>(browser_view_command(browser_,"show"));
+                browser_editing_=false;browser_controlling_=true;
+            },[this] {static_cast<void>(browser_view_command(browser_,"show"));browser_editing_=false;browser_controlling_=true;});
+        } else if(option==7) {browser_info_=!browser_info_;}
+        else if(option==8) {static_cast<void>(close_browser(browser_));return result::close;}
+        return result::success;
+    }
+    void render_browser_options(const app::xmb_canvas& c) {
+        // The native viewport ends at x=1508. Keep the XMB side menu in the
+        // shell's right margin; suspend child input while retaining its page.
+        c.gradient(1514,76,406,928,{0.08F,0.08F,0.08F,0.85F},{0.02F,0.02F,0.02F,0.94F});
+        c.rect(1514,76,1,928,{1,1,1,0.3F});
+        c.text("Internet Browser",1550,151,25,{1,1,1,0.72F});c.rect(1544,178,330,1,{1,1,1,0.3F});
+        constexpr std::array<std::string_view,9> labels{"Back","Forward","Refresh","Home","Enter Address","Internet Search","Enter Text","Page Information","Exit"};
+        for(std::size_t i=0;i<labels.size();++i) {
+            const float y=245+static_cast<float>(i)*68;
+            const bool focused=i==browser_option_;
+            const bool unavailable=(i==0&&!page_.back)||(i==1&&!page_.forward);
+            c.text(labels[i],1570,y,focused?29:26,{1,1,1,unavailable?0.3F:focused?1.0F:0.65F},focused&&!unavailable?app::xmb_canvas::pulse():0);
+            if(focused) {c.text("›",1536,y,30,{1,1,1,0.95F},app::xmb_canvas::pulse());c.gradient(1550,y+12,305,2,{1,1,1,0.35F},{1,1,1,0});}
+        }
+    }
     static std::string browser_preference(const std::string& key,const std::string& fallback={}) {
         const auto& values=config::CONFIG.preferences;
         const auto found=values.find(key);
@@ -290,12 +370,14 @@ private:
 #ifdef _WIN32
         const auto zoom=browser_preference("browser.zoom","1.0");
         const auto downloads=browser_preference("browser.downloads");
-        const auto signature=zoom+"\n"+downloads;
+        const auto options_key=browser_preference("key.options","43");
+        const auto osk=browser_preference("input.osk","On");
+        const auto signature=zoom+"\n"+downloads+"\n"+options_key+"\n"+osk;
         if(signature!=browser_settings_signature_) {
             try {
                 std::size_t used{};const double factor=std::stod(zoom,&used);
                 if(used!=zoom.size()||!std::isfinite(factor)||factor<0.25||factor>5) throw std::runtime_error("Zoom must be between 0.25 and 5.0");
-                const auto sent=openxmb::integrations::browser_view_command(browser_,"configure",nlohmann::json{{"zoom",factor*100},{"downloads",downloads}}.dump());
+                const auto sent=openxmb::integrations::browser_view_command(browser_,"configure",nlohmann::json{{"zoom",factor*100},{"downloads",downloads},{"options_scancode",std::stoi(options_key)},{"osk",osk=="On"}}.dump());
                 if(sent) browser_settings_signature_=signature;else message_=sent.message;
             } catch(const std::exception& error) {message_=error.what();}
         }
@@ -311,10 +393,40 @@ private:
         if (!sent) message_ = sent.message;
         return result::success;
     }
+    void browser_editable() {
+        using namespace openxmb::integrations;
+        const auto token=page_.edit_token;browser_edit_token_=token;
+        if(!config::CONFIG.enabled("input.osk")) {
+            static_cast<void>(browser_view_command(browser_,"edit",nlohmann::json{{"token",token},{"accepted",false}}.dump()));return;
+        }
+        if(!shell_||browser_.process_id<=0) return;
+        browser_editing_=true;browser_controlling_=false;primary_down_=false;pointer_axis_x_=pointer_axis_y_=scroll_axis_=0;
+        static_cast<void>(browser_view_command(browser_,"hide"));
+        static_cast<void>(browser_input(browser_,{BrowserControl::return_to_shell}));
+        const auto initial=page_.edit_password?std::string{}:page_.edit_value;
+        const auto title=page_.edit_password?std::string("Password"):page_.edit_label.empty()?std::string("Text"):page_.edit_label;
+        shell_->emplace_overlay<app::text_entry_overlay>(title,initial,
+            [this,token](std::string text) {finish_browser_edit(token,true,std::move(text));},
+            [this,token] {finish_browser_edit(token,false,{});});
+    }
+    void finish_browser_edit(std::uint64_t token,bool accepted,std::string text) {
+        using namespace openxmb::integrations;
+        const auto result=browser_view_command(browser_,"edit",nlohmann::json{{"token",token},{"accepted",accepted},{"text",std::move(text)}}.dump());
+        message_=result.message;
+        static_cast<void>(browser_view_command(browser_,"show"));
+        browser_editing_=false;browser_controlling_=true;primary_down_=false;
+    }
+    void dismiss_browser_edit_request() {
+        if(!page_.edit_requested) return;
+        browser_edit_token_=page_.edit_token;
+        static_cast<void>(openxmb::integrations::browser_view_command(browser_,"edit",nlohmann::json{{"token",page_.edit_token},{"accepted",false}}.dump()));
+    }
     void browser_text(bool address) {
         using namespace openxmb::integrations;
         if (!shell_ || browser_.process_id <= 0 || !browser_.dedicated_window) { message_ = "Open a dedicated browser window first."; return; }
         if(browser_.embedded_view) {
+            if(!address&&page_.edit_requested) {browser_editable();return;}
+            if(address) dismiss_browser_edit_request();
             browser_editing_=true;browser_controlling_=false;
             static_cast<void>(browser_view_command(browser_,"hide"));
             static_cast<void>(browser_input(browser_,{BrowserControl::return_to_shell}));
@@ -376,7 +488,10 @@ private:
     std::size_t selected_{};
     std::int64_t core_process_{-1};
     app::shell* shell_{};
-    bool browser_controlling_{},background_input_{},primary_down_{},browser_started_{},browser_editing_{},previous_blur_{},browser_blur_saved_{};
+    bool browser_controlling_{},background_input_{},primary_down_{},browser_started_{},browser_editing_{},previous_blur_{},browser_blur_saved_{},browser_options_open_{},browser_info_{};
+    std::size_t browser_option_{};
+    std::uint64_t browser_edit_token_{};
+    app::media_icons browser_icons_;
     std::string browser_settings_signature_,browser_clear_token_;
     openxmb::integrations::BrowserPage page_;
     std::chrono::steady_clock::time_point page_updated_{};

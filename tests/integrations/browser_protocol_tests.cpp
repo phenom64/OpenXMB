@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
+#include "../../src/integrations/browser_keys.hpp"
 
 int main() {
   using namespace openxmb::integrations;
@@ -12,6 +13,8 @@ int main() {
   std::filesystem::create_directories(root);
   const auto require = [](bool value, const char* message) { if (!value) throw std::runtime_error(message); };
   try {
+    require(detail::browser_key_code(43)=="Tab"&&detail::browser_key_code(4)=="KeyA"&&detail::browser_key_code(69)=="F12", "Options scancode mapping failed");
+    require(detail::browser_virtual_key(62)==0x74&&detail::browser_virtual_key(43)==9,"native remapped accelerator mapping failed");
     BrowserSession session;
     session.embedded_view = true;
     session.url = "https://example.org/initial";
@@ -40,6 +43,8 @@ int main() {
     const auto page = browser_page(session);
     require(page.title == "Page title" && page.url == "https://example.org/next" && page.loading && page.address_requested, "page state not decoded");
     require(page.back && page.forward && page.ready && page.error == "Runtime test error", "browser capability/error state lost");
+    std::ofstream(session.state_file)<<R"({"edit_token":7,"edit_requested":true,"edit_password":true,"edit_value":"must not be returned","edit_label":"Password"})";
+    require(browser_page(session).edit_token==7&&browser_page(session).edit_value.empty(),"password request not redacted by shell state reader");
 #ifdef _WIN32
     require(bool(browser_view_command(session, "configure", R"({"zoom":125,"downloads":""})")), "browser configuration command rejected");
     require(bool(browser_view_command(session, "clear_site_data")), "site-data command rejected");
