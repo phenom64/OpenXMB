@@ -257,8 +257,15 @@ struct session::implementation {
     double last_video_pts = 0;
     double last_presented_pts = -1;
     bool resume_seek = false;
+    std::optional<clock_type::time_point> hardware_late_since;
     std::deque<double> recent_frame_times;
     std::deque<frame> frames;
+    // Demux must be able to reach audio behind a video packet burst without
+    // growing the much larger decoded-image queue or freezing its own clock.
+    std::deque<AVPacket*> deferred_video;
+    std::size_t deferred_video_bytes = 0;
+    static constexpr std::size_t max_deferred_bytes = 16u * 1024u * 1024u;
+    static constexpr std::size_t max_deferred_packets = 1024;
     std::optional<frame> published;
     std::vector<subtitle_cue> embedded_cues;
     std::vector<subtitle_cue> sidecar_cues;
@@ -312,8 +319,26 @@ struct session::implementation {
 
     ~implementation() { release(); }
 
+    void clear_deferred_video() {
+        for(auto*& pending : deferred_video) av_packet_free(&pending);
+        deferred_video.clear();
+        deferred_video_bytes = 0;
+    }
+
+    void defer_video(AVPacket* input) {
+        const auto bytes = static_cast<std::size_t>(std::max(0, input->size));
+        if(deferred_video.size() >= max_deferred_packets || bytes > max_deferred_bytes - deferred_video_bytes)
+            throw std::runtime_error("Video/audio interleave exceeds bounded packet read-ahead (16 MiB / 1024 packets)");
+        auto* pending = av_packet_clone(input);
+        if(!pending) throw std::bad_alloc();
+        try { deferred_video.push_back(pending); }
+        catch(...) { av_packet_free(&pending); throw; }
+        deferred_video_bytes += bytes;
+    }
+
     void release() {
         audio.pause(true);
+        clear_deferred_video();
         av_packet_free(&packet);
         av_frame_free(&decoded);
         av_frame_free(&transferred);
@@ -572,6 +597,7 @@ struct session::implementation {
         audio.clear();
         audio_anchored = false;
         frames.clear();
+        clear_deferred_video();
         published.reset();
         embedded_cues.clear();
         discard_before = seconds;
@@ -579,10 +605,22 @@ struct session::implementation {
         eof = false;
         drained = false;
         needs_frame = true;
+        hardware_late_since.reset();
         failure.clear();
         set_clock(seconds);
         if(status == state::ended) status = state::paused;
         return true;
+    }
+
+    void use_software(double position, state resume_state) {
+        audio.pause(true);
+        avcodec_free_context(&video_codec);
+        av_buffer_unref(&hardware_device);
+        hardware_format = AV_PIX_FMT_NONE;
+        video_codec = open_codec(video_index, false);
+        metadata.decoder = std::string(video_codec->codec->name) + " · software";
+        if(!seek_to(position)) throw std::runtime_error(failure);
+        status = resume_state;
     }
 
     void pump() {
@@ -590,22 +628,36 @@ struct session::implementation {
         if(status == state::paused && !needs_frame) return;
         try {
             auto deadline = clock_type::now() + std::chrono::milliseconds(12);
-            for(int count = 0; count < 128 && !eof; ++count) {
-                if(frames.size() >= max_frames) break;
-                if(audio.buffered() >= 1.0) break;
+            for(int count = 0; count < 128; ++count) {
                 bool video_ready = !frames.empty() && frames.back().timestamp > current_position() + 0.25;
                 bool audio_ready = !audio_codec || speed != 1.0 || audio.buffered() >= 0.25;
+                // A full image queue is backpressure for decoding, not for
+                // demuxing: audio may be located behind those video packets.
+                if(frames.size() >= max_frames && (audio_ready || eof)) break;
                 if(video_ready && audio_ready) break;
                 if(count > 0 && clock_type::now() >= deadline) break;
+                if(!deferred_video.empty() && frames.size() < max_frames) {
+                    auto* pending = deferred_video.front();
+                    deferred_video.pop_front();
+                    deferred_video_bytes -= static_cast<std::size_t>(std::max(0, pending->size));
+                    try { decode(video_codec, pending, true); }
+                    catch(...) { av_packet_free(&pending); throw; }
+                    av_packet_free(&pending);
+                    continue;
+                }
+                if(eof || audio.buffered() >= 1.0) break;
                 int read = av_read_frame(format, packet);
                 if(read == AVERROR_EOF) { eof = true; break; }
                 require(read, "Read media packet");
-                if(packet->stream_index == video_index) decode(video_codec, packet, true);
+                if(packet->stream_index == video_index) {
+                    if(frames.size() >= max_frames || !deferred_video.empty()) defer_video(packet);
+                    else decode(video_codec, packet, true);
+                }
                 else if(packet->stream_index == audio_index) decode(audio_codec, packet, false);
                 else if(packet->stream_index == subtitle_index) decode_subtitle(packet);
                 av_packet_unref(packet);
             }
-            if(eof && !drained) {
+            if(eof && !drained && deferred_video.empty() && frames.size() < max_frames) {
                 decode(video_codec, nullptr, true);
                 decode(audio_codec, nullptr, false);
                 drain_audio_resampler();
@@ -624,6 +676,23 @@ struct session::implementation {
                 needs_frame = false;
                 if(status == state::paused) { set_clock(published->timestamp); break; }
             }
+            // Some Windows decode/download paths succeed but cannot sustain
+            // the source frame rate. Auto means a usable pipeline, not simply
+            // the first device that opens. Observe backend presentation (which
+            // is independent of UI uploads), tolerate startup/transient load,
+            // then retry once in software at the current audio position.
+            const double late_threshold = std::max(0.25, 8.0 / metadata.frame_rate);
+            if(settings.hardware_acceleration == "auto" && hardware_device &&
+               status == state::playing && speed == 1.0 && !eof && last_presented_pts >= 0 &&
+               now - last_presented_pts > late_threshold) {
+                const auto observed = clock_type::now();
+                if(!hardware_late_since) hardware_late_since = observed;
+                else if(observed - *hardware_late_since >= std::chrono::seconds(1)) {
+                    use_software(now, status);
+                    metadata.decoder += " (hardware throughput fallback)";
+                    return;
+                }
+            } else hardware_late_since.reset();
             std::erase_if(embedded_cues, [now](const auto& cue) { return cue.end < now - 5.0; });
             if(eof && drained && frames.empty() && audio.buffered() < 0.001 && now >= last_video_pts - 0.02) {
                 if(loop) { seek_to(0); status = state::playing; }
@@ -637,15 +706,8 @@ struct session::implementation {
             if(hardware_device && video_codec) {
                 const double resume_at = current_position();
                 const auto resume_state = status;
-                audio.pause(true);
-                avcodec_free_context(&video_codec);
-                av_buffer_unref(&hardware_device);
-                hardware_format = AV_PIX_FMT_NONE;
                 try {
-                    video_codec = open_codec(video_index, false);
-                    metadata.decoder = std::string(video_codec->codec->name) + " · software";
-                    if(!seek_to(resume_at)) throw std::runtime_error(failure);
-                    status = resume_state;
+                    use_software(resume_at, resume_state);
                     return;
                 } catch(const std::exception& fallback) {
                     failure = std::string(exception.what()) + "; software fallback failed: " + fallback.what();
