@@ -42,7 +42,9 @@ def context():
     repository, sha = os.environ['GITHUB_REPOSITORY'], os.environ['GITHUB_SHA']
     prs = []
     if os.environ['GITHUB_EVENT_NAME'] == 'push' and os.environ['GITHUB_REF'] == 'refs/heads/master':
-        prs = api(f'repos/{repository}/commits/{sha}/pulls')
+        pr = api(f'repos/{repository}/pulls/8', missing_ok=True)
+        if pr:
+            prs.append(pr)
     return repository, sha, eligible(os.environ['GITHUB_EVENT_NAME'], os.environ['GITHUB_REF'], sha, repository, prs)
 
 

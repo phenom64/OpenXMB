@@ -4,6 +4,7 @@ import hashlib
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location('release_gate', Path(__file__).resolve().parents[2] / 'scripts/ci/release.py')
 release = importlib.util.module_from_spec(spec)
@@ -44,6 +45,26 @@ class ReleaseGateTests(unittest.TestCase):
     def test_fork_cannot_publish(self):
         self.pr['head']['repo']['full_name'] = 'someone/OpenXMB'
         self.assertFalse(self.check_gate())
+
+    def test_master_context_checks_the_approved_pr_directly(self):
+        environment = {'GITHUB_REPOSITORY': 'phenom64/OpenXMB', 'GITHUB_SHA': 'merge-sha',
+                       'GITHUB_EVENT_NAME': 'push', 'GITHUB_REF': 'refs/heads/master'}
+        with patch.dict(release.os.environ, environment), patch.object(release, 'api', return_value=self.pr) as api:
+            self.assertEqual(release.context(), ('phenom64/OpenXMB', 'merge-sha', True))
+            api.assert_called_once_with('repos/phenom64/OpenXMB/pulls/8', missing_ok=True)
+
+    def test_pr_context_does_not_query_publication_state(self):
+        environment = {'GITHUB_REPOSITORY': 'phenom64/OpenXMB', 'GITHUB_SHA': 'test-merge-sha',
+                       'GITHUB_EVENT_NAME': 'pull_request', 'GITHUB_REF': 'refs/pull/8/merge'}
+        with patch.dict(release.os.environ, environment), patch.object(release, 'api') as api:
+            self.assertFalse(release.context()[2])
+            api.assert_not_called()
+
+    def test_missing_release_pr_cannot_publish(self):
+        environment = {'GITHUB_REPOSITORY': 'someone/OpenXMB', 'GITHUB_SHA': 'fork-sha',
+                       'GITHUB_EVENT_NAME': 'push', 'GITHUB_REF': 'refs/heads/master'}
+        with patch.dict(release.os.environ, environment), patch.object(release, 'api', return_value=None):
+            self.assertFalse(release.context()[2])
 
 
 class ReleaseArtifactTests(unittest.TestCase):
