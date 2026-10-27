@@ -166,3 +166,10 @@ class ValidatedRunRecoveryTests(unittest.TestCase):
 
     def test_unrelated_source_cannot_publish(self):
         with self.assertRaises(RuntimeError):self.invoke(status='diverged')
+
+
+class DraftLookupTests(unittest.TestCase):
+    def test_draft_is_found_when_tag_endpoint_omits_it(self):
+        draft={'id':123,'draft':True,'tag_name':'v0.2.0-beta.2'}
+        with patch.object(release,'api',side_effect=[None,[draft]]):
+            self.assertEqual(release.find_release('phenom64/OpenXMB','v0.2.0-beta.2'),draft)

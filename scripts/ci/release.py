@@ -108,6 +108,16 @@ def reserve_tag(repository, sha, tag):
         raise RuntimeError('The release tag targets a different commit')
 
 
+def find_release(repository, tag):
+    release = api(f'repos/{repository}/releases/tags/{tag}', missing_ok=True)
+    if release:
+        return release
+    # The by-tag endpoint can omit unpublished drafts; the authenticated list
+    # exposes drafts to publishers and avoids attempting to create a duplicate.
+    return next((item for item in api(f'repos/{repository}/releases?per_page=100')
+                 if item['tag_name'] == tag), None)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=['gate', 'publish', 'recover'])
@@ -132,7 +142,7 @@ def main():
     assets = verify_assets(args.artifacts, version)
     tag = 'v' + version
     notes = ROOT / 'docs/releases' / (tag + '.md')
-    release = api(f'repos/{repository}/releases/tags/{tag}', missing_ok=True)
+    release = find_release(repository, tag)
     if release and release['target_commitish'] != sha:
         raise RuntimeError('The release already targets a different commit')
     if release and not release['draft']:
@@ -147,7 +157,7 @@ def main():
                         '--notes-file', str(notes), *map(str, assets)], check=True)
     else:
         subprocess.run(['gh', 'release', 'upload', tag, '--repo', repository, '--clobber', *map(str, assets)], check=True)
-    release = api(f'repos/{repository}/releases/tags/{tag}')
+    release = find_release(repository, tag)
     if {asset['name'] for asset in release['assets']} != {path.name for path in assets}:
         raise RuntimeError('The draft release does not contain exactly the verified release assets')
     # Publishing is deliberately the final mutation, after every upload succeeds.
