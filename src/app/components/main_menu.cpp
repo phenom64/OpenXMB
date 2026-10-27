@@ -682,6 +682,8 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
     const auto previous_selection=settings_controller?settings_controller->route().selection:0U;
     current_submenu=nullptr;submenu_stack.clear();in_submenu=false;
     settings_controller.reset();settings_catalog.reset();
+    settings_previous_route.reset();
+    settings_render_values.clear();settings_render_icons.clear();
     settings_icon_textures.clear();settings_value_labels.clear();
     menus.clear();
 
@@ -802,6 +804,10 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
             }
             spdlog::info("Loaded catalog-backed Settings controller with {} icon binding(s)",
                 settings_icon_textures.size());
+            settings_render_values.reserve(settings_catalog->nodes.size());
+            settings_render_icons.reserve(settings_icon_textures.size());
+            for(const auto& entry:settings_icon_textures)
+                settings_render_icons.push_back({entry.semantic_id,entry.texture.get(),entry.glass_texture.get()});
             seed_settings_dialog_values();
             if(!reloading) apply_initial_settings_route();
             else if(!previous_route.empty()) {
@@ -1038,8 +1044,14 @@ bool main_menu::activate_settings(action action) {
 
     switch(resolved.plan->kind) {
         case openxmb::xmb::SettingsActionKind::navigate_menu: {
+            const auto previous=settings_controller->route();
+            const auto now=std::chrono::steady_clock::now();
             const auto step = settings_controller->activate(
-                seconds_from_time_point(std::chrono::steady_clock::now()));
+                seconds_from_time_point(now));
+            if(step&&step.changed) {
+                settings_previous_route=previous;
+                settings_route_changed=now;settings_returning=false;
+            }
             return step && step.changed;
         }
         case openxmb::xmb::SettingsActionKind::open_dialog:
@@ -1067,8 +1079,13 @@ bool main_menu::back_settings() {
     if(!settings_controller || settings_controller->navigation().stack.size() <= 2) {
         return false;
     }
-    const auto step = settings_controller->back(
-        seconds_from_time_point(std::chrono::steady_clock::now()));
+    const auto previous=settings_controller->route();
+    const auto now=std::chrono::steady_clock::now();
+    const auto step = settings_controller->back(seconds_from_time_point(now));
+    if(step&&step.changed) {
+        settings_previous_route=previous;
+        settings_route_changed=now;settings_returning=true;
+    }
     return step && step.changed;
 }
 
@@ -1511,8 +1528,8 @@ void main_menu::render_settings_scene(auroreengine::gui_renderer& renderer, time
         return;
     }
 
-    std::vector<openxmb::xmb::SettingsValueOverride> value_overrides;
-    value_overrides.reserve(settings_value_labels.size());
+    auto& value_overrides=settings_render_values;
+    value_overrides.clear();
     for(const auto& [node_id, label] : settings_value_labels) {
         value_overrides.push_back({
             .node_id = node_id,
@@ -1520,32 +1537,49 @@ void main_menu::render_settings_scene(auroreengine::gui_renderer& renderer, time
         });
     }
 
-    const auto sampled = settings_controller->sample_scene(
-        seconds_from_time_point(now), value_overrides);
+    const auto transition_progress=progress(now,settings_route_changed,transition_submenu_activate_duration);
+    const bool transitioning=settings_previous_route&&transition_progress<1.0;
+    const auto presence=transitioning?openxmb::xmb::SettingsScenePresence::entering:openxmb::xmb::SettingsScenePresence::visible;
+    const auto input=openxmb::xmb::make_settings_scene_input(settings_controller->route(),
+        settings_controller->previous_selection(),settings_controller->focus_transition_started_seconds(),
+        presence,seconds_from_time_point(settings_route_changed));
+    auto sampled=openxmb::xmb::sample_settings_scene(*settings_catalog,input,
+        seconds_from_time_point(now),value_overrides);
     if(!sampled) {
         return;
     }
 
-    std::vector<openxmb::xmb::SettingsSceneIcon> icons;
-    icons.reserve(settings_icon_textures.size());
-    for(const auto& entry : settings_icon_textures) {
-        icons.push_back({
-            .semantic_id = entry.semantic_id,
-            .texture = entry.texture.get(),
-            .glass_texture = entry.glass_texture.get(),
-        });
+    const openxmb::xmb::SettingsSceneRenderOptions options{
+        .glass_icons=config::CONFIG.iconGlassRefraction,
+        .suppress_value_labels=settings_choice_panel_open||xmb->has_choice_overlay()
+    };
+    if(transitioning) {
+        const auto previous_input=openxmb::xmb::make_settings_scene_input(*settings_previous_route,
+            settings_previous_route->selection,0.0,
+            openxmb::xmb::SettingsScenePresence::exiting,seconds_from_time_point(settings_route_changed));
+        auto previous=openxmb::xmb::sample_settings_scene(*settings_catalog,previous_input,
+            seconds_from_time_point(now),value_overrides);
+        if(previous) {
+            if(!settings_returning) for(auto& row:previous.snapshot.rows) {
+                row.icon_center_x-=2.0*previous.snapshot.content_x_shift;
+                row.label_x-=2.0*previous.snapshot.content_x_shift;
+                row.description_x-=2.0*previous.snapshot.content_x_shift;
+            }
+            settings_scene_renderer.render(renderer,previous.snapshot,settings_render_icons,options);
+        }
+        if(settings_returning) for(auto& row:sampled.snapshot.rows) {
+            row.icon_center_x-=2.0*sampled.snapshot.content_x_shift;
+            row.label_x-=2.0*sampled.snapshot.content_x_shift;
+            row.description_x-=2.0*sampled.snapshot.content_x_shift;
+        }
+        renderer.push_color({1,1,1,static_cast<float>(sampled.snapshot.presence)});
+        render_settings_parent_layer(renderer);
+        renderer.pop_color();
+    } else {
+        settings_previous_route.reset();
+        render_settings_parent_layer(renderer);
     }
-
-    render_settings_parent_layer(renderer);
-    settings_scene_renderer.render(
-        renderer,
-        sampled.snapshot,
-        icons,
-        {
-            .glass_icons = config::CONFIG.iconGlassRefraction,
-            .suppress_value_labels =
-                settings_choice_panel_open || xmb->has_choice_overlay(),
-        });
+    settings_scene_renderer.render(renderer,sampled.snapshot,settings_render_icons,options);
 }
 
 void main_menu::render_crossbar(auroreengine::gui_renderer& renderer, time_point now) {
@@ -1565,8 +1599,14 @@ void main_menu::render_crossbar(auroreengine::gui_renderer& renderer, time_point
     const auto submenu_transition = last_submenu_transition.time_since_epoch().count() == 0
         ? (in_submenu ? 1.0 : 0.0)
         : (in_submenu ? submenu_eased : 1.0 - submenu_eased);
-    const auto chrome_transition = std::max(
+    auto chrome_transition = std::max(
         submenu_transition, settings_chrome_collapsed() ? 1.0 : 0.0);
+    if(settings_category_active()&&settings_previous_route) {
+        const auto p=ease_out_cubic(progress(now,settings_route_changed,transition_submenu_activate_duration));
+        const double from=settings_previous_route->id!="category.settings"?1.0:0.0;
+        const double to=settings_chrome_collapsed()?1.0:0.0;
+        chrome_transition=from+(to-from)*p;
+    }
 
     for(std::size_t index = 0; index < menus.size(); ++index) {
         const auto active = static_cast<int>(index) == selected;

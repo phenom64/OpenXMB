@@ -121,6 +121,11 @@ class main_menu : public action_receiver {
         openxmb::xmb::SettingsSceneRenderer settings_scene_renderer;
         std::vector<settings_icon_texture> settings_icon_textures;
         std::unordered_map<std::string, std::string> settings_value_labels;
+        std::vector<openxmb::xmb::SettingsValueOverride> settings_render_values;
+        std::vector<openxmb::xmb::SettingsSceneIcon> settings_render_icons;
+        std::optional<openxmb::xmb::NavigationRoute> settings_previous_route;
+        time_point settings_route_changed;
+        bool settings_returning = false;
         bool settings_choice_panel_open = false;
 };
 
