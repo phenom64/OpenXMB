@@ -77,6 +77,22 @@ void test_boot_timeline() {
   require_near(wave_start.wave_boot_time_seconds, 0.0, 1e-12,
                "wave start time");
   require_near(wave_start.wave_gain, 0.0, 1e-12, "wave start gain");
+  const auto wave_speed = [](double time) {
+    constexpr double step = 0.0001;
+    return (sample_boot_timeline(time + step).wave_boot_time_seconds -
+            sample_boot_timeline(time - step).wave_boot_time_seconds) / (2 * step);
+  };
+  require(wave_speed(0.81) < 0.2, "startup wave begins slowly");
+  require(wave_speed(3.8) > 1.7, "startup wave accelerates before settling");
+  require_near(wave_speed(8.0), 1.0, 1e-8,
+               "startup wave settles to the regular speed");
+  for (const double boundary : {0.8, 3.8, 7.665, 16.9}) {
+    const auto before = sample_boot_timeline(boundary - 0.00001);
+    const auto after = sample_boot_timeline(boundary + 0.00001);
+    require(after.wave_boot_time_seconds >= before.wave_boot_time_seconds &&
+                after.wave_boot_time_seconds - before.wave_boot_time_seconds < 0.00004,
+            "wave phase stays continuous across startup milestones");
+  }
   require_near(sample_boot_timeline(2.5).background_exposure_top, 0.0, 1e-12,
                "boot gradient reveal starts black");
   require(sample_boot_timeline(3.1).background_exposure_bottom >
@@ -139,6 +155,27 @@ void test_boot_timeline() {
   require_near(skipped.identity_opacity, 0.0, 1e-12, "skip hides identity");
   require_near(skipped.warning_opacity, 0.0, 1e-12, "skip hides warning");
   require_near(skipped.ui_reveal, 1.0, 1e-12, "skip reveals UI");
+
+  BootTimeline warning;
+  require(!warning.dismiss_warning(3.0), "confirm cannot skip the identity intro");
+  const auto warning_before = warning.sample(8.0);
+  require(warning.dismiss_warning(8.0), "visible warning accepts dismissal");
+  const auto dismissed = warning.sample(8.0);
+  require_near(dismissed.warning_opacity, 0.0, 1e-12, "dismissal hides warning");
+  require_near(dismissed.warning_backdrop_blur_px, 0.0, 1e-12,
+               "dismissal releases the warning backdrop");
+  require_near(dismissed.ui_reveal, 0.0, 1e-12,
+               "dismissal starts, rather than bypasses, UI reveal");
+  require_near(dismissed.wave_boot_time_seconds, warning_before.wave_boot_time_seconds,
+               1e-12, "warning dismissal never jumps wave motion");
+  require(!warning.dismiss_warning(8.1), "repeated confirm cannot restart UI reveal");
+  require_near(warning.sample(8.5).ui_reveal, 0.5, 1e-12,
+               "dismissed warning reveals UI over one second");
+  require(warning.sample(9.0).complete, "dismissal completes early");
+  require(!warning.dismiss_warning(20.0), "completed boot ignores warning dismissal");
+  warning.reset();
+  require_near(warning.sample(8.0).warning_opacity, 1.0, 1e-12,
+               "reset restores normal warning timing");
 }
 
 void test_boot_text_layout() {

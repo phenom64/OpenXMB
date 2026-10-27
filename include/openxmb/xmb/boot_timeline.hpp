@@ -26,6 +26,7 @@ struct BootSample {
   double elapsed_seconds{};
 
   // Renderer-facing background/wave tracks.
+  // Continuous motion phase, independent of warning dismissal/visual seeking.
   double wave_boot_time_seconds{};
   double wave_gain{};
   double wave_geometry_progress{};
@@ -64,6 +65,8 @@ class BootTimeline {
 public:
   [[nodiscard]] BootSample sample(double elapsed_seconds) noexcept;
   [[nodiscard]] BootSample skip(double elapsed_seconds = 0.0) noexcept;
+  // Dismiss only a visible warning, then run the normal one-second UI reveal.
+  [[nodiscard]] bool dismiss_warning(double elapsed_seconds) noexcept;
   void reset() noexcept;
 
   [[nodiscard]] bool skipped() const noexcept { return skipped_; }
@@ -72,6 +75,7 @@ public:
   }
 
 private:
+  double warning_skip_seconds_{};
   bool skipped_{};
   bool startup_cue_emitted_{};
 };

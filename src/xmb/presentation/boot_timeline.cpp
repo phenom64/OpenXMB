@@ -33,6 +33,22 @@ constexpr std::array<std::array<double,2>,45> identity_right{{{0,0},{2.09,0},{2.
   return t * t * (3.0 - 2.0 * t);
 }
 
+// Integrate the velocity envelope, rather than multiplying time by a changing
+// speed: that would jump the ribbon's phase when the intro settles.
+[[nodiscard]] double startup_wave_time(double elapsed) noexcept {
+  const double time = std::max(0.0, elapsed - BootMilestones::wave_emerge_seconds);
+  constexpr double peak = 3.0;
+  constexpr double settled = BootMilestones::warning_in_seconds -
+                             BootMilestones::wave_emerge_seconds;
+  const auto segment = [](double duration, double length, double from, double to) {
+    const double t = std::clamp(duration / length, 0.0, 1.0);
+    return length * (from * t + (to - from) * (t * t * t - 0.5 * t * t * t * t));
+  };
+  return segment(time, peak, 0.15, 1.8) +
+         segment(time - peak, settled - peak, 1.8, 1.0) +
+         std::max(0.0, time - settled);
+}
+
 [[nodiscard]] double gradient_reveal(double milliseconds,
                                      std::size_t column) noexcept {
   constexpr std::array table{
@@ -67,7 +83,7 @@ BootSample sample_boot_timeline(double elapsed_seconds) noexcept {
 
   BootSample sample{};
   sample.elapsed_seconds = time;
-  sample.wave_boot_time_seconds = std::max(0.0, time - M::wave_emerge_seconds);
+  sample.wave_boot_time_seconds = startup_wave_time(time);
   sample.wave_gain = smooth(ramp(time, M::wave_emerge_seconds, 2.6));
   sample.wave_geometry_progress = ramp(time, 1.3, 4.2);
   sample.background_active = time < M::complete_seconds;
@@ -115,12 +131,22 @@ BootSample BootTimeline::sample(double elapsed_seconds) noexcept {
     return result;
   }
 
-  auto result = sample_boot_timeline(elapsed_seconds);
+  auto result = sample_boot_timeline(elapsed_seconds + warning_skip_seconds_);
+  result.wave_boot_time_seconds = startup_wave_time(elapsed_seconds);
   if (!startup_cue_emitted_ && !result.complete) {
     result.effect = BootEffect::play_startup_cue;
     startup_cue_emitted_ = true;
   }
   return result;
+}
+
+bool BootTimeline::dismiss_warning(double elapsed_seconds) noexcept {
+  const auto current = sample_boot_timeline(elapsed_seconds + warning_skip_seconds_);
+  if (skipped_ || current.warning_opacity <= 0.0) {
+    return false;
+  }
+  warning_skip_seconds_ += BootMilestones::ui_in_seconds - current.elapsed_seconds;
+  return true;
 }
 
 BootSample BootTimeline::skip(double elapsed_seconds) noexcept {
@@ -132,6 +158,7 @@ BootSample BootTimeline::skip(double elapsed_seconds) noexcept {
 }
 
 void BootTimeline::reset() noexcept {
+  warning_skip_seconds_ = 0.0;
   skipped_ = false;
   startup_cue_emitted_ = false;
 }
