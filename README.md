@@ -197,7 +197,16 @@ On Windows, use the `windows-vcpkg` preset and verify both a windowed launch and
 
 ## Configuration
 
-OpenXMB is configured using the `config.json` file. At runtime it checks `OPENXMB_CONFIG` first, then `config.json` beside the executable, and finally a per-user config location such as `%LOCALAPPDATA%/OpenXMB/config.json` on Windows. You can edit this file to change settings like:
+OpenXMB stores settings in `config.json`. The active profile has its own settings;
+setting `OPENXMB_CONFIG` selects an explicit configuration file instead of restoring
+the active profile at startup. Without an override, OpenXMB loads saved user
+settings before falling back to packaged defaults. It saves changes to the active
+profile or explicit file, or to the user configuration directory when neither is
+selected. Default user configuration locations are `~/.config/openxmb` on Linux
+(or `$XDG_CONFIG_HOME/openxmb`), `~/Library/Application Support/OpenXMB` on
+macOS and `%LOCALAPPDATA%/OpenXMB` on Windows.
+
+You can change settings such as:
 
 *   Background colors and type (`wave`, `color`, `image`)
 *   Fonts and date/time display
