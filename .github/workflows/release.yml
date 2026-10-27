@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: openxmb-${{ github.workflow }}-${{ github.ref }}
+  group: openxmb-${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 jobs:

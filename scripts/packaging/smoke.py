@@ -79,6 +79,7 @@ def main():
                                               os.environ['SystemRoot'] + '\\System32', os.environ['SystemRoot']])
     elif platform.system() == 'Darwin':
         environment['PATH'] = str(app.parent) + ':/usr/bin:/bin:/usr/sbin:/sbin'
+        environment['FONTCONFIG_FILE'] = str(app.parent / '../Resources/fonts/fonts.conf')
         for key in ['DYLD_LIBRARY_PATH', 'DYLD_FALLBACK_LIBRARY_PATH', 'DYLD_FRAMEWORK_PATH']:
             environment.pop(key, None)
     for key in ['XMB_ASSET_DIR', 'XMB_LOCALE_DIR', 'OPENXMB_CONFIG', 'OPENXMB_DATA_DIR']:
