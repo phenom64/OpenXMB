@@ -9,8 +9,10 @@ module;
 #include <filesystem>
 #include <functional>
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <string_view>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -23,6 +25,7 @@ import auroreengine;
 import sdl2;
 import glm;
 import openxmb.utils;
+import openxmb.config;
 
 export namespace programs {
 
@@ -39,6 +42,10 @@ public:
         cores_ = openxmb::integrations::discover_libretro_cores();
         if (preferences_.core.empty() && !cores_.empty()) preferences_.core = cores_.front();
         if (section_ == "discs") discs_ = openxmb::integrations::discover_discs();
+        if (section_ == "browser") {
+            const auto homepage=browser_preference("browser.homepage","https://duckduckgo.com");
+            if(openxmb::integrations::validate_browser_url(homepage)) preferences_.browser_url=homepage;
+        }
         rebuild_rows();
     }
     ~integration_center() override {
@@ -55,12 +62,18 @@ public:
         shell_ = shell;
         const auto now = std::chrono::steady_clock::now();
         if(section_=="browser"&&!browser_started_) {
-            browser_started_=true;previous_blur_=shell->get_blur_background();shell->set_blur_background(true);
+            browser_started_=true;
+            if(!browser_blur_saved_) {previous_blur_=shell->get_blur_background();browser_blur_saved_=true;}
+            shell->set_blur_background(true);
             const auto opened=openxmb::integrations::open_browser(preferences_.browser_url,browser_);message_=opened.message;
+            browser_settings_signature_.clear();browser_clear_token_.clear();
             if(opened&&browser_.dedicated_window) {sdl::SetHint("SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS","1");background_input_=true;browser_controlling_=true;}
         }
         if(browser_.embedded_view&&now-page_updated_>std::chrono::milliseconds(200)) {
             page_=openxmb::integrations::browser_page(browser_);page_updated_=now;
+            sync_browser_settings();
+            if(!page_.error.empty()) message_=page_.error;
+            else if(!page_.status.empty()) message_=page_.status;
             if(page_.address_requested&&!browser_editing_) browser_text(true);
         }
         const auto elapsed = std::clamp(std::chrono::duration<double>(now - input_updated_).count(), 0.0, 0.1);
@@ -89,8 +102,9 @@ public:
             if (const auto status = openxmb::integrations::process_exit_status(browser_.process_id); status) {
                 if(browser_.embedded_view&&*status==0) return result::close;
                 browser_.embedded_view=false;browser_controlling_=false;
-                message_ = "The browser exited with an error. Check the installed browser and display session.";
+                message_ = page_.error.empty()?"The browser exited unexpectedly. Reopen Internet Browser; check the WebView2 Runtime if this continues.":page_.error;
                 browser_.process_id = -1;
+                browser_.native_process.reset();
             }
         }
         return result::success;
@@ -122,8 +136,9 @@ public:
             if(selected_action==action::options) {
                 if(browser_.process_id>0) browser_text(true);
                 else edit("Address",preferences_.browser_url,[this](std::string value) {
+                    value=openxmb::integrations::browser_address_url(value,browser_preference("browser.search","duckduckgo"));
                     if(const auto valid=openxmb::integrations::validate_browser_url(value);!valid) {message_=valid.message;return;}
-                    preferences_.browser_url=std::move(value);persist();browser_started_=false;
+                    preferences_.browser_url=std::move(value);browser_started_=false;
                 });
             } else {
                 if(browser_.process_id>0) {browser_controlling_=true;return send_control(openxmb::integrations::BrowserControl::tab);}
@@ -230,7 +245,9 @@ public:
             c.text(title,106,60,22,{1,1,1,0.88F});
             const float url_x=std::min(780.0F,136+renderer.text_width_pixels(title,22*c.scale)/c.scale);
             c.text(page_.url.empty()?preferences_.browser_url:page_.url.substr(0,125),url_x,60,22,{1,1,1,0.7F});
-            c.text(page_.hover.substr(0,140),70,1030,22,{1,1,1,0.8F});
+            const auto footer=!page_.error.empty()?page_.error:!page_.status.empty()?page_.status:page_.hover;
+            c.text(footer.substr(0,140),70,1030,22,{1,1,1,0.8F});
+            c.text(page_.loading?"Loading…":"Start: Address / Search    B / Esc: Return",70,1065,20,{1,1,1,0.7F});
             if(!browser_.embedded_view) {
                 c.text(message_.empty()?"Opening Internet Browser…":message_,960,450,26,{1,1,1,1},0,true);
                 render_controller_buttons(shell,renderer,0.5F,0.9F,std::array{std::pair{action::ok,std::string_view{"Open / Resume"}},std::pair{action::options,std::string_view{"Address"}},std::pair{action::cancel,std::string_view{"Back"}}});
@@ -264,6 +281,31 @@ public:
     }
     bool is_opaque() const override { return section_=="browser"; }
 private:
+    static std::string browser_preference(const std::string& key,const std::string& fallback={}) {
+        const auto& values=config::CONFIG.preferences;
+        const auto found=values.find(key);
+        return found==values.end()?fallback:found->second;
+    }
+    void sync_browser_settings() {
+#ifdef _WIN32
+        const auto zoom=browser_preference("browser.zoom","1.0");
+        const auto downloads=browser_preference("browser.downloads");
+        const auto signature=zoom+"\n"+downloads;
+        if(signature!=browser_settings_signature_) {
+            try {
+                std::size_t used{};const double factor=std::stod(zoom,&used);
+                if(used!=zoom.size()||!std::isfinite(factor)||factor<0.25||factor>5) throw std::runtime_error("Zoom must be between 0.25 and 5.0");
+                const auto sent=openxmb::integrations::browser_view_command(browser_,"configure",nlohmann::json{{"zoom",factor*100},{"downloads",downloads}}.dump());
+                if(sent) browser_settings_signature_=signature;else message_=sent.message;
+            } catch(const std::exception& error) {message_=error.what();}
+        }
+        const auto clear=browser_preference("browser.clear_site_data");
+        if(!clear.empty()&&clear!=browser_clear_token_) {
+            const auto sent=openxmb::integrations::browser_view_command(browser_,"clear_site_data",clear);
+            if(sent) browser_clear_token_=clear;else message_=sent.message;
+        }
+#endif
+    }
     result send_control(openxmb::integrations::BrowserControl control, double scroll = 0) {
         const auto sent = openxmb::integrations::browser_input(browser_, {control, pointer_x_, scroll, {}});
         if (!sent) message_ = sent.message;
@@ -278,8 +320,9 @@ private:
             static_cast<void>(browser_input(browser_,{BrowserControl::return_to_shell}));
             shell_->emplace_overlay<app::text_entry_overlay>(address?"Address":"Text",address?(page_.url.empty()?preferences_.browser_url:page_.url):std::string{},
                 [this,address](std::string value) {
+                    if(address) value=browser_address_url(value,browser_preference("browser.search","duckduckgo"));
                     const auto result=openxmb::integrations::browser_view_command(browser_,address?"navigate":"text",value);message_=result.message;
-                    if(address&&result) {preferences_.browser_url=value;persist();}
+                    if(address&&result) preferences_.browser_url=value;
                     if(!result) static_cast<void>(openxmb::integrations::browser_view_command(browser_,"show"));browser_editing_=false;browser_controlling_=true;
                 },[this] {static_cast<void>(openxmb::integrations::browser_view_command(browser_,"show"));browser_editing_=false;browser_controlling_=true;});
             return;
@@ -333,7 +376,8 @@ private:
     std::size_t selected_{};
     std::int64_t core_process_{-1};
     app::shell* shell_{};
-    bool browser_controlling_{},background_input_{},primary_down_{},browser_started_{},browser_editing_{},previous_blur_{};
+    bool browser_controlling_{},background_input_{},primary_down_{},browser_started_{},browser_editing_{},previous_blur_{},browser_blur_saved_{};
+    std::string browser_settings_signature_,browser_clear_token_;
     openxmb::integrations::BrowserPage page_;
     std::chrono::steady_clock::time_point page_updated_{};
     double pointer_x_{0.5}, pointer_y_{0.5}, pointer_axis_x_{}, pointer_axis_y_{}, scroll_axis_{};

@@ -33,6 +33,8 @@ struct ProcessResult {
 [[nodiscard]] std::filesystem::path user_data_directory();
 
 [[nodiscard]] Result validate_browser_url(std::string_view url);
+// Resolve an address/search entry without invoking a shell or external browser.
+[[nodiscard]] std::string browser_address_url(std::string_view text,std::string_view search_engine="duckduckgo");
 struct BrowserSession {
   std::int64_t process_id{-1};
   bool dedicated_window{};
@@ -41,8 +43,15 @@ struct BrowserSession {
   std::shared_ptr<void> native_input;
   bool embedded_view{};
   std::filesystem::path state_file;
+  // Keeps the Windows helper handle alive until its exit has been observed.
+  std::shared_ptr<void> native_process;
 };
-struct BrowserPage {std::string title,url,hover;bool loading{},address_requested{};};
+struct BrowserPage {
+  std::string title,url,hover;
+  bool loading{},address_requested{};
+  bool back{},forward{},ready{};
+  std::string error,status;
+};
 [[nodiscard]] BrowserPage browser_page(const BrowserSession& session);
 [[nodiscard]] Result browser_view_command(BrowserSession& session,std::string_view command,std::string_view value={});
 enum class BrowserControl {

@@ -11,12 +11,14 @@
 #include <iomanip>
 #include <set>
 #include <system_error>
+#include <atomic>
 
 #if defined(_WIN32)
 #define NOMINMAX
 #include <windows.h>
 #include <shellapi.h>
 #include <gdiplus.h>
+#include "browser_ipc_win.hpp"
 #elif defined(__APPLE__)
 #include <mach-o/dyld.h>
 #include <fcntl.h>
@@ -269,6 +271,26 @@ Result validate_browser_url(std::string_view url) {
   for (const unsigned char ch : url) if (ch <= 32 || ch == 127) return {false, "Web addresses cannot contain whitespace or control characters"};
   return {true, "Web address accepted"};
 }
+std::string browser_address_url(std::string_view text,std::string_view search_engine) {
+  while(!text.empty()&&text.front()==' ') text.remove_prefix(1);
+  while(!text.empty()&&text.back()==' ') text.remove_suffix(1);
+  if(text.empty()||text.size()>8192) return {};
+  for(const unsigned char ch:text) if(ch<32||ch==127) return {};
+  if(text.starts_with("http://")||text.starts_with("https://")) return std::string(text);
+  if(text.find(' ')==std::string_view::npos&&text.find(':')==std::string_view::npos&&
+     text.find('.')!=std::string_view::npos) return "https://"+std::string(text);
+  std::string encoded;
+  constexpr char hex[]="0123456789ABCDEF";
+  for(const unsigned char ch:text) {
+    if((ch>='a'&&ch<='z')||(ch>='A'&&ch<='Z')||(ch>='0'&&ch<='9')||ch=='-'||ch=='_'||ch=='.'||ch=='~') encoded+=ch;
+    else {encoded+='%';encoded+=hex[ch>>4];encoded+=hex[ch&15];}
+  }
+  std::string engine(search_engine);
+  std::ranges::transform(engine,engine.begin(),[](unsigned char ch) {return static_cast<char>(std::tolower(ch));});
+  const std::string base=engine=="google"?"https://www.google.com/search?q=":
+    engine=="bing"?"https://www.bing.com/search?q=":"https://duckduckgo.com/?q=";
+  return base+encoded;
+}
 Result open_browser(std::string_view url, BrowserSession& session, const std::filesystem::path& profile_directory) {
   if (const auto valid = validate_browser_url(url); !valid) return valid;
   if (session.process_id > 0 && session.dedicated_window && !process_exit_status(session.process_id))
@@ -281,6 +303,31 @@ Result open_browser(std::string_view url, BrowserSession& session, const std::fi
   const auto return_window = detail::capture_return_window();
   bool embedded=false;
   const auto state_file=profile/"page-state.json";
+#ifdef _WIN32
+  if (!std::getenv("OPENXMB_BROWSER")) {
+    const auto parent = reinterpret_cast<HWND>(return_window);
+    DWORD owner{}; GetWindowThreadProcessId(parent, &owner);
+    if (!IsWindow(parent) || owner != GetCurrentProcessId())
+      return {false, "Select the OpenXMB window before opening its embedded browser"};
+    const auto helper = executable_path().parent_path()/"openxmb-web.exe";
+    if (!std::filesystem::is_regular_file(helper, error))
+      return {false, "The embedded browser helper openxmb-web.exe is missing. Reinstall OpenXMB with Windows browser support."};
+    std::filesystem::remove(state_file,error);
+    std::filesystem::remove(profile/"page-command.json",error);
+    std::wstring command = windows_quote(helper.wstring()) + L" " + windows_quote(wide(url)) + L" " +
+      std::to_wstring(return_window) + L" " + windows_quote(profile.wstring()) + L" " + windows_quote(state_file.wstring());
+    STARTUPINFOW startup{}; startup.cb=sizeof(startup);
+    PROCESS_INFORMATION process{};
+    if (!CreateProcessW(helper.c_str(),command.data(),nullptr,nullptr,FALSE,CREATE_NO_WINDOW,nullptr,nullptr,&startup,&process))
+      return {false,"Cannot start the embedded browser (Windows error " + std::to_string(GetLastError()) + ")"};
+    CloseHandle(process.hThread);
+    // Permit the child to transfer keyboard focus into its WebView when ready.
+    AllowSetForegroundWindow(process.dwProcessId);
+    session = {static_cast<std::int64_t>(process.dwProcessId),true,std::string(url),return_window,{},true,state_file,
+      std::shared_ptr<void>(process.hProcess,[](void* handle) { CloseHandle(handle); })};
+    return {true,"Opening embedded browser"};
+  }
+#endif
 #if !defined(_WIN32) && !defined(__APPLE__)
   if(return_window&&!std::getenv("OPENXMB_BROWSER")) {
     if(auto helper=find_executable((executable_path().parent_path()/"openxmb-web").string())) {
@@ -342,26 +389,91 @@ BrowserPage browser_page(const BrowserSession& session) {
   std::error_code error;const auto bytes=std::filesystem::file_size(session.state_file,error);
   if(error||bytes>65536) return page;
   try {
+#ifdef _WIN32
+    const auto state=detail::read_browser_json(session.state_file,65536);
+#else
     std::ifstream file(session.state_file);const auto state=nlohmann::json::parse(file);
+#endif
     page.title=state.value("title",std::string{});page.url=state.value("uri",session.url);
     page.hover=state.value("hover",std::string{});page.loading=state.value("loading",false);page.address_requested=state.value("address_requested",false);
+    page.back=state.value("back",false);page.forward=state.value("forward",false);
+    page.ready=state.value("ready",false);page.error=state.value("error",std::string{});
+    page.status=state.value("status",std::string{});
   }catch(...) {}
   return page;
 }
 Result browser_view_command(BrowserSession& session,std::string_view command,std::string_view value) {
   if(!session.embedded_view) return {false,"An embedded browser view is not available"};
-  if(command=="navigate") {const auto result=validate_browser_url(value);if(!result) return result;session.url=value;}
-  else if(command!="hide"&&command!="show"&&command!="back"&&command!="forward"&&command!="reload"&&command!="text") return {false,"Unknown browser command"};
-  const auto sequence=std::chrono::steady_clock::now().time_since_epoch().count();
-  const nlohmann::json message{{"sequence",sequence},{"command",command},{"value",value}};
+  if(command=="navigate") {const auto result=validate_browser_url(value);if(!result) return result;}
+  else if(command!="hide"&&command!="show"&&command!="back"&&command!="forward"&&command!="reload"&&command!="text"
+#ifdef _WIN32
+    &&command!="close"&&command!="input"&&command!="address"&&command!="return"&&command!="configure"&&command!="clear_site_data"
+#endif
+    ) return {false,"Unknown browser command"};
+  if(value.size()>16384) return {false,"Browser command is too long"};
+  static std::atomic<std::int64_t> sequence{};
+  nlohmann::json message{{"sequence",++sequence},{"command",command},{"value",value}};
   const auto destination=session.state_file.parent_path()/"page-command.json";auto temporary=destination;temporary+=".tmp";
-  std::ofstream file(temporary,std::ios::binary|std::ios::trunc);file<<message.dump();file.close();
+#ifdef _WIN32
+  // Preserve commands issued between helper timer ticks (e.g. hide then return,
+  // or pointer then click). The latest envelope remains Linux-protocol compatible.
+  nlohmann::json commands=nlohmann::json::array();
+  try {
+    std::int64_t acknowledged{};
+    const auto state=detail::read_browser_json(session.state_file);
+    if(state.is_object()) acknowledged=state.value("command_sequence",std::int64_t{});
+    const auto previous=detail::read_browser_json(destination);
+    if(previous.is_object()) {
+      for(const auto& pending:previous.value("commands",nlohmann::json::array()))
+        if(pending.value("sequence",std::int64_t{})>acknowledged) commands.push_back(pending);
+    }
+  }catch(...) {}
+  if(commands.size()>=256) return {false,"The browser is not responding to commands"};
+  commands.push_back(message);message["commands"]=std::move(commands);
+#endif
+  std::string encoded;
+  try {encoded=message.dump();}catch(const nlohmann::json::exception&) {return {false,"Browser command contains invalid UTF-8 text"};}
+  if(encoded.size()>262144) return {false,"The browser command queue is full"};
+  std::ofstream file(temporary,std::ios::binary|std::ios::trunc);file<<encoded;file.close();
   if(!file) return {false,"Unable to update the browser view"};
-  std::error_code error;std::filesystem::rename(temporary,destination,error);
+  std::error_code error;
+#ifdef _WIN32
+  if(!detail::replace_browser_file(temporary,destination))
+    error=std::error_code(GetLastError(),std::system_category());
+#else
+  std::filesystem::rename(temporary,destination,error);
+#endif
+  if(!error&&command=="navigate") session.url=value;
   return {!error,error?error.message():std::string{}};
 }
 Result close_browser(BrowserSession& session) {
   if (!session.dedicated_window) return {false, "Close your system browser with its own window controls"};
+#ifdef _WIN32
+  if(session.embedded_view&&session.native_process) {
+    const auto handle=static_cast<HANDLE>(session.native_process.get());
+    auto result=browser_view_command(session,"close");
+    // Closing the controller first allows the runtime to flush cookies/profile
+    // and release its processes. Force only an unresponsive helper to exit.
+    // Closing WebView2/focusing the shell can send synchronous native messages
+    // across UI threads. Service sent messages while waiting, without dispatching
+    // queued user input that could re-enter this closing browser component.
+    const auto deadline=GetTickCount64()+3000;
+    DWORD waited=WAIT_TIMEOUT;
+    while((waited=WaitForSingleObject(handle,0))==WAIT_TIMEOUT&&GetTickCount64()<deadline) {
+      MsgWaitForMultipleObjects(1,&handle,FALSE,20,QS_SENDMESSAGE);
+      MSG sent{};PeekMessageW(&sent,nullptr,WM_NULL,WM_NULL,PM_NOREMOVE);
+    }
+    if(waited==WAIT_TIMEOUT) {
+      const auto forced=TerminateProcess(handle,1)!=FALSE;
+      if(forced) WaitForSingleObject(handle,1000);
+      result={forced,forced?"Unresponsive browser session stopped":"Unable to stop the browser session"};
+    } else result={true,"Browser session closed"};
+    const auto parent=reinterpret_cast<HWND>(session.return_window);
+    if(IsWindow(parent)) {SetForegroundWindow(parent);SetFocus(parent);}
+    session.process_id=-1;session.embedded_view=false;session.native_input.reset();session.native_process.reset();
+    return result;
+  }
+#endif
   auto result = stop_process(session.process_id);
   session.process_id = -1;
   session.native_input.reset();

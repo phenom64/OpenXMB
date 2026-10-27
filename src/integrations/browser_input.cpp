@@ -6,6 +6,9 @@
 #include <mutex>
 #include <stdexcept>
 #include <vector>
+#ifdef _WIN32
+#include <nlohmann/json.hpp>
+#endif
 
 #ifdef _WIN32
 #define NOMINMAX
@@ -121,7 +124,20 @@ void win_key(std::vector<INPUT>& events, WORD key, bool down, bool unicode = fal
 namespace detail {
 std::uintptr_t capture_return_window() {
 #ifdef _WIN32
-  return reinterpret_cast<std::uintptr_t>(GetForegroundWindow());
+  // Foreground may belong to another app during asynchronous startup. Never
+  // embed into that app: prefer this thread's active root, then our own window.
+  auto window=GetActiveWindow();
+  DWORD owner{};GetWindowThreadProcessId(window,&owner);
+  if(window&&owner==GetCurrentProcessId()) return reinterpret_cast<std::uintptr_t>(GetAncestor(window,GA_ROOT));
+  struct Search {HWND window{};} search;
+  EnumWindows([](HWND candidate,LPARAM argument)->BOOL {
+    DWORD pid{};GetWindowThreadProcessId(candidate,&pid);
+    if(pid==GetCurrentProcessId()&&IsWindowVisible(candidate)&&!GetWindow(candidate,GW_OWNER)) {
+      reinterpret_cast<Search*>(argument)->window=candidate;return FALSE;
+    }
+    return TRUE;
+  },reinterpret_cast<LPARAM>(&search));
+  return reinterpret_cast<std::uintptr_t>(search.window);
 #elif defined(__APPLE__)
   return static_cast<std::uintptr_t>(getpid());
 #else
@@ -138,6 +154,16 @@ Result browser_input(BrowserSession& session, const BrowserInput& input) {
   if (input.control != BrowserControl::return_to_shell && (!session.dedicated_window || session.process_id <= 0))
     return {false, "Controller navigation requires a dedicated browser window"};
 #ifdef _WIN32
+  if(session.embedded_view) {
+    switch(input.control) {
+    case BrowserControl::back: return browser_view_command(session,"back");
+    case BrowserControl::forward: return browser_view_command(session,"forward");
+    case BrowserControl::text: return browser_view_command(session,"text",input.text);
+    case BrowserControl::address_bar: return browser_view_command(session,"address");
+    case BrowserControl::return_to_shell: return browser_view_command(session,"return");
+    default: return browser_view_command(session,"input",nlohmann::json{{"control",static_cast<int>(input.control)},{"x",input.x},{"y",input.y}}.dump());
+    }
+  }
   const auto window = input.control == BrowserControl::return_to_shell ? reinterpret_cast<HWND>(session.return_window) : locate_window(session.process_id);
   if (!window || !IsWindow(window)) return {false, "The browser window is not ready"};
   ShowWindow(window, SW_RESTORE); SetForegroundWindow(window);
