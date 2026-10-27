@@ -157,6 +157,11 @@ jobs:
         if: ${{ !cancelled() && steps.build.outputs.installed == 'true' }}
         id: package
         run: python scripts/packaging/package.py windows
+      - uses: actions/cache@v6.1.0
+        if: ${{ !cancelled() && steps.package.outcome == 'success' }}
+        with:
+          path: ${{ runner.temp }}/openxmb-software-vulkan/*/chrome.zip
+          key: software-vulkan-156.0.8078.47-Windows-x86_64
       - name: Prepare software Vulkan
         if: ${{ !cancelled() && steps.package.outcome == 'success' }}
         id: vulkan
@@ -234,6 +239,11 @@ jobs:
       - name: Test the relocated application bundle and helpers
         if: ${{ !cancelled() && steps.package.outcome == 'success' }}
         run: python scripts/packaging/smoke.py --app dist/packages/OpenXMB.app/Contents/MacOS/OpenXMB --assets dist/packages/OpenXMB.app/Contents/Resources/share/shell --output dist/package-smoke
+      - uses: actions/cache@v6.1.0
+        if: ${{ !cancelled() && steps.package.outcome == 'success' }}
+        with:
+          path: ${{ runner.temp }}/openxmb-software-vulkan/*/chrome.zip
+          key: software-vulkan-156.0.8078.47-macOS-${{ matrix.arch }}
       - name: Locate a software Vulkan driver when available
         if: ${{ !cancelled() && steps.package.outcome == 'success' }}
         run: python scripts/ci/software_vulkan.py --optional
