@@ -569,6 +569,8 @@ std::vector<unsigned char> https(const std::string &url, std::size_t limit) {
   curl_easy_setopt(handle, CURLOPT_REDIR_PROTOCOLS_STR, "https");
   curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 0L);
   curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 1L); curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, 2L);
+  if(const auto* certificates=std::getenv("CURL_CA_BUNDLE");certificates&&*certificates)
+    curl_easy_setopt(handle,CURLOPT_CAINFO,certificates);
   curl_easy_setopt(handle, CURLOPT_TIMEOUT, 15L); curl_easy_setopt(handle, CURLOPT_NOSIGNAL, 1L);
   curl_easy_setopt(handle, CURLOPT_USERAGENT, "OpenXMB/1.0"); curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, receive); curl_easy_setopt(handle, CURLOPT_WRITEDATA, &download);
   const auto status = curl_easy_perform(handle); long http{}; curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http); curl_easy_cleanup(handle);

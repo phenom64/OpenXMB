@@ -18,7 +18,10 @@ set(COLOR_RED     "${ESC}[31m")
 set(COLOR_YELLOW  "${ESC}[33m")
 set(COLOR_GREEN   "${ESC}[32m")
 
-project(OpenXMB VERSION 0.1.0 LANGUAGES CXX)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" OPENXMB_RELEASE_VERSION)
+string(STRIP "${OPENXMB_RELEASE_VERSION}" OPENXMB_RELEASE_VERSION)
+string(REGEX MATCH "^[0-9]+\\.[0-9]+\\.[0-9]+" OPENXMB_NUMERIC_VERSION "${OPENXMB_RELEASE_VERSION}")
+project(OpenXMB VERSION ${OPENXMB_NUMERIC_VERSION} LANGUAGES CXX)
 
 # OpenXMB uses CTest for backend-neutral engine and product contract tests.
 # Keep this independent of third-party BUILD_TESTING cache options below.
@@ -245,7 +248,7 @@ endif()
 
 FetchContent_Declare(i18n++
   GIT_REPOSITORY https://github.com/JnCrMx/i18n-cpp.git
-  GIT_TAG        trunk    #trunk = master branch
+  GIT_TAG        998ba2e80e3a8967f916df68d8543659dd1c453f
 )
 
 # We are using our own stable, maintained fork of the rendering engine.
@@ -570,6 +573,7 @@ set(XMS_SHADERS
 )
 
 add_executable(XMS ${XMS_SOURCES})
+target_compile_definitions(XMS PRIVATE OPENXMB_VERSION_STRING="${OPENXMB_RELEASE_VERSION}")
 if(TARGET openxmb_compat_assets)
   add_dependencies(XMS openxmb_compat_assets)
 endif()

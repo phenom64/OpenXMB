@@ -459,12 +459,14 @@ std::filesystem::path config::config_path_for_read() const {
         return path;
     }
 
-    auto exe_config = exe_directory / "config.json";
-    if(std::filesystem::exists(exe_config)) {
-        return exe_config;
+    const auto user_config=user_config_directory()/"config.json";
+    if(std::filesystem::exists(user_config)) return user_config;
+    for(const auto& bundled:{exe_directory/"config.json",
+                            exe_directory/"../Resources/share/OpenXMB/config.json",
+                            exe_directory/"../share/OpenXMB/config.json"}) {
+        if(std::filesystem::exists(bundled)) return bundled;
     }
-
-    return user_config_directory() / "config.json";
+    return user_config;
 }
 
 std::filesystem::path config::config_path_for_write() const {

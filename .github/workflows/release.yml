@@ -1,0 +1,291 @@
+name: Build, test and release
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: openxmb-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  gate:
+    name: Release gate
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      version: ${{ steps.gate.outputs.version }}
+      publish: ${{ steps.gate.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Test publication conditions
+        run: python3 -m unittest discover -s tests/packaging -v
+      - name: Resolve release eligibility
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/ci/release.py gate
+
+  linux:
+    name: Ubuntu x86-64 DEB
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: scripts/ci/requirements.txt
+      - run: bash scripts/ci/setup-linux.sh
+      - run: python -m pip install -r scripts/ci/requirements.txt
+      - name: Build, run regression tests and install
+        run: python scripts/ci/build.py --arch x86_64
+      - name: Prepare software Vulkan
+        run: python scripts/ci/software_vulkan.py
+      - name: Native settings and browser smoke tests
+        env:
+          WEBKIT_DISABLE_COMPOSITING_MODE: '1'
+        run: |
+          python tests/desktop/native_settings_smoke.py --app build/release/XMS.bin --output dist/settings-smoke
+          python tests/integrations/web_view_smoke.py --helper dist/stage/bin/openxmb-web --output dist/browser-smoke
+      - name: Render the DMG wave using OpenXMB itself
+        run: python scripts/packaging/smoke.py --app dist/stage/bin/XMS.bin --assets dist/stage/share/shell --background dist/dmg-wave.png --output dist/stage-smoke
+      - name: Build Debian package
+        run: python scripts/packaging/package.py linux
+      - name: Install and render in a clean Ubuntu container
+        run: |
+          docker run --rm -v "$PWD:/src:ro" ubuntu:24.04 bash -ec '
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update
+            apt-get install -y /src/dist/packages/*.deb mesa-vulkan-drivers python3 python3-pil
+            export VK_ICD_FILENAMES=$(find /usr/share/vulkan/icd.d -name "*lvp*.json" -print -quit)
+            python3 /src/scripts/packaging/smoke.py --app /usr/bin/XMS.bin --assets /usr/share/shell --render --output /tmp/openxmb-smoke
+          '
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: release-linux
+          path: |
+            dist/packages/*.deb
+            dist/packages/*.sha256
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: dmg-wave
+          path: dist/dmg-wave.png
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: linux-smoke-evidence
+          path: |
+            build/release/Testing/Temporary/LastTest.log
+            dist/*smoke/**
+
+  windows:
+    name: Windows x86-64 portable ZIP
+    runs-on: windows-2022
+    timeout-minutes: 180
+    env:
+      VCPKG_DISABLE_METRICS: '1'
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: scripts/ci/requirements.txt
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+      - uses: actions/cache@v6.1.0
+        with:
+          path: |
+            build/vcpkg_installed
+            ~/AppData/Local/vcpkg/archives
+          key: vcpkg-release-windows-${{ hashFiles('vcpkg.json', 'scripts/ci/triplets/*.cmake') }}
+      - name: Install pinned Windows dependencies
+        shell: pwsh
+        run: ./scripts/ci/setup-windows.ps1
+      - run: python -m pip install -r scripts/ci/requirements.txt
+      - name: Build, run regression tests and install
+        run: python scripts/ci/build.py --arch x86_64
+      - name: Build portable ZIP with runtime dependencies
+        run: python scripts/packaging/package.py windows
+      - name: Prepare software Vulkan
+        run: python scripts/ci/software_vulkan.py
+      - name: Extract and test the portable package
+        shell: pwsh
+        run: |
+          $archive = Get-ChildItem dist/packages/*.zip | Select-Object -First 1
+          $directory = Join-Path $env:RUNNER_TEMP 'OpenXMB portable test'
+          Expand-Archive $archive.FullName -DestinationPath $directory
+          $app = Get-ChildItem $directory -Filter OpenXMB.exe -Recurse | Select-Object -First 1
+          python scripts/packaging/smoke.py --app $app.FullName --assets (Join-Path $app.Directory.FullName 'shell') --render --output dist/package-smoke
+          if ($LASTEXITCODE) { throw 'Portable package smoke failed' }
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: release-windows
+          path: |
+            dist/packages/*.zip
+            dist/packages/*.sha256
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: windows-smoke-evidence
+          path: |
+            build/release/Testing/Temporary/LastTest.log
+            dist/*smoke/**
+
+  macos:
+    name: macOS ${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: macos-15-intel
+          - arch: arm64
+            runner: macos-15
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 150
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: scripts/ci/requirements.txt
+      - run: bash scripts/ci/setup-macos.sh
+      - run: python -m pip install -r scripts/ci/requirements.txt
+      - name: Build and test the native architecture
+        run: python scripts/ci/build.py --arch ${{ matrix.arch }}
+      - name: Bundle application and every non-system dylib
+        run: python scripts/packaging/package.py mac-thin --arch ${{ matrix.arch }}
+      - name: Test the relocated application bundle and helpers
+        run: python scripts/packaging/smoke.py --app dist/packages/OpenXMB.app/Contents/MacOS/OpenXMB --assets dist/packages/OpenXMB.app/Contents/Resources/share/shell --output dist/package-smoke
+      - name: Locate a software Vulkan driver when available
+        run: python scripts/ci/software_vulkan.py --optional
+      - name: Render using the packaged application
+        if: env.OPENXMB_SOFTWARE_VULKAN == '1'
+        run: python scripts/packaging/smoke.py --app dist/packages/OpenXMB.app/Contents/MacOS/OpenXMB --assets dist/packages/OpenXMB.app/Contents/Resources/share/shell --render --output dist/render-smoke
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: macos-thin-${{ matrix.arch }}
+          path: dist/packages/*.tar.gz
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: macos-${{ matrix.arch }}-smoke-evidence
+          path: |
+            build/release/Testing/Temporary/LastTest.log
+            dist/*smoke/**
+
+  universal:
+    name: Universal macOS DMG
+    needs: [linux, macos]
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r scripts/ci/requirements.txt
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          pattern: macos-thin-*
+          path: dist/thin
+          merge-multiple: true
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: dmg-wave
+          path: dist/background
+      - name: Merge and verify both architectures in every Mach-O
+        shell: bash
+        run: |
+          python scripts/packaging/package.py mac-universal --intel dist/thin/*x86_64.tar.gz --arm dist/thin/*arm64.tar.gz --background dist/background/dmg-wave.png
+      - name: Smoke-test the universal bundle
+        run: python scripts/packaging/smoke.py --app dist/packages/OpenXMB.app/Contents/MacOS/OpenXMB --assets dist/packages/OpenXMB.app/Contents/Resources/share/shell --output dist/universal-smoke
+      - name: Mount and verify the final disk image
+        shell: bash
+        run: |
+          mkdir -p dist/mounted
+          hdiutil attach dist/packages/*.dmg -nobrowse -mountpoint "$PWD/dist/mounted"
+          trap 'hdiutil detach "$PWD/dist/mounted"' EXIT
+          test -L dist/mounted/Applications
+          lipo -verify_arch x86_64 arm64 dist/mounted/OpenXMB.app/Contents/MacOS/OpenXMB
+          codesign --verify --deep --strict dist/mounted/OpenXMB.app
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: release-macos
+          path: |
+            dist/packages/*.dmg
+            dist/packages/*.dmg.sha256
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: dmg-design
+          path: dist/packages/dmg-background.png
+
+  readiness:
+    name: Release readiness
+    if: always()
+    needs: [gate, linux, windows, macos, universal]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require every build, test and package job
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          jobs = json.loads(os.environ['RESULTS'])
+          failed = {name: job['result'] for name, job in jobs.items() if job['result'] != 'success'}
+          if failed:
+              raise SystemExit('Release requirements failed: ' + str(failed))
+          PY
+
+  publish:
+    name: Publish approved master release
+    needs: [gate, readiness]
+    if: needs.gate.outputs.publish == 'true' && needs.readiness.result == 'success'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          pattern: release-*
+          path: dist/release
+          merge-multiple: true
+      - name: Verify checksums, stage all assets, then publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/ci/release.py publish --artifacts dist/release

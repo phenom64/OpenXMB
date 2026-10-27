@@ -25,6 +25,7 @@ module;
 
 #include <array>
 #include <chrono>
+#include <cstdint>
 #include <cstdlib>
 #include <filesystem>
 #include <functional>
@@ -32,6 +33,7 @@ module;
 #include <stdexcept>
 #include <unordered_set>
 #include <version>
+#include <vector>
 
 #include <glm/vec3.hpp>
 
@@ -40,6 +42,9 @@ module;
 #define NOMINMAX
 #endif
 #include <windows.h>
+#endif
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
 #endif
 
 export module openxmb.config;
@@ -72,6 +77,15 @@ export namespace config
                 }
                 return std::filesystem::path(buffer.data()).parent_path();
             }();
+#elif defined(__APPLE__)
+            std::filesystem::path exe_directory = [](){
+                std::uint32_t size=0;
+                _NSGetExecutablePath(nullptr,&size);
+                std::vector<char> buffer(size);
+                if(_NSGetExecutablePath(buffer.data(),&size)!=0)
+                    throw std::runtime_error("Could not locate the OpenXMB executable");
+                return std::filesystem::weakly_canonical(buffer.data()).parent_path();
+            }();
 #else
             std::filesystem::path exe_directory = std::filesystem::current_path(); // best guess for other platforms
 #endif
@@ -79,12 +93,20 @@ export namespace config
                 if(auto v = std::getenv("XMB_ASSET_DIR"); v != nullptr) {
                     return std::filesystem::path(v);
                 }
+#ifdef __APPLE__
+                const auto bundled=exe_directory/"../Resources/share/shell";
+                if(std::filesystem::is_directory(bundled)) return bundled;
+#endif
                 return exe_directory / std::string(constants::asset_directory);
             }();
             std::filesystem::path locale_directory = [this](){
                 if(auto v = std::getenv("XMB_LOCALE_DIR"); v != nullptr) {
                     return std::filesystem::path(v);
                 }
+#ifdef __APPLE__
+                const auto bundled=exe_directory/"../Resources/share/locale";
+                if(std::filesystem::is_directory(bundled)) return bundled;
+#endif
                 // Prefer build-tree locales (CMake symlinks) when running from build dir
                 auto build_locales = exe_directory / "locales";
                 if(std::filesystem::exists(build_locales)) {
@@ -92,7 +114,7 @@ export namespace config
                 }
                 return exe_directory / std::string(constants::locale_directory);
             }();
-            std::filesystem::path fallback_font = exe_directory / std::string(constants::fallback_font);
+            std::filesystem::path fallback_font = asset_directory / "Play-Regular.ttf";
 
             vk::PresentModeKHR      preferredPresentMode = vk::PresentModeKHR::eFifoRelaxed; //aka VSync
             vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e4; // aka Anti-aliasing

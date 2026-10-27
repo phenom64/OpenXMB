@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+"""Verify installed assets, executable startup, document tools and rendered pixels."""
+import argparse
+import json
+import os
+from pathlib import Path
+import platform
+import subprocess
+import tempfile
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--app', type=Path, required=True)
+    parser.add_argument('--assets', type=Path, required=True)
+    parser.add_argument('--render', action='store_true')
+    parser.add_argument('--background', type=Path)
+    parser.add_argument('--output', type=Path, required=True)
+    args = parser.parse_args()
+    app, assets = args.app.resolve(), args.assets.resolve()
+    args.output.mkdir(parents=True, exist_ok=True)
+    version = (ROOT / 'VERSION').read_text().strip()
+    environment = os.environ.copy()
+    # Keep system commands, but remove build-tool dependency directories. All
+    # application DLLs/dylibs and packaged helpers must resolve from the package.
+    if platform.system() == 'Windows':
+        environment['PATH'] = os.pathsep.join([str(app.parent), str(app.parent / 'tools/poppler/bin'),
+                                              os.environ['SystemRoot'] + '\\System32', os.environ['SystemRoot']])
+    elif platform.system() == 'Darwin':
+        environment['PATH'] = str(app.parent) + ':/usr/bin:/bin:/usr/sbin:/sbin'
+        for key in ['DYLD_LIBRARY_PATH', 'DYLD_FALLBACK_LIBRARY_PATH', 'DYLD_FRAMEWORK_PATH']:
+            environment.pop(key, None)
+    for key in ['XMB_ASSET_DIR', 'XMB_LOCALE_DIR', 'OPENXMB_CONFIG', 'OPENXMB_DATA_DIR']:
+        environment.pop(key, None)
+    for relative in ['Play-Regular.ttf', 'catalog/en.json', 'icons/theme/icon_setting.png',
+                     'normalmaps/theme/icon_setting.png', 'sounds/ok.wav']:
+        if not (assets / relative).is_file():
+            raise RuntimeError('Missing packaged asset: ' + relative)
+    for option in ['--help', '--version']:
+        result = subprocess.run([str(app), option], env=environment, cwd=args.output,
+                                text=True, capture_output=True, timeout=45, check=True)
+        if option == '--version' and version not in result.stdout + result.stderr:
+            raise RuntimeError('Packaged executable reports the wrong release version')
+    checks = ['packaged assets', 'clean-environment startup and version']
+    defaults = [app.parent / 'config.json', app.parent / '../Resources/share/OpenXMB/config.json',
+                app.parent / '../share/OpenXMB/config.json']
+    default_config = next((path for path in defaults if path.is_file()), None)
+    if default_config is None:
+        raise RuntimeError('Missing packaged default configuration')
+    for name in ['ffmpeg', 'ffprobe', 'pdftoppm', 'pdftotext', 'pdfinfo']:
+        helper = app.parent / (name + ('.exe' if platform.system() == 'Windows' else ''))
+        if platform.system() == 'Windows' and name.startswith('pdf'):
+            helper = app.parent / 'tools/poppler/bin' / (name + '.exe')
+        if platform.system() == 'Linux':
+            helper = Path('/usr/bin') / name
+        subprocess.run([str(helper), '-version' if name.startswith('ff') else '-v'],
+                       env=environment, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                       timeout=30, check=True)
+    checks.append('packaged document and media tools')
+    if args.render or args.background:
+        with tempfile.TemporaryDirectory(prefix='openxmb-package-smoke-') as temporary:
+            root = Path(temporary)
+            config = json.loads(default_config.read_text())
+            config['render'].update({'sample-count': 1, 'vsync': False, 'max-fps': 30,
+                                     'show-fps': False, 'show-mem': False})
+            config['shell'].update({'font-path': 'default', 'background-type': 'original',
+                                    'theme-colour-mode': 'custom', 'theme-custom-colour': '#512360'})
+            (root / 'config.json').write_text(json.dumps(config))
+            frames = root / 'frames'
+            frames.mkdir()
+            environment.update({
+                'OPENXMB_CONFIG': str(root / 'config.json'), 'OPENXMB_DATA_DIR': str(root / 'data'),
+                'SDL_AUDIODRIVER': 'dummy', 'SDL_VIDEODRIVER': 'dummy',
+                'AUROREENGINE_HEADLESS': '1', 'AUROREENGINE_HEADLESS_AUDIO': '1',
+                'AUROREENGINE_HEADLESS_WIDTH': '960', 'AUROREENGINE_HEADLESS_HEIGHT': '640',
+                'AUROREENGINE_HEADLESS_FRAMES': '16', 'AUROREENGINE_HEADLESS_OUTPUT_DIR': str(frames),
+                'AUROREENGINE_HEADLESS_OUTPUT_PATTERN': 'frame-{:06d}.png',
+                'OPENXMB_HEADLESS_STARTUP': '0', 'OPENXMB_FIXED_BOOT_SECONDS': '17',
+                'OPENXMB_FIXED_UNIX_SECONDS': '1781524800', 'OPENXMB_FIXED_WAVE_SECONDS': '4',
+            })
+            command = [str(app), '--width', '960', '--height', '640', '--no-fullscreen']
+            if args.background:
+                command.append('--background-only')
+            with (args.output / 'render.log').open('w') as log:
+                subprocess.run(command, env=environment, cwd=root, stdout=log,
+                               stderr=subprocess.STDOUT, check=True, timeout=180)
+            images = sorted(frames.glob('*.png'))
+            if len(images) < 5:
+                raise RuntimeError('The installed renderer did not produce frames')
+            from PIL import Image, ImageStat
+            image = Image.open(images[-1]).convert('RGB')
+            if image.size != (960, 640) or max(ImageStat.Stat(image).stddev) < 3:
+                raise RuntimeError('The installed renderer produced a blank image')
+            image.save(args.output / 'render.png')
+            if args.background:
+                args.background.parent.mkdir(parents=True, exist_ok=True)
+                image.save(args.background)
+            checks.append('offscreen Vulkan rendering')
+    (args.output / 'report.json').write_text(json.dumps({'status': 'passed', 'checks': checks}, indent=2) + '\n')
+    print('PASS package smoke: ' + ', '.join(checks))
+
+
+if __name__ == '__main__':
+    main()

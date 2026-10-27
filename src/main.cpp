@@ -24,6 +24,9 @@
 #include <memory>
 #include <string_view>
 #include <vector>
+#ifdef __APPLE__
+#include <dlfcn.h>
+#endif
 
 #include <libintl.h>
 #include "openxmb/desktop/library.hpp"
@@ -109,6 +112,32 @@ LONG WINAPI log_windows_exception(EXCEPTION_POINTERS* exception_info)
 #undef main
 int main(int argc, char *argv[])
 {
+#if defined(__APPLE__) || defined(_WIN32)
+    const auto binary_directory=config::CONFIG.exe_directory;
+    const char* previous_path=std::getenv("PATH");
+#ifdef _WIN32
+    const auto tools=(binary_directory/"tools/poppler/bin").string()+";"+binary_directory.string()+";"+(previous_path?previous_path:"");
+    _putenv_s("PATH",tools.c_str());
+#else
+    const auto tools=binary_directory.string()+":"+(previous_path?previous_path:"");
+    setenv("PATH",tools.c_str(),1);
+    const auto contents=binary_directory.parent_path();
+    const auto icd=contents/"Resources/vulkan/icd.d/MoltenVK_icd.json";
+    if(!std::getenv("VK_ICD_FILENAMES")&&std::filesystem::is_regular_file(icd))
+        setenv("VK_ICD_FILENAMES",icd.c_str(),1);
+    const auto loader=contents/"Frameworks/libvulkan.1.dylib";
+    if(std::filesystem::is_regular_file(loader))
+        static_cast<void>(dlopen(loader.c_str(),RTLD_NOW|RTLD_GLOBAL));
+    const auto fontconfig=contents/"Resources/fonts/fonts.conf";
+    if(!std::getenv("FONTCONFIG_FILE")&&std::filesystem::is_regular_file(fontconfig))
+        setenv("FONTCONFIG_FILE",fontconfig.c_str(),1);
+    const auto certificates=contents/"Resources/certs/cert.pem";
+    if(std::filesystem::is_regular_file(certificates)) {
+        if(!std::getenv("CURL_CA_BUNDLE")) setenv("CURL_CA_BUNDLE",certificates.c_str(),1);
+        if(!std::getenv("SSL_CERT_FILE")) setenv("SSL_CERT_FILE",certificates.c_str(),1);
+    }
+#endif
+#endif
 #ifndef NDEBUG
     spdlog::set_level(spdlog::level::trace);
 #endif
@@ -121,7 +150,7 @@ int main(int argc, char *argv[])
     spdlog::cfg::load_env_levels();
     spdlog::cfg::load_argv_levels(argc, argv);
 
-    argparse::ArgumentParser program("OpenXMB");
+    argparse::ArgumentParser program("OpenXMB", OPENXMB_VERSION_STRING);
     program.add_argument("--width")
         .help("Width of the window")
         .metavar("WIDTH")
