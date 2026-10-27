@@ -20,8 +20,10 @@
 
 #include <algorithm>
 #include <cctype>
+#include <charconv>
 #include <fstream>
 #include <numeric>
+#include <map>
 #include <random>
 #include <stdexcept>
 
@@ -94,6 +96,12 @@ void Queue::append(QueueEntry entry) {
   entries_.push_back(std::move(entry));
   order_.push_back(entries_.size() - 1);
 }
+void Queue::insert_next(QueueEntry entry) {
+  const auto index = current_index() ? *current_index() + 1 : 0;
+  entries_.insert(entries_.begin() + static_cast<std::ptrdiff_t>(index), std::move(entry));
+  for(auto& existing : order_) if(existing >= index) ++existing;
+  order_.insert(order_.begin() + static_cast<std::ptrdiff_t>(std::min(cursor_ + 1, order_.size())), index);
+}
 bool Queue::erase(std::size_t index) {
   if (index >= entries_.size()) return false;
   auto selected = current_index().value_or(0);
@@ -123,12 +131,39 @@ bool supported_playlist(const std::filesystem::path &path) {
   const auto ext = lower(path.extension().string());
   return ext == ".m3u" || ext == ".m3u8" || ext == ".pls";
 }
-std::vector<QueueEntry> read_playlist(const std::filesystem::path &path) {
+std::vector<QueueEntry> read_playlist(const std::filesystem::path &path, bool allow_empty) {
   std::ifstream stream(path);
   if (!stream) throw std::runtime_error("Cannot read playlist: " + path.string());
   std::vector<QueueEntry> entries;
   std::string line, title;
   const bool pls = lower(path.extension().string()) == ".pls";
+  if(pls) {
+    std::map<unsigned,std::pair<std::string,std::string>> rows;
+    while(std::getline(stream,line)) {
+      line=trim(std::move(line));
+      const auto equal=line.find('=');
+      if(equal==std::string::npos) continue;
+      const auto key=lower(trim(line.substr(0,equal)));
+      const bool file=key.starts_with("file"), title_key=key.starts_with("title");
+      if(!file && !title_key) continue;
+      const auto suffix=key.substr(file?4:5);
+      unsigned index{};
+      const auto [end,error]=std::from_chars(suffix.data(),suffix.data()+suffix.size(),index);
+      if(error!=std::errc{} || end!=suffix.data()+suffix.size() || !index) continue;
+      if(rows.size()>=10000 && !rows.contains(index)) throw std::runtime_error("Playlist exceeds 10000 tracks");
+      auto& row=rows[index];
+      (file?row.first:row.second)=trim(line.substr(equal+1));
+    }
+    for(const auto& [index,row]:rows) {
+      if(row.first.empty()) continue;
+      if(row.first.find("://")!=std::string::npos) throw std::runtime_error("Network playlist entries are unsupported");
+      std::filesystem::path item(row.first);
+      if(item.is_relative()) item=path.parent_path()/item;
+      if(supported_audio(item)) entries.push_back({item.lexically_normal(),row.second.empty()?item.stem().string():row.second});
+    }
+    if(entries.empty() && !allow_empty) throw std::runtime_error("Playlist contains no supported local music");
+    return entries;
+  }
   while (std::getline(stream, line)) {
     if (entries.size() >= 10000) throw std::runtime_error("Playlist exceeds 10000 tracks");
     line = trim(std::move(line));
@@ -140,11 +175,6 @@ std::vector<QueueEntry> read_playlist(const std::filesystem::path &path) {
       continue;
     }
     if (line[0] == '#' || line[0] == ';' || line[0] == '[') continue;
-    if (pls) {
-      const auto equal = line.find('=');
-      if (equal == std::string::npos || !lower(line.substr(0, equal)).starts_with("file")) continue;
-      line = trim(line.substr(equal + 1));
-    }
     if (line.find("://") != std::string::npos) throw std::runtime_error("Network playlist entries are unsupported");
     std::filesystem::path item(line);
     if (item.is_relative()) item = path.parent_path() / item;
@@ -152,7 +182,7 @@ std::vector<QueueEntry> read_playlist(const std::filesystem::path &path) {
     entries.push_back({item.lexically_normal(), title.empty() ? item.stem().string() : title});
     title.clear();
   }
-  if (entries.empty()) throw std::runtime_error("Playlist contains no supported local music");
+  if (entries.empty() && !allow_empty) throw std::runtime_error("Playlist contains no supported local music");
   return entries;
 }
 void write_playlist(const std::filesystem::path &path, const std::vector<QueueEntry> &entries) {
@@ -167,7 +197,11 @@ void write_playlist(const std::filesystem::path &path, const std::vector<QueueEn
   stream << (pls ? "[playlist]\n" : "#EXTM3U\n");
   std::size_t index = 0;
   for (const auto &entry : entries) {
-    if (pls) stream << "File" << ++index << '=' << std::filesystem::absolute(entry.path).string() << '\n';
+    if (pls) {
+      ++index;
+      stream << "File" << index << '=' << std::filesystem::absolute(entry.path).string() << '\n'
+             << "Title" << index << '=' << entry.title << '\n' << "Length" << index << "=-1\n";
+    }
     else stream << "#EXTINF:-1," << entry.title << '\n' << std::filesystem::absolute(entry.path).string() << '\n';
   }
   if (pls) stream << "NumberOfEntries=" << entries.size() << "\nVersion=2\n";

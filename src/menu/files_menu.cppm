@@ -18,6 +18,8 @@
 
 module;
 
+#include "openxmb/music/library.hpp"
+
 #include <array>
 #include <cstdint>
 #include <filesystem>
@@ -72,7 +74,7 @@ class files_menu : public simple_menu {
     public:
         files_menu(std::string name, auroreengine::texture&& icon, app::shell* xmb, std::filesystem::path path, auroreengine::resource_loader& loader,
             files_menu_profile profile = files_menu_profile::generic);
-        ~files_menu() override = default;
+        ~files_menu() override { stop_scan(); }
 
         void on_open() override;
         void on_close() override {
@@ -131,6 +133,10 @@ class files_menu : public simple_menu {
         void resort();
         void rebuild_entries_from_cache();
         void show_sort_filter_options();
+        bool music_root() const;
+        bool playlist_directory() const;
+        void add_music_library_entries();
+        result music_actions(const std::filesystem::path& source, std::vector<openxmb::music::QueueEntry> tracks = {});
         result activate_file(const file_info& info, action action);
         result open_file(const file_info& info);
         void show_file_information(const file_info& info, const std::filesystem::path& file_path);
@@ -143,6 +149,7 @@ class files_menu : public simple_menu {
         struct extra_data {
             std::filesystem::path path;
             file_info info;
+            std::vector<openxmb::music::QueueEntry> tracks;
         };
         std::vector<extra_data> extra_data_entries;
 
@@ -160,11 +167,13 @@ class files_menu : public simple_menu {
         // Cache last directory scan to avoid I/O on resort/filter changes
         std::filesystem::path last_scanned_path;
         mutable std::vector<file_info> cached_file_infos;
+        std::vector<openxmb::music::LibraryTrack> cached_music_tracks;
         // Async scan machinery
         mutable std::mutex cache_mutex;
         mutable std::atomic<bool> scanning{false};
         mutable std::atomic<bool> needs_rebuild{false};
         mutable std::atomic<uint64_t> scan_generation{0};
+        std::thread scan_worker;
 };
 
 }

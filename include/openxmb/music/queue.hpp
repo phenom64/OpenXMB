@@ -45,6 +45,7 @@ public:
   std::optional<std::size_t> current_index() const noexcept;
   const QueueEntry *current() const noexcept;
   void append(QueueEntry entry);
+  void insert_next(QueueEntry entry);
   bool erase(std::size_t index);
   bool move(std::size_t from, std::size_t to);
 
@@ -59,7 +60,7 @@ private:
 
 bool supported_audio(const std::filesystem::path &path);
 bool supported_playlist(const std::filesystem::path &path);
-std::vector<QueueEntry> read_playlist(const std::filesystem::path &path);
+std::vector<QueueEntry> read_playlist(const std::filesystem::path &path, bool allow_empty = false);
 void write_playlist(const std::filesystem::path &path,
                     const std::vector<QueueEntry> &entries);
 } // namespace openxmb::music

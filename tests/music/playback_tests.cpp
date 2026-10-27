@@ -23,6 +23,7 @@
 #include <SDL2/SDL_mixer.h>
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -37,7 +38,7 @@ namespace {
 void require(bool value, const std::string &message) {
   if (!value) throw std::runtime_error(message);
 }
-void wave(const std::filesystem::path &file, double duration) {
+void wave(const std::filesystem::path &file, double duration, bool stepped = false) {
   std::ofstream output(file, std::ios::binary);
   auto word = [&](std::uint32_t value, unsigned bytes) {
     for (unsigned index = 0; index < bytes; ++index) output.put(static_cast<char>(value >> (index * 8)));
@@ -47,7 +48,7 @@ void wave(const std::filesystem::path &file, double duration) {
   word(1, 2); word(1, 2); word(44100, 4); word(88200, 4); word(2, 2); word(16, 2);
   output.write("data", 4); word(samples * 2, 4);
   for (std::uint32_t index = 0; index < samples; ++index)
-    word(static_cast<std::uint16_t>(static_cast<std::int16_t>(std::sin(2 * std::numbers::pi * 440 * index / 44100) * 16000)), 2);
+    word(static_cast<std::uint16_t>(static_cast<std::int16_t>(std::sin(2 * std::numbers::pi * (stepped ? (index < 44100 ? 220 : 880) : 440) * index / 44100) * 16000)), 2);
 }
 void run_for(Player &player, unsigned milliseconds) {
   for (unsigned elapsed = 0; elapsed < milliseconds; elapsed += 10) {
@@ -55,13 +56,103 @@ void run_for(Player &player, unsigned milliseconds) {
     player.tick();
   }
 }
+std::atomic<float> output_peak{};
+bool float_output{};
+void SDLCALL measure(void *, Uint8 *bytes, int length) {
+  float peak = 0;
+  if (float_output) {
+    auto *pcm = reinterpret_cast<float *>(bytes);
+    for (int i = 0; i < length / 4; ++i) peak = std::max(peak, std::abs(pcm[i]));
+  } else {
+    auto *pcm = reinterpret_cast<std::int16_t *>(bytes);
+    for (int i = 0; i < length / 2; ++i) peak = std::max(peak, std::abs(pcm[i] / 32768.0f));
+  }
+  output_peak.store(std::max(output_peak.load(), peak));
+}
+void signal_and_mixer(const std::filesystem::path &root) {
+  const auto fixture = root / "seek-signal.wav";
+  wave(fixture, 2.0, true);
+  Player player;
+  require(player.set_queue({{fixture, "Seek signal"}}), "signal fixture opens");
+  player.set_ducking_enabled(false);
+  run_for(player, 130);
+  auto peak_band = [&] { return std::max_element(player.snapshot().spectrum.begin(), player.snapshot().spectrum.end()) - player.snapshot().spectrum.begin(); };
+  const auto low_band = peak_band();
+  require(low_band >= 4 && low_band <= 6, "220 Hz PCM reaches its frequency band");
+  require(player.seek(1.213), "signal seeks forward");
+  run_for(player, 100);
+  const auto high_band = peak_band();
+  require(high_band >= 10 && high_band <= 12, "seek decodes 880 Hz audio rather than stale queued 220 Hz samples");
+  require(player.seek(0.187), "signal seeks backward");
+  run_for(player, 100);
+  require(peak_band() == low_band, "backward seek restores actual 220 Hz PCM");
+  Mix_SetPostMix(measure, nullptr);
+  output_peak.store(0);
+  run_for(player, 70);
+  require(output_peak.load() > 0.1f, "post-mixer output includes music PCM");
+  player.set_muted(true);
+  SDL_Delay(30); output_peak.store(0);
+  run_for(player, 70);
+  require(output_peak.load() == 0, "music gain silences actual mixed PCM");
+  // A shell effect remains audible while music is muted. This also proves
+  // that music does not replace the mixer's sound-effects callback/output.
+  wave(root / "effect.wav", 0.3);
+  Mix_Chunk *effect = Mix_LoadWAV((root / "effect.wav").string().c_str());
+  require(effect != nullptr, "sound effect loads");
+  require(Mix_PlayChannel(-1, effect, 0) >= 0, "sound effect starts alongside music");
+  output_peak.store(0); run_for(player, 80);
+  require(output_peak.load() > 0.1f, "muted music preserves audible SDL mixer effects");
+  player.set_muted(false);
+  player.set_ducking_enabled(true);
+  const float before_effect = player.snapshot().effective_volume;
+  run_for(player, 80);
+  require(!player.snapshot().ducked && std::abs(player.snapshot().effective_volume - before_effect) < 0.001f,
+          "menu sound effects never duck the music or change its effective volume");
+  Mix_HaltChannel(-1); Mix_FreeChunk(effect);
+  Mix_SetPostMix(nullptr, nullptr);
+  player.set_muted(false);
+  player.set_volume(0.6f);
+  player.set_output_gain(0.5f);
+  require(std::abs(player.snapshot().volume - 0.6f) < 0.001f && std::abs(player.snapshot().effective_volume - 0.3f) < 0.001f, "settings gain preserves per-player user volume");
+  player.set_output_gain(1.0f);
+  player.pause();
+  const double device_position = player.snapshot().position;
+  require(player.set_output_device("System Default"), "default output device reopens");
+  require(player.snapshot().status == Status::paused && std::abs(player.snapshot().position - device_position) < 0.002, "output switch preserves pause and position");
+  require(!player.set_output_device("OpenXMB nonexistent audio output"), "missing output is rejected");
+  require(player.snapshot().status == Status::paused && !player.snapshot().error.empty(), "failed output switch restores transport with actionable error");
+  require(player.play(), "music resumes on restored audio output");
+  run_for(player, 80);
+  require(player.snapshot().position > device_position + 0.04, "restored mixer callback consumes PCM");
+  player.shutdown();
+}
 void format(const std::filesystem::path &path) {
   Player player;
   require(player.set_queue({{path, "Fixture"}}), "format open failed: " + path.string() + " " + player.snapshot().error);
   run_for(player, 120);
   require(player.snapshot().status == Status::playing && player.snapshot().position > 0.05,
           "fixture audio must be consumed by SDL output: " + path.string());
-  require(player.snapshot().metadata.title == "Fixture Title" && player.snapshot().metadata.artist == "Fixture Artist", "FFmpeg reads embedded music tags");
+  require(player.snapshot().metadata.title == "Fixture Title" && (path.extension() == ".mod" || player.snapshot().metadata.artist == "Fixture Artist"), "decoder reads embedded music tags: " + path.filename().string());
+  require(std::ranges::any_of(player.snapshot().spectrum, [](float level) { return level > 0.001f; }), "decoded format produces real PCM spectrum");
+  player.pause();
+  const double paused = player.snapshot().position;
+  run_for(player, 60);
+  require(std::abs(player.snapshot().position - paused) < 0.001, "format pause freezes sample clock");
+  require(player.seek(0.713), "subsecond format seek succeeds");
+  require(player.snapshot().status == Status::paused && std::abs(player.snapshot().position - 0.713) < 0.002, "seek preserves pause and exact sample position");
+  require(player.play(), "format resumes after seek");
+  const auto resume_started = std::chrono::steady_clock::now();
+  run_for(player, 100);
+  const auto resume_elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - resume_started).count();
+  // SDL_Delay is a minimum wait: 10 x 10ms took 155ms in a loaded parallel
+  // run. Compare sample consumption against measured wall time, allowing only
+  // three 512-frame device periods, rather than assuming a 100ms scheduler.
+  require(player.snapshot().position > 0.77 && player.snapshot().position <= 0.713 + resume_elapsed + 0.035, "format consumes PCM from seek target: " + path.filename().string() + " position=" + std::to_string(player.snapshot().position) + " wall_seconds=" + std::to_string(resume_elapsed));
+  require(player.seek(0.187), "backward format seek succeeds");
+  const auto backward_started = std::chrono::steady_clock::now();
+  run_for(player, 80);
+  const auto backward_elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - backward_started).count();
+  require(player.snapshot().position > 0.23 && player.snapshot().position <= 0.187 + backward_elapsed + 0.035, "backward seek removes stale buffered PCM: " + path.filename().string() + " position=" + std::to_string(player.snapshot().position) + " wall_seconds=" + std::to_string(backward_elapsed));
   if (path.extension() == ".mp3") require(static_cast<bool>(player.snapshot().metadata.artwork), "MP3 embedded album art extracted");
   player.shutdown();
 }
@@ -69,6 +160,7 @@ void playback(const std::filesystem::path &root) {
   wave(root / "long.wav", 2.0);
   wave(root / "short.wav", 0.20);
   Player player;
+  require(player.enqueue({{root / "long.wav","Long"},{root / "short.wav","Short"}},true) && player.queue().current()->title=="Long", "Play Next into an empty queue preserves requested track order");
   require(player.set_queue({{root / "long.wav", "Long"}, {root / "short.wav", "Short"}}), "PCM playback opens");
   run_for(player, 180);
   require(player.snapshot().position > 0.1 && player.snapshot().metadata.duration > 1.9, "actual decoded audio advances position and reports duration");
@@ -77,9 +169,7 @@ void playback(const std::filesystem::path &root) {
   const double paused = player.snapshot().position;
   run_for(player, 100);
   require(player.snapshot().status == Status::paused && std::abs(player.snapshot().position - paused) < 0.04, "pause freezes playback position");
-  // SDL_mixer's WAV decoder aligns seeks to whole seconds; the transport must
-  // still move the actual decoder and resume from that point.
-  require(player.play() && player.seek(1.0), "resume and seek supported for PCM");
+  require(player.play() && player.seek(1.013), "resume and sample-accurate seek supported for PCM");
   run_for(player, 60);
   require(player.snapshot().position >= 0.99, "seek changes decoder position: " + std::to_string(player.snapshot().position));
   player.set_volume(3.0f);
@@ -113,12 +203,17 @@ int main(int argc, char **argv) {
   try {
     require(SDL_InitSubSystem(SDL_INIT_AUDIO) == 0, SDL_GetError());
     Mix_Init(MIX_INIT_MP3 | MIX_INIT_FLAC | MIX_INIT_OGG | MIX_INIT_OPUS);
-    require(Mix_OpenAudio(44100, AUDIO_S16SYS, 2, 512) == 0, Mix_GetError());
-    if (argc > 1) {
-      for (int index = 1; index < argc; ++index) format(argv[index]);
-    } else {
-      std::filesystem::create_directories(root);
-      playback(root);
+    for (int output = 0; output < 2; ++output) {
+      float_output = output == 1;
+      require(Mix_OpenAudio(output ? 48000 : 44100, output ? AUDIO_F32SYS : AUDIO_S16SYS, 2, 512) == 0, Mix_GetError());
+      if (argc > 1) {
+        for (int index = 1; index < argc; ++index) format(argv[index]);
+      } else {
+        std::filesystem::create_directories(root);
+        playback(root);
+        signal_and_mixer(root);
+      }
+      Mix_CloseAudio();
     }
     Mix_CloseAudio();
     Mix_Quit();

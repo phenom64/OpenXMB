@@ -39,6 +39,8 @@ module;
 #include <vector>
 #include <fstream>
 #include <nlohmann/json.hpp>
+#include "openxmb/music/player.hpp"
+#include "openxmb/music/library.hpp"
 
 module openxmb.app;
 
@@ -48,6 +50,8 @@ import :menu_utils;
 import :message_overlay;
 import :choice_overlay;
 import :programs;
+import :music_player;
+import :text_entry;
 
 import openxmb.config;
 import openxmb.utils;
@@ -129,7 +133,7 @@ namespace menu {
     bool is_music_file(const file_info& info)
     {
         return info.content_type.starts_with("audio/") ||
-            has_extension(info, {".mp3", ".wav", ".ogg", ".flac", ".m4a", ".aac", ".wma", ".aif", ".aiff", ".opus"});
+            has_extension(info, {".mp3", ".wav", ".ogg", ".flac", ".m4a", ".aac", ".wma", ".aif", ".aiff", ".opus", ".oga", ".m3u", ".m3u8", ".pls", ".mod", ".xm", ".it", ".s3m"});
     }
 
     bool is_video_file(const file_info& info)
@@ -196,6 +200,11 @@ namespace menu {
     std::filesystem::path icon_for_file(const std::filesystem::path& file_path, const file_info& info,
         files_menu_profile profile)
     {
+        if(profile == files_menu_profile::music) {
+            const auto name = info.is_directory ? "icon_files_folder.png" :
+                openxmb::music::supported_playlist(file_path) ? "theme/icon_playlist.png" : "theme/icon_music.png";
+            return config::CONFIG.asset_directory / "icons" / name;
+        }
         if(profile != files_menu_profile::generic && info.is_directory) {
             if(auto icon = xmb_web_media_icon("compat/xmb-ui-compat/images/icon_fw_folder.png")) {
                 return *icon;
@@ -443,8 +452,83 @@ namespace menu {
         return *entries.at(index);
     }
 
+    bool files_menu::music_root() const {
+        return profile == files_menu_profile::music && std::filesystem::absolute(path).lexically_normal() == std::filesystem::absolute(config::CONFIG.musicPath).lexically_normal();
+    }
+    bool files_menu::playlist_directory() const {
+        return profile == files_menu_profile::music && std::filesystem::absolute(path).lexically_normal() == std::filesystem::absolute(openxmb::music::PlaylistStore(config::CONFIG.musicPath).directory()).lexically_normal();
+    }
+    void files_menu::add_music_library_entries() {
+        if(profile != files_menu_profile::music) return;
+        if(music_root() && config::CONFIG.preference("music.group","Folders") != "Playlists") {
+            file_info info{}; info.name="Playlists";info.display_name="Playlists";info.is_directory=true;
+            const auto directory=openxmb::music::PlaylistStore(config::CONFIG.musicPath).directory();
+            auto entry=std::make_unique<files_menu>("Playlists",auroreengine::texture(loader.getDevice(),loader.getAllocator()),xmb,directory,loader,profile);
+            loader.loadTexture(&entry->get_icon(),config::CONFIG.asset_directory/"icons/theme/icon_playlist.png");
+            entries.push_back(std::move(entry)); extra_data_entries.push_back({directory,info,{}});
+        }
+        if(music_root() || playlist_directory()) {
+            auto entry=std::make_unique<action_menu_entry>("Create Playlist...",auroreengine::texture(loader.getDevice(),loader.getAllocator()),[this] {
+                programs::create_music_playlist(xmb,{},[this] {{std::lock_guard lock(cache_mutex);last_scanned_path.clear();} reload();});return result::success;
+            });
+            loader.loadTexture(&entry->get_icon(),config::CONFIG.asset_directory/"icons/theme/icon_playlist_add.png");
+            entries.push_back(std::move(entry));extra_data_entries.push_back({{},file_info{},{}});
+        }
+        const auto grouping=music_root()?config::CONFIG.preference("music.group","Folders"):"Folders";
+        if(grouping!="Albums" && grouping!="Artists") return;
+        std::vector<openxmb::music::LibraryTrack> tracks;
+        {std::lock_guard lock(cache_mutex);tracks=cached_music_tracks;}
+        openxmb::music::sort_library(tracks,config::CONFIG.preference("music.sort","Name"));
+        for(const auto& [label,items] : openxmb::music::group_library(tracks,grouping)) {
+            std::vector<openxmb::music::QueueEntry> group_tracks;
+            for(const auto& item:items) group_tracks.push_back(item.entry);
+            std::vector<std::unique_ptr<menu_entry>> children;
+            for(const auto& item:items) {
+                file_info info{};info.name=item.entry.path.string();info.display_name=item.entry.title;info.size=item.size;info.modification_time=item.modified;info.content_type="audio/";
+                auto entry=std::make_unique<action_menu_entry>(info.display_name,auroreengine::texture(loader.getDevice(),loader.getAllocator()),std::function<result()>{},[this,info,group_tracks](action value) {
+                    if(value==action::options) return music_actions(std::filesystem::path(info.name));
+                    if(value!=action::ok) return result::unsupported;
+                    const auto it=std::find_if(group_tracks.begin(),group_tracks.end(),[&](const auto& item){return item.path==std::filesystem::path(info.name);});
+                    if(openxmb::music::service().set_queue(group_tracks,static_cast<std::size_t>(it-group_tracks.begin())))
+                        xmb->emplace_overlay<programs::music_player>(std::filesystem::path(info.name),loader);
+                    else xmb->emplace_overlay<app::message_overlay>("Cannot Play Music",openxmb::music::service().snapshot().error);
+                    return result::success;
+                });
+                loader.loadTexture(&entry->get_icon(),config::CONFIG.asset_directory/"icons/theme/icon_music.png");
+                children.push_back(std::move(entry));
+            }
+            auto group=std::make_unique<simple_menu>(label,auroreengine::texture(loader.getDevice(),loader.getAllocator()),std::move(children),std::to_string(items.size())+" songs");
+            loader.loadTexture(&group->get_icon(),config::CONFIG.asset_directory/"icons/theme"/(grouping=="Albums"?"icon_music_album_default.png":"icon_music.png"));
+            entries.push_back(std::move(group));
+            file_info info{};info.name=label;info.display_name=label;info.is_directory=true;
+            extra_data_entries.push_back({path/label,info,std::move(group_tracks)});
+        }
+    }
+    result files_menu::music_actions(const std::filesystem::path& source,std::vector<openxmb::music::QueueEntry> grouped) {
+        std::vector<std::string> choices{"Play Now","Play Next","Add to Queue","Add to Playlist..."};
+        const bool playlist=openxmb::music::supported_playlist(source);
+        if(playlist) choices.push_back("Edit Playlist...");
+        xmb->emplace_overlay<app::choice_overlay>(choices,0,[this,source,grouped=std::move(grouped),playlist](unsigned index) {
+            try {
+                if(playlist && index==4) {xmb->emplace_overlay<programs::playlist_editor>(source,loader);return;}
+                auto tracks=grouped.empty()?openxmb::music::collect_tracks(source):grouped;
+                if(tracks.empty()) throw std::runtime_error("No supported music tracks were found. Use Edit Playlist to add songs.");
+                auto& player=openxmb::music::service();
+                if(index==0) {
+                    const auto selected=tracks.front().path;
+                    if(!player.set_queue(std::move(tracks))) throw std::runtime_error(player.snapshot().error);
+                    xmb->emplace_overlay<programs::music_player>(selected,loader);
+                } else if(index==1 || index==2) {
+                    if(!player.enqueue(std::move(tracks),index==1)) throw std::runtime_error(player.snapshot().error);
+                    xmb->emplace_overlay<app::message_overlay>(index==1?"Play Next":"Added to Queue",index==1?"The selected music will follow the current track.":"The selected music was added to the end of the play queue.");
+                } else if(index==3) programs::add_to_music_playlist(xmb,std::move(tracks));
+            } catch(const std::exception& error) {xmb->emplace_overlay<app::message_overlay>("Music",error.what());}
+        });
+        return result::success;
+    }
+
     void files_menu::start_scan_async() {
-        // Cancel any in-flight scan by bumping generation
+        stop_scan();
         uint64_t gen = ++scan_generation;
         scanning = true;
         needs_rebuild = false;
@@ -455,14 +539,25 @@ namespace menu {
         {
             auroreengine::texture icon_texture(loader.getDevice(), loader.getAllocator());
             entries.push_back(std::make_unique<action_menu_entry>(
-                std::string{"Loading..."}, std::move(icon_texture), std::function<result()>{}
+                std::string{"Loading..."}, std::move(icon_texture), [] { return result::success; }
             ));
         }
 
         // Launch background scan
-        std::thread([this, gen, p = path]() {
+        const auto grouping = music_root() ? config::CONFIG.preference("music.group", "Folders") : "Folders";
+        const auto source = music_root() && grouping == "Playlists" ? openxmb::music::PlaylistStore(config::CONFIG.musicPath).directory() : path;
+        scan_worker = std::thread([this, gen, p = source, grouping]() {
             std::vector<file_info> file_infos;
+            std::vector<openxmb::music::LibraryTrack> music_tracks;
             try {
+                if(profile == files_menu_profile::music && grouping != "Folders" && grouping != "Playlists") {
+                    music_tracks = openxmb::music::scan_library(p, [this, gen] { return scan_generation.load() != gen; });
+                    for(const auto& track : music_tracks) {
+                        file_info info{std::filesystem::directory_entry(track.entry.path)};
+                        info.name = track.entry.path.string(); info.display_name = track.entry.title;
+                        file_infos.push_back(std::move(info));
+                    }
+                } else {
                 std::filesystem::directory_iterator it{p};
                 for (auto iter = it; iter != std::filesystem::end(it); ++iter) {
                     const auto& entry = *iter;
@@ -474,6 +569,7 @@ namespace menu {
                         spdlog::warn("Error processing file {}: {}", entry.path().string(), e.what());
                     }
                 }
+                }
             } catch (const std::exception& e) {
                 spdlog::error("Error scanning directory {}: {}", p.string(), e.what());
             }
@@ -483,11 +579,12 @@ namespace menu {
                     std::lock_guard<std::mutex> lk(cache_mutex);
                     last_scanned_path = p;
                     cached_file_infos.swap(file_infos);
+                    cached_music_tracks.swap(music_tracks);
                 }
                 needs_rebuild = true;
                 scanning = false;
             }
-        }).detach();
+        });
     }
 
     void files_menu::ensure_built() const {
@@ -499,6 +596,7 @@ namespace menu {
 
     void files_menu::stop_scan() {
         ++scan_generation; // supersede any worker
+        if(scan_worker.joinable()) scan_worker.join();
         scanning = false;
     }
 
@@ -520,11 +618,20 @@ namespace menu {
         view.reserve(infos.size());
         for (const auto& info : infos) {
             if (filter(info)) {
-                view.push_back(info);
+                if(music_root() && config::CONFIG.preference("music.group", "Folders") == "Folders" && info.is_directory && info.name == "Playlists") continue;
+                auto item=info;
+                if(music_root() && config::CONFIG.preference("music.group", "Folders") == "Playlists") item.name=(openxmb::music::PlaylistStore(config::CONFIG.musicPath).directory()/info.name).string();
+                view.push_back(std::move(item));
             }
         }
 
         std::ranges::sort(view, [this](const file_info& a, const file_info& b) {
+            if(profile == files_menu_profile::music) {
+                if(a.is_directory != b.is_directory) return a.is_directory;
+                const auto order=config::CONFIG.preference("music.sort","Name");
+                if(order=="Date" && a.modification_time!=b.modification_time) return a.modification_time>b.modification_time;
+                if(order=="Size" && a.size!=b.size) return a.size<b.size;
+            }
             bool a_before_b = sort(a, b);
             bool b_before_a = sort(b, a);
             if(a_before_b != b_before_a) {
@@ -536,30 +643,33 @@ namespace menu {
         entries.clear();
         extra_data_entries.clear();
 
+        add_music_library_entries();
+        const auto grouping = music_root() ? config::CONFIG.preference("music.group", "Folders") : "Folders";
+        if(grouping == "Albums" || grouping == "Artists") view.clear();
         for (const auto& info : view) {
             auto file_path = path / info.name;
             extra_data_entries.push_back({file_path, info});
 
             auto icon_path = icon_for_file(file_path, info, profile);
             auroreengine::texture icon_texture(loader.getDevice(), loader.getAllocator());
-            auto entry = std::make_unique<action_menu_entry>(
-                info.display_name,
-                std::move(icon_texture),
-                std::function<result()>{},
-                [this, info](action a) {
-                    return activate_file(info, a);
-                }
-            );
+            std::unique_ptr<menu_entry> entry;
+            if(info.is_directory) {
+                entry = std::make_unique<files_menu>(info.display_name,std::move(icon_texture),xmb,file_path,loader,profile);
+            } else {
+                entry = std::make_unique<action_menu_entry>(info.display_name,std::move(icon_texture),std::function<result()>{},
+                    [this,info](action a) { return activate_file(info,a); });
+            }
+            auto* mutable_icon = const_cast<auroreengine::texture*>(&entry->get_icon());
 
             if(!icon_path.empty()) {
                 try {
-                    loader.loadTexture(&entry->get_icon(), icon_path);
+                    loader.loadTexture(mutable_icon, icon_path);
                 } catch (const std::exception& e) {
                     spdlog::debug("Failed to load icon for {}: {}", info.name, e.what());
                     auto fallback = fallback_icon_for(info);
                     if(fallback != icon_path) {
                         try {
-                            loader.loadTexture(&entry->get_icon(), fallback);
+                            loader.loadTexture(mutable_icon, fallback);
                         } catch (const std::exception& fallback_error) {
                             spdlog::debug("Failed to load fallback icon for {}: {}", info.name, fallback_error.what());
                         }
@@ -590,7 +700,7 @@ namespace menu {
 
         try {
             std::error_code ec;
-            if(!std::filesystem::exists(path, ec) || ec) {
+            if((!std::filesystem::exists(path, ec) || ec) && !music_root() && !playlist_directory()) {
                 spdlog::error("Path does not exist: {}", path.string());
                 auroreengine::texture icon_texture(loader.getDevice(), loader.getAllocator());
                 auto entry = std::make_unique<action_menu_entry>(
@@ -633,11 +743,27 @@ namespace menu {
         std::filesystem::path file_path = path / info.name;
 
         if (info.is_directory) {
-            path = file_path;
-            reload();
-            return result::success;
+            return result::submenu;
         }
 
+        if(profile == files_menu_profile::music && openxmb::music::supported_playlist(file_path)) {
+            xmb->emplace_overlay<programs::playlist_editor>(file_path,loader);
+            return result::success;
+        }
+        if(profile == files_menu_profile::music && openxmb::music::supported_audio(file_path)) {
+            std::vector<openxmb::music::QueueEntry> tracks;
+            std::size_t selected = 0;
+            for(const auto& item : extra_data_entries) {
+                if(item.info.is_directory || !openxmb::music::supported_audio(item.path)) continue;
+                if(item.path == file_path) selected = tracks.size();
+                tracks.push_back({item.path,item.info.display_name});
+            }
+            if(tracks.empty()) tracks.push_back({file_path,info.display_name});
+            if(openxmb::music::service().set_queue(std::move(tracks),selected))
+                xmb->emplace_overlay<programs::music_player>(file_path,loader);
+            else xmb->emplace_overlay<app::message_overlay>("Cannot Play Music",openxmb::music::service().snapshot().error);
+            return result::success;
+        }
         auto open_infos = programs::get_open_infos(file_path, programs::file_info(file_path));
         if (!open_infos.empty()) {
             auto& open_info = open_infos[0];
@@ -680,6 +806,7 @@ namespace menu {
             return open_file(info);
         }
 
+        if(action == action::options && profile == files_menu_profile::music) return music_actions(file_path);
         if(action == action::options) {
             std::vector<std::string> options;
             std::vector<std::function<void()>> actions;
@@ -783,6 +910,24 @@ namespace menu {
     }
 
     void files_menu::show_sort_filter_options() {
+        if(profile == files_menu_profile::music) {
+            xmb->emplace_overlay<app::choice_overlay>(std::vector<std::string>{"View: " + config::CONFIG.preference("music.group","Folders"),"Sort: " + config::CONFIG.preference("music.sort","Name"),"Create Playlist...","Save Queue as Playlist...","Refresh"},0,[this](unsigned index) {
+                if(index==0 || index==1) {
+                    const std::vector<std::string> values=index==0?std::vector<std::string>{"Folders","Songs","Albums","Artists","Playlists"}:std::vector<std::string>{"Name","Date","Size"};
+                    const auto key=index==0?"music.group":"music.sort";
+                    xmb->emplace_overlay<app::choice_overlay>(values,0,[this,key,values](unsigned choice) {
+                        if(choice>=values.size()) return;
+                        config::CONFIG.preferences[key]=values[choice];config::CONFIG.save_config();
+                        {std::lock_guard lock(cache_mutex);last_scanned_path.clear();}
+                        reload();
+                    });
+                } else if(index==2 || index==3) programs::create_music_playlist(xmb,index==3?openxmb::music::service().queue().entries():std::vector<openxmb::music::QueueEntry>{},[this] {
+                    {std::lock_guard lock(cache_mutex);last_scanned_path.clear();} reload();
+                });
+                else if(index==4) { {std::lock_guard lock(cache_mutex);last_scanned_path.clear();} reload(); }
+            });
+            return;
+        }
         std::vector<std::string> options{
             std::string{"Filter: "} + (selected_filter == 0
                 ? std::string{normal_filter_label(profile)}
@@ -824,6 +969,8 @@ namespace menu {
     }
 
     result files_menu::activate(action action) {
+        if(action == action::options && profile == files_menu_profile::music && is_open && selected_submenu < extra_data_entries.size() && extra_data_entries[selected_submenu].info.is_directory)
+            return music_actions(extra_data_entries[selected_submenu].path,extra_data_entries[selected_submenu].tracks);
         if(action == action::extra) {
             show_sort_filter_options();
             return result::success;
@@ -849,7 +996,7 @@ namespace menu {
         v.emplace_back(action::none, "");
         v.emplace_back(action::none, "");
         v.emplace_back(action::options, "Options"_());
-        v.emplace_back(action::extra, "Sort and Filter"_());
+        v.emplace_back(action::extra, profile == files_menu_profile::music ? "Music Library" : "Sort and Filter"_());
     }
 
     void files_menu::on_open() {

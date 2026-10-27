@@ -9,6 +9,7 @@
       ]
     },
     "sdl2-image",
+    "libxmp",
     {
       "name": "sdl2-mixer",
       "features": [

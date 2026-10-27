@@ -167,7 +167,7 @@ class action_menu_entry_generic : public Base {
             } else if(action != action::ok) {
                 return result::unsupported;
             }
-            return on_activate();
+            return on_activate ? on_activate() : result::success;
         }
     private:
         std::function<result()> on_activate;

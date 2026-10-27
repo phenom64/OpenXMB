@@ -65,10 +65,14 @@ void playlists(const std::filesystem::path &root) {
     write_playlist(file, entries);
     const auto read = read_playlist(file);
     require(read.size() == 2 && read[0].path == entries[0].path && read[1].path == entries[1].path, "playlist roundtrip keeps special filenames");
+    require(read[0].title==entries[0].title && read[1].title==entries[1].title,"playlist formats preserve display titles");
   }
   std::ofstream(root / "relative.m3u") << "#EXTM3U\n#EXTINF:3,Display title\na song & more.mp3\n";
   const auto relative = read_playlist(root / "relative.m3u");
   require(relative[0].path == entries[0].path && relative[0].title == "Display title", "relative entries and titles resolve");
+  std::ofstream(root/"unordered.pls") << "[playlist]\nTitle2=Second\nFile2=two.mp3\nTitle1=First\nFile1=one.mp3\n";
+  const auto ordered=read_playlist(root/"unordered.pls");
+  require(ordered[0].title=="First" && ordered[1].title=="Second","PLS numbered entries and titles survive arbitrary field order");
   std::ofstream(root / "remote.m3u") << "https://example.invalid/song.mp3\n";
   bool failed = false;
   try { (void)read_playlist(root / "remote.m3u"); } catch (const std::runtime_error &) { failed = true; }

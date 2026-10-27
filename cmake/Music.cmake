@@ -1,4 +1,5 @@
 add_library(openxmb_music_core STATIC
+  "${PROJECT_SOURCE_DIR}/src/music/library.cpp"
   "${PROJECT_SOURCE_DIR}/src/music/queue.cpp"
   "${PROJECT_SOURCE_DIR}/src/music/player.cpp"
 )
@@ -32,4 +33,22 @@ if(OPENXMB_BUILD_NATIVE_TESTS)
         --player "$<TARGET_FILE:openxmb_music_playback_tests>")
     set_tests_properties(openxmb_music_format_tests PROPERTIES ENVIRONMENT "SDL_AUDIODRIVER=dummy" TIMEOUT 40)
   endif()
+endif()
+
+find_package(libxmp CONFIG QUIET)
+if(TARGET libxmp::xmp_shared)
+  target_link_libraries(openxmb_music_core PUBLIC libxmp::xmp_shared)
+else()
+  pkg_check_modules(LIBXMP REQUIRED IMPORTED_TARGET libxmp)
+  target_link_libraries(openxmb_music_core PUBLIC PkgConfig::LIBXMP)
+endif()
+if(OPENXMB_BUILD_NATIVE_TESTS)
+  add_executable(openxmb_music_library_tests "${PROJECT_SOURCE_DIR}/tests/music/library_tests.cpp")
+  target_link_libraries(openxmb_music_library_tests PRIVATE OpenXMB::MusicCore)
+  set_target_properties(openxmb_music_library_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  add_test(NAME openxmb_music_library_tests COMMAND openxmb_music_library_tests)
+endif()
+
+if(OPENXMB_BUILD_NATIVE_TESTS AND OPENXMB_MUSIC_FFMPEG_EXECUTABLE AND Python3_Interpreter_FOUND)
+  add_test(NAME openxmb_music_library_fixtures COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tests/music/library_fixtures.py" --ffmpeg "${OPENXMB_MUSIC_FFMPEG_EXECUTABLE}" --player "$<TARGET_FILE:openxmb_music_library_tests>")
 endif()

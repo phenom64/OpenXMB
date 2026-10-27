@@ -21,6 +21,8 @@ module;
 #include <array>
 #include <chrono>
 #include <cstdint>
+#include <charconv>
+#include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <functional>
@@ -167,6 +169,17 @@ export namespace config
             std::map<std::string, std::filesystem::path> themeSounds;
             std::map<std::string, std::string> preferences;
             std::filesystem::path profileConfigPath;
+            std::string preference(std::string_view key, std::string fallback={}) const {
+                const auto it=preferences.find(std::string(key));return it==preferences.end()?fallback:it->second;
+            }
+            double number(std::string_view key,double fallback) const {
+                const auto value=preference(key);double result{};
+                const auto [end,error]=std::from_chars(value.data(),value.data()+value.size(),result);
+                return error==std::errc{} && end==value.data()+value.size() && std::isfinite(result)?result:fallback;
+            }
+            bool enabled(std::string_view key,bool fallback=true) const {
+                return preference(key,fallback?"On":"Off")=="On";
+            }
 
             std::filesystem::path resolve_icon(const std::filesystem::path& path) const;
             std::filesystem::path resolve_sound(const std::filesystem::path& path) const;

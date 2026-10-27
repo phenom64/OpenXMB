@@ -51,8 +51,8 @@ struct Snapshot {
   std::uint64_t generation{};
 };
 
-// Main-thread transport. The SDL post-mix callback publishes samples through
-// atomics and never accesses queue, metadata, UI, or filesystem state.
+// Main-thread transport with bounded FFmpeg streaming. The shared SDL mixer
+// callback consumes buffered PCM; it never decodes or touches UI/filesystem state.
 class Player {
 public:
   Player();
@@ -71,6 +71,12 @@ public:
   void tick();
   void shutdown();
   void set_volume(float volume);
+  // Settings gain is independent of the transport's user volume.
+  void set_output_gain(float gain);
+  // Global mixer operation: destroy other video/audio sinks before calling;
+  // reload effects if their original mixer format differed from S16 stereo.
+  // On failure the previous device is reopened and music transport restored.
+  bool set_output_device(std::string device);
   void set_muted(bool enabled);
   void set_background_enabled(bool enabled);
   void set_ducking_enabled(bool enabled);
@@ -81,6 +87,7 @@ public:
   bool remove(std::size_t index);
   bool move(std::size_t from, std::size_t to);
   bool append(const std::filesystem::path &path);
+  bool enqueue(std::vector<QueueEntry> entries, bool play_next = false);
   bool save_playlist(const std::filesystem::path &path);
   const Snapshot &snapshot() const noexcept;
   const Queue &queue() const noexcept;
