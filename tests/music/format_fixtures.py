@@ -17,12 +17,19 @@ with tempfile.TemporaryDirectory(prefix="openxmb-music-formats-") as directory:
     subprocess.run([args.ffmpeg, "-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "color=c=blue:s=32x32", "-frames:v", "1", str(cover)], check=True)
     files = []
     for suffix, codec in [("mp3", "libmp3lame"), ("flac", "flac"), ("ogg", "libvorbis"),
-                          ("m4a", "aac"), ("m4a", "alac"), ("wav", "pcm_s16le")]:
+                          ("m4a", "aac"), ("m4a", "alac"), ("wav", "pcm_s16le"),
+                          ("opus", "opus"), ("aiff", "pcm_s16be")]:
         target = root / (codec + "." + suffix)
         command = [args.ffmpeg, "-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "sine=frequency=440:duration=1.5"]
         if suffix == "mp3":
             command += ["-i", str(cover), "-map", "0:a", "-map", "1:v", "-c:v", "copy", "-disposition:v", "attached_pic", "-id3v2_version", "3"]
         command += ["-c:a", codec, "-metadata", "title=Fixture Title", "-metadata", "artist=Fixture Artist", str(target)]
+        if codec == "opus":
+            # The bundled FFmpeg exposes its native Opus encoder, not libopus.
+            command[-1:-1] = ["-strict", "experimental", "-ar", "48000"]
+        if suffix == "aiff":
+            # Native AIFF chunks retain Title but require ID3 for Artist tags.
+            command[-1:-1] = ["-write_id3v2", "1"]
         subprocess.run(command, check=True)
         files.append(str(target))
     # Original deterministic ProTracker module: one looping sine instrument,

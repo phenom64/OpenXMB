@@ -21,6 +21,9 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
 #include <xmp.h>
+#ifdef OPENXMB_MUSIC_CALLBACK_TESTS
+#include "../../tests/music/callback_test_hooks.hpp"
+#endif
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -37,11 +40,51 @@ extern "C" {
 #include <cstdio>
 #include <fstream>
 #include <limits>
-#include <mutex>
+#include <thread>
 #include <numbers>
 #include <stdexcept>
 
 namespace openxmb::music {
+#ifdef OPENXMB_MUSIC_CALLBACK_TESTS
+namespace callback_test {
+Audit audit;
+thread_local bool in_callback{};
+// Deliberately held at deterministic seams by concurrency tests. This code,
+// all timers and diagnostics are absent from the shipping callback.
+struct CallbackAudit {
+  std::chrono::steady_clock::time_point started;
+  std::uint64_t epoch;
+  bool held{};
+  CallbackAudit() : epoch(audit.epoch.load()) {
+    in_callback = true;
+    audit.callbacks.fetch_add(1);
+    if(audit.hold_callback.load()) {
+      held = true; audit.callback_held.store(true);
+      while(audit.hold_callback.load()) std::this_thread::yield();
+      audit.callback_held.store(false);
+    }
+    started = std::chrono::steady_clock::now();
+  }
+  ~CallbackAudit() {
+    const auto elapsed = static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now()-started).count());
+    audit.last_output_epoch.store(epoch);
+    if(!held) {
+      audit.timed.fetch_add(1);
+      if(elapsed > audit.max_ns.load()) audit.max_ns.store(elapsed);
+    }
+    audit.completed.fetch_add(1);
+    in_callback = false;
+  }
+};
+void producer_seam() {
+  if(!audit.hold_producer.load()) return;
+  audit.producer_held.store(true);
+  while(audit.hold_producer.load()) std::this_thread::yield();
+  audit.producer_held.store(false);
+}
+}
+#endif
+
 namespace {
 constexpr std::size_t sample_count = 1024;
 void checked(int result, const char *operation) {
@@ -303,32 +346,79 @@ struct Player::Impl {
   std::string device_name;
   bool device_known{};
   std::atomic<float> gain{0.75f};
-  // The callback only holds this mutex while copying bounded PCM. FFmpeg,
-  // filesystem operations and allocations never run while it is held.
-  mutable std::mutex mutex;
+  // SPSC PCM: main/control thread publishes write; the SDL callback publishes
+  // read after it has finished all reads. Neither side accesses the other's
+  // owned slots until the corresponding release/acquire exchange.
+  static_assert(std::atomic<std::uint64_t>::is_always_lock_free);
+  static_assert(std::atomic<unsigned>::is_always_lock_free);
+  static_assert(std::atomic<float>::is_always_lock_free);
+  static constexpr unsigned enabled_bit = 1, callback_bit = 2;
+  std::atomic<unsigned> gate{};
   std::vector<float> ring;
-  std::size_t read{}, write{}, queued{};
-  std::uint64_t consumed{};
-  bool active{};
-  double base{};
+  alignas(64) std::atomic<std::uint64_t> read_index{};
+  alignas(64) std::atomic<std::uint64_t> write_index{};
+  double base{}; // Control-thread only; reset after callback quiescence.
+
+  // Reverse SPSC: callback publishes played mono PCM, control drains it into
+  // its private FFT window. Full analysis queues drop new analysis samples,
+  // never stall audio and never overwrite slots being read by the control.
+  static constexpr std::size_t analysis_capacity = 8192;
+  std::array<float, analysis_capacity> analysis{};
+  alignas(64) std::atomic<std::uint64_t> analysis_read{};
+  alignas(64) std::atomic<std::uint64_t> analysis_write{};
   std::array<float, sample_count> samples{};
-  std::size_t sample_cursor{};
-  std::uint64_t sample_generation{}, last_samples{};
+  std::size_t sample_cursor{}; // Both fields above belong to the control only.
   std::chrono::steady_clock::time_point last_tick = std::chrono::steady_clock::now();
 
-  static void SDLCALL mix(int, void *buffer, int length, void *userdata) {
+  static void SDLCALL mix(int, void *buffer, int length, void *userdata) noexcept {
+#ifdef OPENXMB_MUSIC_CALLBACK_TESTS
+    callback_test::audit.calls.fetch_add(1);
+    callback_test::audit.last_output_epoch.store(0);
+    callback_test::audit.last_frames.store(0);
+#endif
     auto &self = *static_cast<Impl *>(userdata);
-    std::lock_guard lock(self.mutex);
-    if (!self.active || self.channels <= 0 || self.ring.empty()) return;
+    // One admission attempt, never a retry/spin/wait. A control operation can
+    // clear enabled_bit while this callback holds callback_bit; it waits on
+    // the CONTROL thread for the final release before resetting any storage.
+    unsigned expected = enabled_bit;
+    if (!self.gate.compare_exchange_strong(expected, enabled_bit | callback_bit,
+        std::memory_order_acquire, std::memory_order_relaxed)) return;
+    struct Exit {
+      Impl &self;
+      ~Exit() { self.gate.fetch_and(~callback_bit, std::memory_order_release); }
+    } exit{self};
+#ifdef OPENXMB_MUSIC_CALLBACK_TESTS
+    callback_test::CallbackAudit audit;
+#endif
+    if (length <= 0 || self.channels <= 0 || self.ring.empty()) return;
+    const auto read = self.read_index.load(std::memory_order_relaxed);
+    const auto write = self.write_index.load(std::memory_order_acquire);
+    const auto available = write - read;
+    if (available > self.ring.size()) {
+#ifdef OPENXMB_MUSIC_CALLBACK_TESTS
+      callback_test::audit.invariant_failures.fetch_add(1);
+#endif
+      return;
+    }
     const auto sample_bytes = self.output_format == AUDIO_F32SYS ? sizeof(float) : sizeof(std::int16_t);
-    auto frames = std::min(static_cast<std::size_t>(length) / (sample_bytes * self.channels), self.queued / self.channels);
+#ifdef OPENXMB_MUSIC_CALLBACK_TESTS
+    const auto requested_frames = static_cast<std::size_t>(length) / (sample_bytes * self.channels);
+    if (requested_frames > callback_test::audit.max_buffer_frames.load()) callback_test::audit.max_buffer_frames.store(requested_frames);
+#endif
+    const auto frames = std::min(static_cast<std::size_t>(length) / (sample_bytes * self.channels),
+        static_cast<std::size_t>(available / self.channels));
     const float volume = self.gain.load(std::memory_order_relaxed);
+    auto cursor = static_cast<std::size_t>(read % self.ring.size());
+    auto analysis_write = self.analysis_write.load(std::memory_order_relaxed);
+    const auto analysis_read = self.analysis_read.load(std::memory_order_acquire);
+    const auto analysis_free = analysis_capacity - (analysis_write - analysis_read);
+    std::uint64_t analyzed = 0;
     for (std::size_t i = 0; i < frames; ++i) {
       float mono = 0;
       for (int channel = 0; channel < self.channels; ++channel) {
-        float value = self.ring[self.read] * volume;
-        self.read = (self.read + 1) % self.ring.size();
-        auto index = i * self.channels + channel;
+        const float value = self.ring[cursor] * volume;
+        if (++cursor == self.ring.size()) cursor = 0;
+        const auto index = i * self.channels + channel;
         if (self.output_format == AUDIO_F32SYS) {
           auto *output = static_cast<float *>(buffer);
           output[index] = std::clamp(output[index] + value, -1.0f, 1.0f);
@@ -339,14 +429,47 @@ struct Player::Impl {
         }
         mono += value;
       }
-      self.samples[self.sample_cursor] = mono / self.channels;
-      self.sample_cursor = (self.sample_cursor + 1) % sample_count;
+      if (analyzed < analysis_free) {
+        self.analysis[(analysis_write + analyzed) & (analysis_capacity - 1)] = mono / self.channels;
+        ++analyzed;
+      }
     }
-    self.queued -= frames * self.channels;
-    self.consumed += frames;
-    if (frames) ++self.sample_generation;
+    self.analysis_write.store(analysis_write + analyzed, std::memory_order_release);
+    self.read_index.store(read + frames * self.channels, std::memory_order_release);
+#ifdef OPENXMB_MUSIC_CALLBACK_TESTS
+    callback_test::audit.last_frames.store(frames);
+    if (frames > analyzed) callback_test::audit.analysis_drops.fetch_add(frames - analyzed);
+    if (read + frames * self.channels > callback_test::audit.max_read.load())
+      callback_test::audit.max_read.store(read + frames * self.channels);
+#endif
+  }
+
+  void quiesce() {
+    gate.fetch_and(~enabled_bit, std::memory_order_acq_rel);
+#ifdef OPENXMB_MUSIC_CALLBACK_TESTS
+    callback_test::audit.quiesces.fetch_add(1);
+#endif
+    // Only the non-realtime control thread waits. Future callbacks immediately
+    // decline admission. The in-flight callback never calls a control method.
+    while (gate.load(std::memory_order_acquire) & callback_bit) std::this_thread::yield();
+  }
+  void enable() { gate.fetch_or(enabled_bit, std::memory_order_release); }
+  bool collect_samples(std::array<float, sample_count> &output) {
+    const auto read = analysis_read.load(std::memory_order_relaxed);
+    const auto write = analysis_write.load(std::memory_order_acquire);
+    for (auto index = read; index != write; ++index) {
+      samples[sample_cursor] = analysis[index & (analysis_capacity - 1)];
+      sample_cursor = (sample_cursor + 1) % sample_count;
+    }
+    analysis_read.store(write, std::memory_order_release);
+    if (read == write) return false;
+    for (std::size_t i = 0; i < sample_count; ++i) output[i] = samples[(sample_cursor + i) % sample_count];
+    return true;
   }
   bool initialize() {
+    // Immutable device fields must not be rewritten while a registered
+    // callback could read them, even if QuerySpec would return equal values.
+    if (postmix) return true;
     if (!Mix_QuerySpec(&rate, &output_format, &channels) || rate <= 0 || channels <= 0 ||
         (output_format != AUDIO_S16SYS && output_format != AUDIO_F32SYS)) {
       fail("Music needs an open SDL mixer with signed 16-bit or float output.");
@@ -354,18 +477,25 @@ struct Player::Impl {
     }
     if (!postmix) {
       ring.resize(static_cast<std::size_t>(rate) * channels);
+#ifdef OPENXMB_MUSIC_CALLBACK_TESTS
+      callback_test::audit.capacity.store(ring.size());
+#endif
       postmix = Mix_RegisterEffect(MIX_CHANNEL_POST, mix, nullptr, this) != 0;
       if (!postmix) { fail(std::string("Cannot attach music output: ") + Mix_GetError()); return false; }
     }
     return true;
   }
   void clear(double position) {
-    std::lock_guard lock(mutex);
-    active = false;
-    read = write = queued = consumed = 0;
+    quiesce();
+    read_index.store(0, std::memory_order_relaxed);
+    write_index.store(0, std::memory_order_relaxed);
+    analysis_read.store(0, std::memory_order_relaxed);
+    analysis_write.store(0, std::memory_order_relaxed);
     base = position;
     samples.fill(0); sample_cursor = 0;
-    ++sample_generation;
+#ifdef OPENXMB_MUSIC_CALLBACK_TESTS
+    callback_test::audit.epoch.fetch_add(1);
+#endif
   }
   void release() { clear(0); decoder.reset(); }
   void fail(std::string error) {
@@ -374,31 +504,35 @@ struct Player::Impl {
     state.status = Status::error;
   }
   double position() const {
-    std::lock_guard lock(mutex);
-    return base + static_cast<double>(consumed) / rate;
+    return base + static_cast<double>(read_index.load(std::memory_order_acquire)) / (static_cast<double>(channels) * rate);
   }
   void fill() {
     if (!decoder) return;
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(12);
     for (unsigned blocks = 0; blocks < 128; ++blocks) {
-      std::size_t available{};
-      {
-        std::lock_guard lock(mutex);
-        const auto target = static_cast<std::size_t>(rate * 0.4) * channels;
-        if (queued >= target) break;
-        available = target - queued;
-      }
+      const auto write = write_index.load(std::memory_order_relaxed);
+      const auto read = read_index.load(std::memory_order_acquire);
+      const auto queued = write - read;
+      const auto target = static_cast<std::uint64_t>(rate * 0.4) * channels;
+      if (queued >= target) break;
+      const auto available = static_cast<std::size_t>(target - queued);
       if (decoder->offset == decoder->pcm.size() && !decoder->decode()) break;
-      auto count = std::min(available, decoder->pcm.size() - decoder->offset);
-      {
-        std::lock_guard lock(mutex);
-        for (std::size_t i = 0; i < count; ++i) {
-          ring[write] = decoder->pcm[decoder->offset + i];
-          write = (write + 1) % ring.size();
-        }
-        queued += count;
-      }
+      const auto count = std::min(available, decoder->pcm.size() - decoder->offset);
+#ifdef OPENXMB_MUSIC_CALLBACK_TESTS
+      callback_test::producer_seam();
+#endif
+      const auto cursor = static_cast<std::size_t>(write % ring.size());
+      const auto first = std::min(count, ring.size() - cursor);
+      std::copy_n(decoder->pcm.data() + decoder->offset, first, ring.data() + cursor);
+      std::copy_n(decoder->pcm.data() + decoder->offset + first, count - first, ring.data());
+      write_index.store(write + count, std::memory_order_release);
       decoder->offset += count;
+#ifdef OPENXMB_MUSIC_CALLBACK_TESTS
+      const auto occupancy = write + count - read_index.load(std::memory_order_acquire);
+      if (occupancy > ring.size()) callback_test::audit.invariant_failures.fetch_add(1);
+      if (occupancy > callback_test::audit.max_queued.load()) callback_test::audit.max_queued.store(occupancy);
+      if (write + count > callback_test::audit.max_write.load()) callback_test::audit.max_write.store(write + count);
+#endif
       if (std::chrono::steady_clock::now() >= deadline) break;
     }
   }
@@ -432,12 +566,12 @@ struct Player::Impl {
     seconds = std::max(0.0, seconds);
     if (state.metadata.duration > 0) seconds = std::min(seconds, state.metadata.duration);
     bool playing = state.status == Status::playing;
-    { std::lock_guard lock(mutex); active = false; }
+    quiesce();
     try {
       decoder->seek(seconds); clear(seconds); fill();
       state.position = seconds; state.spectrum.fill(0); state.error.clear();
       if (state.status == Status::ended) state.status = Status::paused;
-      { std::lock_guard lock(mutex); active = playing; }
+      if (playing) enable();
       return true;
     } catch (const std::exception &error) { fail(error.what()); return false; }
   }
@@ -446,7 +580,7 @@ struct Player::Impl {
     if (state.status == Status::ended && !seek_to(0)) return false;
     try { fill(); } catch (const std::exception &error) { fail(error.what()); return false; }
     gain.store(state.muted ? 0.0f : state.volume * duck_gain * output_gain);
-    { std::lock_guard lock(mutex); active = true; }
+    enable();
     state.status = Status::playing; state.error.clear();
     return true;
   }
@@ -487,17 +621,17 @@ bool Player::select(std::size_t index) {
 bool Player::play() { return impl_->start(); }
 void Player::pause() {
   if (impl_->state.status == Status::playing) {
-    { std::lock_guard lock(impl_->mutex); impl_->active = false; }
+    impl_->quiesce();
     impl_->state.position = impl_->position();
     impl_->state.status = Status::paused;
   }
 }
 void Player::stop() {
-  { std::lock_guard lock(impl_->mutex); impl_->active = false; }
+  impl_->quiesce();
   const bool failed = impl_->state.status == Status::error;
   if (!failed) impl_->state.status = Status::stopped;
   if (impl_->decoder && !impl_->seek_to(0)) return;
-  { std::lock_guard lock(impl_->mutex); impl_->active = false; }
+  impl_->quiesce();
   impl_->state.position = 0.0;
   impl_->state.status = Status::stopped;
   impl_->state.spectrum.fill(0.0f);
@@ -518,11 +652,10 @@ void Player::tick() {
   if (self.state.status == Status::playing) {
     try { self.fill(); } catch (const std::exception &error) { self.fail(error.what()); return; }
     self.state.position = self.position();
-    bool empty{};
-    { std::lock_guard lock(self.mutex); empty = self.queued == 0; }
+    const bool empty = self.read_index.load(std::memory_order_acquire) == self.write_index.load(std::memory_order_relaxed);
     if (self.decoder->done && empty) {
       if (self.queue.next(true)) { if (self.load()) self.start(); }
-      else { self.state.status = Status::ended; std::lock_guard lock(self.mutex); self.active = false; }
+      else { self.quiesce(); self.state.position = self.position(); self.state.status = Status::ended; }
     }
   }
   // Interface/menu effects never attenuate the song. Only an explicit
@@ -536,14 +669,7 @@ void Player::tick() {
   Mix_VolumeMusic(static_cast<int>(std::lround(self.state.effective_volume * MIX_MAX_VOLUME)));
 
   std::array<float, sample_count> samples{};
-  bool fresh = false;
-  {
-    std::lock_guard lock(self.mutex);
-    if (self.sample_generation != self.last_samples) {
-      self.last_samples = self.sample_generation; fresh = true;
-      for (std::size_t i = 0; i < sample_count; ++i) samples[i] = self.samples[(self.sample_cursor + i) % sample_count];
-    }
-  }
+  const bool fresh = self.collect_samples(samples);
   if (fresh && self.state.status == Status::playing) {
     // Log-spaced frequencies in Hz, over contiguous output PCM at the real
     // device sample rate. Sound effects never enter the music analysis buffer.
@@ -567,6 +693,7 @@ void Player::tick() {
 
 void Player::shutdown() {
   if (!impl_) return;
+  impl_->quiesce();
   if (impl_->postmix) {
     Mix_UnregisterEffect(MIX_CHANNEL_POST, Impl::mix);
     impl_->postmix = false;
@@ -591,6 +718,7 @@ bool Player::set_output_device(std::string device) {
   if (self.device_known && device == self.device_name && Mix_QuerySpec(nullptr, nullptr, nullptr)) return true;
   const auto old_device = self.device_name;
   const auto old_status = self.state.status;
+  self.quiesce();
   const double position = self.decoder ? self.position() : 0;
   if (self.postmix) {
     Mix_UnregisterEffect(MIX_CHANNEL_POST, Impl::mix);

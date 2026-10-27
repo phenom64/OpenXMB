@@ -51,8 +51,10 @@ struct Snapshot {
   std::uint64_t generation{};
 };
 
-// Main-thread transport with bounded FFmpeg streaming. The shared SDL mixer
-// callback consumes buffered PCM; it never decodes or touches UI/filesystem state.
+// Single-control-thread transport with bounded streaming. The shared SDL
+// callback consumes an SPSC PCM ring without locks, waits, allocation or decode.
+// Pause/seek/shutdown may wait on the control thread for an in-flight callback;
+// transport and snapshot/queue access must stay on that one control thread.
 class Player {
 public:
   Player();
