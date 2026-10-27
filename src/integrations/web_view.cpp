@@ -4,6 +4,7 @@
 #include <X11/Xlib.h>
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -22,6 +23,11 @@ struct Browser {
     int width{},height{};
     std::int64_t command_sequence{};
     bool address_requested{};
+    void reveal() {
+        gtk_widget_show(window);
+        gtk_widget_grab_focus(GTK_WIDGET(view));
+        gdk_window_focus(gtk_widget_get_window(window),GDK_CURRENT_TIME);
+    }
     void publish() const {
         const char* uri=webkit_web_view_get_uri(view);const char* title=webkit_web_view_get_title(view);
         const nlohmann::json state{{"uri",uri?uri:""},{"title",title?title:""},{"hover",hover},
@@ -32,6 +38,18 @@ struct Browser {
     }
 };
 int ignore_closed_parent(Display*,XErrorEvent*) {return 0;}
+GdkFilterReturn parent_lifecycle(GdkXEvent* native,GdkEvent*,gpointer data) {
+    const auto& event=*static_cast<XEvent*>(native);
+    const auto& b=*static_cast<Browser*>(data);
+    if(event.type==DestroyNotify&&
+       (event.xdestroywindow.window==b.parent||event.xdestroywindow.window==b.child)) {
+        // X11 has already destroyed the child surface. Exit before GTK queues
+        // another paint against its invalid drawable; closing IPC releases the
+        // sandboxed web processes and the OS releases native resources.
+        std::_Exit(EXIT_SUCCESS);
+    }
+    return GDK_FILTER_CONTINUE;
+}
 gboolean update(gpointer data) {
     auto& b=*static_cast<Browser*>(data);
     XWindowAttributes a{};
@@ -53,11 +71,11 @@ gboolean update(gpointer data) {
             if(sequence!=b.command_sequence) {
                 b.command_sequence=sequence;b.address_requested=false;const auto command=message.value("command",std::string{});
                 if(command=="hide") gtk_widget_hide(b.window);
-                else if(command=="show") {gtk_widget_show(b.window);gtk_widget_grab_focus(GTK_WIDGET(b.view));}
-                else if(command=="navigate") {const auto uri=message.value("value",std::string{});if(uri.starts_with("http://")||uri.starts_with("https://")) webkit_web_view_load_uri(b.view,uri.c_str());gtk_widget_show(b.window);}
+                else if(command=="show") b.reveal();
+                else if(command=="navigate") {const auto uri=message.value("value",std::string{});if(uri.starts_with("http://")||uri.starts_with("https://")) webkit_web_view_load_uri(b.view,uri.c_str());b.reveal();}
                 else if(command=="back") webkit_web_view_go_back(b.view);
                 else if(command=="forward") webkit_web_view_go_forward(b.view);
-                else if(command=="text") {gtk_widget_show(b.window);gtk_widget_grab_focus(GTK_WIDGET(b.view));const auto text=message.value("value",std::string{});webkit_web_view_execute_editing_command_with_argument(b.view,"InsertText",text.c_str());}
+                else if(command=="text") {b.reveal();const auto text=message.value("value",std::string{});webkit_web_view_execute_editing_command_with_argument(b.view,"InsertText",text.c_str());}
                 else if(command=="reload") webkit_web_view_reload(b.view);
             }
         }
@@ -107,10 +125,12 @@ int main(int argc,char** argv) {
     gtk_widget_show_all(b.window);
     b.child=GDK_WINDOW_XID(gtk_widget_get_window(b.window));
     XReparentWindow(b.display,b.child,b.parent,0,0);
+    XSelectInput(b.display,b.parent,StructureNotifyMask);
+    gdk_window_add_filter(nullptr,parent_lifecycle,&b);
     update(&b);
     webkit_web_view_load_uri(b.view,uri.c_str());
     g_timeout_add(200,update,&b);
-    gtk_widget_grab_focus(GTK_WIDGET(b.view));
+    b.reveal();
     gtk_main();
     return 0;
 }

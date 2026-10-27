@@ -45,7 +45,7 @@ def main():
         def do_GET(self):
             title = 'First page' if self.path.startswith('/first') else 'Second page'
             body = (f'<!doctype html><meta charset="utf-8"><title>{title}</title>'
-                    '<input autofocus oninput="document.title=\'Typed:\'+this.value">'
+                    '<body style="background:#2ac78f"><input autofocus oninput="document.title=\'Typed:\'+this.value">'
                     '<a href="/second">Next page</a>').encode()
             self.send_response(200)
             self.send_header('Content-Type', 'text/html; charset=utf-8')
@@ -98,6 +98,16 @@ def main():
             if not child or geometry(child) != (414, 76, 1094, 928):
                 raise RuntimeError('Native web surface does not fit the XMB viewport')
             checks.append('native child viewport')
+            # A loaded title is insufficient: require the live page's painted pixels.
+            time.sleep(1)
+            capture=output/'native-page.png'
+            subprocess.run(['import','-silent','-window','root','PNG24:'+str(capture)],check=True)
+            from PIL import Image
+            image=Image.open(capture).convert('RGB')
+            region=image.crop((500,200,1400,900))
+            green=sum(1 for red,g,b in module.pixels(region) if abs(red-42)<8 and abs(g-199)<8 and abs(b-143)<8)
+            if green/(region.width*region.height)<0.90:raise RuntimeError('Loaded HTML did not paint its expected background')
+            checks.append('actual painted page pixels')
             command('text', 'Unicode ✓')
             wait(lambda p: p['title'] == 'Typed:Unicode ✓', 'UTF-8 editing reached live DOM')
             command('navigate', origin + '/second')

@@ -1,261 +1,52 @@
 project:
   name: OpenXMB
-  description: >
-    PS3-style XrossMediaBar shell built with C++23 modules on top of a
-    Vulkan + SDL2 renderer (AuroreEngine/auroreengine). Uses a JSON-based
-    configuration, dynamic menus, icon + font systems, and an integrated
-    FFmpeg video player. Emulation, optical media, and browser are planned.
-  repos:
-    - name: OpenXMB
-      role: shell/app/menus/config/runtime
-    - name: AuroreEngine (exposed as "auroreengine")
-      role: renderer + GUI + IO (Vulkan backend, SDL2 integration)
+  scope: Native Vulkan desktop shell with AuroreEngine, C++23 modules and JSON configuration.
+  targets: Linux, macOS and Windows (platform-specific behavior requires testing)
+  deferred: OpenGL ES, H700/RG34XX and handheld distribution
 
-tech_stack:
-  graphics: [Vulkan (MoltenVK on macOS), SDL2]
-  audio: [SDL2_mixer]
-  media: [FFmpeg]
-  text: [FreeType]
-  optional_future: [libass (subtitles), HarfBuzz, MSDF, CEF, libretro, libbluray/libdvd*]
-  build: [CMake, Ninja]
-  os_targets: [Linux, macOS, Windows]
-
-current_state:
-  builds: [Linux, macOS (MoltenVK)]
-  renderer: auroreengine integrated via FetchContent
-  config: JSON (config.json). No YAML configs are in use.
-  menus: settings_menu, applications_menu (Linux .desktop), users_menu (POSIX), files_menu
-  programs: text_viewer, image_viewer, video_player (FFmpeg + YUV compute path)
-  assets: packaged into share/shell for build-tree and installed runs; XMB_ASSET_DIR override supported
-  i18n: i18n++ integrated; locales staged in build tree and installed under share/locale
-
-proposed_build_flags:
-  - name: ENABLE_BROWSER
-    type: BOOL
-    default: OFF
-    desc: Build CEF-based browser module (off for SBC/light builds)
-  - name: ENABLE_VIDEO_PLAYER
-    type: BOOL
-    default: ON
-    desc: Build FFmpeg-based video player (currently implemented)
-  - name: ENABLE_DISC_MEDIA
-    type: BOOL
-    default: OFF
-    desc: Build DVD/Blu-ray glue (requires user-provided keys at runtime)
-  - name: ENABLE_LIBRETRO
-    type: BOOL
-    default: OFF
-    desc: Build libretro host module (planned)
-  - name: INTERFACE_FX_DEBUG
-    type: BOOL
-    default: OFF
-    desc: Compile interface/UI graphics debug overlays
-  - name: HWACCEL
-    type: STRING
-    default: auto
-    enum: [auto, off, vaapi, d3d11, videotoolbox]
-    desc: Preferred hardware video decode backend (planned)
-  - name: OPENXMB_APPLE_PREFIXES
-    type: STRING
-    default: auto-detect /opt/homebrew and /usr/local when present
-    desc: Additional macOS dependency prefixes; avoids hard-coded SDK paths
-
-runtime_config:
-  files:
-    - path: ./config.json
-      desc: Main runtime settings (render, controller, shell colors, paths, language, excludes)
-  notes:
-    - JSON is authoritative; no YAML configs exist in the repo at present.
-    - XMB menu layout is code-driven; can be made data-driven later.
-
-file_layout:
-  OpenXMB:
-    - src/app/                # shell (phase), components, layers
-    - src/menu/               # menus (settings, files, apps, users)
-    - src/programs/           # viewers (text/image/video)
-    - src/render/             # render partitions (shaders, wave renderer)
-    - src/config.*            # JSON-backed config module
-    - src/constants.cppm      # paths, defaults, names
-    - shaders/                # SPIR-V inputs embedded at build
-    - scripts/XMS.sh.in       # launcher (sets VK_ICD on macOS, copies config)
-    - scripts/headless-smoke.sh # configures, builds, installs to stage, verifies release resources
-    - CMakePresets.json       # default/dev/ci configure and build presets
-    - .github/workflows/ci.yml # Linux/macOS configure smoke
-    - config.json             # default runtime config (installed to share/OpenXMB)
-  AuroreEngine (auroreengine):
-    - Vulkan device/swapchain, renderers (GUI/image/font), helpers
-
-app_loop:
-  pseudocode: |
-    SDL_Init(VIDEO|GAMECONTROLLER|AUDIO)
-    auroreengine::window win{config_from_json}
-    win.init()
-    auto* shell = new app::shell(&win)
-    if (--background-only) shell->set_background_only(true)
-    win.set_phase(shell, shell, shell)
-    win.loop()   # shell handles input, GUI, overlays, and rendering
-
-modules:
-  - id: menu_system
-    repo: OpenXMB
-    status: present
-    summary: PS3-like crossbar + submenus (settings, files, apps, users)
-    tasks_next:
-      - Replace placeholder category/settings assets with final theme artwork
-      - Add metadata panels (title/subtitle/details)
-      - Optional data-driven layout (JSON) and hot-reload
-
-  - id: icon_system
-    repo: OpenXMB
-    status: basic
-    summary: Icons loaded on demand; JSON-driven resolver for system icons
-    tasks_next:
-      - Build-time atlas and runtime LRU cache
-      - Theme variants (light/dark/platform)
-
-  - id: font_text_system
-    repo: AuroreEngine/OpenXMB
-    status: present (FreeType in engine)
-    tasks_next:
-      - macOS default font fallback (added in code) and UI selection
-      - Optional: HarfBuzz shaping + MSDF glyph atlases
-
-  - id: audio_mixer_music
-    repo: AuroreEngine
-    status: planned
-    tasks:
-      - Music bus + visualizer + SFX/system ducking
-
-  - id: video_player
-    repo: OpenXMB
-    status: present (software decode; YUV GPU path)
-    tasks_next:
-      - HW accel selection (HWACCEL) and libass subtitles
-
-  - id: browser_cef
-    repo: OpenXMB
-    status: planned (OFF by default)
-    tasks:
-      - CEF OSR integration, controller mapping, background policy
-      - See Plan: M6 below
-
-  - id: disc_media
-    repo: OpenXMB
-    status: planned (OFF by default)
-    tasks:
-      - libdvdread/libdvdnav/libbluray glue; device monitor; demux URL for player
-      - See Plan: M7 below
-
-  - id: libretro_host
-    repo: OpenXMB
-    status: planned (OFF by default)
-    tasks:
-      - Core host, framebuffer upload, audio routing, save/load, presets
-
-apis (planned contracts):
-  - Services: events/config/audio/renderer/icons/fonts
-  - Overlay: show/hide/visible/pushPanel(id)
-  - RendererSurfaces: register/unregister Surface{id, tex, rect, z}
-  - Player: open/play/pause/stop/seek/videoTexture
-  - Browser: openURL/back/forward/reload/texture/pump/injectInput
-  - DiscService: start/stop/currentStatus/openMainTitle
-
-data_models:
-  config_json_example: |
-    {
-      "shell": {
-        "background-color": "#1e1e1e",
-        "wave-color": "#ffffff",
-        "background-type": "wave",
-        "background-image": "",
-        "font-path": "default",
-        "date-time-format": "%a %d %b %H:%M",
-        "date-time-x-offset": 0.0,
-        "language": "auto",
-        "pictures-path": "~/Pictures",
-        "music-path": "~/Music",
-        "videos-path": "~/Videos",
-        "excluded-applications": []
-      },
-      "controller": { "rumble": true, "analog-stick": true, "type": "auto" },
-      "render": { "sample-count": 4, "max-fps": 100, "vsync": true, "show-fps": false, "show-mem": false }
-    }
-
-performance_plan (incremental):
-  - persist VkPipelineCache; reuse transient images/buffers; upload ring
-  - consider descriptor indexing and batching where feasible
-  - keep frame graph responsibilities in engine (auroreengine), surface hooks in app
-
-policies:
-  background_apps: { min_ram_gb_for_browser: 4, background_browser_fps_cap: 30 }
-  audio_ducking:   { overlay_duck_db: -8 }
-  texture_budgets: { icon_atlas_mb: 32, cover_cache_mb_desktop: 256, cover_cache_mb_sbc: 128 }
-
+# Status describes implementation, not release acceptance. See docs/desktop-release.md
+# for workflows, validation commands and compatibility limits. The desktop build
+# and individual tests do not establish visual parity, performance or completeness.
 milestones:
   - id: M1_scaffold
-    goal: App compiles & runs; static XMB; JSON config
-    status: done
-    notes: macOS requires MoltenVK ICD; launcher now auto-detects common paths
+    goal: Build and run the shell with JSON configuration.
+    status: Implemented; Linux desktop build verified in current development environment.
+    remaining: Validate runtime and installation on supported target platforms.
   - id: M2_menu_fonts_icons
-    goal: Navigable XMB with text & icons
-    status: done (placeholder asset polish continues)
-    issues:
-      - Replace placeholder icons with final theme artwork
-      - Metadata panel wiring
+    goal: Navigable crossbar with text, icons and menus.
+    status: Implemented and under visual review.
+    details: Native 1920x1080 layout, material icons, clock frame, glyph shadow/glow/fade, boot alignment, dialogs and keyboard are implemented. Theme and menu controls continue to be refined.
+    remaining: Complete visual and platform validation; packaged fallback artwork is replaceable.
   - id: M3_audio_music_visualizer
-    goal: Music playback + visualizer + ducking
-    status: planned
+    goal: Music playback, visualizer and audio management.
+    status: Desktop playback and controls implemented; acceptance remains open.
+    details: Playlist, seeking, shuffle/repeat, volume, metadata, visualizers and continued playback are available. Wave transitions and format badges are implemented.
+    remaining: Validate sustained playback, visual quality and audio behavior on target systems; broader audio ducking remains future work.
   - id: M4_video_player
-    goal: File playback (software), then HW accel + subtitles
-    status: present (software); planned (HW/subtitles)
+    goal: File playback, hardware acceleration and subtitles.
+    status: Desktop playback and controls implemented; acceptance remains open.
+    details: Software decoding, audio, seeking, speed, frame stepping and text subtitle selection are available; YUV conversion uses the GPU.
+    remaining: Hardware decoding, bitmap subtitles and target-device playback validation.
   - id: M5_libretro_overlay
-  goal: Emulation with overlay
-  status: planned
-
-  - id: M6_browser_cef
-    goal: Chromium Embedded Framework browser overlay with off‑screen rendering
-    status: planned
-    plan:
-      build:
-        - `ENABLE_BROWSER` toggles; build overlay only if CEF toolchain is provided
-      rendering:
-        - CEF OSR BGRA buffer → auroreengine texture via resource_loader (double‑buffered)
-      input:
-        - Map SDL keyboard/mouse/wheel; IME support after alpha
-      ui:
-        - Minimal overlay (URL bar optional), back/forward/reload/close
-      followups:
-        - Downloads, persistence, multi‑tabs, GPU accel toggles
-
+    goal: Emulation with shell integration.
+    status: Software libretro host and shell integration implemented; full overlay goal remains open.
+    remaining: Hardware-context cores and broader core/platform validation.
+  - id: M6_browser
+    goal: Browser access and navigation from the shell.
+    status: Optional Linux/X11 WebKitGTK child surface and system-browser fallback implemented; integration validation continues.
+    details: The WebKit view renders real pages inside the shell and uses sandboxed processes. Native navigation and keyboard integration are under review.
+    remaining: Validate end-to-end shell interaction and platform behavior; native Wayland input is not established.
   - id: M7_disc_media
-    goal: Seamless CD/DVD/Blu‑ray playback within OpenXMB (PS3‑style)
-    status: planned
-    plan:
-      detection:
-        - Poll `/dev/sr0` and common mount points; classify: Audio CD (FFmpeg cdda), DVD (VIDEO_TS), Blu‑ray (BDMV)
-        - Optional metadata via libbluray/libdvdread/libdvdnav when present
-      ui_integration:
-        - Inject dynamic entries at top of Music (Audio CD) and Video (DVD/BD):
-          * No Disc (disabled), Play Audio CD, Play DVD/Blu‑ray, or title when available
-      playback:
-        - Reuse FFmpeg player: open `cdda:/dev/sr0`, `dvd:`, `bluray:` or mounted main title
-        - Phase‑1 for Audio CD: play all (track list later)
-      build:
-        - Guarded by `ENABLE_DISC_MEDIA`; optional links to libbluray/libdvd*/pkg‑config
-  - id: M8_perf_pass
-    goal: Release hygiene, pipeline cache, upload ring, descriptor indexing review
-    status: wip
-    done:
-      - CMake presets for default/dev/ci
-      - Linux/macOS configure smoke workflow
-      - Staged install smoke script
-      - Packaged config, shell assets, launcher, and locale paths
+    goal: Media detection and playback.
+    status: Mounted-disc desktop workflows implemented; full optical-media support remains open.
+    remaining: Device, format and platform validation; protected playback is unsupported.
+  - id: M8_perf_release
+    goal: Release hygiene and performance validation.
+    status: In progress.
+    details: CMake presets, staged-install smoke tooling and renderer/resource improvements are present.
+    remaining: Complete release checks and measure on target hardware; no target frame rate has been validated.
 
-acceptance:
-  baseline:
-    - 60 FPS navigating XMB at 1080p on mid-range iGPU
-    - Music + visualizer smooth; no dropouts (later)
-    - Video 1080p smooth; add HW accel + subtitles (later)
-    - Emulated cores full-speed with overlay <80 ms open (later)
-    - Browser background mode with FPS cap when RAM ≥ 4GB (later)
-    - Disc entry appears when media present; plays if keys provided (later)
+acceptance_targets_not_yet_validated:
+  - 60 FPS navigating the crossbar at 1080p on a mid-range integrated GPU.
+  - Smooth music and video playback without dropouts on target hardware.
+  - Platform and device coverage for emulation, browser and optical-media workflows.

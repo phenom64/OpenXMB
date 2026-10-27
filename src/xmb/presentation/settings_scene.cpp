@@ -224,7 +224,7 @@ SettingsSceneSample sample_settings_scene(
         .icon_ref = node->icon_ref,
         .icon_center_x = icon_x,
         .center_y = y,
-        .icon_extent = SettingsSceneMetrics::icon_extent+(SettingsSceneMetrics::focused_icon_extent-SettingsSceneMetrics::icon_extent)*
+        .icon_extent = SettingsSceneMetrics::icon_extent+((input.menu_id=="category.settings"?SettingsSceneMetrics::focused_icon_extent:SettingsSceneMetrics::icon_extent)-SettingsSceneMetrics::icon_extent)*
             (focused?snapshot.focus_eased_progress:index==input.previous_selected_index?1.0-snapshot.focus_eased_progress:0.0),
         .label_x = label_x,
         .value_right_x = SettingsSceneMetrics::value_right_x,

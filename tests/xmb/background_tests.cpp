@@ -63,14 +63,17 @@ int main() {
   require(near(july.night_day_blend, 1.0F), "July night blend");
 
   const auto manual =
-      resolve_manual_background_gradient({1.25F, 0.88F, -0.10F}, 22.0F);
+      resolve_manual_background_gradient({1.25F, 0.88F, -0.10F}, 12.0F);
   require(near(manual.bottom_rgb[0], 1.0F), "manual red clamps high");
   require(near(manual.bottom_rgb[1], 0.88F), "manual green keeps palette");
   require(near(manual.top_rgb[2], 0.0F), "manual blue clamps low");
   require(manual.top_rgb[0] < manual.bottom_rgb[0] && manual.direct_gradient_span == 1.0F,
           "manual colour has a darker top and a full-height direct gradient");
-  require(near(manual.night_day_blend, 1.0F),
-          "manual colour keeps day/night envelope");
+  const auto manual_night = resolve_manual_background_gradient({1.0F,0.88F,0.0F},22.0F);
+  require(near(manual_night.night_day_blend,1.0F) &&
+          manual_night.top_rgb[0] < manual.top_rgb[0] &&
+          manual_night.bottom_rgb[0] < manual.bottom_rgb[0],
+          "night mode visibly darkens both ends of a custom-colour gradient");
 
   const auto pinned = parse_unix_seconds("1781524800");
   require(pinned.has_value(), "valid fixed timestamp parses");

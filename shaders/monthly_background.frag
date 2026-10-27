@@ -27,7 +27,9 @@ vec3 xmb_web_composite(vec3 scene)
 }
 
 void write_background(vec3 rgb) {
-    float u=clamp(in_uv.y/0.62,0.0,1.0);
+    const vec2 music_direction=vec2(-0.06975647,0.99756405);
+    float u=clamp((dot(in_uv,music_direction)-music_direction.x)/
+                  ((music_direction.y-music_direction.x)*0.62),0.0,1.0);
     float gradient=1.0-pow(1.0-u,2.0);
     vec3 music=mix(vec3(106.0,45.0,118.0)/255.0,vec3(2.0,0.0,4.0)/255.0,gradient);
     out_color=vec4(mix(rgb,music,background.modes.x),1.0);
@@ -36,7 +38,10 @@ void main()
 {
     const float screen_y = clamp(in_uv.y, 0.0, 1.0);
     if(background.bottom_and_reserved.a>0.0) {
-        float t=smoothstep(0.0,background.bottom_and_reserved.a,screen_y);
+        const vec2 manual_direction=vec2(-0.20791169,0.9781476);
+        float u=(dot(in_uv,manual_direction)-manual_direction.x)/
+                (manual_direction.y-manual_direction.x);
+        float t=smoothstep(0.0,background.bottom_and_reserved.a,u);
         vec3 rgb=mix(background.top_and_night.rgb,background.bottom_and_reserved.rgb,t);
         write_background(rgb);return;
     }

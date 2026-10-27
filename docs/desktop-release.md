@@ -6,6 +6,18 @@ is replaceable in `assets/shell`; the existing fonts, boot identity and sounds a
 retained. Original now renders a procedural ribbon and sparkle field without a
 private captured-wave asset directory. Classic remains available in settings.
 
+## Desktop presentation and status
+
+The shell includes a native 1920×1080 XMB layout, baked translucent material icons,
+a shader-drawn clock frame, glyph-atlas shadow, glow and fade, and an aligned
+boot presentation. Native dialogs, the on-screen keyboard, theme hierarchy and
+music, photo and video overlays are implemented. Menu selection spacing, the
+music wave and playback format badges have also been revised.
+
+These are implementation descriptions. Visual review and end-to-end desktop
+validation are ongoing; they do not establish complete fidelity or a performance
+target. The current milestone status is tracked in [milestones.txt](../milestones.txt).
+
 ## What is connected to the shell
 
 - Settings → Theme Settings imports folders, ZIP and P3T packs; previews, component switches,

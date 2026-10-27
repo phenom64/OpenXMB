@@ -209,16 +209,16 @@ void SettingsSceneRenderer::render(auroreengine::gui_renderer &renderer,
 
     if (!options.suppress_value_labels && row.has_value &&
         row.value_alpha > 0.001) {
-      const auto size = layout.text_size(row.value_size);
-      const auto measured = renderer.measure_text(row.value, size * 0.5F);
-      const auto right = layout.x(row.value_right_x);
+      const auto size = static_cast<float>(row.value_size)*layout.scale;
+      const auto measured = renderer.text_width_pixels(row.value,size);
       const auto color =
           row.focused
               ? glm::vec3(245.0F / 255.0F, 240.0F / 255.0F, 250.0F / 255.0F)
               : glm::vec3(235.0F / 255.0F);
-      renderer.draw_text(
-          row.value, right - measured.x, layout.y(row.center_y), size,
-          glm::vec4(color, static_cast<float>(row.value_alpha)), false, true);
+      renderer.draw_text_pixels(row.value,
+          layout.offset_x+row.value_right_x*layout.scale-measured,
+          layout.offset_y+(row.center_y+(row.focused?3.0:11.0))*layout.scale,size,
+          glm::vec4(color, static_cast<float>(row.value_alpha)),0.7F);
     }
   }
 }

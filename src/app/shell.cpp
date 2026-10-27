@@ -1,8 +1,6 @@
-/* XMBShell, a console-like desktop shell
- * Copyright (C) 2025 - JCM
- *
- * This file (or substantial portions of it) is derived from XMBShell:
- *   https://github.com/JnCrMx/xmbshell
+/* This file is a part of the OpenXMB desktop experience project.
+ * Copyright (C) 2025-2026 Syndromatic Ltd. All rights reserved
+ * Designed by Kavish Krishnakumar in Manchester.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -663,8 +661,7 @@ namespace app
             spdlog::info("Language set to '{}'; reloading menus", lang);
 
             // Rebuild main menu to refresh translated strings
-            menu = app::main_menu(this);
-            menu.preload(device, allocator, *loader);
+            reload_menu();
         } catch(const std::exception& e) {
             spdlog::error("reload_language failed: {}", e.what());
         }
@@ -1535,9 +1532,12 @@ namespace app
             enable_cursor = overlays[i]->enable_cursor();
         }
         if(!allow_menu && has_overlay && overlays[overlay_begin]->show_status_bar()) {
+            const auto overlay_text_scale = renderer.text_scale;
+            renderer.text_scale = static_cast<float>(config::CONFIG.textScale);
             renderer.push_color(glm::vec4(config::CONFIG.clockColor,1.0F));
             static_cast<void>(status_bar_render.render_local(renderer,openxmb::xmb::wall_clock_now()));
             renderer.pop_color();
+            renderer.text_scale = overlay_text_scale;
         }
         if(overlay_transition && overlay_fade_direction == transition_direction::out &&
            old_overlay && old_overlay->do_fade_out()) {
@@ -1605,7 +1605,6 @@ namespace app
     void shell::reload_menu() {
         if(!fixed_components_loaded) return;
         win->waitIdle();
-        menu = app::main_menu(this);
         menu.preload(device, allocator, *loader);
     }
 

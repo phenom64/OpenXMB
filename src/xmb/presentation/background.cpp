@@ -127,13 +127,15 @@ BackgroundGradient resolve_background_gradient(int month_zero_based,
 
 BackgroundGradient resolve_manual_background_gradient(std::array<float, 3> rgb,
                                                       float local_hour) noexcept {
+  const auto night = night_day_blend(local_hour);
+  const auto brightness = 1.0F + (0.42F - 1.0F) * night;
   for (auto &channel : rgb) {
-    channel = std::clamp(channel, 0.0F, 1.0F);
+    channel = std::clamp(channel, 0.0F, 1.0F) * brightness;
   }
   return {
-      .top_rgb = {rgb[0]*0.43F,rgb[1]*0.43F,rgb[2]*0.43F},
+      .top_rgb = {rgb[0]*0.5F,rgb[1]*0.5F,rgb[2]*0.5F},
       .bottom_rgb = rgb,
-      .night_day_blend = night_day_blend(local_hour),
+      .night_day_blend = night,
       .direct_gradient_span = 1.0F,
   };
 }

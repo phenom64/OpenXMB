@@ -1,8 +1,6 @@
-/* XMBShell, a console-like desktop shell
- * Copyright (C) 2025 - JCM
- *
- * This file (or substantial portions of it) is derived from XMBShell:
- *   https://github.com/JnCrMx/xmbshell
+/* This file is a part of the OpenXMB desktop experience project.
+ * Copyright (C) 2025-2026 Syndromatic Ltd. All rights reserved
+ * Designed by Kavish Krishnakumar in Manchester.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +21,7 @@ module;
 #include "openxmb/xmb/catalog.hpp"
 #include "openxmb/xmb/background.hpp"
 #include "openxmb/desktop/library.hpp"
+#include "openxmb/themes/library.hpp"
 #include "openxmb/xmb/settings_actions.hpp"
 #include "openxmb/xmb/settings_controller.hpp"
 
@@ -178,6 +177,21 @@ struct contained_layout {
     constexpr std::string_view compat_icon_prefix = "compat.icon.";
     const auto icon_directory = asset_directory / "compat/xmb-ui-compat/icons";
 
+    constexpr std::array<std::pair<std::string_view,std::string_view>,17> settings_icons{{
+        {"008","icon_update"},{"005","icon_game_setting"},{"009","icon_bdvd_setting"},
+        {"003","icon_music_setting"},{"042","icon_chat_setting"},{"012","icon_system_setting"},
+        {"023","icon_theme_setting"},{"014","icon_datetime_setting"},{"056","icon_powersave_setting"},
+        {"015","icon_accessory"},{"010","icon_printer_setting"},{"016","icon_display_setting"},
+        {"017","icon_sound_setting"},{"018","icon_security_setting"},{"020","icon_remoteplay_setting"},
+        {"006","icon_network_setting"},{"022","icon_setting_item"}
+    }};
+    if(icon_ref.starts_with(xmb_icon_prefix)) {
+        for(const auto& [suffix,name]:settings_icons) if(icon_ref.substr(xmb_icon_prefix.size())==suffix) {
+            const auto path=asset_directory/"icons/theme"/(std::string(name)+".png");
+            if(file_exists(path)) return path;
+        }
+    }
+
     if(icon_ref.starts_with(xmb_icon_prefix)) {
         const auto suffix = icon_ref.substr(xmb_icon_prefix.size());
         const auto filename = suffix == "psn"
@@ -271,7 +285,7 @@ struct ps3_colour_entry {
             return colour.value;
         }
     }
-    return "light.purple";
+    return "custom";
 }
 
 [[nodiscard]] std::string_view current_ps3_background_value() noexcept {
@@ -338,6 +352,20 @@ struct ps3_colour_entry {
         return current_ps3_day_night_value();
     }
     return "";
+}
+
+[[nodiscard]] std::string_view locale_for_catalog_value(std::string_view value) noexcept {
+    constexpr std::array<std::pair<std::string_view,std::string_view>,20> locales{{
+        {"japanese","ja"},{"english.united.states","en_US"},
+        {"english.united.kingdom","en_GB"},{"french","fr"},
+        {"spanish","es"},{"german","de"},{"italian","it"},{"dutch","nl"},
+        {"portuguese.portugal","pt_PT"},{"portuguese.brazil","pt_BR"},
+        {"russian","ru"},{"korean","ko"},{"chinese.traditional","zh_TW"},
+        {"chinese.simplified","zh_CN"},{"finnish","fi"},{"swedish","sv"},
+        {"danish","da"},{"norwegian","no"},{"polish","pl"},{"turkish","tr"}
+    }};
+    for(const auto& [catalog,locale]:locales) if(value==catalog) return locale;
+    return {};
 }
 
 [[nodiscard]] bool settings_dialog_top_action(
@@ -649,6 +677,14 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
     using ::menu::make_simple;
     using ::menu::make_simple_of;
 
+    const bool reloading=!menus.empty();
+    const auto previous_route=settings_controller?settings_controller->route().id:std::string{};
+    const auto previous_selection=settings_controller?settings_controller->route().selection:0U;
+    current_submenu=nullptr;submenu_stack.clear();in_submenu=false;
+    settings_controller.reset();settings_catalog.reset();
+    settings_icon_textures.clear();settings_value_labels.clear();
+    menus.clear();
+
     const auto& asset_directory = config::CONFIG.asset_directory;
     menus.reserve(16);
     const auto panel_entry = [&](std::string label, std::string section, std::string icon = "icon_category_settings.png") {
@@ -767,7 +803,17 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
             spdlog::info("Loaded catalog-backed Settings controller with {} icon binding(s)",
                 settings_icon_textures.size());
             seed_settings_dialog_values();
-            apply_initial_settings_route();
+            if(!reloading) apply_initial_settings_route();
+            else if(!previous_route.empty()) {
+                std::vector<std::size_t> path;
+                if(find_settings_menu_path(*settings_catalog,"category.settings",previous_route,path)) {
+                    const auto now=seconds_from_time_point(std::chrono::steady_clock::now());
+                    for(const auto index:path) {
+                        if(!settings_controller->set_selection(index,now)||!settings_controller->activate(now)) break;
+                    }
+                    static_cast<void>(settings_controller->set_selection(previous_selection,now));
+                }
+            }
         } else {
             spdlog::warn("Settings catalog loaded from {}, but controller creation failed",
                 catalog_path.string());
@@ -932,6 +978,12 @@ void main_menu::seed_settings_dialog_values() {
     }
     for(const auto& [node_id, node] : settings_catalog->nodes) {
         (void)node_id;
+        if(node.action_id=="simulate.system.language") {
+            for(const auto& choice:node.choices)
+                if(locale_for_catalog_value(choice.value)==config::CONFIG.language||
+                   (choice.value=="english.united.states"&&config::CONFIG.language=="en"))
+                    settings_value_labels[node.id]=settings_catalog->text(choice.label_key);
+        }
         if(node.action_id.rfind("dialog.", 0) != 0) {
             continue;
         }
@@ -941,8 +993,14 @@ void main_menu::seed_settings_dialog_values() {
         }
         auto label = localized_dialog_choice_label(
             *settings_catalog, node.action_id, current_value);
+        if(node.action_id=="dialog.colour"&&current_value=="custom")
+            label=nlohmann::json::parse(config::CONFIG.shell_snapshot()).value("theme-custom-colour",std::string{"Custom"});
         if(!label.empty()) {
             settings_value_labels[node.id] = std::move(label);
+        }
+        if(node.action_id=="dialog.theme") {
+            if(const auto active=xmb->theme_library()->active();active&&!active->reverted&&!active->id.empty())
+                settings_value_labels[node.id]=active->name;
         }
     }
 }
@@ -985,7 +1043,6 @@ bool main_menu::activate_settings(action action) {
             return step && step.changed;
         }
         case openxmb::xmb::SettingsActionKind::open_dialog:
-            if(resolved.plan->target_id == "dialog.theme") { xmb->open_panel("themes"); return true; }
             if(open_settings_dialog_choice_overlay(*resolved.plan)) {
                 return true;
             }
@@ -1043,11 +1100,18 @@ bool main_menu::open_settings_choice_overlay(const openxmb::xmb::CatalogNode& no
     auto* overlay = xmb->emplace_overlay<app::choice_overlay>(
         labels,
         selection,
-        [this, node_id = node.id, labels](unsigned int index) {
+        [this, node_id = node.id, labels, choices=node.choices,
+         system_language=node.action_id=="simulate.system.language"](unsigned int index) {
             settings_choice_panel_open = false;
             if(index < labels.size()) {
                 settings_value_labels[node_id] = labels[index];
                 config::CONFIG.preferences[node_id] = labels[index];
+                if(system_language&&index<choices.size()) {
+                    const auto locale=std::string(locale_for_catalog_value(choices[index].value));
+                    // The language callback rebuilds the menu. Do not access
+                    // this menu again after applying the real locale setting.
+                    if(!locale.empty()) config::CONFIG.setLanguage(locale);
+                }
                 if(!config_override_read_only()) config::CONFIG.save_config();
             }
         },
@@ -1061,6 +1125,36 @@ bool main_menu::open_settings_dialog_choice_overlay(
     const openxmb::xmb::SettingsActionPlan& plan) {
     if(!settings_catalog) {
         return false;
+    }
+    if(plan.target_id=="dialog.theme") {
+        const auto library=xmb->theme_library();
+        const auto installed=library->discover();
+        const auto active=library->active();
+        std::vector<std::string> labels{"Original","Classic"};
+        unsigned int selection=current_ps3_theme_value()=="classic"?1U:0U;
+        for(const auto& theme:installed) {
+            if(active&&active->id==theme.id) selection=static_cast<unsigned int>(labels.size());
+            labels.push_back(theme.name);
+        }
+        labels.push_back("Install / manage themes...");
+        settings_choice_panel_open=true;
+        auto* shell=xmb;
+        shell->emplace_overlay<app::choice_overlay>(labels,selection,
+            [this,shell,library,installed,labels,node_id=plan.node_id](unsigned int index) {
+                settings_choice_panel_open=false;
+                if(index>=labels.size()) return;
+                if(index==labels.size()-1) {shell->open_panel("themes");return;}
+                settings_value_labels[node_id]=labels[index];
+                // Applying a pack reloads icon resources and reconstructs the
+                // menu; retain no references to this instance afterwards.
+                if(index>=2) {shell->apply_theme(library->apply(installed[index-2].id));return;}
+                shell->apply_theme(library->revert());
+                if(index==1) {
+                    config::CONFIG.setBackgroundType(config::config::background_type::wave);
+                    if(!config_override_read_only()) config::CONFIG.save_config();
+                }
+            },[this] {settings_choice_panel_open=false;});
+        return true;
     }
     if(plan.target_id.rfind("dialog.", 0) != 0) {
         return false;
@@ -1108,6 +1202,7 @@ bool main_menu::open_settings_dialog_choice_overlay(
             }
         }
     }
+    const auto original_value_label=settings_value_labels.contains(plan.node_id)?settings_value_labels.at(plan.node_id):std::string{};
     if(selection < labels.size()) {
         settings_value_labels[plan.node_id] = labels[selection];
     }
@@ -1125,6 +1220,11 @@ bool main_menu::open_settings_dialog_choice_overlay(
     const auto dialog_id = plan.target_id;
     const auto node_id = plan.node_id;
     const auto original_selection = selection;
+    const auto original_colour=config::CONFIG.themeCustomColour;
+    const auto original_colour_mode=config::CONFIG.themeOriginalColour;
+    const auto original_background=config::CONFIG.backgroundType;
+    const auto original_font=config::CONFIG.fontPath;
+    const auto original_label=original_value_label;
     settings_choice_panel_open = true;
     auto* overlay = xmb->emplace_overlay<app::choice_overlay>(
         labels,
@@ -1156,15 +1256,20 @@ bool main_menu::open_settings_dialog_choice_overlay(
             }
         },
         [this, dialog_id, node_id, labels, choices = selectable_choices,
-         original_selection]() {
+         original_selection,original_colour,original_colour_mode,original_background,original_font,original_label]() {
             settings_choice_panel_open = false;
-            if(original_selection < choices.size()) {
+            if(dialog_id=="dialog.colour") {
+                config::CONFIG.setThemeCustomColour(original_colour);
+                config::CONFIG.setThemeOriginalColour(original_colour_mode);
+            } else if(dialog_id=="dialog.background") {
+                config::CONFIG.setBackgroundType(original_background);
+            } else if(dialog_id=="dialog.font") {
+                config::CONFIG.setFontPath(original_font.string());
+            } else if(original_selection < choices.size()) {
                 (void)apply_settings_dialog_choice_value(
                     dialog_id, choices[original_selection].value, false);
             }
-            if(original_selection < labels.size()) {
-                settings_value_labels[node_id] = labels[original_selection];
-            }
+            settings_value_labels[node_id] = original_label;
         },
         [dialog_id, choices = selectable_choices](unsigned int index) {
             if(index < choices.size()) {

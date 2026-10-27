@@ -9,7 +9,7 @@
 
 This project is a modern interpretation of the iconic XrossMediaBar (XMB) interface, famously used on the PlayStation 3 and other Sony devices. It is not a direct port, but a new implementation that leverages modern graphics APIs and C++ features to create a flexible and performant user interface for desktops and embedded systems.
 
-The rendering backend is powered by [**AuroreEngine**](https://github.com/phenom64/AuroreEngine), a custom rendering library based on `auroreengine`. The entire application is built using C++23 modules for a clean and modern architecture.
+The rendering backend is powered by [**AuroreEngine**](https://github.com/phenom64/AuroreEngine), a custom rendering library based on `dreamrender`. The entire application is built using C++23 modules for a clean and modern architecture.
 
 ## Screenshots
 
@@ -31,7 +31,7 @@ The rendering backend is powered by [**AuroreEngine**](https://github.com/phenom
 *   **Built-in Media Viewers:**
     *   Image viewer for common formats.
     *   Text viewer.
-    *   FFmpeg-based video player with GPU-accelerated YUV decoding.
+    *   FFmpeg-based video player with GPU YUV conversion.
 *   **Highly Configurable:** Runtime behavior, colors, fonts, and more can be configured via a simple `config.json` file.
 *   **Optional Modules:** The build system allows enabling or disabling major features like the video player, an optional WebKitGTK browser surface, and libretro core support.
 
@@ -247,14 +247,28 @@ The Unix launcher sets `XMB_ASSET_DIR` and `XMB_LOCALE_DIR` when they are not al
 
 ## Roadmap
 
-*   **✅ M1: Scaffold:** App compiles & runs; static XMB; JSON config.
-*   **✅ M2: Menus, Fonts, Icons:** Fully navigable XMB with text & icons; async file menu scanning; local placeholder assets packaged for build/install runs.
-*   **🚧 M3: Audio & Music:** UI sound effects are wired; background music playback and visualizer remain planned.
-*   **🚧 M4: Video Player:** File playback with GPU-accelerated YUV decoding; subtitle support next.
-*   ** M5: Libretro Overlay:** Emulation support via a libretro core host.
-*   ** M6: Web Browser:** Integration of a CEF-based browser.
-*   ** M7: Disc Media:** Support for DVD/Blu-ray playback.
-*   **🚧 M8: Performance/Release Pass:** Release/IPO defaults, presets, staged install smoke, CI matrix, steady-clock timing, async I/O; engine-side loader/pipeline tweaks and further descriptor/pool tuning planned.
+The desktop shell has moved beyond the original scaffold and menu milestones. The
+items below describe implementation progress; they are not release acceptance or
+claims of complete visual fidelity. See [milestones.txt](milestones.txt) and
+[desktop workflows and validation](docs/desktop-release.md) for remaining work.
+
+* **M1–M2: Shell and menus:** JSON configuration, navigable crossbar, native
+  1920×1080 layout, text effects, icons, dialogs and keyboard are implemented;
+  visual and platform validation continues.
+* **M3: Music:** Playback, playlists, visualizers and native controls are
+  implemented; sustained playback and audio behavior need target-system testing.
+* **M4: Video:** Playback, audio, text subtitles and native controls are
+  implemented; hardware decoding and bitmap subtitles remain open.
+* **M5: Emulation:** A software libretro host is integrated; hardware-context
+  cores and broader validation remain open.
+* **M6: Browser:** An optional Linux/X11 WebKitGTK child view and a system-browser
+  fallback are implemented; end-to-end integration and platform validation continue.
+* **M7: Disc media:** Mounted-disc workflows are implemented; full optical-media
+  and device coverage remain open.
+* **M8: Performance and release:** Build and smoke-test tooling and resource
+  improvements are in place; release checks and target-hardware measurements remain.
+
+OpenGL ES, H700/RG34XX support and a handheld distribution are deferred.
 
 ### Notes on AuroreEngine
 
@@ -266,10 +280,10 @@ OpenXMB is distributed under the **GNU General Public License v3.0 (GPLv3)**.
 See the [LICENSE](LICENSE) file for the full text.
 
 A significant portion of the OpenXMB base is derived from **XMBShell**, and this is reflected in code taken from that project.  
-Many thanks to its author, **JCM**.
+Many thanks to its author, **JCM**. See the [source provenance review](docs/source-provenance.md) for the current review scope and unresolved items.
 
 All other original code is © 2025-2026 Syndromatic Ltd and contributors, and licensed under version 3 of the GNU General Public License.
-AuroreEngine components adapted from **auroreengine** remain under the MPL 2.0 license.
+AuroreEngine components adapted from **dreamrender** remain under the MPL 2.0 license.
 
 ---
 
