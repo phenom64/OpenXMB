@@ -125,8 +125,7 @@ LONG WINAPI log_windows_exception(EXCEPTION_POINTERS* exception_info)
 #endif
 
 #undef main
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) try {
     startup_trace("entered main");
     std::set_terminate([]() {
         std::fputs("OpenXMB terminated with an uncaught exception\n", stderr);
@@ -280,4 +279,10 @@ int main(int argc, char *argv[])
     spdlog::debug("OpenXMB main loop exited");
 
     return 0;
+} catch(const std::exception& error) {
+    std::fprintf(stderr, "OpenXMB startup or rendering failed: %s\n", error.what());
+    return 1;
+} catch(...) {
+    std::fputs("OpenXMB startup or rendering failed with an unknown exception\n", stderr);
+    return 1;
 }

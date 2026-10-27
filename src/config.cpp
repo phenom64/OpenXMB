@@ -504,6 +504,9 @@ void config::load_from_json() {
         
         nlohmann::json config;
         config_file >> config;
+        // Windows does not allow the migration's atomic replacement while this
+        // stream still holds the original file open.
+        config_file.close();
         bool migrated = false;
         migrate_json(config, migrated);
         

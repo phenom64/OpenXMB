@@ -44,6 +44,7 @@ Before you begin, ensure you have the following tools and libraries installed (v
 - Git
 - CMake 3.28+
 - Ninja build system
+- `glslangValidator` (provided by `glslang-tools` on Ubuntu)
 - LLVM/Clang with C++23 module scanning and a matching `clang-scan-deps`:
   - Linux: Clang 19 with a recent C++ standard library (the CI setup uses GCC 14's library)
   - macOS: Homebrew `llvm@20`
@@ -63,7 +64,8 @@ Before you begin, ensure you have the following tools and libraries installed (v
   - Optional embedded Linux browser: `libwebkit2gtk-4.1-dev`, `libgtk-3-dev`
   - PDF viewing: Poppler tools (`pdfinfo`, `pdftoppm`); printing uses `lp` or `lpr`
   - Optional online game metadata: libcurl and a user-supplied provider key
-- Optional (used by dependencies): `harfbuzz`, `glslang-tools`, `spirv-tools`, `pkg-config`
+- Recommended: `pkg-config` for FFmpeg and optional WebKitGTK discovery; HarfBuzz
+  enables text shaping. `spirv-tools` is optional.
 
 See [desktop workflows and validation](docs/desktop-release.md) for the expanded shell, themes and native media tools.
 

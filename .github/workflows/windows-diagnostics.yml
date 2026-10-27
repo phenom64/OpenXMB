@@ -1,0 +1,118 @@
+name: Windows package diagnostics
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - .github/workflows/windows-diagnostics.yml
+      - scripts/ci/windows_startup_probe.cpp
+      - scripts/packaging/smoke.py
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Release workflow run to replay (empty selects the latest RSX-26 Windows package)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  collect:
+    name: Collect Windows package diagnostics
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.12'
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+      - run: python -m pip install -r scripts/ci/requirements.txt
+      - name: Select an existing package from this repository
+        id: source
+        shell: python
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_RUN: ${{ inputs.run_id }}
+        run: |
+          import json, os, pathlib, subprocess
+          repository = os.environ['GITHUB_REPOSITORY']
+          def api(path):
+              return json.loads(subprocess.check_output(['gh', 'api', path], text=True))
+          requested = os.environ.get('REQUESTED_RUN', '')
+          if requested and not requested.isdecimal():
+              raise SystemExit('run_id must be a numeric workflow run ID')
+          candidates = ([{'id': int(requested)}] if requested else
+              api(f'repos/{repository}/actions/workflows/release.yml/runs?branch=RSX-26&per_page=10')['workflow_runs'])
+          for candidate in candidates:
+              run = api(f'repos/{repository}/actions/runs/{candidate["id"]}')
+              if run['head_branch'] != 'RSX-26' or run['head_repository']['full_name'] != repository:
+                  continue
+              artifacts = api(f'repos/{repository}/actions/runs/{run["id"]}/artifacts')['artifacts']
+              if any(a['name'] == 'release-windows' and not a['expired'] for a in artifacts):
+                  directory = pathlib.Path('dist/windows-diagnostics')
+                  directory.mkdir(parents=True, exist_ok=True)
+                  (directory / 'source.json').write_text(json.dumps({
+                      'run_id': run['id'], 'commit': run['head_sha'], 'url': run['html_url']}, indent=2))
+                  with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+                      output.write(f'run_id={run["id"]}\n')
+                  print(f'Replaying Windows package from {run["html_url"]}, commit {run["head_sha"]}')
+                  break
+          else:
+              raise SystemExit('No retained Windows package exists on RSX-26')
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: release-windows
+          run-id: ${{ steps.source.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: dist/windows-diagnostics/package
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: windows-smoke-evidence
+          run-id: ${{ steps.source.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: dist/windows-diagnostics/previous
+      - name: Prepare software Vulkan
+        run: python scripts/ci/software_vulkan.py
+      - name: Compile and verify the native exception probe
+        shell: pwsh
+        run: |
+          $probe = Join-Path $env:RUNNER_TEMP 'openxmb-startup-probe.exe'
+          $object = Join-Path $env:RUNNER_TEMP 'openxmb-startup-probe.obj'
+          cl.exe /nologo /std:c++20 /EHsc /O1 scripts/ci/windows_startup_probe.cpp "/Fo$object" "/Fe$probe" /link dbghelp.lib
+          if ($LASTEXITCODE) { throw 'Native diagnostic probe compilation failed' }
+          & $probe --self-test
+          if ($LASTEXITCODE) { throw 'Native diagnostic probe self-test failed' }
+          "OPENXMB_STARTUP_PROBE=$probe" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Replay startup, helpers and rendering with captured exceptions
+        id: replay
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $archive = Get-ChildItem dist/windows-diagnostics/package/*.zip | Select-Object -First 1
+          $directory = Join-Path $env:RUNNER_TEMP 'OpenXMB diagnostic package'
+          Expand-Archive $archive.FullName -DestinationPath $directory
+          $app = Get-ChildItem $directory -Filter OpenXMB.exe -Recurse | Select-Object -First 1
+          $symbols = Get-ChildItem dist/windows-diagnostics/previous -Filter '*.pdb' -Recurse | Select-Object -First 1
+          if ($symbols) { $env:_NT_SYMBOL_PATH = $symbols.Directory.FullName }
+          python scripts/packaging/smoke.py --app $app.FullName --assets (Join-Path $app.Directory.FullName 'shell') --render --output dist/windows-diagnostics/current
+          if ($LASTEXITCODE) { throw 'Replayed package failed; inspect the retained diagnostic logs' }
+      - name: Report diagnostic collection separately from release validation
+        shell: pwsh
+        env:
+          REPLAY_OUTCOME: ${{ steps.replay.outcome }}
+        run: |
+          "Package replay outcome: $env:REPLAY_OUTCOME. This workflow collects evidence; it cannot approve or publish a release." | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: windows-package-diagnostics
+          path: |
+            dist/windows-diagnostics/source.json
+            dist/windows-diagnostics/current/**

@@ -28,6 +28,25 @@
 #include <vector>
 
 namespace {
+struct DiagnosticTag { virtual ~DiagnosticTag() = default; };
+struct DiagnosticException : DiagnosticTag, std::runtime_error {
+    using std::runtime_error::runtime_error;
+};
+
+std::wstring quote_argument(const std::wstring& argument)
+{
+    std::wstring result = L"\"";
+    unsigned slashes = 0;
+    for(const auto character : argument) {
+        if(character == L'\\') { ++slashes; continue; }
+        result.append(character == L'"' ? 2 * slashes + 1 : slashes, L'\\');
+        result += character;
+        slashes = 0;
+    }
+    result.append(2 * slashes, L'\\');
+    return result + L'"';
+}
+
 void load_symbols(HANDLE process, HANDLE file, const void* base)
 {
     std::vector<wchar_t> path(32768);
@@ -68,14 +87,24 @@ bool print_cpp_exception(HANDLE process, const EXCEPTION_RECORD& exception)
     // RTTI. Read only its type name and standard exception message, never a dump.
     const auto image = exception.ExceptionInformation[3];
     const auto info = exception.ExceptionInformation[2];
-    std::uint32_t array{}, type{}, descriptor{};
-    if(read_value(process, info + 12, array) && read_value(process, image + array + 4, type) &&
-       read_value(process, image + type + 4, descriptor)) {
-        const auto name = read_text(process, image + descriptor + 2 * sizeof(void*));
-        if(!name.empty()) std::printf("C++ exception type: %s\n", name.c_str());
+    auto standard_exception = exception.ExceptionInformation[1];
+    std::uint32_t array{}, count{};
+    if(read_value(process, info + 12, array) && read_value(process, image + array, count) && count <= 64) {
+        for(std::uint32_t i = 0; i < count; ++i) {
+            std::uint32_t type{}, descriptor{};
+            if(!read_value(process, image + array + 4 * (i + 1), type) ||
+               !read_value(process, image + type + 4, descriptor)) continue;
+            const auto name = read_text(process, image + descriptor + 2 * sizeof(void*));
+            if(i == 0 && !name.empty()) std::printf("C++ exception type: %s\n", name.c_str());
+            std::int32_t displacement{}, virtual_base{};
+            if(name.find("AVexception@std@@") != std::string::npos &&
+               read_value(process, image + type + 8, displacement) &&
+               read_value(process, image + type + 12, virtual_base) && virtual_base == -1)
+                standard_exception += displacement;
+        }
     }
     ULONG_PTR message{};
-    if(read_value(process, exception.ExceptionInformation[1] + sizeof(void*), message)) {
+    if(read_value(process, standard_exception + sizeof(void*), message)) {
         const auto text = read_text(process, message);
         if(!text.empty()) std::printf("C++ exception message: %s\n", text.c_str());
         return text == "OpenXMB native startup probe fixture";
@@ -126,19 +155,20 @@ int wmain(int argc, wchar_t** argv)
 {
     if(argc == 2 && std::wstring(argv[1]) == L"--crash") {
 #ifdef _MSC_VER
-        throw std::runtime_error("OpenXMB native startup probe fixture");
+        throw DiagnosticException("OpenXMB native startup probe fixture");
 #else
         RaiseException(0xE042584D, EXCEPTION_NONCONTINUABLE, 0, nullptr);
         return 1;
 #endif
     }
-    if(argc != 2) return 2;
-    const bool self_test = std::wstring(argv[1]) == L"--self-test";
+    if(argc < 2) return 2;
+    const bool self_test = argc == 2 && std::wstring(argv[1]) == L"--self-test";
     std::vector<wchar_t> own_path(32768);
     GetModuleFileNameW(nullptr, own_path.data(), static_cast<DWORD>(own_path.size()));
     const auto executable = self_test ? own_path.data() : argv[1];
-    std::wstring command = L"\"" + std::wstring(executable) + L"\" " +
-                           (self_test ? L"--crash" : L"--help");
+    std::wstring command = quote_argument(executable);
+    if(self_test || argc == 2) command += self_test ? L" --crash" : L" --help";
+    else for(int i = 2; i < argc; ++i) command += L" " + quote_argument(argv[i]);
     STARTUPINFOW startup{};
     startup.cb = sizeof(startup);
     PROCESS_INFORMATION child{};

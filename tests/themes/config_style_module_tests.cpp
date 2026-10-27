@@ -37,6 +37,8 @@ int main() {
     const auto priorText=b.textColor;b.setTextColor("invalid");require(b.textColor.r==priorText.r&&b.textColor.g==priorText.g&&b.textColor.b==priorText.b,"invalid colors preserve current setting");
     std::ofstream(root/"legacy.json")<<R"({"_meta":{"config_version":4},"shell":{},"render":{}})";
     b.profileConfigPath=root/"legacy.json";b.load();
+    const auto migrated=json::parse(std::ifstream(root/"legacy.json"));
+    require(migrated.at("_meta").at("config_version")==5,"legacy migration is persisted while loading");
     require(b.textScale==1&&b.wavesEnabled&&b.particlesEnabled&&b.waveParameters.empty(),"legacy profile does not inherit previous style/effects");
     require(b.textColor.r==1&&b.textColor.g==1&&b.textColor.b==1&&b.iconColor.r==1&&b.iconColor.g==1&&b.iconColor.b==1,"legacy profile uses neutral color defaults");
     fs::remove_all(root);std::cout<<"Config styles: "<<checks<<" checks passed\n";return 0;

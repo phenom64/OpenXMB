@@ -107,6 +107,7 @@ def main():
         if not (locales / language / 'LC_MESSAGES/shell.mo').is_file():
             raise RuntimeError('Missing compiled translation catalog: ' + language)
     environment['OPENXMB_STARTUP_TRACE'] = '1'
+    environment['SPDLOG_LEVEL'] = 'debug'
     for option in ['--help', '--version']:
         try:
             output = checked_output([app, option], environment, args.output,
@@ -114,7 +115,7 @@ def main():
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
             if probe := environment.get('OPENXMB_STARTUP_PROBE'):
                 try:
-                    checked_output([probe, app], environment, args.output,
+                    checked_output([probe, app, option], environment, args.output,
                                    args.output / 'native-startup-stack.log', timeout=90)
                 except (OSError, subprocess.SubprocessError) as error:
                     print('Native startup probe: ' + str(error), flush=True)
@@ -171,9 +172,16 @@ def main():
             command = [str(app), '--width', '960', '--height', '640', '--no-fullscreen']
             if args.background:
                 command.append('--background-only')
-            with (args.output / 'render.log').open('w') as log:
-                subprocess.run(command, env=environment, cwd=root, stdout=log,
-                               stderr=subprocess.STDOUT, check=True, timeout=180)
+            try:
+                checked_output(command, environment, root, args.output.resolve() / 'render.log', timeout=180)
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+                if probe := environment.get('OPENXMB_STARTUP_PROBE'):
+                    try:
+                        checked_output([probe, *command], environment, root,
+                                       args.output.resolve() / 'native-render-stack.log', timeout=90)
+                    except (OSError, subprocess.SubprocessError) as error:
+                        print('Native renderer probe: ' + str(error), flush=True)
+                raise
             images = sorted(frames.glob('*.png'))
             if len(images) < 5:
                 raise RuntimeError('The installed renderer did not produce frames')
