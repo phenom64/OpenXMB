@@ -77,12 +77,12 @@ function Invoke-SceneCapture {
     }
 
     $env:SPDLOG_LEVEL = "warn"
-    $env:DREAMRENDER_HEADLESS = "1"
-    $env:DREAMRENDER_HEADLESS_WIDTH = "$Width"
-    $env:DREAMRENDER_HEADLESS_HEIGHT = "$Height"
-    $env:DREAMRENDER_HEADLESS_FRAMES = "$Frames"
-    $env:DREAMRENDER_HEADLESS_OUTPUT_DIR = $sceneDir
-    $env:DREAMRENDER_HEADLESS_OUTPUT_PATTERN = $Pattern
+    $env:AUROREENGINE_HEADLESS = "1"
+    $env:AUROREENGINE_HEADLESS_WIDTH = "$Width"
+    $env:AUROREENGINE_HEADLESS_HEIGHT = "$Height"
+    $env:AUROREENGINE_HEADLESS_FRAMES = "$Frames"
+    $env:AUROREENGINE_HEADLESS_OUTPUT_DIR = $sceneDir
+    $env:AUROREENGINE_HEADLESS_OUTPUT_PATTERN = $Pattern
     $env:XMB_ASSET_DIR = $shellDir
     $env:XMB_LOCALE_DIR = $localeDir
     $env:SDL_AUDIODRIVER = "dummy"

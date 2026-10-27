@@ -16,7 +16,7 @@ module;
 #include <string_view>
 
 export module openxmb.app:document_viewer;
-import dreamrender;
+import auroreengine;
 import glm;
 import sdl2;
 import openxmb.utils;
@@ -37,7 +37,7 @@ export class document_viewer : private base_viewer,public component,
 public:
     float typography_scale() const override { return 2.5F; }
 
-    document_viewer(std::filesystem::path path,dreamrender::resource_loader& loader)
+    document_viewer(std::filesystem::path path,auroreengine::resource_loader& loader)
         : path(std::filesystem::absolute(std::move(path))),loader(loader) {
         image_width=image_height=1;
         request(0);
@@ -58,9 +58,9 @@ public:
                 document=loaded.document;
                 if(loaded.generation==generation) {
                     auto pixels=std::make_shared<openxmb::photos::Bitmap>(std::move(loaded.image));
-                    incoming=std::make_shared<dreamrender::texture>(loader.getDevice(),loader.getAllocator(),pixels->width,pixels->height);
+                    incoming=std::make_shared<auroreengine::texture>(loader.getDevice(),loader.getAllocator(),pixels->width,pixels->height);
                     upload_generation=generation;
-                    upload=loader.loadTexture(incoming.get(),dreamrender::LoaderFunction{[pixels](std::uint8_t* output,std::size_t capacity) {
+                    upload=loader.loadTexture(incoming.get(),auroreengine::LoaderFunction{[pixels](std::uint8_t* output,std::size_t capacity) {
                         if(pixels->rgba.size()>capacity) throw std::runtime_error("Document page exceeds texture upload limit");
                         std::memcpy(output,pixels->rgba.data(),pixels->rgba.size());
                     }});
@@ -85,7 +85,7 @@ public:
         }
         return result::success;
     }
-    void render(dreamrender::gui_renderer& renderer,shell*) override {
+    void render(auroreengine::gui_renderer& renderer,shell*) override {
         view_aspect=static_cast<float>(renderer.aspect_ratio);
         renderer.draw_rect(glm::vec2(0),glm::vec2(1),glm::vec4(0.02f,0.025f,0.035f,1));
         std::string title=path.filename().string();
@@ -203,10 +203,10 @@ private:
         xmb->emplace_overlay<message_overlay>(std::move(title),std::move(body),std::vector<std::string>{"OK"},[this](unsigned int) { modal_open=false; },true,[this]() { modal_open=false; });
     }
     std::filesystem::path path;
-    dreamrender::resource_loader& loader;
+    auroreengine::resource_loader& loader;
     shell* xmb{};
     std::shared_ptr<documents::Document> document;
-    std::shared_ptr<dreamrender::texture> texture,incoming;
+    std::shared_ptr<auroreengine::texture> texture,incoming;
     std::future<Loaded> decoding;
     std::future<void> upload,printing;
     std::stop_source cancellation;

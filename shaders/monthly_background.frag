@@ -7,6 +7,7 @@ layout(push_constant) uniform MonthlyBackgroundParameters {
     vec4 top_and_night;
     vec4 bottom_and_reserved;
     vec4 boot;
+    vec4 modes;
 } background;
 
 vec3 srgb_to_linear(vec3 color)
@@ -25,9 +26,20 @@ vec3 xmb_web_composite(vec3 scene)
     return vec3(1.0) - exp(-max(scene, vec3(0.0)) * (exposure / white_level));
 }
 
+void write_background(vec3 rgb) {
+    float u=clamp(in_uv.y/0.62,0.0,1.0);
+    float gradient=1.0-pow(1.0-u,2.0);
+    vec3 music=mix(vec3(106.0,45.0,118.0)/255.0,vec3(2.0,0.0,4.0)/255.0,gradient);
+    out_color=vec4(mix(rgb,music,background.modes.x),1.0);
+}
 void main()
 {
     const float screen_y = clamp(in_uv.y, 0.0, 1.0);
+    if(background.bottom_and_reserved.a>0.0) {
+        float t=smoothstep(0.0,background.bottom_and_reserved.a,screen_y);
+        vec3 rgb=mix(background.top_and_night.rgb,background.bottom_and_reserved.rgb,t);
+        write_background(rgb);return;
+    }
     const float bottom_mix = smoothstep(0.70, 1.0, screen_y);
     vec3 color = mix(background.top_and_night.rgb,
                      background.bottom_and_reserved.rgb,
@@ -85,5 +97,5 @@ void main()
 
     // xmb-web's fitted constants target numeric 8-bit canvas values. The
     // Vulkan target is sRGB, so feed it linear light to avoid encoding twice.
-    out_color = vec4(srgb_to_linear(clamp(xmb_web_composite(color), 0.0, 1.0)), 1.0);
+    write_background(clamp(xmb_web_composite(color),0.0,1.0));
 }

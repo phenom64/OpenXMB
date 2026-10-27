@@ -250,38 +250,38 @@ FetchContent_Declare(i18n++
 
 # We are using our own stable, maintained fork of the rendering engine.
 # Allow overriding the engine source with a local path for development.
-set(DREAMS_BUILD_WITH_POSIX_THREADS ON CACHE BOOL "" FORCE)
-set(DREAMS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(DREAMS_BUILD_V2_TESTS ON CACHE BOOL "Build Aurore v2 contract tests during OpenXMB integration" FORCE)
-set(DREAMS_FIND_PACKAGES ON CACHE BOOL "Allow AuroreEngine to create required package targets" FORCE)
+set(AUROREENGINE_BUILD_WITH_POSIX_THREADS ON CACHE BOOL "" FORCE)
+set(AUROREENGINE_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(AUROREENGINE_BUILD_V2_TESTS ON CACHE BOOL "Build Aurore v2 contract tests during OpenXMB integration" FORCE)
+set(AUROREENGINE_FIND_PACKAGES ON CACHE BOOL "Allow AuroreEngine to create required package targets" FORCE)
 
-set(DREAMRENDER_LOCAL "" CACHE PATH "Path to local AuroreEngine checkout (optional)")
-if(DREAMRENDER_LOCAL)
-  get_filename_component(_dreamrender_local "${DREAMRENDER_LOCAL}" ABSOLUTE)
-  if(NOT EXISTS "${_dreamrender_local}/CMakeLists.txt")
-    message(FATAL_ERROR "DREAMRENDER_LOCAL does not point to an AuroreEngine checkout: ${_dreamrender_local}")
+set(AUROREENGINE_LOCAL "" CACHE PATH "Path to local AuroreEngine checkout (optional)")
+if(AUROREENGINE_LOCAL)
+  get_filename_component(_auroreengine_local "${AUROREENGINE_LOCAL}" ABSOLUTE)
+  if(NOT EXISTS "${_auroreengine_local}/CMakeLists.txt")
+    message(FATAL_ERROR "AUROREENGINE_LOCAL does not point to an AuroreEngine checkout: ${_auroreengine_local}")
   endif()
-  message(STATUS "${COLOR_YELLOW}Using local AuroreEngine at ${COLOR_CYAN}${_dreamrender_local}${COLOR_RESET}")
-  add_subdirectory("${_dreamrender_local}" "${CMAKE_CURRENT_BINARY_DIR}/_deps/dreamrender-build")
+  message(STATUS "${COLOR_YELLOW}Using local AuroreEngine at ${COLOR_CYAN}${_auroreengine_local}${COLOR_RESET}")
+  add_subdirectory("${_auroreengine_local}" "${CMAKE_CURRENT_BINARY_DIR}/_deps/auroreengine-build")
 else()
-  FetchContent_Declare(dreamrender
+  FetchContent_Declare(auroreengine
     GIT_REPOSITORY https://github.com/phenom64/AuroreEngine.git
-    GIT_TAG        22e749dc8bad62f3263eb5a254475599fc0052f4
+    GIT_TAG        b4eb034efa60a0d7171187f5ab7e8bf3d435e85a
     OVERRIDE_FIND_PACKAGE
   )
-  FetchContent_GetProperties(dreamrender)
-  if(NOT dreamrender_POPULATED)
-    FetchContent_Populate(dreamrender)
-    add_subdirectory("${dreamrender_SOURCE_DIR}" "${dreamrender_BINARY_DIR}")
+  FetchContent_GetProperties(auroreengine)
+  if(NOT auroreengine_POPULATED)
+    FetchContent_Populate(auroreengine)
+    add_subdirectory("${auroreengine_SOURCE_DIR}" "${auroreengine_BINARY_DIR}")
   endif()
 endif()
 
-if(TARGET SDL2::SDL2 AND TARGET dreams_sdl2Module)
+if(TARGET SDL2::SDL2 AND TARGET auroreengine_sdl2Module)
   get_target_property(_openxmb_sdl2_includes SDL2::SDL2 INTERFACE_INCLUDE_DIRECTORIES)
   foreach(_sdl2_include_dir IN LISTS _openxmb_sdl2_includes)
     get_filename_component(_sdl2_include_parent "${_sdl2_include_dir}" DIRECTORY)
     if(EXISTS "${_sdl2_include_parent}/SDL2/SDL.h")
-      target_include_directories(dreams_sdl2Module PUBLIC "${_sdl2_include_parent}")
+      target_include_directories(auroreengine_sdl2Module PUBLIC "${_sdl2_include_parent}")
     endif()
   endforeach()
 endif()
@@ -617,18 +617,18 @@ endif()
 target_compile_options(XMS PRIVATE --embed-dir=${CMAKE_CURRENT_BINARY_DIR}/shaders)
 target_compile_options(XMS PRIVATE --embed-dir=${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(XMS PRIVATE dreams::dreamrender)
+target_link_libraries(XMS PRIVATE auroreengine::auroreengine)
 target_link_libraries(XMS PRIVATE OpenXMB::ShellCore)
 target_link_libraries(XMS PRIVATE OpenXMB::MediaCore)
 target_link_libraries(XMS PRIVATE OpenXMB::CatalogCore)
 target_link_libraries(XMS PRIVATE OpenXMB::SettingsCore)
 target_link_libraries(XMS PRIVATE OpenXMB::DialogsCore)
 target_link_libraries(XMS PRIVATE OpenXMB::LocalizationCore)
-target_link_libraries(XMS PRIVATE dreams::sdl2Module)
-target_link_libraries(XMS PRIVATE dreams::glmModule)
-target_link_libraries(XMS PRIVATE dreams::VulkanHppModule)
-target_link_libraries(XMS PRIVATE dreams::vmaModule)
-target_link_libraries(XMS PRIVATE dreams::spdlogModule)
+target_link_libraries(XMS PRIVATE auroreengine::sdl2Module)
+target_link_libraries(XMS PRIVATE auroreengine::glmModule)
+target_link_libraries(XMS PRIVATE auroreengine::VulkanHppModule)
+target_link_libraries(XMS PRIVATE auroreengine::vmaModule)
+target_link_libraries(XMS PRIVATE auroreengine::spdlogModule)
 target_link_libraries(XMS PRIVATE Freetype::Freetype)
 target_link_libraries(XMS PRIVATE i18nModule)
 target_link_libraries(XMS PRIVATE argparseModule)
@@ -652,6 +652,7 @@ include(cmake/Integrations.cmake)
 target_link_libraries(XMS PRIVATE OpenXMB::MusicCore OpenXMB::Integrations OpenXMB::DesktopCore)
 target_sources(XMS PRIVATE src/programs/library_manager.cpp)
 target_sources(XMS PUBLIC FILE_SET CXX_MODULES FILES
+  src/app/xmb_presentation.cppm
   src/programs/music_player.cppm
   src/programs/integration_center.cppm
   src/programs/library_manager.cppm
@@ -660,8 +661,8 @@ target_sources(XMS PUBLIC FILE_SET CXX_MODULES FILES
 if(ENABLE_VIDEO_PLAYER)
   target_sources(XMS PRIVATE src/video.cpp src/video_worker.cpp)
   target_sources(XMS PUBLIC FILE_SET CXX_MODULES FILES src/render/components/video_background.cppm)
-  dreams_add_shader(XMS shaders/video_background.vert)
-  dreams_add_shader(XMS shaders/video_background.frag)
+  auroreengine_add_shader(XMS shaders/video_background.vert)
+  auroreengine_add_shader(XMS shaders/video_background.frag)
 endif()
 
 if(OPENXMB_BUILD_NATIVE_TESTS AND ENABLE_VIDEO_PLAYER)
@@ -935,7 +936,7 @@ if(UNIX AND NOT APPLE)
 endif()
 
 foreach(shader ${XMS_SHADERS})
-  dreams_add_shader(XMS ${shader})
+  auroreengine_add_shader(XMS ${shader})
 endforeach()
 target_include_directories(XMS PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/shaders)
 

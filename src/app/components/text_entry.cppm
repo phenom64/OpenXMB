@@ -1,6 +1,8 @@
 module;
 
 #include <array>
+#include <chrono>
+#include <cmath>
 #include <functional>
 #include <string>
 #include <string_view>
@@ -8,8 +10,10 @@ module;
 
 export module openxmb.app:text_entry;
 import :component;
+import :main;
+import :xmb_presentation;
 import openxmb.utils;
-import dreamrender;
+import auroreengine;
 import glm;
 
 export namespace app {
@@ -19,8 +23,8 @@ public:
     float typography_scale() const override { return 2.5F; }
 
     text_entry_overlay(std::string title, std::string initial,
-                       std::function<void(std::string)> accept)
-        : title_(std::move(title)), value_(std::move(initial)), accept_(std::move(accept)) {}
+                       std::function<void(std::string)> accept,std::function<void()> cancel={})
+        : title_(std::move(title)), value_(std::move(initial)), accept_(std::move(accept)),cancel_(std::move(cancel)) {}
 
     result on_event(const event& e) override {
         if (const auto* key = e.get<events::key_up>(); key && (key->keycode==225 || key->keycode==229)) { upper_=false; return result::success; }
@@ -42,7 +46,7 @@ public:
             if (ch) { if (value_.size() < 4096) value_ += ch; return result::success; }
         }
         switch (e.action) {
-        case action::cancel: return result::close | result::back_sound;
+        case action::cancel: if(cancel_) cancel_();return result::close | result::back_sound;
         case action::up: row_ = (row_ + 5) % 6; break;
         case action::down: row_ = (row_ + 1) % 6; break;
         case action::left: col_ = (col_ + 9) % 10; break;
@@ -66,25 +70,53 @@ public:
         return result::success;
     }
 
-    void render(dreamrender::gui_renderer& r, shell*) override {
-        r.draw_rect({0.08F, 0.12F}, {0.84F, 0.76F}, {0.025F, 0.035F, 0.055F, 0.96F});
-        r.draw_text(title_, 0.12F, 0.19F, 0.05F);
-        const auto shown = value_.size() > 70 ? "..." + value_.substr(value_.size()-70) : value_;
-        r.draw_text(shown + "_", 0.12F, 0.28F, 0.035F);
-        for (int row = 0; row < 5; ++row) for (int col = 0; col < 10; ++col) {
-            const float x = 0.14F + col * 0.073F, y = 0.38F + row * 0.065F;
-            if (row == row_ && col == col_) r.draw_rect({x-0.008F, y-0.027F}, {0.047F, 0.055F}, {0.28F, 0.48F, 0.70F, 0.9F});
-            char ch = rows_[row][col];
-            if (upper_ && ch >= 'a' && ch <= 'z') ch -= 'a' - 'A';
-            r.draw_text(std::string(1, ch), x, y, 0.04F);
+    result tick(shell* xmb) override {
+        if(!loaded_) {
+            loaded_=true;
+            for(const auto* name:{"osk/button_base_white","osk/button_base_blue_gray","osk/button_base_g","osk/osk_icon"}) icons_.load(*xmb->get_window()->loader,name);
         }
-        const std::array<std::string_view, 4> labels{"Delete", "Space", "Shift", "Done"};
-        for (int i = 0; i < 4; ++i) {
-            const bool selected = row_ == 5 && (col_ < 2 ? 0 : col_ < 5 ? 1 : col_ < 7 ? 2 : 3) == i;
-            r.draw_text(labels[i], 0.14F + i * 0.19F, 0.74F, 0.037F,
-                        selected ? glm::vec4(0.5F, 0.8F, 1.0F, 1.0F) : glm::vec4(1.0F));
+        return result::success;
+    }
+    void render(auroreengine::gui_renderer& r, shell*) override {
+        xmb_canvas c(r);
+        c.rect(0,0,1920,1080,{0,0,0,0.42F});
+        c.rect(385,206,1149,668,{0,0,0,0.35F},12);
+        const auto grey=[](float value) {const float v=std::pow((value+0.055F)/1.055F,2.4F);return glm::vec4(v,v,v,1);};
+        const auto gradient=[&](float y,float h,float top,float bottom) {
+            c.gradient(393,y,1133,h,grey(top),grey(bottom));
+        };
+        gradient(214,56,0.63F,0.56F);
+        icons_.box(c,"osk/osk_icon",403,224,34,39);
+        c.text(title_,447,254,28);
+        gradient(270,118,0.31F,0.14F);
+        const auto shown=value_.size()>83?"..."+value_.substr(value_.size()-83):value_;
+        c.text(shown,414,312,24);
+        const float caret=414+r.text_width_pixels(shown,24*c.scale)/c.scale;
+        const auto seconds=std::chrono::duration<float>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        if(std::fmod(seconds,1.0F)<0.5F) {
+            c.rect(caret+2,284,2,34,{0.43F,0.81F,0.18F,1});
+            c.rect(caret,284,6,2,{0.43F,0.81F,0.18F,1});c.rect(caret,316,6,2,{0.43F,0.81F,0.18F,1});
         }
-        r.draw_text("Enter / Options: save    Cancel: back    Extra: delete", 0.14F, 0.82F, 0.026F);
+        c.rect(393,388,1133,14,grey(0.61F));
+        gradient(402,388,0.61F,0.38F);
+        for(int row=0;row<5;++row) for(int col=0;col<10;++col) {
+            const float x=418+col*109,y=418+row*57;
+            const bool focused=row==row_&&col==col_;
+            icons_.box(c,"osk/button_base_white",x,y,102,54,focused?1.0F:0.8F);
+            if(focused) {c.rect(x+4,y+3,94,1,{1,1,1,0.9F});c.rect(x+4,y+50,94,1,{1,1,1,0.9F});}
+            char ch=rows_[row][col];if(upper_&&ch>='a'&&ch<='z') ch-='a'-'A';
+            c.text(std::string(1,ch),x+76,y+39,27,{0.025F,0.025F,0.025F,1},0,true);
+        }
+        const std::array<std::string_view,4> labels{"Delete","Space","Shift","Done"};
+        for(int i=0;i<4;++i) {
+            const bool focused=row_==5&&(col_<2?0:col_<5?1:col_<7?2:3)==i;
+            const float x=418+i*273;
+            icons_.box(c,i==3?"osk/button_base_g":"osk/button_base_blue_gray",x,715,266,58,focused?1.0F:0.8F);
+            c.text(labels[i],x+133,755,26,{0.025F,0.025F,0.025F,1},0,true);
+            if(focused) c.rect(x+5,718,256,1,{1,1,1,1});
+        }
+        c.rect(393,790,1133,76,grey(0.38F));
+        c.text("Enter / Options: save    Cancel: back    Extra: delete",960,838,23,{1,1,1,0.95F},0,true);
     }
     bool is_opaque() const override { return false; }
 private:
@@ -93,7 +125,10 @@ private:
     static constexpr std::array<std::string_view, 5> rows_{"1234567890", "qwertyuiop", "asdfghjkl:", "zxcvbnm./-", "_@+?=\\()[]"};
     std::string title_, value_;
     std::function<void(std::string)> accept_;
+    std::function<void()> cancel_;
     int row_ = 0, col_ = 0;
     bool upper_ = false;
+    bool loaded_{};
+    media_icons icons_;
 };
 }

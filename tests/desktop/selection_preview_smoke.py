@@ -68,7 +68,7 @@ def main():
         config_file = root / "config.json"
         config_file.write_text(json.dumps(config))
         environment = dict(os.environ)
-        environment.update({"XMB_ASSET_DIR": str(app.parent / "share/shell"), "XMB_LOCALE_DIR": str(app.parent / "locales"), "SDL_VIDEODRIVER": "x11", "DREAMRENDER_HEADLESS": "0", "OPENXMB_DATA_DIR": str(data), "OPENXMB_CONFIG": str(config_file), "OPENXMB_FIXED_BOOT_SECONDS": "100", "SDL_AUDIODRIVER": "dummy", "XDG_CACHE_HOME": str(root / "cache")})
+        environment.update({"XMB_ASSET_DIR": str(app.parent / "share/shell"), "XMB_LOCALE_DIR": str(app.parent / "locales"), "SDL_VIDEODRIVER": "x11", "AUROREENGINE_HEADLESS": "0", "OPENXMB_DATA_DIR": str(data), "OPENXMB_CONFIG": str(config_file), "OPENXMB_FIXED_BOOT_SECONDS": "100", "SDL_AUDIODRIVER": "dummy", "XDG_CACHE_HOME": str(root / "cache")})
         log = root / "app.log"
         with log.open("w") as output:
             process = subprocess.Popen([str(app), "--width", "960", "--height", "540", "--no-fullscreen", "--open-panel", "games"], env=environment, cwd=root, stdout=output, stderr=subprocess.STDOUT)

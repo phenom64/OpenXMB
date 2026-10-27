@@ -1,24 +1,28 @@
 module;
 
 #include "openxmb/xmb/settings_scene.hpp"
+#include "openxmb/xmb/background.hpp"
 
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <chrono>
+#include <cmath>
 #include <span>
 #include <string_view>
 
 export module openxmb.xmb.settings_scene_renderer;
 
-import dreamrender;
+import auroreengine;
+import openxmb.utils;
 import glm;
 
 export namespace openxmb::xmb {
 
 struct SettingsSceneIcon {
   std::string_view semantic_id;
-  const dreamrender::texture *texture{};
-  const dreamrender::texture *glass_texture{};
+  const auroreengine::texture *texture{};
+  const auroreengine::texture *glass_texture{};
 };
 
 struct SettingsSceneRenderOptions {
@@ -28,7 +32,7 @@ struct SettingsSceneRenderOptions {
 
 class SettingsSceneRenderer {
 public:
-  void render(dreamrender::gui_renderer &renderer,
+  void render(auroreengine::gui_renderer &renderer,
               const SettingsSceneSnapshot &snapshot,
               std::span<const SettingsSceneIcon> icons,
               SettingsSceneRenderOptions options = {}) const;
@@ -39,8 +43,8 @@ public:
 namespace openxmb::xmb {
 namespace {
 
-inline constexpr double settings_focused_glass_alpha = 0.84;
-inline constexpr double settings_inactive_glass_alpha = 0.76;
+inline constexpr double settings_focused_glass_alpha = 0.90;
+inline constexpr double settings_inactive_glass_alpha = 0.90;
 
 struct ContainedLayout {
   float scale{};
@@ -68,7 +72,7 @@ struct ContainedLayout {
 };
 
 [[nodiscard]] ContainedLayout
-make_layout(const dreamrender::gui_renderer &renderer) noexcept {
+make_layout(const auroreengine::gui_renderer &renderer) noexcept {
   const auto width = static_cast<float>(renderer.frame_size.width);
   const auto height = static_cast<float>(renderer.frame_size.height);
   const auto scale = static_cast<float>(std::min(
@@ -95,7 +99,7 @@ find_icon(std::span<const SettingsSceneIcon> icons,
   return nullptr;
 }
 
-void draw_icon(dreamrender::gui_renderer &renderer,
+void draw_icon(auroreengine::gui_renderer &renderer,
                const ContainedLayout &layout, const SettingsRowVisual &row,
                const SettingsSceneIcon &icon, bool glass) {
   const auto extent = layout.image_extent(row.icon_extent);
@@ -106,43 +110,24 @@ void draw_icon(dreamrender::gui_renderer &renderer,
                                           row.alpha * settings_focused_glass_alpha)
                                : row.alpha * settings_inactive_glass_alpha;
   const auto tint =
-      glm::vec4(1.0F, 1.0F, 1.0F, static_cast<float>(glass ? glass_alpha : row.alpha));
+      glm::vec4(utils::xmb_icon_colour(openxmb::xmb::wall_clock_now()), static_cast<float>(glass ? glass_alpha : row.alpha));
   if (glass && icon.glass_texture != nullptr && icon.glass_texture->loaded)
     renderer.draw_image_glass(*icon.glass_texture, x, y, extent, extent, tint);
   else if (icon.texture != nullptr)
     renderer.draw_image_a(*icon.texture, x, y, extent, extent, tint);
 }
 
-void draw_focused_label(dreamrender::gui_renderer &renderer,
+void draw_focused_label(auroreengine::gui_renderer &renderer,
                         const ContainedLayout &layout,
                         const SettingsRowVisual &row) {
-  const auto x = layout.x(row.label_x);
-  const auto y = layout.y(row.center_y - 1.0);
-  const auto size = layout.text_size(row.label_size);
-  const auto alpha = static_cast<float>(row.alpha);
-  // A bounded four-direction halo approximates xmb-web's two Canvas blur
-  // passes without allocating temporary geometry or textures.
-  constexpr std::array<std::array<double, 2>, 8> offsets{{
-      {{-4.0, 0.0}},
-      {{4.0, 0.0}},
-      {{0.0, -4.0}},
-      {{0.0, 4.0}},
-      {{-2.0, -2.0}},
-      {{2.0, -2.0}},
-      {{-2.0, 2.0}},
-      {{2.0, 2.0}},
-  }};
-  for (const auto &offset : offsets) {
-    renderer.draw_text(row.label, layout.x(row.label_x + offset[0]),
-                       layout.y(row.center_y - 1.0 + offset[1]), size,
-                       glm::vec4(1.0F, 1.0F, 1.0F, alpha * 0.075F), false,
-                       true);
-  }
-  renderer.draw_text(row.label, x, y, size, glm::vec4(1.0F, 1.0F, 1.0F, alpha),
-                     false, true);
+  const float pulse=0.8F+0.4F*std::sin(static_cast<float>(std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count())*1.848F);
+  renderer.draw_text_pixels(row.label,layout.offset_x+row.label_x*layout.scale,
+      layout.offset_y+(row.center_y+3.0)*layout.scale,row.label_size*layout.scale,
+      {1,1,1,static_cast<float>(row.alpha)},0.72F,pulse);
+
 }
 
-void draw_wrapped_description(dreamrender::gui_renderer &renderer,
+void draw_wrapped_description(auroreengine::gui_renderer &renderer,
                               const ContainedLayout &layout,
                               const SettingsRowVisual &row) {
   if (!row.has_description || row.description_alpha <= 0.001 ||
@@ -190,21 +175,16 @@ void draw_wrapped_description(dreamrender::gui_renderer &renderer,
       accepted_end = cursor;
     const auto text =
         row.description.substr(line_start, accepted_end - line_start);
-    renderer.draw_text(
-        text, layout.x(row.description_x),
-        layout.y(row.description_y +
-                 static_cast<double>(line) * row.description_line_height),
-        size,
-        glm::vec4(235.0F / 255.0F, 235.0F / 255.0F, 235.0F / 255.0F,
-                  static_cast<float>(row.description_alpha)),
-        false, false);
+    renderer.draw_text_pixels(text,layout.offset_x+row.description_x*layout.scale,
+        layout.offset_y+(row.description_y+static_cast<double>(line)*row.description_line_height)*layout.scale,
+        22.0F*layout.scale,{0.92F,0.92F,0.92F,static_cast<float>(row.description_alpha)},0.65F);
     ++line;
   }
 }
 
 } // namespace
 
-void SettingsSceneRenderer::render(dreamrender::gui_renderer &renderer,
+void SettingsSceneRenderer::render(auroreengine::gui_renderer &renderer,
                                    const SettingsSceneSnapshot &snapshot,
                                    std::span<const SettingsSceneIcon> icons,
                                    SettingsSceneRenderOptions options) const {
@@ -222,11 +202,9 @@ void SettingsSceneRenderer::render(dreamrender::gui_renderer &renderer,
       draw_wrapped_description(renderer, layout, row);
     } else {
       const auto value = 235.0F / 255.0F;
-      renderer.draw_text(
-          row.label, layout.x(row.label_x), layout.y(row.center_y),
-          layout.text_size(row.label_size),
-          glm::vec4(value, value, value, static_cast<float>(row.alpha)), false,
-          true);
+      renderer.draw_text_pixels(row.label,layout.offset_x+row.label_x*layout.scale,
+          layout.offset_y+(row.center_y+11.0)*layout.scale,row.label_size*layout.scale,
+          {value,value,value,static_cast<float>(row.alpha)},0.7F);
     }
 
     if (!options.suppress_value_labels && row.has_value &&

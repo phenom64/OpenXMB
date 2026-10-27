@@ -68,7 +68,7 @@
       "inherits": "windows-vcpkg",
       "binaryDir": "${sourceDir}/build/windows-local-aurore",
       "cacheVariables": {
-        "DREAMRENDER_LOCAL": "$env{USERPROFILE}/Developer/AuroreEngine"
+        "AUROREENGINE_LOCAL": "$env{USERPROFILE}/Developer/AuroreEngine"
       }
     },
     {
@@ -93,7 +93,7 @@
       "binaryDir": "${sourceDir}/build/native",
       "toolchainFile": "${sourceDir}/cmake/toolchains/windows-clang-vcpkg.cmake",
       "cacheVariables": {
-        "DREAMRENDER_LOCAL": "$env{USERPROFILE}/Developer/AuroreEngine",
+        "AUROREENGINE_LOCAL": "$env{USERPROFILE}/Developer/AuroreEngine",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "BUILD_TESTING": "ON",
         "OPENXMB_IMPORT_XMB_WEB_COMPAT": "ON",

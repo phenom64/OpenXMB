@@ -11,6 +11,8 @@ struct BackgroundGradient {
   std::array<float, 3> top_rgb{};
   std::array<float, 3> bottom_rgb{};
   float night_day_blend{};
+  float direct_gradient_span{};
+  float music_mix{};
 };
 
 // Matches xmb-web's calibrated dawn/day/dusk/night windows.

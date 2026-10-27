@@ -1,18 +1,26 @@
 # Desktop integrations
 
 The shell exposes Browser, Emulation, Optical Media, and Desktop Tools panels.
-These panels use native shell controls and the controller/keyboard text-entry
-panel. Browser and emulation content run in separate native windows and return
-to the shell when closed. They are not embedded web or emulation widgets.
+These panels use native shell controls and controller/keyboard text entry.
+Emulation runs in its own native window and returns to the shell when closed.
 
 ## Browser
 
-Enter an HTTP/HTTPS address, then choose **Open browser window**. The integration
-prefers a dedicated Chromium/Chrome/Firefox profile so closing this session does
-not close an existing personal browser session. `OPENXMB_BROWSER` can select an
-explicit executable; on Linux it may be a command on `PATH` or an absolute path.
-If no supported dedicated browser is installed, the system default browser is
-opened with its own navigation controls.
+Linux/X11 builds with WebKitGTK 4.1 and GTK3 provide the `openxmb-web` helper.
+The shell draws the themed header, page address and hovered-link footer around a
+centered native WebKit child surface. Pages render and accept input through
+WebKit's sandboxed processes. Install `libwebkit2gtk-4.1-dev` and `libgtk-3-dev`
+before configuring to build that optional helper.
+
+The browser opens the saved HTTP/HTTPS address when entered. Ctrl+L opens the
+shell address entry; F5 reloads; Alt+Left/Right moves through history; Escape
+returns to the crossbar. Page titles and hovered links come from the live view.
+
+Without the helper, the integration prefers a dedicated Chromium/Chrome/Firefox
+profile. Closing this session leaves an existing personal browser session alone.
+`OPENXMB_BROWSER` selects an explicit executable, either a command on `PATH` or
+an absolute path on Linux. A system default browser provides its own navigation
+when no supported dedicated browser is installed.
 
 Dedicated sessions support native controller input:
 
@@ -22,14 +30,15 @@ Dedicated sessions support native controller input:
   Shift+Tab; the right shoulder presses Enter.
 - Y opens the shell keyboard and types into the focused browser field.
 - Start opens address entry and navigates the current window.
-- B restores the shell window; select **Control browser with gamepad** to resume.
+- B closes an embedded page and returns to the crossbar. External sessions can
+  restore the shell while leaving their dedicated browser window open.
 
 Linux controller injection targets the owned browser window through X11/XTest.
 Native Wayland applications may reject injection. macOS requires Accessibility
 permission for the native event API. Windows uses normal window focus and
 `SendInput` and reports when the foreground-input policy prevents delivery.
-Linux on-screen-keyboard injection currently accepts Latin/ASCII text; use a
-physical keyboard for other writing systems. Full browser operation requires a
+The embedded view accepts UTF-8 through the shell keyboard. External Linux
+window injection accepts Latin/ASCII; other writing systems use a physical keyboard. Full browser operation requires a
 working browser sandbox: OpenXMB never adds flags to disable it.
 
 ## Emulation

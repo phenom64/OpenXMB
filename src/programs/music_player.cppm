@@ -6,6 +6,7 @@ module;
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <cctype>
 #include <filesystem>
 #include <future>
 #include <memory>
@@ -17,11 +18,12 @@ module;
 
 export module openxmb.app:music_player;
 
-import dreamrender;
+import auroreengine;
 import glm;
 import openxmb.utils;
 import :component;
 import :programs;
+import :xmb_presentation;
 
 namespace programs {
 using namespace app;
@@ -32,8 +34,11 @@ export class music_player final : public component, public action_receiver,
 public:
     float typography_scale() const override { return 2.5F; }
 
-  music_player(std::filesystem::path path, dreamrender::resource_loader &loader)
+  music_player(std::filesystem::path path, auroreengine::resource_loader &loader)
       : loader_(loader) {
+    for(const auto* name:{"volume","visual","addplaylist","delete","display","prev","next","frev","ffwd","play","pause","stop","repeat","shuffle"}) icons_.load(loader_,std::string("system/mp_")+name);
+    for(const auto* name:{"flac","wav","mp3","aac","opus","vorbis","pcm","wma","alac","atrac"}) icons_.load(loader_,std::string("vp/fmt/")+name);
+    for(const auto* name:{"l1","r1","l2","r2","start","select","square"}) icons_.load(loader_,std::string("system/btn_mp_")+name);
     auto &player = music::service();
     const auto *current = player.queue().current();
     std::error_code error;
@@ -56,60 +61,55 @@ public:
       artwork_data_ = state.metadata.artwork;
       generation_ = state.generation;
       if (artwork_data_ || !state.metadata.artwork_path.empty()) {
-        artwork_ = std::make_shared<dreamrender::texture>(loader_.getDevice(), loader_.getAllocator());
-        if (artwork_data_) artwork_ready_ = loader_.loadTexture(artwork_.get(), dreamrender::LoadDataView(*artwork_data_, state.metadata.artwork_type));
+        artwork_ = std::make_shared<auroreengine::texture>(loader_.getDevice(), loader_.getAllocator());
+        if (artwork_data_) artwork_ready_ = loader_.loadTexture(artwork_.get(), auroreengine::LoadDataView(*artwork_data_, state.metadata.artwork_type));
         else artwork_ready_ = loader_.loadTexture(artwork_.get(), state.metadata.artwork_path);
       }
     }
     return result::success;
   }
   bool is_opaque() const override { return true; }
+  bool music_background() const override { return true; }
 
-  void render(dreamrender::gui_renderer &renderer, shell *xmb) override {
-    const auto &player = music::service();
-    const auto &state = player.snapshot();
-    const auto &metadata = state.metadata;
-    const auto foreground = glm::vec4(1.0f, 1.0f, 1.0f, 0.96f);
-    renderer.draw_rect({0.0f, 0.0f}, {1.0f, 1.0f}, {0.015f, 0.025f, 0.06f, 1.0f});
-    draw_visualizer(renderer, state);
-    renderer.draw_text(elide(metadata.title.empty() ? "Music" : metadata.title, 62), 0.08f, 0.10f, 0.055f, foreground);
-    renderer.draw_text(elide(metadata.artist + (metadata.album.empty() ? "" : "  /  " + metadata.album), 86), 0.08f, 0.17f, 0.030f, foreground);
-    if (artwork_ && artwork_->loaded) renderer.draw_image(artwork_->imageView.get(), 0.08f, 0.27f, 0.28f * renderer.aspect_ratio, 0.28f);
-    else {
-      renderer.draw_rect({0.08f, 0.27f}, {0.22f, 0.28f}, {0.15f, 0.20f, 0.29f, 0.7f});
-      renderer.draw_text("Music", 0.19f, 0.41f, 0.035f, foreground, true, true);
+  void render(auroreengine::gui_renderer &renderer, shell *) override {
+    const auto& player=music::service();const auto& state=player.snapshot();const auto& metadata=state.metadata;
+    app::xmb_canvas c(renderer);
+    if(visualizer_on_) draw_visualizer(renderer,state);
+    if(panel_==Panel::controls) draw_controls(renderer);
+    else if(panel_==Panel::queue) draw_queue(renderer);
+    else if(panel_==Panel::information) {
+      c.rect(1090,230,660,500,{0,0,0,0.7f});
+      const std::array lines{"Album: "+metadata.album,"Artist: "+metadata.artist,"Genre: "+metadata.genre,
+        "Date: "+metadata.date,"Track: "+metadata.track,"Codec: "+metadata.codec+"  "+std::to_string(metadata.sample_rate)+" Hz",
+        "Channels: "+std::to_string(metadata.channels)+"  "+std::to_string(metadata.bit_rate/1000)+" kb/s"};
+      float y=285;for(const auto& line:lines) {c.text(elide(line,52),1130,y,23);y+=48;}
     }
-    renderer.draw_text(status_name(state.status), 0.08f, 0.61f, 0.029f, foreground);
-    const auto current = player.queue().current_index();
-    renderer.draw_text(std::to_string(current ? *current + 1 : 0) + " / " + std::to_string(player.queue().entries().size()) +
-                           (player.queue().shuffle() ? "   Shuffle" : "") +
-                           "   " + repeat_name(player.queue().repeat()), 0.08f, 0.66f, 0.025f, foreground);
-    renderer.draw_text("Volume " + std::to_string(static_cast<int>(state.volume * 100.0f)) + "%" +
-                           (state.muted ? "  Muted" : state.ducked ? "  Ducked" : "") +
-                           (state.background ? "  Background on" : ""), 0.08f, 0.71f, 0.023f, foreground);
-
-    if (panel_ == Panel::controls) draw_controls(renderer);
-    else if (panel_ == Panel::queue) draw_queue(renderer);
-    else if (panel_ == Panel::information) {
-      const std::array lines{
-          "Album: " + metadata.album, "Artist: " + metadata.artist,
-          "Genre: " + metadata.genre, "Date: " + metadata.date, "Track: " + metadata.track,
-          "Codec: " + metadata.codec + "  " + std::to_string(metadata.sample_rate) + " Hz",
-          "Channels: " + std::to_string(metadata.channels) + "  " + std::to_string(metadata.bit_rate / 1000) + " kb/s"};
-      float y = 0.29f;
-      for (const auto &line : lines) { renderer.draw_text(elide(line, 64), 0.43f, y, 0.025f, foreground); y += 0.055f; }
+    if(display_on_) {
+      icons_.draw(c,state.status==music::Status::playing?"system/mp_play":"system/mp_pause",154,846,49,1);
+      if(player.queue().repeat()!=music::Repeat::off) icons_.draw(c,"system/mp_repeat",270,846,49,1);
+      if(player.queue().shuffle()) icons_.draw(c,"system/mp_shuffle",375,846,49,1);
+      const auto index=player.queue().current_index();
+      c.text(std::to_string(index?*index+1:0)+" / "+std::to_string(player.queue().entries().size()),1740,858,25,{1,1,1,0.95f});
+      c.text(time_text(state.position)+" / "+time_text(metadata.duration),1418,942,27);
+      std::string format=metadata.codec;
+      if(const auto* track=player.queue().current()) {
+        format=track->path.extension().string();if(!format.empty()&&format.front()=='.') format.erase(0,1);
+        std::transform(format.begin(),format.end(),format.begin(),[](unsigned char c){return static_cast<char>(std::tolower(c));});
+      }
+      if(metadata.codec=="flac"||metadata.codec=="mp3"||metadata.codec=="opus"||metadata.codec=="alac"||metadata.codec=="vorbis") format=metadata.codec;
+      if(format=="m4a"||format=="mp4") format="aac";else if(format=="aiff"||format=="aif") format="pcm";else if(format=="ogg"||format=="oga") format="vorbis";
+      icons_.draw(c,"vp/fmt/"+format,1842,929,27,1);
+      const float progress=metadata.duration>0?std::clamp(static_cast<float>(state.position/metadata.duration),0.0f,1.0f):0;
+      c.rect(1418,967,385,11,{0.48f,0.48f,0.48f,1},5.5f);c.rect(1419,968,383,8,{0.045f,0.045f,0.045f,1},4);
+      c.rect(1419,968,383*progress,8,{0.30f,0.49f,0.008f,1},std::min(4.0F,191.5F*progress));c.rect(1419,968,383*progress,2,{0.78f,0.92f,0.35f,1});
     }
-    const float progress = metadata.duration > 0.0 ? static_cast<float>(std::clamp(state.position / metadata.duration, 0.0, 1.0)) : 0.0f;
-    renderer.draw_rect({0.08f, 0.83f}, {0.84f, 0.007f}, {1.0f, 1.0f, 1.0f, 0.20f});
-    renderer.draw_rect({0.08f, 0.83f}, {0.84f * progress, 0.007f}, {0.45f, 0.74f, 1.0f, 1.0f});
-    renderer.draw_text(time_text(state.position) + " / " + time_text(metadata.duration), 0.08f, 0.86f, 0.023f, foreground);
-    if (!state.error.empty()) renderer.draw_text(elide(state.error, 100), 0.08f, 0.77f, 0.023f, {1.0f, 0.65f, 0.45f, 1.0f});
-    else if (!notice_.empty()) renderer.draw_text(elide(notice_, 100), 0.08f, 0.77f, 0.023f, foreground);
-    render_controller_buttons(xmb, renderer, 0.5f, 0.94f, std::array{
-        std::pair{action::ok, std::string_view{panel_ == Panel::queue ? "Play track" : "Play / Pause"}},
-        std::pair{action::options, std::string_view{"Controls"}},
-        std::pair{action::extra, std::string_view{"Visualizer"}},
-        std::pair{action::cancel, std::string_view{panel_ == Panel::none ? "Return to XMB" : "Back"}}});
+    if(artwork_&&artwork_->loaded) c.image(*artwork_,123,897,88,88);
+    else icons_.draw(c,"system/mp_visual",167,941,88,0.85f);
+    c.text(elide(metadata.title.empty()?"Music":metadata.title,58),243,941,34);
+    c.text(elide(metadata.artist+(metadata.album.empty()?"":"  /  "+metadata.album),90),243,981,25);
+    if(!state.error.empty()) c.text(elide(state.error,100),123,785,24,{1,0.7f,0.5f,1});
+    else if(!notice_.empty()) c.text(elide(notice_,100),123,785,24);
+    if(volume_open_) c.text("Volume  "+std::to_string(static_cast<int>(state.volume*100))+"%",524,682,25,{1,1,1,1},0,true);
   }
   result on_action(action value) override {
     auto &player = music::service();
@@ -120,7 +120,7 @@ public:
       return result::close;
     }
     if (value == action::options) { panel_ = panel_ == Panel::controls ? Panel::none : Panel::controls; return result::success; }
-    if (value == action::extra) { cycle_visualizer(); return result::success; }
+    if (value == action::extra) { visualizer_on_=!visualizer_on_; cycle_visualizer(); return result::success; }
     if (panel_ == Panel::queue) {
       const auto count = player.queue().entries().size();
       if (count) queue_row_ = std::min(queue_row_, count - 1);
@@ -130,10 +130,13 @@ public:
       else return result::unsupported;
       return result::success;
     }
-    if (panel_ == Panel::controls) {
-      if (value == action::up) control_row_ = (control_row_ + control_count - 1) % control_count;
-      else if (value == action::down) control_row_ = (control_row_ + 1) % control_count;
-      else if (value == action::ok || value == action::right || value == action::left) activate_control(value == action::left ? -1 : 1);
+    if(volume_open_&&(value==action::left||value==action::right)) {player.set_volume(state.volume+(value==action::left?-0.05F:0.05F));return result::success;}
+    if(panel_==Panel::controls) {
+      static constexpr std::array<int,3> counts{5,7,2};
+      if(value==action::left) control_col_=(control_col_+counts[control_row_]-1)%counts[control_row_];
+      else if(value==action::right) control_col_=(control_col_+1)%counts[control_row_];
+      else if(value==action::up||value==action::down) {control_row_=(control_row_+(value==action::up?2:1))%3;control_col_=std::min(control_col_,static_cast<std::size_t>(counts[control_row_]-1));}
+      else if(value==action::ok) activate_control(1);
       else return result::unsupported;
       return result::success;
     }
@@ -157,7 +160,8 @@ public:
       case 19: return player.previous() ? result::success : result::failure; // P
       case 20: panel_ = Panel::queue; return result::success; // Q
       case 12: panel_ = panel_ == Panel::information ? Panel::none : Panel::information; return result::success; // I
-      case 25: cycle_visualizer(); return result::success; // V
+      case 25: visualizer_on_=!visualizer_on_; cycle_visualizer(); return result::success; // V
+      case 7: display_on_=!display_on_; return result::success; // D
       case 16: player.set_muted(!player.snapshot().muted); return result::success; // M
       case 46: case 87: player.set_volume(player.snapshot().volume + 0.05f); return result::success;
       case 45: case 86: player.set_volume(player.snapshot().volume - 0.05f); return result::success;
@@ -190,7 +194,8 @@ private:
   }
   static std::string time_text(double seconds) {
     const auto whole = std::isfinite(seconds) && seconds > 0.0 ? static_cast<unsigned long long>(seconds) : 0;
-    return std::to_string(whole / 60) + ':' + (whole % 60 < 10 ? "0" : "") + std::to_string(whole % 60);
+    const auto two=[](unsigned long long value){return (value<10?"0":"")+std::to_string(value);};
+    return two(whole/3600)+":"+two(whole/60%60)+":"+two(whole%60);
   }
   static std::string repeat_name(music::Repeat repeat) {
     switch (repeat) { case music::Repeat::all: return "Repeat all"; case music::Repeat::one: return "Repeat one"; default: return "Repeat off"; }
@@ -207,24 +212,20 @@ private:
     auto &player = music::service();
     player.set_visualizer(static_cast<music::Visualizer>((static_cast<int>(player.snapshot().visualizer) + 1) % 3));
   }
-  void activate_control(int direction) {
-    auto &player = music::service();
-    const auto &state = player.snapshot();
-    switch (control_row_) {
-    case 0: toggle_pause(); break;
-    case 1: player.previous(); break;
-    case 2: player.next(); break;
-    case 3: player.stop(); break;
-    case 4: player.set_shuffle(!player.queue().shuffle()); break;
-    case 5: player.set_repeat(static_cast<music::Repeat>((static_cast<int>(player.queue().repeat()) + (direction > 0 ? 1 : 2)) % 3)); break;
-    case 6: cycle_visualizer(); break;
-    case 7: player.set_volume(state.volume + direction * 0.05f); break;
-    case 8: panel_ = Panel::queue; break;
-    case 9: save_playlist(); break;
-    case 10: player.set_background_enabled(!state.background); break;
-    case 11: player.set_ducking_enabled(!state.ducking); break;
-    case 12: player.set_muted(!state.muted); break;
-    case 13: panel_ = Panel::information; break;
+  void activate_control(int) {
+    auto& player=music::service();const auto& state=player.snapshot();
+    const auto selected=control_row_==0?control_col_:control_row_==1?5+control_col_:12+control_col_;
+    switch(selected) {
+    case 0: volume_open_=!volume_open_; break;
+    case 1: visualizer_on_=!visualizer_on_;cycle_visualizer();break;
+    case 2: panel_=Panel::queue;break;
+    case 3: if(auto current=player.queue().current_index()) player.remove(*current);break;
+    case 4: display_on_=!display_on_;break;
+    case 5: player.previous();break;case 6:player.next();break;
+    case 7:player.seek(state.position-10);break;case 8:player.seek(state.position+10);break;
+    case 9:player.play();break;case 10:player.pause();break;case 11:player.stop();break;
+    case 12:player.set_repeat(static_cast<music::Repeat>((static_cast<int>(player.queue().repeat())+1)%3));break;
+    case 13:player.set_shuffle(!player.queue().shuffle());break;
     }
   }
   void save_playlist() {
@@ -235,23 +236,26 @@ private:
     auto destination = current->path.parent_path() / ("OpenXMB Playlist " + std::to_string(stamp) + ".m3u8");
     if (player.save_playlist(destination)) notice_ = "Saved " + destination.filename().string();
   }
-  void draw_controls(dreamrender::gui_renderer &renderer) {
-    const auto &player = music::service();
-    const auto &state = player.snapshot();
-    const std::array<std::string, control_count> labels{
-        state.status == music::Status::playing ? "Pause" : "Play", "Previous track", "Next track", "Stop",
-        std::string("Shuffle: ") + (player.queue().shuffle() ? "On" : "Off"), repeat_name(player.queue().repeat()),
-        "Change visualizer", "Volume: " + std::to_string(static_cast<int>(state.volume * 100)) + "%", "Play queue",
-        "Save playlist", std::string("Background: ") + (state.background ? "On" : "Off"),
-        std::string("Duck other audio: ") + (state.ducking ? "On" : "Off"), state.muted ? "Unmute" : "Mute", "Information"};
-    const auto first = control_row_ < 7 ? 0 : control_row_ - 6;
-    for (std::size_t row = first; row < std::min(first + 7, labels.size()); ++row) {
-      const float y = 0.29f + static_cast<float>(row - first) * 0.060f;
-      if (row == control_row_) renderer.draw_rect({0.41f, y - 0.009f}, {0.48f, 0.050f}, {1.0f, 1.0f, 1.0f, 0.14f});
-      renderer.draw_text(labels[row], 0.43f, y, 0.027f);
+  void draw_controls(auroreengine::gui_renderer& renderer) {
+    app::xmb_canvas c(renderer);
+    static constexpr std::array<std::string_view,14> names{"volume","visual","addplaylist","delete","display","prev","next","frev","ffwd","play","pause","stop","repeat","shuffle"};
+    static constexpr std::array<std::string_view,14> labels{"Volume Control","Visual Player","Play Queue","Remove from Queue","Display","Previous","Next","Fast Reverse","Fast Forward","Play","Pause","Stop","Repeat","Shuffle"};
+    const auto selected=control_row_==0?control_col_:control_row_==1?5+control_col_:12+control_col_;
+    for(int row=0;row<3;++row) {
+      const int count=row==0?5:row==1?7:2, first=row==0?0:row==1?5:12;
+      const float pitch=row==2?95:64;
+      for(int col=0;col<count;++col) {
+        const int index=first+col;const bool focus=selected==static_cast<std::size_t>(index);
+        icons_.draw(c,std::string("system/mp_")+std::string(names[index]),524+(col-(count-1)*0.5f)*pitch,412+row*65,74,focus?1:0.85f,focus?1.3f:1);
+      }
     }
+    static constexpr std::array<std::string_view,14> hints{"","select","","","square","l1","r1","l2","r2","start","start","","",""};
+    const float label_width=renderer.text_width_pixels(std::string(labels[selected]),25*c.scale);
+    const bool has_hint=!hints[selected].empty();
+    c.text(labels[selected],has_hint?524-31:524,632,25,{1,1,1,1},app::xmb_canvas::pulse(),true);
+    if(has_hint) icons_.draw(c,"system/btn_mp_"+std::string(hints[selected]),524+label_width/(2*c.scale)+18,616,28,0.9f);
   }
-  void draw_queue(dreamrender::gui_renderer &renderer) {
+  void draw_queue(auroreengine::gui_renderer &renderer) {
     const auto &queue = music::service().queue();
     const auto &entries = queue.entries();
     const auto first = queue_row_ < 6 ? 0 : queue_row_ - 5;
@@ -263,7 +267,7 @@ private:
     }
     renderer.draw_text("Delete: remove selected track", 0.42f, 0.73f, 0.020f);
   }
-  void draw_visualizer(dreamrender::gui_renderer &renderer, const music::Snapshot &state) {
+  void draw_visualizer(auroreengine::gui_renderer &renderer, const music::Snapshot &state) {
     const auto elapsed = static_cast<float>(std::fmod(std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count(), 1000.0));
     for (std::size_t index = 0; index < state.spectrum.size(); ++index) {
       const float amplitude = state.spectrum[index];
@@ -280,11 +284,13 @@ private:
       }
     }
   }
-  dreamrender::resource_loader &loader_;
+  auroreengine::resource_loader &loader_;
   Panel panel_{Panel::none};
-  std::size_t control_row_{}, queue_row_{};
+  app::media_icons icons_;
+  bool display_on_{true},visualizer_on_{false},volume_open_{false};
+  std::size_t control_row_{1},control_col_{4},queue_row_{};
   std::uint64_t generation_{~std::uint64_t{}};
-  std::shared_ptr<dreamrender::texture> artwork_;
+  std::shared_ptr<auroreengine::texture> artwork_;
   std::shared_ptr<const std::vector<std::uint8_t>> artwork_data_;
   std::future<void> artwork_ready_;
   std::string notice_;

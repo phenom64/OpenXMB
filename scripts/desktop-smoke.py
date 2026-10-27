@@ -302,7 +302,7 @@ class NativeInput:
 
 
 class Session:
-    def __init__(self, runner: "Runner", name: str, arguments: list[str], *, reuse: Path | None = None):
+    def __init__(self, runner: "Runner", name: str, arguments: list[str], *, reuse: Path | None = None, configuration_patch: dict | None = None, environment_patch: dict | None = None):
         self.runner, self.name = runner, name
         self.directory = runner.output / name
         self.directory.mkdir(parents=True, exist_ok=False)
@@ -315,6 +315,8 @@ class Session:
             config.setdefault("shell", {}).update({"background-type": "original", "font-path": "default",
                 "pictures-path": str(runner.fixtures.photo.parent), "music-path": str(runner.fixtures.audio.parent),
                 "videos-path": str(runner.fixtures.video.parent)})
+            if configuration_patch:
+                for group,values in configuration_patch.items(): config.setdefault(group,{}).update(values)
             json_write(self.configuration, config)
         self.frames = self.directory / "frames"
         self.frames.mkdir()
@@ -324,17 +326,17 @@ class Session:
             "OPENXMB_DATA_DIR": str(self.state_root / "data/OpenXMB"),
             "XDG_DATA_HOME": str(self.state_root / "data"), "XDG_CONFIG_HOME": str(self.state_root / "config"),
             "XDG_CACHE_HOME": str(self.state_root / "cache"), "SDL_AUDIODRIVER": "dummy", "SDL_VIDEODRIVER": "dummy",
-            "DREAMRENDER_HEADLESS": "1", "DREAMRENDER_HEADLESS_AUDIO": "1", "DREAMRENDER_HEADLESS_FRAMES": "20000",
-            "DREAMRENDER_HEADLESS_WIDTH": str(runner.args.width), "DREAMRENDER_HEADLESS_HEIGHT": str(runner.args.height),
-            "DREAMRENDER_HEADLESS_OUTPUT_DIR": str(self.frames), "DREAMRENDER_HEADLESS_OUTPUT_PATTERN": "frame-{:06d}.png",
+            "AUROREENGINE_HEADLESS": "1", "AUROREENGINE_HEADLESS_AUDIO": "1", "AUROREENGINE_HEADLESS_FRAMES": "20000",
+            "AUROREENGINE_HEADLESS_WIDTH": str(runner.args.width), "AUROREENGINE_HEADLESS_HEIGHT": str(runner.args.height),
+            "AUROREENGINE_HEADLESS_OUTPUT_DIR": str(self.frames), "AUROREENGINE_HEADLESS_OUTPUT_PATTERN": "frame-{:06d}.png",
             "OPENXMB_FIXED_UNIX_SECONDS": "1781524800", "OPENXMB_FIXED_WAVE_SECONDS": "4.0",
             "OPENXMB_FIXED_BOOT_SECONDS": "17.0", "OPENXMB_HEADLESS_STARTUP": "0"})
-        environment.pop("DREAMRENDER_HEADLESS_TERMINAL", None)
+        environment.pop("AUROREENGINE_HEADLESS_TERMINAL", None)
         for key in ("OPENXMB_INITIAL_SETTINGS_MENU", "OPENXMB_INITIAL_SETTINGS_SELECTION", "OPENXMB_OPEN_INITIAL_SETTINGS_CHOICE"):
             environment.pop(key, None)
         environment["OPENXMB_INITIAL_CATEGORY"] = "users"
         if runner.args.native_window:
-            environment["DREAMRENDER_HEADLESS"] = "0"
+            environment["AUROREENGINE_HEADLESS"] = "0"
             environment.pop("SDL_VIDEODRIVER", None)
         environment["XMB_ASSET_DIR"] = str(runner.assets)
         environment["XMB_LOCALE_DIR"] = str(runner.locales)
@@ -344,6 +346,7 @@ class Session:
         environment["XDG_RUNTIME_DIR"] = str(runtime)
         for directory in ("data/OpenXMB", "config", "cache"):
             (self.state_root / directory).mkdir(parents=True, exist_ok=True)
+        if environment_patch: environment.update(environment_patch)
         self.log_handle = self.log.open("w", encoding="utf-8")
         self.process = subprocess.Popen([str(runner.app), "--width", str(runner.args.width), "--height", str(runner.args.height),
                                          "--no-fullscreen", *arguments], cwd=self.directory, env=environment,
@@ -601,20 +604,25 @@ class Runner:
 
     def music(self):
         with Session(self, "music", ["--open-media", str(self.fixtures.audio)]) as session:
-            session.wait(lambda image: color_ratio(image, COVER, 35) > 0.015 and foreground(image, (0.07, 0.07, 0.75, 0.23)) > 0.004 and
-                         (not self.ocr or re.search(r"SMOKEAUDI[O0]", re.sub(r"\s", "", self.text(image, (0.07, 0.07, 0.85, 0.23))).upper())),
-                         "music-artwork-and-metadata")
-            if self.ocr:
-                session.wait(lambda image: "playing" in self.text(image, (0.07, 0.58, 0.36, 0.65), line=True).lower(), "music-playing")
+            playing = session.wait(lambda image: color_ratio(image, COVER, 35) > 0.002 and
+                         foreground(image, (0.12, 0.83, 0.60, 0.93)) > 0.004 and
+                         foreground(image, (0.94, 0.84, 0.99, 0.88)) > 0.01 and
+                         (not self.ocr or re.search(r"SMOKEAUDI[O0]", re.sub(r"\s", "", self.text(image, (0.12, 0.83, 0.60, 0.93))).upper())),
+                         "music-artwork-metadata-format")
             session.key("space")
-            paused = session.wait(lambda image: not self.ocr or "paused" in self.text(image, (0.07, 0.58, 0.36, 0.65), line=True).lower(),
-                                  "music-paused", delay=0.15)
-            frozen = session.wait(lambda image: difference(paused, image, (0.08, 0.825, 0.92, 0.845)) < 0.0005, "music-paused-progress", delay=0.4)
+            paused = session.wait(lambda image: difference(playing,image,(0.065,0.76,0.095,0.81)) > 0.015,
+                                  "music-pause-status", delay=0.2)
+            frozen = session.wait(lambda image: difference(paused,image,(0.739,0.896,0.94,0.906)) < 0.001,
+                                  "music-paused-progress", delay=0.4)
             session.key("space")
-            session.wait(lambda image: difference(frozen, image, (0.08, 0.825, 0.92, 0.845)) > 0.0007,
+            session.wait(lambda image: difference(frozen,image,(0.739,0.896,0.94,0.906)) > 0.003,
                          "music-resumed-progress", delay=0.6)
+            session.key("tab")
+            session.wait(lambda image: foreground(image,(0.16,0.35,0.39,0.53)) > 0.015,
+                         "music-native-controls")
             session.key("i")
-            session.wait(lambda image: foreground(image, (0.42, 0.27, 0.94, 0.70)) > 0.006, "music-information")
+            session.wait(lambda image: foreground(image,(0.58,0.23,0.9,0.65)) > 0.006,
+                         "music-information")
 
     def video(self):
         with Session(self, "video", ["--open-media", str(self.fixtures.video)]) as session:
@@ -630,7 +638,7 @@ class Runner:
             session.wait(lambda image: difference(paused, image, (0.1, 0.15, 0.9, 0.7)) > 0.005,
                          "video-resumed-frames", delay=0.4)
             session.key("s")
-            session.wait(lambda image: ("subtitles" in self.text(image, (0.59, 0.04, 0.95, 0.28)).lower()) if self.ocr else
+            session.wait(lambda image: ("subtitles" in self.text(image, (0.59, 0.04, 0.97, 0.28)).lower()) if self.ocr else
                          color_ratio(image, (6, 9, 15), 35, (0.58, 0.05, 0.96, 0.8)) > 0.50, "video-subtitle-menu")
             session.key("down")
             session.key("enter")
@@ -698,7 +706,7 @@ class Runner:
         source_hash = hashlib.sha256(self.fixtures.theme.read_bytes()).hexdigest()
         with Session(self, "themes", ["--open-panel", "themes"]) as session:
             state = session.state_root
-            session.wait(lambda image: self.panel_ready(image, "Theme Library"), "theme-library")
+            session.wait(lambda image: self.panel_ready(image, "Original"), "theme-xmb-list")
             session.key("down")
             session.key("enter")
             session.wait(lambda image: foreground(image, (0.12, 0.36, 0.88, 0.78)) > 0.01, "theme-import-native-keyboard")
@@ -721,7 +729,7 @@ class Runner:
             session.wait(lambda image: color_ratio(image, MAGENTA, 35) > 0.55 and color_ratio(image, CYAN, 100) > 0.0015,
                          "theme-restored-after-restart")
         with Session(self, "themes-revert", ["--open-panel", "themes"], reuse=state) as session:
-            session.wait(lambda image: self.panel_ready(image, "Theme Library"), "theme-library-reopened")
+            session.wait(lambda image: self.panel_ready(image, "Original"), "theme-xmb-list-reopened")
             session.key("enter")
             session.wait_file(state / "data/OpenXMB/themes/active.json", lambda saved: "active" not in saved)
             session.key("escape")

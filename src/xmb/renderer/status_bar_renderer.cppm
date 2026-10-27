@@ -11,20 +11,20 @@ module;
 
 export module openxmb.xmb.status_bar_renderer;
 
-import dreamrender;
+import auroreengine;
 import glm;
 
 export namespace openxmb::xmb {
 
 class StatusBarRenderer {
 public:
-  void render(dreamrender::gui_renderer &renderer, const StatusBarTime &time,
+  void render(auroreengine::gui_renderer &renderer, const StatusBarTime &time,
               float opacity = 1.0F) const;
 
   // Convenience path for production. Deterministic tests and captures should
   // resolve their fixed civil time once and use the overload above.
   [[nodiscard]] bool
-  render_local(dreamrender::gui_renderer &renderer,
+  render_local(auroreengine::gui_renderer &renderer,
                std::chrono::system_clock::time_point time,
                float opacity = 1.0F) const;
 };
@@ -56,7 +56,7 @@ struct ContainedLayout {
 };
 
 [[nodiscard]] ContainedLayout
-make_layout(const dreamrender::gui_renderer &renderer) noexcept {
+make_layout(const auroreengine::gui_renderer &renderer) noexcept {
   const auto width = static_cast<float>(renderer.frame_size.width);
   const auto height = static_cast<float>(renderer.frame_size.height);
   const auto scale =
@@ -73,16 +73,16 @@ make_layout(const dreamrender::gui_renderer &renderer) noexcept {
   };
 }
 
-void draw_logical_rect(dreamrender::gui_renderer &renderer,
+void draw_logical_rect(auroreengine::gui_renderer &renderer,
                        const ContainedLayout &layout, float x, float y,
                        float width, float height, glm::vec4 color,
-                       dreamrender::simple_params parameters = {}) {
+                       auroreengine::simple_params parameters = {}) {
   renderer.draw_rect({layout.x(x), layout.y(y)},
                      {layout.width(width), layout.height(height)}, color,
                      parameters);
 }
 
-void draw_u_frame(dreamrender::gui_renderer &renderer,
+void draw_u_frame(auroreengine::gui_renderer &renderer,
                   const ContainedLayout &layout, float opacity) {
   constexpr std::array glow_alpha{0.13F, 0.095F, 0.065F, 0.035F, 0.02F};
   for (std::size_t index = 0; index < glow_alpha.size(); ++index) {
@@ -133,10 +133,10 @@ void draw_u_frame(dreamrender::gui_renderer &renderer,
 
 constexpr std::size_t kRingSegments = 32;
 
-void draw_ring(dreamrender::gui_renderer &renderer,
+void draw_ring(auroreengine::gui_renderer &renderer,
                const ContainedLayout &layout, float center_x, float center_y,
                float radius, float width, glm::vec4 color) {
-  std::array<dreamrender::simple_renderer::vertex_data, kRingSegments * 6>
+  std::array<auroreengine::simple_renderer::vertex_data, kRingSegments * 6>
       vertices{};
   constexpr auto pi = 3.14159265358979323846F;
   constexpr auto full_turn = 2.0F * pi;
@@ -144,7 +144,7 @@ void draw_ring(dreamrender::gui_renderer &renderer,
   const auto outer = radius + width * 0.5F;
 
   const auto vertex = [&](float x, float y) {
-    return dreamrender::simple_renderer::vertex_data{
+    return auroreengine::simple_renderer::vertex_data{
         .position = {layout.x(x), layout.y(y)},
         .color = color,
         .tex_coords = {},
@@ -178,7 +178,7 @@ void draw_ring(dreamrender::gui_renderer &renderer,
   renderer.draw_generic(std::span{vertices});
 }
 
-void draw_hand(dreamrender::gui_renderer &renderer,
+void draw_hand(auroreengine::gui_renderer &renderer,
                const ContainedLayout &layout, float center_x, float center_y,
                float angle, float length, float width, glm::vec4 color) {
   const auto dx = std::cos(angle);
@@ -188,7 +188,7 @@ void draw_hand(dreamrender::gui_renderer &renderer,
   const auto end_x = center_x + dx * length;
   const auto end_y = center_y + dy * length;
   const auto vertex = [&](float x, float y) {
-    return dreamrender::simple_renderer::vertex_data{
+    return auroreengine::simple_renderer::vertex_data{
         .position = {layout.x(x), layout.y(y)},
         .color = color,
         .tex_coords = {},
@@ -205,7 +205,7 @@ void draw_hand(dreamrender::gui_renderer &renderer,
   renderer.draw_generic(vertices);
 }
 
-void draw_clock_face(dreamrender::gui_renderer &renderer,
+void draw_clock_face(auroreengine::gui_renderer &renderer,
                      const ContainedLayout &layout,
                      const ClockHandAngles &angles, float x_offset,
                      float y_offset, float ring_width, float hand_width,
@@ -223,7 +223,7 @@ void draw_clock_face(dreamrender::gui_renderer &renderer,
 
 } // namespace
 
-void StatusBarRenderer::render(dreamrender::gui_renderer &renderer,
+void StatusBarRenderer::render(auroreengine::gui_renderer &renderer,
                                const StatusBarTime &time,
                                float opacity) const {
   opacity = std::clamp(opacity, 0.0F, 1.0F);
@@ -239,22 +239,8 @@ void StatusBarRenderer::render(dreamrender::gui_renderer &renderer,
   const std::string_view time_text(text_buffer.data(), text_size);
   const auto layout = make_layout(renderer);
 
-  dreamrender::simple_params panel_parameters{};
-  panel_parameters.border_radius = {
-      StatusBarMetrics::frame_corner_radius /
-          StatusBarMetrics::frame_height,
-      0.0F,
-      0.0F,
-      StatusBarMetrics::frame_corner_radius /
-          StatusBarMetrics::frame_height,
-  };
-  draw_logical_rect(renderer, layout, StatusBarMetrics::frame_x,
-                    StatusBarMetrics::frame_y,
-                    StatusBarMetrics::frame_width + 4.0F,
-                    StatusBarMetrics::frame_height,
-                    {0.0F, 0.0F, 0.0F, 0.24F * opacity},
-                    panel_parameters);
-  draw_u_frame(renderer, layout, opacity);
+  renderer.draw_glass_frame(layout.x(StatusBarMetrics::frame_x),layout.y(StatusBarMetrics::frame_y),
+      layout.height(StatusBarMetrics::frame_width+4.0F),layout.height(StatusBarMetrics::frame_height),opacity);
 
   const auto text_scale =
       layout.height(StatusBarMetrics::text_size * 2.5F);
@@ -279,7 +265,7 @@ void StatusBarRenderer::render(dreamrender::gui_renderer &renderer,
 }
 
 bool StatusBarRenderer::render_local(
-    dreamrender::gui_renderer &renderer,
+    auroreengine::gui_renderer &renderer,
     std::chrono::system_clock::time_point time, float opacity) const {
   const auto local = resolve_local_status_bar_time(time);
   if (!local.has_value()) {

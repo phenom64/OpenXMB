@@ -2,13 +2,13 @@ project:
   name: OpenXMB
   description: >
     PS3-style XrossMediaBar shell built with C++23 modules on top of a
-    Vulkan + SDL2 renderer (AuroreEngine/dreamrender). Uses a JSON-based
+    Vulkan + SDL2 renderer (AuroreEngine/auroreengine). Uses a JSON-based
     configuration, dynamic menus, icon + font systems, and an integrated
     FFmpeg video player. Emulation, optical media, and browser are planned.
   repos:
     - name: OpenXMB
       role: shell/app/menus/config/runtime
-    - name: AuroreEngine (exposed as "dreamrender")
+    - name: AuroreEngine (exposed as "auroreengine")
       role: renderer + GUI + IO (Vulkan backend, SDL2 integration)
 
 tech_stack:
@@ -22,7 +22,7 @@ tech_stack:
 
 current_state:
   builds: [Linux, macOS (MoltenVK)]
-  renderer: dreamrender integrated via FetchContent
+  renderer: auroreengine integrated via FetchContent
   config: JSON (config.json). No YAML configs are in use.
   menus: settings_menu, applications_menu (Linux .desktop), users_menu (POSIX), files_menu
   programs: text_viewer, image_viewer, video_player (FFmpeg + YUV compute path)
@@ -82,13 +82,13 @@ file_layout:
     - CMakePresets.json       # default/dev/ci configure and build presets
     - .github/workflows/ci.yml # Linux/macOS configure smoke
     - config.json             # default runtime config (installed to share/OpenXMB)
-  AuroreEngine (dreamrender):
+  AuroreEngine (auroreengine):
     - Vulkan device/swapchain, renderers (GUI/image/font), helpers
 
 app_loop:
   pseudocode: |
     SDL_Init(VIDEO|GAMECONTROLLER|AUDIO)
-    dreamrender::window win{config_from_json}
+    auroreengine::window win{config_from_json}
     win.init()
     auto* shell = new app::shell(&win)
     if (--background-only) shell->set_background_only(true)
@@ -184,7 +184,7 @@ data_models:
 performance_plan (incremental):
   - persist VkPipelineCache; reuse transient images/buffers; upload ring
   - consider descriptor indexing and batching where feasible
-  - keep frame graph responsibilities in engine (dreamrender), surface hooks in app
+  - keep frame graph responsibilities in engine (auroreengine), surface hooks in app
 
 policies:
   background_apps: { min_ram_gb_for_browser: 4, background_browser_fps_cap: 30 }
@@ -219,7 +219,7 @@ milestones:
       build:
         - `ENABLE_BROWSER` toggles; build overlay only if CEF toolchain is provided
       rendering:
-        - CEF OSR BGRA buffer → dreamrender texture via resource_loader (double‑buffered)
+        - CEF OSR BGRA buffer → auroreengine texture via resource_loader (double‑buffered)
       input:
         - Map SDL keyboard/mouse/wheel; IME support after alpha
       ui:

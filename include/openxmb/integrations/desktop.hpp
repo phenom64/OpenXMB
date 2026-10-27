@@ -39,7 +39,12 @@ struct BrowserSession {
   std::string url;
   std::uintptr_t return_window{};
   std::shared_ptr<void> native_input;
+  bool embedded_view{};
+  std::filesystem::path state_file;
 };
+struct BrowserPage {std::string title,url,hover;bool loading{},address_requested{};};
+[[nodiscard]] BrowserPage browser_page(const BrowserSession& session);
+[[nodiscard]] Result browser_view_command(BrowserSession& session,std::string_view command,std::string_view value={});
 enum class BrowserControl {
   pointer, click, context_click, scroll, tab, reverse_tab, back, forward,
   confirm, escape, address_bar, text, return_to_shell

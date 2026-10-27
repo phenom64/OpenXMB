@@ -18,7 +18,7 @@ module;
 
 export module openxmb.xmb.captured_wave_renderer;
 
-import dreamrender;
+import auroreengine;
 import vulkan_hpp;
 import vma;
 
@@ -150,10 +150,10 @@ private:
   std::size_t line_index_count_{};
 
   vk::UniquePipelineLayout pipeline_layout_;
-  dreamrender::UniquePipelineMap boot_fill_pipelines_;
-  dreamrender::UniquePipelineMap boot_line_pipelines_;
-  dreamrender::UniquePipelineMap idle_fill_pipelines_;
-  dreamrender::UniquePipelineMap idle_line_pipelines_;
+  auroreengine::UniquePipelineMap boot_fill_pipelines_;
+  auroreengine::UniquePipelineMap boot_line_pipelines_;
+  auroreengine::UniquePipelineMap idle_fill_pipelines_;
+  auroreengine::UniquePipelineMap idle_line_pipelines_;
 
   bool assets_ready_{};
   bool pipelines_ready_{};
@@ -181,10 +181,10 @@ constexpr char kCapturedWaveFragmentBytes[] = {
 #pragma clang diagnostic pop
 
 constexpr std::array kCapturedWaveVertexShader =
-    dreamrender::convert<std::to_array(kCapturedWaveVertexBytes),
+    auroreengine::convert<std::to_array(kCapturedWaveVertexBytes),
                          std::uint32_t>();
 constexpr std::array kCapturedWaveFragmentShader =
-    dreamrender::convert<std::to_array(kCapturedWaveFragmentBytes),
+    auroreengine::convert<std::to_array(kCapturedWaveFragmentBytes),
                          std::uint32_t>();
 
 [[nodiscard]] std::string describe_wave_error(std::string_view operation,
@@ -498,9 +498,9 @@ void CapturedWaveRenderer::preload(
   const vk::PipelineDynamicStateCreateInfo dynamic({}, dynamic_states);
 
   const auto vertex_shader =
-      dreamrender::createShader(device_, kCapturedWaveVertexShader);
+      auroreengine::createShader(device_, kCapturedWaveVertexShader);
   const auto fragment_shader =
-      dreamrender::createShader(device_, kCapturedWaveFragmentShader);
+      auroreengine::createShader(device_, kCapturedWaveFragmentShader);
   const std::array stages{
       vk::PipelineShaderStageCreateInfo({}, vk::ShaderStageFlagBits::eVertex,
                                         vertex_shader.get(), "main"),
@@ -519,7 +519,7 @@ void CapturedWaveRenderer::preload(
         {}, stages, &vertex_input, &input_assembly, nullptr, &viewport_state,
         &rasterization, &multisample, &depth_stencil, &color_blend, &dynamic,
         pipeline_layout_.get(), {});
-    return dreamrender::createPipelines(device_, pipeline_cache, pipeline_info,
+    return auroreengine::createPipelines(device_, pipeline_cache, pipeline_info,
                                         render_passes, debug_name);
   };
 

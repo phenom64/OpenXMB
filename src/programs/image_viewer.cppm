@@ -21,6 +21,9 @@
 module;
 
 #include <openxmb/photos/photo_library.hpp>
+#include <openxmb/integrations/desktop.hpp>
+#include <fstream>
+#include <sstream>
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -36,7 +39,7 @@ module;
 
 export module openxmb.app:image_viewer;
 
-import dreamrender;
+import auroreengine;
 import glm;
 import sdl2;
 import vulkan_hpp;
@@ -45,6 +48,7 @@ import openxmb.utils;
 import :component;
 import :programs;
 import :base_viewer;
+import :xmb_presentation;
 import :choice_overlay;
 import :message_overlay;
 import openxmb.app;
@@ -59,12 +63,18 @@ export class image_viewer : private base_viewer, public component,
 public:
     float typography_scale() const override { return 2.5F; }
 
-    image_viewer(std::filesystem::path selected, dreamrender::resource_loader& resources)
+    image_viewer(std::filesystem::path selected, auroreengine::resource_loader& resources)
         : path(std::filesystem::absolute(std::move(selected)).lexically_normal()), loader(&resources) {
         image_width = image_height = 1;
+        if(path.extension()==".xmbphotos") {
+            std::ifstream stream(path);std::string line;
+            while(std::getline(stream,line)) if(!line.empty()&&line[0]!='#') {std::filesystem::path entry(line);if(entry.is_relative()) entry=path.parent_path()/entry;if(photo::supported_image(entry)&&std::filesystem::is_regular_file(entry)) images.push_back(entry);}
+            if(!images.empty()) path=images.front();
+        }
+        for(const auto* name:{"vp/screen_mode","pv/change_effect","pv/trimming","system/mp_addplaylist","pv/print","pv/set_as_wallpaper","system/mp_delete","system/mp_display","pv/zoom_in","pv/zoom_out","pv/rotate_left","pv/rotate_right","pv/up","pv/down","pv/left","pv/right","system/mp_prev","system/mp_next","system/mp_play"}) icons.load(resources,name);
         request_load();
     }
-    image_viewer(std::shared_ptr<dreamrender::texture> image) : texture(std::move(image)) {
+    image_viewer(std::shared_ptr<auroreengine::texture> image) : texture(std::move(image)) {
         image_width = image_height = 1;
     }
     ~image_viewer() override {
@@ -100,9 +110,9 @@ public:
                         selected_index = found == images.end() ? 0 : static_cast<std::size_t>(found-images.begin());
                     }
                     auto pixels = std::make_shared<photo::Bitmap>(std::move(loaded.image));
-                    incoming = std::make_shared<dreamrender::texture>(loader->getDevice(), loader->getAllocator(), pixels->width, pixels->height);
+                    incoming = std::make_shared<auroreengine::texture>(loader->getDevice(), loader->getAllocator(), pixels->width, pixels->height);
                     upload_generation=generation;
-                    upload = loader->loadTexture(incoming.get(), dreamrender::LoaderFunction{
+                    upload = loader->loadTexture(incoming.get(), auroreengine::LoaderFunction{
                         [pixels](std::uint8_t* destination, std::size_t capacity) {
                             if(pixels->rgba.size() > capacity) throw std::runtime_error("Image exceeds texture upload limit");
                             std::memcpy(destination, pixels->rgba.data(), pixels->rgba.size());
@@ -120,6 +130,7 @@ public:
                 upload.get();
                 if(incoming && incoming->loaded.load(std::memory_order_acquire) && upload_generation==generation) {
                     if(texture) wait_gpu();
+                    previous_image=std::move(texture);transition_started=now;
                     texture = std::move(incoming);
                     image_width = texture->width; image_height = texture->height;
                     message.clear(); error_state = false; last_slide = now;
@@ -151,20 +162,21 @@ public:
             } catch(const std::exception& error) { notify("Photo operation failed",error.what()); }
         }
         if(slideshow && !modal_open && !cropping && !busy() && images.size()>1 && now-last_slide>=slide_interval) navigate(1);
+        if(previous_image&&now-transition_started>std::chrono::milliseconds(500)) {wait_gpu();previous_image.reset();}
         if(close_pending && !modal_open) return result::close;
         return result::success;
     }
 
-    void render(dreamrender::gui_renderer& renderer, shell*) override {
+    void render(auroreengine::gui_renderer& renderer, shell*) override {
         view_aspect=static_cast<float>(renderer.aspect_ratio);
-        renderer.draw_rect(glm::vec2(0),glm::vec2(1),glm::vec4(0.015f,0.018f,0.025f,1));
-        std::string title=path.empty() ? "Photo" : path.filename().string();
-        if(!images.empty()) title += "   " + std::to_string(selected_index+1)+" / "+std::to_string(images.size());
-        renderer.draw_text(title,0.045f,0.035f,0.035f);
+        renderer.draw_rect(glm::vec2(0),glm::vec2(1),glm::vec4(0,0,0,1));
+        app::xmb_canvas canvas(renderer);
         if(texture && texture->loaded.load(std::memory_order_acquire) && !error_state) {
             const auto geometry=layout(static_cast<float>(renderer.aspect_ratio));
-            renderer.set_clip(0.035f,0.09f,0.93f,0.76f);
-            renderer.draw_image(*texture,geometry[0],geometry[1],geometry[2]*renderer.aspect_ratio,geometry[3]);
+            renderer.set_clip(0,0,1,1);
+            const float blend=effect_fade?std::clamp(std::chrono::duration<float>(clock::now()-transition_started).count()/0.5f,0.0f,1.0f):1.0f;
+            if(previous_image&&blend<1) renderer.draw_image(*previous_image,geometry[0],geometry[1],geometry[2]*renderer.aspect_ratio,geometry[3]);
+            renderer.draw_image(*texture,geometry[0],geometry[1],geometry[2]*renderer.aspect_ratio,geometry[3],{1,1,1,blend});
             if(cropping) {
                 const float left=geometry[0]+geometry[2]*crop_region.x;
                 const float top=geometry[1]+geometry[3]*crop_region.y;
@@ -183,19 +195,23 @@ public:
             }
             renderer.reset_clip();
         }
-        if(!message.empty()) renderer.draw_text(message,0.05f,0.46f,0.03f,glm::vec4(1,0.75f,0.65f,1));
-        if(busy()) renderer.draw_text(operation.valid()?"Saving…":"Loading…",0.78f,0.04f,0.028f);
-        const auto hints=cropping ? "Arrows move crop · +/- or wheel resize · Enter saves a copy · Escape cancels"
-            : "Left/Right photo · Up/Down zoom · Drag to pan · R rotate · Space slideshow · I information · Tab options";
-        renderer.draw_text(hints,0.045f,0.87f,0.022f,glm::vec4(0.8f,0.83f,0.88f,1));
+        if(display_on) {
+            canvas.rect(0,0,1920,130,{0,0,0,0.64f});
+            canvas.text(path.stem().string(),132,114,27,{0.83f,0.68f,0.36f,1});
+            canvas.text("("+std::to_string(selected_index+1)+"/"+std::to_string(images.size())+")  "+(info.captured.empty()?info.modified:info.captured),1470,114,25,{0.83f,0.68f,0.36f,1});
+        }
+        if(controls_on) draw_controls(canvas);
+        if(information_on) {
+            canvas.rect(1106,231,643,633,{0,0,0,0.78f});
+            std::istringstream lines(photo::describe(info));std::string line;float y=275;
+            while(std::getline(lines,line)) {canvas.text(line,1140,y,23);y+=40;}
+        }
+        if(!message.empty()) canvas.text(message,100,922,24,{1,0.84f,0.65f,1});
+        if(busy()) canvas.text(operation.valid()?"Saving…":"Loading…",1600,107,24);
         if(cropping) {
+            canvas.text("Trimming",960,170,30,{1,1,1,1},0,true);
             render_controller_buttons(xmb,renderer,0.5f,0.94f,std::array{
-                std::pair{action::ok,std::string_view{"Save crop"}}, std::pair{action::extra,std::string_view{"Resize"}}, std::pair{action::cancel,std::string_view{"Cancel"}}});
-        } else {
-            render_controller_buttons(xmb,renderer,0.5f,0.94f,std::array{
-                std::pair{action::left,std::string_view{"Previous"}}, std::pair{action::right,std::string_view{"Next"}},
-                std::pair{action::ok,slideshow?std::string_view{"Pause slideshow"}:std::string_view{"Slideshow"}},
-                std::pair{action::options,std::string_view{"Options"}},std::pair{action::cancel,std::string_view{"Close"}}});
+                std::pair{action::ok,std::string_view{"Save crop"}},std::pair{action::extra,std::string_view{"Resize"}},std::pair{action::cancel,std::string_view{"Cancel"}}});
         }
     }
     result on_action(action action) override {
@@ -209,11 +225,21 @@ public:
             else if(action==action::down) crop_region.y=std::min(1.0-crop_region.height,crop_region.y+0.025);
             return result::success;
         }
+        if(action==action::options) { controls_on=!controls_on;return result::success; }
+        if(controls_on) {
+            constexpr std::array<int,3> counts{8,8,3};
+            if(action==action::cancel) {controls_on=false;return result::success;}
+            if(action==action::left) control_column=(control_column+counts[control_row]-1)%counts[control_row];
+            else if(action==action::right) control_column=(control_column+1)%counts[control_row];
+            else if(action==action::up||action==action::down) {control_row=(control_row+(action==action::up?2:1))%3;control_column=std::min(control_column,counts[control_row]-1);}
+            else if(action==action::ok) activate_control();
+            return result::success;
+        }
         if(action==action::cancel) return result::close;
         if(action==action::left) { navigate(-1); return result::success; }
         if(action==action::right) { navigate(1); return result::success; }
         if(action==action::ok) { slideshow=!slideshow; last_slide=clock::now(); return result::success; }
-        if(action==action::options) { options(); return result::success; }
+
         auto result=base_viewer::on_action(action);
         zoom=std::clamp(zoom,0.1f,16.0f);
         return result;
@@ -232,7 +258,8 @@ public:
             switch(static_cast<sdl::Scancode>(key->keycode)) {
                 case sdl::Scancode::SDL_SCANCODE_R: pending_action=command::rotate_right; return result::success;
                 case sdl::Scancode::SDL_SCANCODE_SPACE: return on_action(action::ok);
-                case sdl::Scancode::SDL_SCANCODE_I: pending_action=command::information; return result::success;
+                case sdl::Scancode::SDL_SCANCODE_D: display_on=!display_on; return result::success;
+                case sdl::Scancode::SDL_SCANCODE_I: information_on=!information_on; return result::success;
                 case sdl::Scancode::SDL_SCANCODE_W: pending_action=command::wallpaper; return result::success;
                 case sdl::Scancode::SDL_SCANCODE_S: pending_action=command::save; return result::success;
                 case sdl::Scancode::SDL_SCANCODE_DELETE: pending_action=command::trash; return result::success;
@@ -288,11 +315,11 @@ private:
     }
     std::array<float,4> layout(float aspect) const {
         const float picture=static_cast<float>(image_width)/std::max(1u,image_height);
-        float width=0.91f, height=width*aspect/picture;
-        if(height>0.73f) { height=0.73f; width=height*picture/aspect; }
+        float width=1.0f, height=width*aspect/picture;
+        if(height>1.0f) { height=1.0f; width=height*picture/aspect; }
         const float scale=cropping?1.0f:zoom;
         const glm::vec2 pan=cropping?glm::vec2(0):offset;
-        return {0.5f-width*scale*0.5f+pan.x/aspect,0.47f-height*scale*0.5f+pan.y,width*scale,height*scale};
+        return {0.5f-width*scale*0.5f+pan.x/aspect,0.5f-height*scale*0.5f+pan.y,width*scale,height*scale};
     }
     void resize_crop(double factor) {
         factor=std::clamp(factor,std::max(0.05/crop_region.width,0.05/crop_region.height),std::min(1.0/crop_region.width,1.0/crop_region.height));
@@ -302,15 +329,41 @@ private:
         crop_region.y=std::clamp(crop_region.y+(crop_region.height-height)*0.5,0.0,1.0-height);
         crop_region.width=width; crop_region.height=height;
     }
-    void options() {
-        if(!xmb || modal_open) return;
-        if(path.empty()) return;
-        modal_open=true;
-        xmb->emplace_overlay<choice_overlay>(std::vector<std::string>{
-            "Rotate clockwise","Rotate counterclockwise","Photo information","Set as wallpaper","Save rotated copy",
-            "Crop square…","Crop 16:9…","Crop 4:3…","Move to OpenXMB Trash…","Slideshow interval…"},0,
-            [this](unsigned int selected) { modal_open=false; if(selected<=9) pending_action=static_cast<command>(selected); },
-            [this]() { modal_open=false; });
+    void draw_controls(const app::xmb_canvas& c) {
+        static constexpr std::array<std::string_view,19> names{"vp/screen_mode","pv/change_effect","pv/trimming","system/mp_addplaylist","pv/print","pv/set_as_wallpaper","system/mp_delete","system/mp_display","pv/zoom_in","pv/zoom_out","pv/rotate_left","pv/rotate_right","pv/up","pv/down","pv/left","pv/right","system/mp_prev","system/mp_next","system/mp_play"};
+        static constexpr std::array<std::string_view,19> labels{"Display Mode","Change Effect","Trimming","Add to Playlist","Print","Set as Wallpaper","Delete","Display","Zoom In","Zoom Out","Rotate Left","Rotate Right","Up","Down","Left","Right","Previous","Next","Slideshow"};
+        const int selected=control_row<2?control_row*8+control_column:16+control_column;
+        for(int row=0;row<3;++row) {const int count=row==2?3:8,first=row*8;
+            for(int column=0;column<count;++column) {int index=first+column;bool focus=selected==index;
+                icons.draw(c,names[index],514+(column-(count-1)*0.5f)*64,440+row*65,72,focus?1:0.85f,focus?1.3f:1);
+            }
+        }
+        c.text(labels[selected],514,648,26,{0.83f,0.68f,0.36f,1},app::xmb_canvas::pulse(),true);
+    }
+    void activate_control() {
+        const int selected=control_row<2?control_row*8+control_column:16+control_column;
+        switch(selected) {
+        case 0: zoom=zoom==1?1.3f:1.0f;offset={};break;
+        case 1: effect_fade=!effect_fade;message=effect_fade?"Fade":"Normal";break;
+        case 2: controls_on=false;pending_action=command::crop_classic;break;
+        case 3: {
+            const auto destination=openxmb::integrations::user_data_directory()/"Photo Playlists";
+            std::filesystem::create_directories(destination);
+            const auto playlist=destination/(path.stem().string()+".xmbphotos");
+            std::ofstream file(playlist);file<<"#OPENXMB-PHOTOS\n";for(const auto& image:images) file<<image.string()<<'\n';
+            message=file?"Slideshow saved: "+playlist.filename().string():"Could not save slideshow";break;
+        }
+        case 4: {
+            const auto program=openxmb::integrations::find_executable("lp");
+            if(!program) {message="No print service is available";break;}
+            const auto result=openxmb::integrations::launch_process({program->string(),"--",path.string()});message=result?"Photo sent to print service":result.message;break;
+        }
+        case 5: pending_action=command::wallpaper;break;case 6:pending_action=command::trash;break;
+        case 7: display_on=!display_on;break;case 8:zoom=std::min(16.0f,zoom*1.1f);break;case 9:zoom=std::max(0.1f,zoom/1.1f);break;
+        case 10:pending_action=command::rotate_left;break;case 11:pending_action=command::rotate_right;break;
+        case 12:offset.y-=0.03f;break;case 13:offset.y+=0.03f;break;case 14:offset.x-=0.03f;break;case 15:offset.x+=0.03f;break;
+        case 16:navigate(-1);break;case 17:navigate(1);break;case 18:slideshow=!slideshow;last_slide=clock::now();break;
+        }
     }
     void perform(command selected) {
         if(!xmb || path.empty() || operation.valid()) return;
@@ -356,9 +409,13 @@ private:
             [this](unsigned int) { modal_open=false; },true,[this]() { modal_open=false; });
     }
     std::filesystem::path path;
-    dreamrender::resource_loader* loader{};
+    auroreengine::resource_loader* loader{};
     shell* xmb{};
-    std::shared_ptr<dreamrender::texture> texture,incoming;
+    std::shared_ptr<auroreengine::texture> texture,incoming,previous_image;
+    app::media_icons icons;
+    bool controls_on{},display_on{true},information_on{},effect_fade{true};
+    int control_row{},control_column{};
+    clock::time_point transition_started=clock::now();
     std::future<Loaded> decode;
     std::future<void> upload;
     std::future<Operation> operation;
@@ -380,6 +437,6 @@ namespace {
 const inline register_program<image_viewer> image_viewer_program{
     "image_viewer",
     {"image/bmp","image/gif","image/jpeg","image/vnd.zbrush.pcx","image/png","image/x-portable-bitmap","image/x-portable-graymap","image/x-portable-pixmap","image/x-portable-anymap","image/svg+xml","image/x-targa","image/x-tga","image/tiff","image/webp","image/x-xcf","image/x-xpixmap"},
-    {".bmp",".gif",".jpg",".jpeg",".pcx",".png",".pbm",".pgm",".ppm",".pnm",".svg",".tga",".tiff",".tif",".webp",".xcf",".xpm"}};
+    {".bmp",".gif",".jpg",".jpeg",".pcx",".png",".pbm",".pgm",".ppm",".pnm",".svg",".tga",".tiff",".tif",".webp",".xcf",".xpm",".xmbphotos"}};
 }
 }

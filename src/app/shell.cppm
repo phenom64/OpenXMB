@@ -42,7 +42,7 @@ import openxmb.utils;
 import openxmb.xmb.captured_wave_renderer;
 import openxmb.xmb.monthly_background_renderer;
 import openxmb.xmb.status_bar_renderer;
-import dreamrender;
+import auroreengine;
 import glm;
 import sdl2;
 import vulkan_hpp;
@@ -66,7 +66,7 @@ namespace app
         in, out
     };
 
-    using namespace dreamrender;
+    using namespace auroreengine;
     export class shell : public phase, public input::keyboard_handler, public input::controller_handler
     {
         public:
@@ -141,7 +141,7 @@ namespace app
                 }
             }
 
-            dreamrender::window* get_window() const { return this->win; }
+            auroreengine::window* get_window() const { return this->win; }
 
             void set_ingame_mode(bool ingame_mode) { this->ingame_mode = ingame_mode; }
             bool get_ingame_mode() const { return ingame_mode; }
@@ -262,6 +262,7 @@ namespace app
 
             // Per-frame resolve target for background (offscreen, avoids reusing swapchain mid-frame)
             std::vector<std::unique_ptr<texture>> backgroundResolve;
+            std::vector<vk::UniqueImageView> backgroundAttachmentViews,backgroundMsaaViews;
             std::vector<std::unique_ptr<texture>> backgroundDepth;
             std::vector<vk::UniqueFramebuffer> backgroundFramebuffers;
 
@@ -319,6 +320,7 @@ namespace app
             sdl::mix::unique_chunk cancel_sound;
             sdl::mix::unique_chunk back_sound;
 
+            std::chrono::steady_clock::time_point cursor_active_at{};
             glm::vec2 cursor_position{0.5f, 0.5f};
             glm::vec2 cursor_joystick_delta{0.0f, 0.0f};
             glm::ivec2 last_mouse_position{0, 0};

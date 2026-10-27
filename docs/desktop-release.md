@@ -8,7 +8,7 @@ private captured-wave asset directory. Classic remains available in settings.
 
 ## What is connected to the shell
 
-- Theme Library imports folders, ZIP and P3T packs; previews, component switches,
+- Settings → Theme Settings imports folders, ZIP and P3T packs; previews, component switches,
   custom-theme capture, export, presets, apply, restart restoration and revert are
   available from native controls. [Theme format and limits](../include/openxmb/themes/FORMAT.md).
 - Music supports metadata/artwork, playlist queues, seek, shuffle/repeat, volume,
@@ -39,7 +39,10 @@ accepts `settings`, `themes`, `users`, `games`, `custom`, `friends`, `account`,
 The procedural wave uploads 7424 bytes of spline/control data per frame, with a
 retained index buffer and one indexed ribbon draw. Sparkles use one instanced
 quad draw with a bounded count. Font shaping has a bounded cache shared between
-measurement and rendering. Theme meshes use retained mapped vertex arenas and
+measurement and rendering. Text shadows and selection glow are baked into padded
+glyph coverage channels, so each text draw samples a single atlas. The background
+uses compatible UNORM attachment views of its existing sRGB images for encoded
+wave blending; this adds no full-screen image or render pass. Theme meshes use retained mapped vertex arenas and
 batched draw calls, including depth and additive materials.
 
 Blur textures are allocated per frame slot on first use. The six RGBA16F targets
@@ -56,7 +59,7 @@ not be presented as handheld or native GPU performance.
 
 Use Clang 19 with clang-scan-deps, CMake/Ninja and the development dependencies in
 the README. The default build fetches an immutable engine revision; local engine
-work can use `-DDREAMRENDER_LOCAL=/path/to/AuroreEngine`.
+work can use `-DAUROREENGINE_LOCAL=/path/to/AuroreEngine`.
 
 ```sh
 cmake --preset default
@@ -72,18 +75,22 @@ and persistence, retaining screenshots/logs and `report.json`. It does not use t
 tracked default configuration for writes. Pillow and FFmpeg command-line tools
 are required; Tesseract adds visible text checks. The native-window mode also
 requires Xvfb, XTest and ImageMagick. Headless media tests explicitly opt into the
-engine's `DREAMRENDER_HEADLESS_AUDIO=1` mixer path.
+engine's `AUROREENGINE_HEADLESS_AUDIO=1` mixer path.
 
 The optional engine `aurore_textured_triangles_smoke` verifies actual textured,
 additive and depth-tested pixels, upload counters, and draining a pending upload
 from a phase callback. Its generated scene submits 8196 triangles in three mesh
-draws. Enable it with `-DDREAMS_BUILD_RENDER_TESTS=ON` and build that target.
+draws. Enable it with `-DAUROREENGINE_BUILD_RENDER_TESTS=ON` and build that target.
 
 ## Compatibility boundaries
 
 Dynamic P3T support covers the implemented RAF/model/VSMX scene subset and reports
-unsupported features in Theme Library. Universal firmware theme compatibility is
+unsupported features in Theme Settings. Universal firmware theme compatibility is
 not claimed. Hardware-only libretro cores, bitmap video subtitles, protected disc
 playback, native Wayland browser input, Windows/macOS runtime behavior and actual
 GPU decoding require their respective implementations or platform/device tests.
-A browser must be installed and its sandbox must function in the host environment.
+On Linux/X11, optional WebKitGTK 4.1 and GTK3 development packages build the
+`openxmb-web` child surface. The Vulkan shell draws the browser header and footer,
+and WebKit runs actual pages in sandboxed processes inside the central viewport.
+Without that optional helper, the system-browser fallback requires an installed
+browser and a working host sandbox.

@@ -1,15 +1,16 @@
 #pragma once
 
 #include <cstdint>
+#include <array>
 
 namespace openxmb::xmb {
 
 struct BootMilestones {
   static constexpr double wave_emerge_seconds = 0.8;
-  static constexpr double identity_in_seconds = 2.2;
-  static constexpr double identity_full_seconds = 4.0;
-  static constexpr double identity_fade_seconds = 5.8;
-  static constexpr double identity_out_seconds = 6.8;
+  static constexpr double identity_in_seconds = 1.92;
+  static constexpr double identity_full_seconds = 3.0;
+  static constexpr double identity_fade_seconds = 4.05;
+  static constexpr double identity_out_seconds = 5.41;
   static constexpr double warning_in_seconds = 7.665;
   static constexpr double warning_out_seconds = 12.53;
   static constexpr double ui_in_seconds = 15.9;
@@ -35,6 +36,7 @@ struct BootSample {
 
   // Identity layer. The host draws kStartupIdentity using these values.
   double identity_opacity{};
+  std::array<double,3> identity_gradient{};
   double identity_blur_px{};
   double identity_scale{1.0};
 

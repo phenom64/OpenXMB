@@ -23,7 +23,7 @@ module;
 
 export module openxmb.app:startup_overlay;
 
-import dreamrender;
+import auroreengine;
 import glm;
 import spdlog;
 import openxmb.config;
@@ -38,7 +38,7 @@ export class startup_overlay : public component {
     ~startup_overlay() override;
 
     result tick(app::shell*) override;
-    void render(dreamrender::gui_renderer& renderer, app::shell*) override;
+    void render(auroreengine::gui_renderer& renderer, app::shell*) override;
     // Opaque so menus do not render behind the intro (PS3-like behavior)
     [[nodiscard]] bool is_opaque() const override { return true; }
     [[nodiscard]] bool do_fade_in() const override { return true; }

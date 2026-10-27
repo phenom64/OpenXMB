@@ -131,9 +131,10 @@ BackgroundGradient resolve_manual_background_gradient(std::array<float, 3> rgb,
     channel = std::clamp(channel, 0.0F, 1.0F);
   }
   return {
-      .top_rgb = rgb,
+      .top_rgb = {rgb[0]*0.43F,rgb[1]*0.43F,rgb[2]*0.43F},
       .bottom_rgb = rgb,
       .night_day_blend = night_day_blend(local_hour),
+      .direct_gradient_span = 1.0F,
   };
 }
 

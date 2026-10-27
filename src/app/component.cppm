@@ -30,7 +30,7 @@ module;
 
 export module openxmb.app:component;
 
-import dreamrender;
+import auroreengine;
 import openxmb.utils;
 import vulkan_hpp;
 
@@ -170,15 +170,17 @@ export class component {
     public:
         virtual ~component() = default;
         virtual void prerender(vk::CommandBuffer cmd, int frame, app::shell* xmb) {};
-        virtual void render(dreamrender::gui_renderer& renderer, app::shell* xmb) = 0;
+        virtual void render(auroreengine::gui_renderer& renderer, app::shell* xmb) = 0;
         virtual result tick(app::shell* xmb) { return result::success; }
         [[nodiscard]] virtual float typography_scale() const { return 1.0F; }
     virtual bool is_opaque() const { return true; }
+    virtual bool music_background() const { return false; }
+    virtual bool show_status_bar() const { return false; }
         [[nodiscard]] virtual bool do_fade_in() const { return false; }
         [[nodiscard]] virtual bool do_fade_out() const { return false; }
         [[nodiscard]] virtual bool enable_cursor() const { return false; }
     protected:
-        void render_controller_buttons(app::shell* xmb, dreamrender::gui_renderer& renderer, float x, float y, std::span<const std::pair<::action, std::string_view>> buttons) const;
+        void render_controller_buttons(app::shell* xmb, auroreengine::gui_renderer& renderer, float x, float y, std::span<const std::pair<::action, std::string_view>> buttons) const;
 };
 
 }

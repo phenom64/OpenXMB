@@ -39,7 +39,7 @@ module openxmb.app;
 
 import sdl2;
 import spdlog;
-import dreamrender;
+import auroreengine;
 import glm;
 import openxmb.config;
 
@@ -86,7 +86,7 @@ double boot_elapsed_seconds(std::chrono::steady_clock::time_point start) {
 }
 
 std::vector<std::string> wrap_warning_body(
-    dreamrender::gui_renderer& renderer,
+    auroreengine::gui_renderer& renderer,
     std::string_view body,
     float font_size,
     float max_width) {
@@ -181,7 +181,7 @@ result startup_overlay::tick(app::shell* xmb) {
   return result::success;
 }
 
-void startup_overlay::render(dreamrender::gui_renderer& renderer, app::shell*) {
+void startup_overlay::render(auroreengine::gui_renderer& renderer, app::shell*) {
   const auto elapsed = boot_elapsed_seconds(start_time);
   const auto sample = openxmb::xmb::sample_boot_timeline(elapsed);
 
@@ -193,72 +193,16 @@ void startup_overlay::render(dreamrender::gui_renderer& renderer, app::shell*) {
       glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f),
       glm::vec4(0.005f, 0.0f, 0.012f, 0.88f * (1.0f - settle)));
 
-  constexpr std::array<std::string_view, 1> identity_lines{{
-      openxmb::xmb::kStartupIdentity,
-  }};
-  float size = static_cast<float>(openxmb::xmb::kBootIdentityBaseSize) *
-               static_cast<float>(sample.identity_scale);
-  for(const auto line : identity_lines) {
-    const auto measured = renderer.measure_text(line, size);
-    const double visual_width =
-        static_cast<double>(measured.x) *
-        openxmb::xmb::kBootNativeTextMeasureToVisualScale;
-    if(visual_width > openxmb::xmb::kBootIdentityMaxWidth) {
-      size = static_cast<float>(openxmb::xmb::fit_startup_identity_size(
-          size, visual_width));
-    }
-  }
-  std::array<openxmb::xmb::BootTextMeasure, identity_lines.size()> line_measures{};
-  double line_height = 0.0;
-  for(std::size_t index = 0; index < identity_lines.size(); ++index) {
-    const auto measured = renderer.measure_text(identity_lines[index], size);
-    line_measures[index] = {
-        .width = static_cast<double>(measured.x) *
-                 openxmb::xmb::kBootNativeTextMeasureToVisualScale,
-        .height = static_cast<double>(measured.y) *
-                  openxmb::xmb::kBootNativeTextMeasureToVisualScale,
-    };
-    line_height = std::max(line_height, line_measures[index].height);
-  }
-  const float identity_pitch = static_cast<float>(
-      line_height * openxmb::xmb::kBootIdentityLinePitchScale);
-  const float identity_top = static_cast<float>(
-      openxmb::xmb::kBootIdentityCenterY -
-      ((line_height +
-        static_cast<double>(identity_lines.size() - 1) * identity_pitch) *
-       0.5));
-  const float identity_alpha =
-      std::clamp(static_cast<float>(sample.identity_opacity), 0.0f, 1.0f);
-  const float blur_x = static_cast<float>(sample.identity_blur_px) /
-                       static_cast<float>(renderer.frame_size.width);
-  const float blur_y = static_cast<float>(sample.identity_blur_px) /
-                       static_cast<float>(renderer.frame_size.height);
-  if(identity_alpha > 0.0f && sample.identity_blur_px > 0.1) {
-    constexpr std::array<glm::vec2, 8> directions{{
-        {-1.0f, 0.0f}, {1.0f, 0.0f}, {0.0f, -1.0f}, {0.0f, 1.0f},
-        {-0.7f, -0.7f}, {0.7f, -0.7f}, {-0.7f, 0.7f}, {0.7f, 0.7f},
-    }};
-    for(std::size_t index = 0; index < identity_lines.size(); ++index) {
-      const auto placement =
-          openxmb::xmb::place_startup_identity_text(line_measures[index]);
-      const float x = static_cast<float>(placement.x);
-      const float y = identity_top + static_cast<float>(index) * identity_pitch;
-      for(const auto direction : directions) {
-        renderer.draw_text(
-            identity_lines[index], x + direction.x * blur_x,
-            y + direction.y * blur_y, size,
-            glm::vec4(1.0f, 0.88f, 0.68f, identity_alpha * 0.08f));
-      }
-    }
-  }
-  for(std::size_t index = 0; index < identity_lines.size(); ++index) {
-    const auto placement =
-        openxmb::xmb::place_startup_identity_text(line_measures[index]);
-    renderer.draw_text(
-        identity_lines[index], static_cast<float>(placement.x),
-        identity_top + static_cast<float>(index) * identity_pitch, size,
-        glm::vec4(1.0f, 0.96f, 0.88f, identity_alpha));
-  }
+  const auto identity=openxmb::xmb::kStartupIdentity;
+  float pixels=34.0F*renderer.frame_size.height/1080.0F;
+  const float available=static_cast<float>(openxmb::xmb::kBootIdentityMaxWidth)*renderer.frame_size.width;
+  const float measured=renderer.text_width_pixels(identity,pixels);
+  if(measured>available) pixels*=available/measured;
+  const float width=renderer.text_width_pixels(identity,pixels);
+  const float right=static_cast<float>(openxmb::xmb::kBootIdentityRightX)*renderer.frame_size.width;
+  const float baseline=static_cast<float>(openxmb::xmb::kBootIdentityCenterY)*renderer.frame_size.height+pixels*0.35F;
+  renderer.draw_text_pixels(identity,right-width,baseline,pixels,{1.0F,0.96F,0.88F,1.0F},0.0F,0.0F,false,
+      {static_cast<float>(sample.identity_gradient[0]),static_cast<float>(sample.identity_gradient[1]),static_cast<float>(sample.identity_gradient[2])});
 
   const float warning_alpha =
       std::clamp(static_cast<float>(sample.warning_opacity), 0.0f, 1.0f);

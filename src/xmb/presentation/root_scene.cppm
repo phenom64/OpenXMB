@@ -14,7 +14,7 @@ export namespace openxmb::xmb {
 inline constexpr double kCategoryBaselineY = 289.0;
 inline constexpr double kActiveCategoryX = 566.0;
 inline constexpr double kCategorySpacing = 203.0;
-inline constexpr double kActiveCategoryIconExtent = 168.0;
+inline constexpr double kActiveCategoryIconExtent = 180.0;
 inline constexpr double kInactiveCategoryIconExtent = 117.0;
 inline constexpr double kCategoryLabelY = 342.0;
 inline constexpr double kCategoryLabelSize = 20.0;
@@ -45,6 +45,7 @@ enum class RootCategoryId : std::uint8_t {
   photo,
   music,
   video,
+  tv,
   game,
   network,
   playstation_network,
@@ -71,7 +72,7 @@ struct UsersItemDefinition {
   std::string_view icon_semantic_id;
 };
 
-inline constexpr std::array<RootCategoryDefinition, 9> kRootCategories{{
+inline constexpr std::array<RootCategoryDefinition, 10> kRootCategories{{
     {RootCategoryId::users, "root.category.users", "Users",
      "xmb.icon.category.users"},
     {RootCategoryId::settings, "root.category.settings", "Settings",
@@ -82,6 +83,7 @@ inline constexpr std::array<RootCategoryDefinition, 9> kRootCategories{{
      "xmb.icon.category.music"},
     {RootCategoryId::video, "root.category.video", "Video",
      "xmb.icon.category.video"},
+    {RootCategoryId::tv,"root.category.tv","TV / Video Services","xmb.icon.category.tv"},
     {RootCategoryId::game, "root.category.game", "Game",
      "xmb.icon.category.game"},
     {RootCategoryId::network, "root.category.network", "Network",
@@ -264,7 +266,7 @@ RootSceneSnapshot sample_root_scene(const RootSceneState &state,
     const auto distance = index > state.active_category
                               ? index - state.active_category
                               : state.active_category - index;
-    const auto base_alpha = active ? 1.0 : (distance <= 2 ? 0.9 : 0.25);
+    const auto base_alpha = active ? 0.90 : 0.85;
 
     auto icon_reveal = reveal.icons;
     if (icon_reveal < 0.999) {

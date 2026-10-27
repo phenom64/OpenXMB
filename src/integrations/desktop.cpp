@@ -1,4 +1,5 @@
 #include "openxmb/integrations/desktop.hpp"
+#include <nlohmann/json.hpp>
 
 #include <algorithm>
 #include <cerrno>
@@ -277,6 +278,18 @@ Result open_browser(std::string_view url, BrowserSession& session, const std::fi
   if (error) return {false, "Cannot create browser profile: " + error.message()};
   std::vector<std::string> args;
   bool dedicated = true;
+  const auto return_window = detail::capture_return_window();
+  bool embedded=false;
+  const auto state_file=profile/"page-state.json";
+#if !defined(_WIN32) && !defined(__APPLE__)
+  if(return_window&&!std::getenv("OPENXMB_BROWSER")) {
+    if(auto helper=find_executable((executable_path().parent_path()/"openxmb-web").string())) {
+      args={helper->string(),std::string(url),std::to_string(return_window),profile.string(),state_file.string()};
+      embedded=true;
+      std::error_code remove_error;std::filesystem::remove(state_file,remove_error);std::filesystem::remove(profile/"page-command.json",remove_error);
+    }
+  }
+#endif
 #ifdef _WIN32
   std::vector<std::filesystem::path> browsers;
   if (const char* configured = std::getenv("OPENXMB_BROWSER"); configured && *configured) browsers.emplace_back(configured);
@@ -307,7 +320,7 @@ Result open_browser(std::string_view url, BrowserSession& session, const std::fi
   std::vector<std::string> browsers;
   if (const char* configured = std::getenv("OPENXMB_BROWSER"); configured && *configured) browsers.emplace_back(configured);
   else browsers = {"chromium", "chromium-browser", "google-chrome", "firefox", "firefox-esr"};
-  for (const auto& name : browsers) {
+  if(args.empty()) for (const auto& name : browsers) {
     if (auto path = find_executable(name)) {
       if (path->filename().string().find("firefox") != std::string::npos) args = {path->string(), "--no-remote", "--profile", profile.string(), "--new-window", std::string{url}};
       else args = {path->string(), "--no-first-run", "--user-data-dir=" + profile.string(), "--app=" + std::string{url}};
@@ -317,11 +330,35 @@ Result open_browser(std::string_view url, BrowserSession& session, const std::fi
   if (args.empty() && std::getenv("OPENXMB_BROWSER")) return {false, "The configured browser executable was not found"};
   if (args.empty()) { args = {"xdg-open", std::string{url}}; dedicated = false; }
 #endif
-  const auto return_window = detail::capture_return_window();
   const auto launched = launch_process(args, profile.parent_path());
   if (!launched) return {false, "Cannot open browser: " + launched.message};
-  session = {launched.process_id, dedicated, std::string{url}, return_window, {}};
+  session = {launched.process_id, dedicated, std::string{url}, return_window, {},embedded,state_file};
+  if(embedded) return {true,"Browser opened"};
   return {true, dedicated ? "Browser opened in a separate window; return to OpenXMB to close the session" : "Opened in your system browser; use its own navigation and close controls"};
+}
+BrowserPage browser_page(const BrowserSession& session) {
+  BrowserPage page{.url=session.url};
+  if(!session.embedded_view||session.state_file.empty()) return page;
+  std::error_code error;const auto bytes=std::filesystem::file_size(session.state_file,error);
+  if(error||bytes>65536) return page;
+  try {
+    std::ifstream file(session.state_file);const auto state=nlohmann::json::parse(file);
+    page.title=state.value("title",std::string{});page.url=state.value("uri",session.url);
+    page.hover=state.value("hover",std::string{});page.loading=state.value("loading",false);page.address_requested=state.value("address_requested",false);
+  }catch(...) {}
+  return page;
+}
+Result browser_view_command(BrowserSession& session,std::string_view command,std::string_view value) {
+  if(!session.embedded_view) return {false,"An embedded browser view is not available"};
+  if(command=="navigate") {const auto result=validate_browser_url(value);if(!result) return result;session.url=value;}
+  else if(command!="hide"&&command!="show"&&command!="back"&&command!="forward"&&command!="reload"&&command!="text") return {false,"Unknown browser command"};
+  const auto sequence=std::chrono::steady_clock::now().time_since_epoch().count();
+  const nlohmann::json message{{"sequence",sequence},{"command",command},{"value",value}};
+  const auto destination=session.state_file.parent_path()/"page-command.json";auto temporary=destination;temporary+=".tmp";
+  std::ofstream file(temporary,std::ios::binary|std::ios::trunc);file<<message.dump();file.close();
+  if(!file) return {false,"Unable to update the browser view"};
+  std::error_code error;std::filesystem::rename(temporary,destination,error);
+  return {!error,error?error.message():std::string{}};
 }
 Result close_browser(BrowserSession& session) {
   if (!session.dedicated_window) return {false, "Close your system browser with its own window controls"};

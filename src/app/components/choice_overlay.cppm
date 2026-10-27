@@ -31,7 +31,7 @@ module;
 
 export module openxmb.app:choice_overlay;
 
-import dreamrender;
+import auroreengine;
 import sdl2;
 import vulkan_hpp;
 import vma;
@@ -54,7 +54,7 @@ export class choice_overlay : public component, public action_receiver {
             top_action = std::move(label);
             top_action_y = y;
         }
-        void render(dreamrender::gui_renderer& renderer, class shell* xmb) override;
+        void render(auroreengine::gui_renderer& renderer, class shell* xmb) override;
         result on_action(action action) override;
 
         [[nodiscard]] bool is_opaque() const override { return false; }

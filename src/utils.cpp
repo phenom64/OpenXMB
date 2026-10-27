@@ -432,6 +432,16 @@ namespace utils {
         return xmb_web_month_anchor(lt.tm_mon);
     }
 
+    glm::vec3 xmb_icon_colour(std::chrono::system_clock::time_point now) {
+        if(!config::CONFIG.iconColorAuto) return config::CONFIG.iconColor;
+        if(config::CONFIG.backgroundType==config::config::background_type::image||config::CONFIG.backgroundType==config::config::background_type::video) return glm::vec3(1);
+        const auto hi=xmb_resolve_theme_colour(now).base_colour;
+        const float gain=std::min(4.0F,0.92F/std::max({0.001F,hi.r,hi.g,hi.b}));
+        glm::vec3 result;
+        for(int i=0;i<3;++i) {const float color=std::min(1.0F,hi[i]*gain);result[i]=std::min(1.0F,std::round((color+(1-color)*0.55F)*32.0F)/32.0F);}
+        return result;
+    }
+
     xmb_resolved_theme_colour xmb_resolve_theme_colour(std::chrono::system_clock::time_point now)
     {
         std::tm lt = local_time(now);

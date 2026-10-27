@@ -51,7 +51,7 @@ import :programs;
 
 import openxmb.config;
 import openxmb.utils;
-import dreamrender;
+import auroreengine;
 import sdl2;
 import spdlog;
 import i18n;
@@ -426,7 +426,7 @@ namespace menu {
         }
     }
 
-    files_menu::files_menu(std::string name, dreamrender::texture&& icon, app::shell* xmb, std::filesystem::path path, dreamrender::resource_loader& loader,
+    files_menu::files_menu(std::string name, auroreengine::texture&& icon, app::shell* xmb, std::filesystem::path path, auroreengine::resource_loader& loader,
         files_menu_profile profile)
     : simple_menu(std::move(name), std::move(icon)), xmb(xmb), path(std::move(path)), loader(loader), profile(profile)
     {
@@ -453,7 +453,7 @@ namespace menu {
         entries.clear();
         extra_data_entries.clear();
         {
-            dreamrender::texture icon_texture(loader.getDevice(), loader.getAllocator());
+            auroreengine::texture icon_texture(loader.getDevice(), loader.getAllocator());
             entries.push_back(std::make_unique<action_menu_entry>(
                 std::string{"Loading..."}, std::move(icon_texture), std::function<result()>{}
             ));
@@ -541,7 +541,7 @@ namespace menu {
             extra_data_entries.push_back({file_path, info});
 
             auto icon_path = icon_for_file(file_path, info, profile);
-            dreamrender::texture icon_texture(loader.getDevice(), loader.getAllocator());
+            auroreengine::texture icon_texture(loader.getDevice(), loader.getAllocator());
             auto entry = std::make_unique<action_menu_entry>(
                 info.display_name,
                 std::move(icon_texture),
@@ -592,7 +592,7 @@ namespace menu {
             std::error_code ec;
             if(!std::filesystem::exists(path, ec) || ec) {
                 spdlog::error("Path does not exist: {}", path.string());
-                dreamrender::texture icon_texture(loader.getDevice(), loader.getAllocator());
+                auroreengine::texture icon_texture(loader.getDevice(), loader.getAllocator());
                 auto entry = std::make_unique<action_menu_entry>(
                     "Folder not found"_(),
                     std::move(icon_texture),

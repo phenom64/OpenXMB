@@ -31,7 +31,7 @@ import :progress_overlay;
 
 import :message_overlay;
 
-import dreamrender;
+import auroreengine;
 import glm;
 import spdlog;
 
@@ -72,7 +72,7 @@ namespace app {
         return result::success;
     }
 
-    void progress_overlay::render(dreamrender::gui_renderer& renderer, shell* xmb) {
+    void progress_overlay::render(auroreengine::gui_renderer& renderer, shell* xmb) {
         renderer.draw_rect(glm::vec2(0.0f, 0.15f), glm::vec2(1.0f, 2.0/renderer.frame_size.height), glm::vec4(0.7f, 0.7f, 0.7f, 1.0f));
         renderer.draw_rect(glm::vec2(0.0f, 0.85f), glm::vec2(1.0f, 2.0/renderer.frame_size.height), glm::vec4(0.7f, 0.7f, 0.7f, 1.0f));
 

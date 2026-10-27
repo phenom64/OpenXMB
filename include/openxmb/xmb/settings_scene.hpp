@@ -25,6 +25,7 @@ struct SettingsSceneMetrics {
   static constexpr double item_pitch = 80.0;
   static constexpr double selected_to_next_padding = 87.0;
   static constexpr double icon_extent = 78.0;
+  static constexpr double focused_icon_extent = 180.0;
   static constexpr double inactive_label_size = 30.0;
   static constexpr double active_label_size = 34.0;
   static constexpr double description_size = 18.0;

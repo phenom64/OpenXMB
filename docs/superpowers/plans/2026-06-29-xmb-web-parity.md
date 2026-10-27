@@ -8,7 +8,7 @@ Historical plan. The desktop implementation and its current scope are documented
 
 **Architecture:** Treat xmb-web as the immutable reference spec. Port behavior into OpenXMB as typed native data (`assets/xmb/catalog/en.json`) and contract-tested C++ samplers. Import reference assets locally via `tools/xmb/import_xmb_web.py` (never redistributed). Extend AuroreEngine only for cross-cutting renderer capabilities (glass icons, compositing hooks, media texture paths). Verify with native unit tests first, then pixel-diff gates (`tools/xmb/compare_frames.py`).
 
-**Tech Stack:** C++23 modules, Vulkan (AuroreEngine/dreamrender), SDL2, FFmpeg, CMake/Ninja, Python 3 (import/compare tooling), pinned xmb-web checkout.
+**Tech Stack:** C++23 modules, Vulkan (AuroreEngine/auroreengine), SDL2, FFmpeg, CMake/Ninja, Python 3 (import/compare tooling), pinned xmb-web checkout.
 
 ## Global Constraints
 
@@ -18,7 +18,7 @@ Historical plan. The desktop implementation and its current scope are documented
   - OpenXMB: `%USERPROFILE%/Developer/OpenXMB`
   - AuroreEngine: `%USERPROFILE%/Developer/AuroreEngine`
   - xmb-web: `%USERPROFILE%/Developer/xmb-web`
-- **Build preset:** `windows-native` (sets `DREAMRENDER_LOCAL`, `OPENXMB_IMPORT_XMB_WEB_COMPAT=ON`, `OPENXMB_XMB_WEB_SOURCE`)
+- **Build preset:** `windows-native` (sets `AUROREENGINE_LOCAL`, `OPENXMB_IMPORT_XMB_WEB_COMPAT=ON`, `OPENXMB_XMB_WEB_SOURCE`)
 - **Clean-build fallback:** When compat pack absent, Original wave falls back to licensed RetroArch Classic wave (`identity-assets.json`)
 - **Excluded from import:** `globe_assets/**`, `music/**`, PS3 boot logo, Rodin fonts, xmb-web sound files
 - **Resolution anchor:** 1920×1080 virtual framebuffer; layout containment for 4:3, 21:9, portrait
@@ -48,7 +48,7 @@ xmb-web (reference)
     │
     └─► measured constants ──► tests/xmb/*_tests.cpp
 
-AuroreEngine (RSX-26) ◄── DREAMRENDER_LOCAL ── OpenXMB (RSX-26)
+AuroreEngine (RSX-26) ◄── AUROREENGINE_LOCAL ── OpenXMB (RSX-26)
          │                                        │
          └─ draw_image_glass, fonts, 2D primitives ┘
               ▲
@@ -119,7 +119,7 @@ The prior agent did **not** leave a single markdown design doc. Instead they est
 
 - `OPENXMB_IMPORT_XMB_WEB_COMPAT` (OFF by default, ON in `windows-native`)
 - `OPENXMB_XMB_WEB_SOURCE` cache path
-- `DREAMRENDER_LOCAL` for local AuroreEngine
+- `AUROREENGINE_LOCAL` for local AuroreEngine
 - `openxmb_compat_assets` custom target copies pack into build tree
 
 ### 7. Milestones doc (`milestones.txt`)
@@ -873,7 +873,7 @@ python tools/xmb/compare_frames.py `
 | Risk | Mitigation |
 |------|------------|
 | Compat assets unavailable in CI | `--verify-only` + clean-build Classic fallback tests |
-| AuroreEngine/OpenXMB branch drift | Phase 0 push discipline; `DREAMRENDER_LOCAL` always in dev preset |
+| AuroreEngine/OpenXMB branch drift | Phase 0 push discipline; `AUROREENGINE_LOCAL` always in dev preset |
 | `main_menu.cpp` size / dual paths | Phase 6 incremental migration behind feature flag |
 | Music files not in xmb-web repo | Document user-supplied `music-path`; compat import optional |
 | Globe assets 7605 files / LFS | Phase 11 explicit opt-in; exclude from default parity scope |

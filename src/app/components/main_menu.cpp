@@ -21,6 +21,7 @@
 module;
 
 #include "openxmb/xmb/catalog.hpp"
+#include "openxmb/xmb/background.hpp"
 #include "openxmb/desktop/library.hpp"
 #include "openxmb/xmb/settings_actions.hpp"
 #include "openxmb/xmb/settings_controller.hpp"
@@ -47,7 +48,7 @@ import i18n;
 import glm;
 import vulkan_hpp;
 import vma;
-import dreamrender;
+import auroreengine;
 import openxmb.xmb.root_scene;
 import openxmb.xmb.settings_scene_renderer;
 
@@ -55,6 +56,7 @@ import openxmb.config;
 import :menu_base;
 import :menu_utils;
 import :choice_overlay;
+import :xmb_presentation;
 import :applications_menu;
 import :settings_menu;
 import :users_menu;
@@ -76,7 +78,7 @@ inline constexpr float submenu_backdrop_dim_alpha = 0.0F;
 inline constexpr double settings_parent_col_x = 316.0;
 inline constexpr double settings_sibling_col_x = 455.0;
 inline constexpr double settings_parent_spacing = 80.0;
-inline constexpr double xmb_web_icon_glass_alpha = 0.76;
+inline constexpr double xmb_web_icon_glass_alpha = 1.0;
 inline constexpr double xmb_web_flat_active_icon_alpha = 0.54;
 inline constexpr std::string_view initial_category_env = "OPENXMB_INITIAL_CATEGORY";
 inline constexpr std::string_view initial_settings_menu_env = "OPENXMB_INITIAL_SETTINGS_MENU";
@@ -111,7 +113,7 @@ struct contained_layout {
     }
 };
 
-[[nodiscard]] contained_layout make_contained_layout(const dreamrender::gui_renderer& renderer) noexcept {
+[[nodiscard]] contained_layout make_contained_layout(const auroreengine::gui_renderer& renderer) noexcept {
     const auto width = static_cast<double>(renderer.frame_size.width);
     const auto height = static_cast<double>(renderer.frame_size.height);
     const auto scale = std::min(width / logical_width, height / logical_height);
@@ -492,20 +494,12 @@ struct ps3_colour_entry {
         std::pair{std::string_view{"4"}, 4},
         std::pair{std::string_view{"video"}, 4},
         std::pair{std::string_view{"category.video"}, 4},
-        std::pair{std::string_view{"5"}, 5},
-        std::pair{std::string_view{"game"}, 5},
-        std::pair{std::string_view{"category.game"}, 5},
-        std::pair{std::string_view{"6"}, 6},
-        std::pair{std::string_view{"network"}, 6},
-        std::pair{std::string_view{"category.network"}, 6},
-        std::pair{std::string_view{"7"}, 7},
-        std::pair{std::string_view{"psn"}, 7},
-        std::pair{std::string_view{"online"}, 7},
-        std::pair{std::string_view{"playstation.network"}, 7},
-        std::pair{std::string_view{"category.online"}, 7},
-        std::pair{std::string_view{"8"}, 8},
-        std::pair{std::string_view{"friends"}, 8},
-        std::pair{std::string_view{"category.friends"}, 8},
+        std::pair{std::string_view{"5"},5},std::pair{std::string_view{"tv"},5},
+        std::pair{std::string_view{"6"},6},std::pair{std::string_view{"game"},6},std::pair{std::string_view{"category.game"},6},
+        std::pair{std::string_view{"7"},7},std::pair{std::string_view{"network"},7},std::pair{std::string_view{"category.network"},7},
+        std::pair{std::string_view{"8"},8},std::pair{std::string_view{"psn"},8},std::pair{std::string_view{"online"},8},
+        std::pair{std::string_view{"playstation.network"},8},std::pair{std::string_view{"category.online"},8},
+        std::pair{std::string_view{"9"},9},std::pair{std::string_view{"friends"},9},std::pair{std::string_view{"category.friends"},9},
     };
 
     for(const auto& [alias, index] : aliases) {
@@ -579,9 +573,9 @@ struct ps3_colour_entry {
 }
 
 void draw_icon(
-    dreamrender::gui_renderer& renderer,
-    const dreamrender::texture& texture,
-    const dreamrender::texture* glass_texture,
+    auroreengine::gui_renderer& renderer,
+    const auroreengine::texture& texture,
+    const auroreengine::texture* glass_texture,
     const contained_layout& layout,
     double center_x,
     double center_y,
@@ -597,7 +591,7 @@ void draw_icon(
     const auto width = layout.width(extent);
     const auto height = layout.height(extent);
     const auto tint =
-        glm::vec4(config::CONFIG.iconColor,
+        glm::vec4(utils::xmb_icon_colour(openxmb::xmb::wall_clock_now()),
             static_cast<float>(alpha * xmb_web_icon_glass_alpha));
     if(config::CONFIG.iconGlassRefraction && glass_texture != nullptr && glass_texture->loaded) {
         renderer.draw_image_glass(*glass_texture, x, y, width, height, tint);
@@ -607,22 +601,22 @@ void draw_icon(
                 ? alpha * xmb_web_flat_active_icon_alpha
                 : alpha;
         const auto flat_tint =
-            glm::vec4(config::CONFIG.iconColor, static_cast<float>(flat_alpha));
+            glm::vec4(utils::xmb_icon_colour(openxmb::xmb::wall_clock_now()), static_cast<float>(flat_alpha));
         renderer.draw_image_a(texture, x, y, width, height, flat_tint);
     }
 }
 
 void draw_normalized_icon(
-    dreamrender::gui_renderer& renderer,
-    const dreamrender::texture& texture,
-    const dreamrender::texture* glass_texture,
+    auroreengine::gui_renderer& renderer,
+    const auroreengine::texture& texture,
+    const auroreengine::texture* glass_texture,
     float x,
     float y,
     double width,
     double height,
     glm::vec4 tint = glm::vec4{1.0F}
 ) {
-    tint *= glm::vec4(config::CONFIG.iconColor, 1.0F);
+    tint *= glm::vec4(utils::xmb_icon_colour(openxmb::xmb::wall_clock_now()), 1.0F);
     if(config::CONFIG.iconGlassRefraction && glass_texture != nullptr && glass_texture->loaded) {
         renderer.draw_image_glass(*glass_texture, x, y,
             static_cast<float>(width), static_cast<float>(height), tint);
@@ -651,7 +645,7 @@ main_menu::main_menu(app::shell* xmb) : xmb(xmb) {
 
 }
 
-void main_menu::preload(vk::Device device, vma::Allocator allocator, dreamrender::resource_loader& loader) {
+void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengine::resource_loader& loader) {
     using ::menu::make_simple;
     using ::menu::make_simple_of;
 
@@ -684,6 +678,12 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, dreamrender
     menus.push_back(make_simple<menu::files_menu>("Video"_(),
         preferred_icon(asset_directory, "xmb_icon_004.png", "icon_category_video.png"), loader, xmb,
         config::CONFIG.videosPath, loader, menu::files_menu_profile::video));
+    {
+        std::vector<std::unique_ptr<menu::menu_entry>> rows;
+        rows.push_back(make_simple<menu::files_menu>("Video Library",asset_directory/"icons/theme/icon_video.png",loader,xmb,config::CONFIG.videosPath,loader,menu::files_menu_profile::video));
+        rows.push_back(panel_entry("Internet Browser","browser","theme/icon_browser.png"));
+        menus.push_back(panel_menu("TV / Video Services",asset_directory/"icons/theme/icon_tv.png",std::move(rows)));
+    }
     {
         std::vector<std::unique_ptr<menu::menu_entry>> rows;
         rows.push_back(panel_entry("Game Library", "games", "icon_category_game.png"));
@@ -744,14 +744,14 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, dreamrender
                 if(node.icon_ref.empty() || !loaded_icon_refs.insert(node.icon_ref).second) {
                     continue;
                 }
-                auto texture = std::make_unique<dreamrender::texture>(device, allocator);
+                auto texture = std::make_unique<auroreengine::texture>(device, allocator);
                 const auto path = config::CONFIG.resolve_icon(resolve_compat_icon_ref(asset_directory, node.icon_ref)
                     .value_or(asset_directory / "icons/icon_category_settings.png"));
                 try {
                     loader.loadTexture(texture.get(), path);
-                    std::unique_ptr<dreamrender::texture> glass_texture;
+                    std::unique_ptr<auroreengine::texture> glass_texture;
                     if(const auto normal_map = menu::xmb_web_normal_map_for_icon(path)) {
-                        glass_texture = std::make_unique<dreamrender::texture>(device, allocator);
+                        glass_texture = std::make_unique<auroreengine::texture>(device,allocator,vk::ImageUsageFlagBits::eSampled,vk::Format::eR8G8B8A8Unorm);
                         loader.loadTexture(glass_texture.get(), *normal_map);
                     }
                     settings_icon_textures.push_back({
@@ -1242,7 +1242,7 @@ void main_menu::apply_initial_settings_route() {
     }
 }
 
-void main_menu::render_settings_parent_layer(dreamrender::gui_renderer& renderer) {
+void main_menu::render_settings_parent_layer(auroreengine::gui_renderer& renderer) {
     if(!settings_catalog || !settings_controller) {
         return;
     }
@@ -1319,7 +1319,7 @@ void main_menu::render_settings_parent_layer(dreamrender::gui_renderer& renderer
         208.0F / 255.0F, arrow_alpha);
     const auto arrow_bottom = glm::vec4(120.0F / 255.0F, 120.0F / 255.0F,
         124.0F / 255.0F, arrow_alpha);
-    const std::array<dreamrender::simple_renderer::vertex_data, 3> chevron{{
+    const std::array<auroreengine::simple_renderer::vertex_data, 3> chevron{{
         {{layout.x(430.0), layout.y(openxmb::xmb::SettingsSceneMetrics::focus_y)},
             arrow_top, {0.0F, 0.5F}},
         {{layout.x(462.0), layout.y(openxmb::xmb::SettingsSceneMetrics::focus_y - 15.0)},
@@ -1374,7 +1374,7 @@ void main_menu::select_submenu_item(int index) {
     menu->select_submenu(index);
 }
 
-void main_menu::render(dreamrender::gui_renderer& renderer) {
+void main_menu::render(auroreengine::gui_renderer& renderer) {
     auto now = std::chrono::steady_clock::now();
 
     const auto submenu_progress = ease_out_cubic(
@@ -1401,7 +1401,7 @@ void main_menu::render(dreamrender::gui_renderer& renderer) {
     }
 }
 
-void main_menu::render_settings_scene(dreamrender::gui_renderer& renderer, time_point now) {
+void main_menu::render_settings_scene(auroreengine::gui_renderer& renderer, time_point now) {
     if(!settings_catalog || !settings_controller) {
         return;
     }
@@ -1443,8 +1443,9 @@ void main_menu::render_settings_scene(dreamrender::gui_renderer& renderer, time_
         });
 }
 
-void main_menu::render_crossbar(dreamrender::gui_renderer& renderer, time_point now) {
+void main_menu::render_crossbar(auroreengine::gui_renderer& renderer, time_point now) {
     const auto layout = make_contained_layout(renderer);
+    const xmb_canvas canvas(renderer);
 
     const auto category_linear = selected == last_selected
         ? 1.0
@@ -1469,7 +1470,7 @@ void main_menu::render_crossbar(dreamrender::gui_renderer& renderer, time_point 
             (static_cast<double>(index) - visual_selection) * kCategorySpacing;
         auto center_y = kCategoryBaselineY + (active ? -10.0 : 0.0);
         auto extent = active ? kActiveCategoryIconExtent : kInactiveCategoryIconExtent;
-        auto alpha = active ? 1.0 : (distance <= 2 ? 0.9 : 0.25);
+        auto alpha = active ? 0.90 : 0.85;
 
         if(active) {
             center_x -= 257.0 * chrome_transition;
@@ -1481,7 +1482,7 @@ void main_menu::render_crossbar(dreamrender::gui_renderer& renderer, time_point 
 
         // The PSN sphere fills substantially more of its source canvas than
         // the numbered icon family. xmb-web measures a 0.68 correction.
-        if(index == 7) {
+        if(index == 8) {
             extent *= 0.68;
         }
 
@@ -1490,15 +1491,8 @@ void main_menu::render_crossbar(dreamrender::gui_renderer& renderer, time_point 
             center_x, center_y, extent, alpha);
 
         if(active) {
-            renderer.draw_text(
-                menus[index]->get_name(),
-                layout.x(center_x),
-                layout.y(kCategoryLabelY),
-                layout.height(kCategoryLabelSize * 2.5),
-                glm::vec4(225.0f / 255.0f, 210.0f / 255.0f, 235.0f / 255.0f,
-                    static_cast<float>(0.9 * (1.0 - 0.55 * chrome_transition))),
-                true,
-                false);
+            canvas.text(menus[index]->get_name(),center_x,kCategoryLabelY+18,24,
+                {1,1,1,static_cast<float>(0.95*(1.0-0.55*chrome_transition))},0,true);
         }
     }
 
@@ -1527,14 +1521,9 @@ void main_menu::render_crossbar(dreamrender::gui_renderer& renderer, time_point 
 
             const auto label_size = focused ? kActiveItemLabelSize : kInactiveItemLabelSize;
             const auto text_value = focused ? 1.0f : 235.0f / 255.0f;
-            renderer.draw_text(
-                entry.get_name(),
-                layout.x(kItemLabelX + x_shift),
-                layout.y(center_y),
-                layout.height(label_size * 2.5),
-                glm::vec4(text_value, text_value, text_value, static_cast<float>(alpha)),
-                false,
-                true);
+            canvas.text(entry.get_name(),kItemLabelX+x_shift,center_y+(focused?3:11),label_size,
+                {text_value,text_value,text_value,static_cast<float>(alpha)},focused?xmb_canvas::pulse():0);
+            if(focused&&!entry.get_description().empty()) canvas.text(entry.get_description(),kItemLabelX+x_shift,center_y+32,22,{1,1,1,static_cast<float>(alpha*0.82)});
         }
     };
 
@@ -1573,7 +1562,7 @@ void main_menu::render_crossbar(dreamrender::gui_renderer& renderer, time_point 
     }
 }
 
-void main_menu::render_submenu(dreamrender::gui_renderer& renderer, time_point now) {
+void main_menu::render_submenu(auroreengine::gui_renderer& renderer, time_point now) {
     double submenu_transition = std::clamp(
         std::chrono::duration<double>(now - last_submenu_transition) / transition_submenu_activate_duration, 0.0, 1.0);
     submenu_transition = in_submenu ? submenu_transition : 1.0 - submenu_transition;

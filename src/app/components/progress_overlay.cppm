@@ -28,7 +28,7 @@ module;
 
 export module openxmb.app:progress_overlay;
 
-import dreamrender;
+import auroreengine;
 import sdl2;
 import vulkan_hpp;
 import vma;
@@ -58,7 +58,7 @@ export class progress_overlay : public component, public action_receiver {
         progress_overlay(std::string title, std::unique_ptr<progress_item>&& item, bool show_progress = true);
 
         result tick(class shell* xmb) override;
-        void render(dreamrender::gui_renderer& renderer, class shell* xmb) override;
+        void render(auroreengine::gui_renderer& renderer, class shell* xmb) override;
         result on_action(action action) override;
     private:
         std::string title;

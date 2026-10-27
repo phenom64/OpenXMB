@@ -47,7 +47,7 @@ module openxmb.app;
 
 import spdlog;
 import i18n;
-import dreamrender;
+import auroreengine;
 import openxmb.config;
 import vulkan_hpp;
 import glm;
@@ -174,7 +174,7 @@ namespace menu {
     };
 #endif
 
-    std::unique_ptr<action_menu_entry> entry_base(dreamrender::resource_loader& loader,
+    std::unique_ptr<action_menu_entry> entry_base(auroreengine::resource_loader& loader,
         std::string name, std::string description, const std::string& key,
         std::function<result()> callback)
     {
@@ -184,7 +184,7 @@ namespace menu {
                                               loader, callback, std::function<result(action)>{}, std::move(description));
     }
 
-    std::unique_ptr<action_menu_entry> entry_bool(dreamrender::resource_loader& loader, app::shell* xmb,
+    std::unique_ptr<action_menu_entry> entry_bool(auroreengine::resource_loader& loader, app::shell* xmb,
         std::string name, std::string description, const std::string& /*schema*/, const std::string& key)
     {
         return entry_base(loader, std::move(name), std::move(description), key, [xmb, key](){
@@ -258,7 +258,7 @@ namespace menu {
         });
     }
 
-    std::unique_ptr<action_menu_entry> entry_int(dreamrender::resource_loader& loader, app::shell* xmb,
+    std::unique_ptr<action_menu_entry> entry_int(auroreengine::resource_loader& loader, app::shell* xmb,
         std::string name, std::string description, const std::string& /*schema*/, const std::string& key, int min, int max, int step = 1)
     {
         return entry_base(loader, std::move(name), std::move(description), key, [xmb, key, min, max, step](){
@@ -326,7 +326,7 @@ namespace menu {
             return result::success;
         });
     }
-    std::unique_ptr<action_menu_entry> entry_int(dreamrender::resource_loader& loader, app::shell* xmb,
+    std::unique_ptr<action_menu_entry> entry_int(auroreengine::resource_loader& loader, app::shell* xmb,
         std::string name, std::string description, const std::string& /*schema*/, const std::string& key, std::ranges::range auto values)
         requires std::is_integral_v<std::ranges::range_value_t<decltype(values)>>
     {
@@ -362,7 +362,7 @@ namespace menu {
             return result::success;
         });
     }
-    std::unique_ptr<action_menu_entry> entry_enum(dreamrender::resource_loader& loader, app::shell* xmb,
+    std::unique_ptr<action_menu_entry> entry_enum(auroreengine::resource_loader& loader, app::shell* xmb,
         std::string name, std::string description, const std::string& /*schema*/, const std::string& key, std::ranges::range auto values)
     {
         return entry_base(loader, std::move(name), std::move(description), key, [xmb, key, values](){
@@ -484,7 +484,7 @@ namespace menu {
         #pragma clang diagnostic pop
     }
 
-    settings_menu::settings_menu(std::string name, dreamrender::texture&& icon, app::shell* xmb, dreamrender::resource_loader& loader) : simple_menu(std::move(name), std::move(icon)) {
+    settings_menu::settings_menu(std::string name, auroreengine::texture&& icon, app::shell* xmb, auroreengine::resource_loader& loader) : simple_menu(std::move(name), std::move(icon)) {
         const std::filesystem::path& asset_dir = config::CONFIG.asset_directory;
         entries.push_back(make_simple<simple_menu>("Theme Settings"_(), asset_dir/"icons/icon_settings_personalization.png", loader,
             std::array{

@@ -9,7 +9,7 @@ module;
 
 export module openxmb.xmb.monthly_background_renderer;
 
-import dreamrender;
+import auroreengine;
 import vulkan_hpp;
 
 export namespace openxmb::xmb {
@@ -34,13 +34,14 @@ public:
     std::array<float, 4> top_and_night{};
     std::array<float, 4> bottom_and_reserved{};
     std::array<float, 4> boot{};
+    std::array<float, 4> modes{};
   };
 
 private:
   vk::Device device_;
   vk::Extent2D framebuffer_extent_;
   vk::UniquePipelineLayout pipeline_layout_;
-  dreamrender::UniquePipelineMap pipelines_;
+  auroreengine::UniquePipelineMap pipelines_;
   bool pipelines_ready_{};
 };
 
@@ -50,7 +51,7 @@ namespace openxmb::xmb {
 namespace {
 
 static_assert(sizeof(MonthlyBackgroundRenderer::PushConstants) ==
-              sizeof(float) * 12);
+              sizeof(float) * 16);
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wc23-extensions"
@@ -63,10 +64,10 @@ constexpr char kMonthlyBackgroundFragmentBytes[] = {
 #pragma clang diagnostic pop
 
 constexpr std::array kMonthlyBackgroundVertexShader =
-    dreamrender::convert<std::to_array(kMonthlyBackgroundVertexBytes),
+    auroreengine::convert<std::to_array(kMonthlyBackgroundVertexBytes),
                          std::uint32_t>();
 constexpr std::array kMonthlyBackgroundFragmentShader =
-    dreamrender::convert<std::to_array(kMonthlyBackgroundFragmentBytes),
+    auroreengine::convert<std::to_array(kMonthlyBackgroundFragmentBytes),
                          std::uint32_t>();
 
 } // namespace
@@ -85,9 +86,9 @@ void MonthlyBackgroundRenderer::preload(
       vk::PipelineLayoutCreateInfo({}, {}, push_range));
 
   const auto vertex_shader =
-      dreamrender::createShader(device_, kMonthlyBackgroundVertexShader);
+      auroreengine::createShader(device_, kMonthlyBackgroundVertexShader);
   const auto fragment_shader =
-      dreamrender::createShader(device_, kMonthlyBackgroundFragmentShader);
+      auroreengine::createShader(device_, kMonthlyBackgroundFragmentShader);
   const std::array stages{
       vk::PipelineShaderStageCreateInfo({}, vk::ShaderStageFlagBits::eVertex,
                                         vertex_shader.get(), "main"),
@@ -123,7 +124,7 @@ void MonthlyBackgroundRenderer::preload(
       {}, stages, &vertex_input, &input_assembly, nullptr, &viewport_state,
       &rasterization, &multisample, &depth_stencil, &color_blend, &dynamic,
       pipeline_layout_.get(), {});
-  pipelines_ = dreamrender::createPipelines(
+  pipelines_ = auroreengine::createPipelines(
       device_, pipeline_cache, pipeline_info, render_passes,
       "OpenXMB Monthly Background");
   pipelines_ready_ = true;
@@ -155,8 +156,9 @@ void MonthlyBackgroundRenderer::render(
       .top_and_night = {gradient.top_rgb[0], gradient.top_rgb[1],
                         gradient.top_rgb[2], gradient.night_day_blend},
       .bottom_and_reserved = {gradient.bottom_rgb[0], gradient.bottom_rgb[1],
-                              gradient.bottom_rgb[2], 0.0F},
+                              gradient.bottom_rgb[2], gradient.direct_gradient_span},
       .boot = boot,
+      .modes = {gradient.music_mix,0,0,0},
   };
   command_buffer.pushConstants(pipeline_layout_.get(),
                                vk::ShaderStageFlagBits::eFragment, 0,

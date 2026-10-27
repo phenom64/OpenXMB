@@ -36,7 +36,7 @@ module;
 
 export module openxmb.app:video_player;
 
-import dreamrender;
+import auroreengine;
 import glm;
 import spdlog;
 import vulkan_hpp;
@@ -47,6 +47,7 @@ import :component;
 import :programs;
 import :message_overlay;
 import :base_viewer;
+import :xmb_presentation;
 import openxmb.app;
 
 namespace programs {
@@ -59,8 +60,9 @@ export class video_player : private base_viewer, public component, public action
 public:
     float typography_scale() const override { return 2.5F; }
 
-    video_player(std::filesystem::path file, dreamrender::resource_loader& loader)
+    video_player(std::filesystem::path file, auroreengine::resource_loader& loader)
         : device(loader.getDevice()), allocator(loader.getAllocator()) {
+        for(const auto* icon:{"vp/scene_search","vp/screen_mode","vp/audio_options","vp/subtitle_options","system/mp_volume","system/mp_display","system/mp_prev","system/mp_next","vp/instant_replay","system/mp_play","vp/go_to","vp/frf_1_5","vp/frame_reverse","vp/frame_advance","system/mp_repeat","system/mp_addplaylist"}) icons_.load(loader,icon);
         image_width = image_height = 1;
         openxmb::music::service().set_external_duck(true);
         playback = std::make_unique<video::worker>();
@@ -117,7 +119,7 @@ public:
             texture.reset();
             staging_buffers.clear();
             staging_allocations.clear();
-            texture = std::make_unique<dreamrender::texture>(device, allocator, frame.width, frame.height);
+            texture = std::make_unique<auroreengine::texture>(device, allocator, frame.width, frame.height);
             std::size_t count = xmb->get_window()->swapchainImageCount;
             staging_allocations.resize(count);
             staging_buffers.resize(count);
@@ -147,7 +149,7 @@ public:
         pending_frame.reset();
     }
 
-    void render(dreamrender::gui_renderer& renderer, shell* xmb) override {
+    void render(auroreengine::gui_renderer& renderer, shell* xmb) override {
         renderer.draw_rect({0, 0}, {1, 1}, {0, 0, 0, 1});
         if(!loaded) {
             renderer.draw_text("Opening video…"_(), 0.5f, 0.5f, 0.025f, glm::vec4(1), true, true);
@@ -171,19 +173,18 @@ public:
         bool controls = menu != menu_kind::none || playback->playback_state() != video::state::playing ||
             std::chrono::steady_clock::now() - last_input < std::chrono::seconds(4);
         if(controls) {
-            if(!status_message.empty()) renderer.draw_text(status_message, 0.05f, 0.06f, 0.016f);
-            renderer.draw_rect({0, 0.87f}, {1, 0.13f}, {0, 0, 0, 0.8f});
-            float progress = playback->info().duration > 0 ? static_cast<float>(std::clamp(playback->position() / playback->info().duration, 0.0, 1.0)) : 0;
-            renderer.draw_rect({0.05f, 0.885f}, {0.90f, 0.004f}, {0.3f, 0.3f, 0.3f, 1});
-            if(progress > 0) renderer.draw_rect({0.05f, 0.885f}, {0.90f * progress, 0.004f}, {0.72f, 0.81f, 0.96f, 1});
-            renderer.draw_text(path.filename().string(), 0.05f, 0.915f, 0.016f);
-            auto position_text = time_label(playback->position()) + " / " + time_label(playback->info().duration) + "   " + std::to_string(static_cast<int>(volume * 100)) + "%";
-            renderer.draw_text(position_text, 0.95f - renderer.measure_text(position_text, 0.016f).x, 0.915f, 0.016f);
-            render_controller_buttons(xmb, renderer, 0.5f, 0.965f, std::array{
-                std::pair{action::ok, playback->playback_state() == video::state::playing ? std::string_view{"Pause"} : std::string_view{"Play"}},
-                std::pair{action::left, std::string_view{"−10s"}}, std::pair{action::right, std::string_view{"+10s"}},
-                std::pair{action::options, std::string_view{"Controls"}}, std::pair{action::cancel, std::string_view{"Close"}}
-            });
+            app::xmb_canvas c(renderer);
+            c.rect(0,0,1920,130,{0,0,0,0.64F});c.text(path.filename().string(),132,107,27);
+            const float progress=playback->info().duration>0?static_cast<float>(std::clamp(playback->position()/playback->info().duration,0.0,1.0)):0;
+            c.rect(0,920,1920,160,{0,0,0,0.48F});
+            icons_.draw(c,playback->playback_state()==video::state::playing?"system/mp_play":"system/mp_display",130,971,58,1);
+            if(repetition!=repeat_mode::off) icons_.draw(c,"system/mp_repeat",240,971,58,1);
+            c.text(time_label(playback->position()),850,978,25);
+            c.rect(1000,962,560,12,{0.38F,0.38F,0.38F,1});c.rect(1001,963,558,10,{0.04F,0.04F,0.04F,1});
+            c.rect(1001,963,558*progress,10,{0.32F,0.51F,0.02F,1});c.rect(1001,963,558*progress,3,{0.78F,0.90F,0.30F,1});
+            c.text(time_label(playback->info().duration),1625,978,25);
+            if(!status_message.empty()) c.text(status_message,100,885,24);
+
         }
         if(menu != menu_kind::none) draw_menu(renderer);
         if(show_information) {
@@ -251,6 +252,7 @@ public:
     bool is_opaque() const override { return true; }
 
 private:
+    app::media_icons icons_;
     enum class repeat_mode { off, file, all };
     enum class screen_mode { fit, original, zoom, stretch };
     enum class menu_kind { none, main, audio, subtitles, screen, speed, scenes, files };
@@ -259,11 +261,11 @@ private:
     std::filesystem::path path;
     std::vector<std::filesystem::path> playlist;
     std::size_t playlist_index = 0;
-    dreamrender::window* window = nullptr;
+    auroreengine::window* window = nullptr;
     bool loaded = false;
     std::unique_ptr<video::worker> playback;
     std::optional<video::frame> pending_frame;
-    std::unique_ptr<dreamrender::texture> texture;
+    std::unique_ptr<auroreengine::texture> texture;
     // Buffers must be destroyed before their backing allocations.
     std::vector<vma::UniqueAllocation> staging_allocations;
     std::vector<vma::UniqueBuffer> staging_buffers;
@@ -341,7 +343,7 @@ private:
         last_input = std::chrono::steady_clock::now();
     }
 
-    void draw_subtitles(dreamrender::gui_renderer& renderer) {
+    void draw_subtitles(auroreengine::gui_renderer& renderer) {
         auto text = playback->subtitle_text();
         if(text.empty()) return;
         std::vector<std::string> lines;
@@ -419,22 +421,26 @@ private:
         }
     }
 
-    void draw_menu(dreamrender::gui_renderer& renderer) {
+    void draw_menu(auroreengine::gui_renderer& renderer) {
         auto rows = menu_rows();
-        renderer.draw_rect({0.57f, 0.035f}, {0.40f, 0.81f}, {0.025f, 0.035f, 0.06f, 0.94f});
-        const auto title = menu == menu_kind::scenes ? "Scene search"_() :
-            menu == menu_kind::subtitles ? "Subtitles"_() :
-            menu == menu_kind::audio ? "Audio tracks"_() : "Video controls"_();
-        renderer.draw_text(title, 0.60f, 0.08f, 0.030f);
-        renderer.set_clip(0.585f, 0.105f, 0.37f, 0.70f);
-        std::size_t first = selection > 6 ? selection - 6 : 0;
-        if(rows.size() > 14) first = std::min(first, rows.size() - 14);
-        for(std::size_t i = first; i < rows.size() && i < first + 14; ++i) {
-            float y = 0.13f + static_cast<float>(i - first) * 0.047f;
-            if(i == selection) renderer.draw_rect({0.585f, y - 0.021f}, {0.37f, 0.041f}, {0.18f, 0.27f, 0.43f, 0.98f});
-            renderer.draw_text(rows[i], 0.605f, y, 0.024f);
+        app::xmb_canvas c(renderer);
+        if(menu==menu_kind::main) {
+            static constexpr std::array<int,17> actions{10,6,7,8,13,14,15,3,4,1,0,2,9,11,12,5,16};
+            static constexpr std::array<std::string_view,17> icons{"vp/scene_search","vp/screen_mode","vp/audio_options","vp/subtitle_options","system/mp_volume","system/mp_volume","system/mp_display","system/mp_prev","system/mp_next","vp/instant_replay","system/mp_play","vp/go_to","vp/frf_1_5","vp/frame_reverse","vp/frame_advance","system/mp_repeat","system/mp_addplaylist"};
+            for(int row=0;row<3;++row) {const int count=row==0?7:row==1?8:2,first=row==0?0:row==1?7:15;
+                for(int column=0;column<count;++column) {const int i=first+column;const bool focused=selection==actions[i];
+                    icons_.draw(c,icons[i],562+(column-(count-1)*0.5F)*64,412+row*65,74,focused?1:0.85F,focused?1.3F:1);
+                }
+            }
+            if(selection<rows.size()) c.text(rows[selection],562,640,26,{1,1,1,1},app::xmb_canvas::pulse(),true);
+            return;
         }
-        renderer.reset_clip();
+        c.rect(1100,0,770,1080,{0,0,0,0.6F});
+        const auto title=menu==menu_kind::scenes?"Scene Search":menu==menu_kind::subtitles?"Subtitle Options":menu==menu_kind::audio?"Audio Options":"Video Settings";
+        c.text(title,1160,95,28);
+        const auto first=selection>8?selection-8:0;
+        for(std::size_t i=first;i<rows.size()&&i<first+16;++i)
+            c.text(rows[i],1160,155+static_cast<float>(i-first)*50,26,{1,1,1,selection==i?1.0F:0.65F},selection==i?app::xmb_canvas::pulse():0);
     }
 
     result menu_action(action command) {
@@ -445,6 +451,14 @@ private:
             menu = menu == menu_kind::main ? menu_kind::none : menu_kind::main;
             selection = 0;
             return result::success;
+        }
+        if(menu==menu_kind::main&&(command==action::left||command==action::right||command==action::up||command==action::down)) {
+            static constexpr std::array<int,17> actions{10,6,7,8,13,14,15,3,4,1,0,2,9,11,12,5,16};
+            const auto found=std::find(actions.begin(),actions.end(),selection);const int i=found==actions.end()?0:static_cast<int>(found-actions.begin());
+            int row=i<7?0:i<15?1:2,column=i-(row==0?0:row==1?7:15);const std::array<int,3> count{7,8,2};
+            if(command==action::left||command==action::right) column=(column+count[row]+(command==action::left?-1:1))%count[row];
+            else {row=(row+(command==action::up?2:1))%3;column=std::min(column,count[row]-1);}
+            selection=actions[(row==0?0:row==1?7:15)+column];return result::success;
         }
         if(command == action::up || command == action::down) {
             selection = command == action::up ? (selection + rows.size() - 1) % rows.size() : (selection + 1) % rows.size();

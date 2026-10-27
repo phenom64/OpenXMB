@@ -30,12 +30,13 @@ void test_root_order_and_assets() {
       std::string_view{"Photo"},
       std::string_view{"Music"},
       std::string_view{"Video"},
+      std::string_view{"TV / Video Services"},
       std::string_view{"Game"},
       std::string_view{"Network"},
       std::string_view{"PlayStation Network"},
       std::string_view{"Friends"},
   };
-  require(kRootCategories.size() == labels.size(), "root has exactly nine categories");
+  require(kRootCategories.size() == labels.size(), "root has exactly ten categories");
   for (std::size_t index = 0; index < labels.size(); ++index) {
     require(kRootCategories[index].label == labels[index], "root category order");
   }
@@ -54,7 +55,7 @@ void test_measured_geometry_and_timing() {
   const auto initial = sample_root_scene(state, 0.0);
   require_near(initial.categories[0].center.x, 566.0, "active category x");
   require_near(initial.categories[0].center.y, 279.0, "active category y");
-  require_near(initial.categories[0].icon_extent, 168.0, "active category extent");
+  require_near(initial.categories[0].icon_extent, 180.0, "active category extent");
   require_near(initial.categories[1].center.x, 769.0, "category pitch");
   require_near(initial.categories[1].center.y, 289.0, "inactive category baseline");
   require_near(initial.categories[1].icon_extent, 117.0, "inactive category extent");

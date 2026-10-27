@@ -9,7 +9,7 @@
 
 This project is a modern interpretation of the iconic XrossMediaBar (XMB) interface, famously used on the PlayStation 3 and other Sony devices. It is not a direct port, but a new implementation that leverages modern graphics APIs and C++ features to create a flexible and performant user interface for desktops and embedded systems.
 
-The rendering backend is powered by [**AuroreEngine**](https://github.com/phenom64/AuroreEngine), a custom rendering library based on `dreamrender`. The entire application is built using C++23 modules for a clean and modern architecture.
+The rendering backend is powered by [**AuroreEngine**](https://github.com/phenom64/AuroreEngine), a custom rendering library based on `auroreengine`. The entire application is built using C++23 modules for a clean and modern architecture.
 
 ## Screenshots
 
@@ -33,7 +33,7 @@ The rendering backend is powered by [**AuroreEngine**](https://github.com/phenom
     *   Text viewer.
     *   FFmpeg-based video player with GPU-accelerated YUV decoding.
 *   **Highly Configurable:** Runtime behavior, colors, fonts, and more can be configured via a simple `config.json` file.
-*   **Optional Modules:** The build system allows enabling or disabling major features like the video player, a planned CEF-based web browser, and libretro core support.
+*   **Optional Modules:** The build system allows enabling or disabling major features like the video player, an optional WebKitGTK browser surface, and libretro core support.
 
 ## Getting Started
 
@@ -59,6 +59,7 @@ Before you begin, ensure you have the following tools and libraries installed (v
   - gettext (i18n): `gettext`
   - Theme/comic archives: `libarchive-dev`, `zlib1g-dev`
   - Linux desktop integration: `libx11-dev`, `libxtst6`
+  - Optional embedded Linux browser: `libwebkit2gtk-4.1-dev`, `libgtk-3-dev`
   - PDF viewing: Poppler tools (`pdfinfo`, `pdftoppm`); printing uses `lp` or `lpr`
   - Optional online game metadata: libcurl and a user-supplied provider key
 - Optional (used by dependencies): `harfbuzz`, `glslang-tools`, `spirv-tools`, `pkg-config`
@@ -164,7 +165,7 @@ For editor/debug work, use `cmake --preset dev && cmake --build --preset dev`.
     # (Optional) Install the application
     cmake --install build/windows-vcpkg --prefix "C:/OpenXMB"
     ```
-    When developing OpenXMB and AuroreEngine together, use `windows-local-aurore` or pass `-DDREAMRENDER_LOCAL=<path-to-AuroreEngine>` so OpenXMB builds against your local engine checkout.
+    When developing OpenXMB and AuroreEngine together, use `windows-local-aurore` or pass `-DAUROREENGINE_LOCAL=<path-to-AuroreEngine>` so OpenXMB builds against your local engine checkout.
 
 ### Build Options
 
@@ -257,7 +258,7 @@ The Unix launcher sets `XMB_ASSET_DIR` and `XMB_LOCALE_DIR` when they are not al
 
 ### Notes on AuroreEngine
 
-OpenXMB uses AuroreEngine as the rendering backend. By default, the build fetches it automatically. For development or local changes, use the `windows-local-aurore` preset on Windows or point CMake to a local checkout with `-DDREAMRENDER_LOCAL=/path/to/AuroreEngine`.
+OpenXMB uses AuroreEngine as the rendering backend. By default, the build fetches it automatically. For development or local changes, use the `windows-local-aurore` preset on Windows or point CMake to a local checkout with `-DAUROREENGINE_LOCAL=/path/to/AuroreEngine`.
 
 ## License
 
@@ -268,7 +269,7 @@ A significant portion of the OpenXMB base is derived from **XMBShell**, and this
 Many thanks to its author, **JCM**.
 
 All other original code is © 2025-2026 Syndromatic Ltd and contributors, and licensed under version 3 of the GNU General Public License.
-AuroreEngine components adapted from **dreamrender** remain under the MPL 2.0 license.
+AuroreEngine components adapted from **auroreengine** remain under the MPL 2.0 license.
 
 ---
 

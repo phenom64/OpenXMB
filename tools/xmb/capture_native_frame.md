@@ -51,11 +51,11 @@ Reports: `build/visual-regression/reports/<scene>-comparison.json`
 
 | Variable | Purpose |
 |----------|---------|
-| `DREAMRENDER_HEADLESS=1` | Offscreen render (AuroreEngine) |
-| `DREAMRENDER_HEADLESS_WIDTH/HEIGHT` | Output resolution (default 1920×1080) |
-| `DREAMRENDER_HEADLESS_FRAMES` | Frames to write (canonical uses last frame) |
-| `DREAMRENDER_HEADLESS_OUTPUT_DIR` | Output directory |
-| `DREAMRENDER_HEADLESS_OUTPUT_PATTERN` | Filename pattern per scene preset |
+| `AUROREENGINE_HEADLESS=1` | Offscreen render (AuroreEngine) |
+| `AUROREENGINE_HEADLESS_WIDTH/HEIGHT` | Output resolution (default 1920×1080) |
+| `AUROREENGINE_HEADLESS_FRAMES` | Frames to write (canonical uses last frame) |
+| `AUROREENGINE_HEADLESS_OUTPUT_DIR` | Output directory |
+| `AUROREENGINE_HEADLESS_OUTPUT_PATTERN` | Filename pattern per scene preset |
 | `OPENXMB_FIXED_UNIX_SECONDS` | Freeze month gradient / clock (default: June 15 2026 noon UTC) |
 | `OPENXMB_FIXED_WAVE_SECONDS` | Freeze wave animation phase |
 | `OPENXMB_HEADLESS_STARTUP=1` | Force boot overlay in headless (boot milestone captures) |

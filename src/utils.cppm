@@ -134,6 +134,7 @@ export namespace utils
         glm::vec3 shaded_colour{};
     };
 
+    glm::vec3 xmb_icon_colour(std::chrono::system_clock::time_point now);
     glm::vec3 xmb_month_colour(int monthIndex /*0=Jan*/);
     float     xmb_effective_day_night_hour(float localHour);
     float     xmb_hour_brightness(int hour /*0..23*/, float minuteFrac);

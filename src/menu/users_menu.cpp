@@ -44,7 +44,7 @@ import :choice_overlay;
 import sdl2;
 import openxmb.config;
 import openxmb.utils;
-import dreamrender;
+import auroreengine;
 import spdlog;
 import i18n;
 
@@ -108,7 +108,7 @@ namespace menu {
         return shell_name != "false" && shell_name != "nologin";
     }
 
-    bool load_icon_if_present(dreamrender::resource_loader& loader, action_menu_entry& entry, const std::filesystem::path& path)
+    bool load_icon_if_present(auroreengine::resource_loader& loader, action_menu_entry& entry, const std::filesystem::path& path)
     {
         std::error_code ec;
         if(!std::filesystem::exists(path, ec) || ec) {
@@ -128,10 +128,10 @@ namespace menu {
         const std::string& label,
         std::string_view compatibility_icon_name,
         std::string_view clean_icon_name,
-        dreamrender::resource_loader& loader,
+        auroreengine::resource_loader& loader,
         std::function<result()> callback
     ) {
-        dreamrender::texture icon_texture(loader.getDevice(), loader.getAllocator());
+        auroreengine::texture icon_texture(loader.getDevice(), loader.getAllocator());
         auto entry = std::make_unique<action_menu_entry>(
             label,
             std::move(icon_texture),
@@ -185,7 +185,7 @@ namespace menu {
 #endif
     }
 
-    users_menu::users_menu(std::string name, dreamrender::texture&& icon, app::shell* xmb, dreamrender::resource_loader& loader)
+    users_menu::users_menu(std::string name, auroreengine::texture&& icon, app::shell* xmb, auroreengine::resource_loader& loader)
         : simple_menu(std::move(name), std::move(icon)), xmb(xmb), loader(loader)
     {
         reload();
@@ -280,7 +280,7 @@ namespace menu {
                 return result::success;
             }));
 
-        dreamrender::texture current_user_icon(loader.getDevice(), loader.getAllocator());
+        auroreengine::texture current_user_icon(loader.getDevice(), loader.getAllocator());
         auto current_user = std::make_unique<action_menu_entry>(
             "*User"_(),
             std::move(current_user_icon),

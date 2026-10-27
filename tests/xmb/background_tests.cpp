@@ -64,11 +64,11 @@ int main() {
 
   const auto manual =
       resolve_manual_background_gradient({1.25F, 0.88F, -0.10F}, 22.0F);
-  require(near(manual.top_rgb[0], 1.0F), "manual red clamps high");
-  require(near(manual.top_rgb[1], 0.88F), "manual green keeps palette");
+  require(near(manual.bottom_rgb[0], 1.0F), "manual red clamps high");
+  require(near(manual.bottom_rgb[1], 0.88F), "manual green keeps palette");
   require(near(manual.top_rgb[2], 0.0F), "manual blue clamps low");
-  require(manual.top_rgb == manual.bottom_rgb,
-          "manual colour keeps Original structure without month hue");
+  require(manual.top_rgb[0] < manual.bottom_rgb[0] && manual.direct_gradient_span == 1.0F,
+          "manual colour has a darker top and a full-height direct gradient");
   require(near(manual.night_day_blend, 1.0F),
           "manual colour keeps day/night envelope");
 

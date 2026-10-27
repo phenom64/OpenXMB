@@ -39,7 +39,7 @@ module;
 export module openxmb.app:files_menu;
 
 import spdlog;
-import dreamrender;
+import auroreengine;
 import openxmb.config;
 import openxmb.utils;
 import :menu_base;
@@ -75,7 +75,7 @@ struct file_info {
 
 class files_menu : public simple_menu {
     public:
-        files_menu(std::string name, dreamrender::texture&& icon, app::shell* xmb, std::filesystem::path path, dreamrender::resource_loader& loader,
+        files_menu(std::string name, auroreengine::texture&& icon, app::shell* xmb, std::filesystem::path path, auroreengine::resource_loader& loader,
             files_menu_profile profile = files_menu_profile::generic);
         ~files_menu() override = default;
 
@@ -142,7 +142,7 @@ class files_menu : public simple_menu {
 
         app::shell* xmb;
         std::filesystem::path path;
-        dreamrender::resource_loader& loader;
+        auroreengine::resource_loader& loader;
         files_menu_profile profile = files_menu_profile::generic;
 
         struct extra_data {

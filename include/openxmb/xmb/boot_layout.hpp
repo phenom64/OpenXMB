@@ -27,8 +27,8 @@ struct BootWarningBlockLayout {
 // frame: centre (0.734W, 0.532H), width 0.365W. OpenXMB replaces only the logo
 // artwork with the preserved identity string, kept as one fitted line inside
 // the same right edge and vertical centre.
-inline constexpr double kBootIdentityRightX = 0.734 + (0.365 * 0.5);
-inline constexpr double kBootIdentityCenterY = 0.532;
+inline constexpr double kBootIdentityRightX = 1764.0 / 1920.0;
+inline constexpr double kBootIdentityCenterY = 530.0 / 1080.0;
 inline constexpr double kBootIdentityBaseSize = 0.082;
 inline constexpr double kBootIdentityMaxWidth = 0.365;
 inline constexpr double kBootIdentityLinePitchScale = 1.16;

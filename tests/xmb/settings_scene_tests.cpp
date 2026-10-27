@@ -112,8 +112,8 @@ void test_settled_layout_and_values() {
   expect_near(below->center_y, 682.0,
               "first row below focus includes active padding");
   expect_near(bottom->center_y, 1002.0, "bottom visible row anchor");
-  expect_near(focused->icon_extent, 78.0,
-              "focused submenu icon remains at the small tier");
+  expect_near(focused->icon_extent, 180.0,
+              "focused submenu icon matches the selected category size");
   expect_near(focused->label_size, 34.0, "focused label uses 34px tier");
   expect_near(above->label_size, 30.0, "inactive label uses 30px tier");
   expect_near(focused->alpha, 1.0, "focused row is fully opaque");

@@ -481,6 +481,7 @@ void config::load_from_json() {
     setFontPath("default");
     textScale = 1.0;
     iconColor = textColor = clockColor = particleColor = glm::vec3(1.0f);
+    iconColorAuto=true;
     iconStyle = "default";
     iconGlassRefraction = true;
     wavesEnabled = particlesEnabled = true;
@@ -743,7 +744,7 @@ void config::save_to_json() {
         config["shell"]["background-image"] = backgroundImage.string();
         config["shell"]["font-path"] = fontPath.string();
         config["shell"]["font-size"] = static_cast<int>(std::lround(textScale * 100.0));
-        config["shell"]["icon-color"] = colour_to_hex(iconColor);
+        config["shell"]["icon-color"] = iconColorAuto ? "auto" : colour_to_hex(iconColor);
         config["shell"]["text-color"] = colour_to_hex(textColor);
         config["shell"]["clock-color"] = colour_to_hex(clockColor);
         config["shell"]["particle-color"] = colour_to_hex(particleColor);
@@ -1134,10 +1135,10 @@ void config::setTextScale(double scale) {
 }
 
 void config::setIconColor(std::string_view hex) {
-    auto colour = parse_hex_colour(hex);
-    if(!colour || colour_equal(iconColor, *colour)) return;
-    iconColor = *colour;
-    notifyCallbacks("icon-color", colour_to_hex(iconColor));
+    if(hex=="auto"||hex=="original") {if(!iconColorAuto) {iconColorAuto=true;notifyCallbacks("icon-color","auto");}return;}
+    auto colour=parse_hex_colour(hex);if(!colour) return;
+    const bool changed=iconColorAuto||!colour_equal(iconColor,*colour);iconColorAuto=false;iconColor=*colour;
+    if(changed) notifyCallbacks("icon-color",colour_to_hex(iconColor));
 }
 void config::setTextColor(std::string_view hex) {
     auto colour = parse_hex_colour(hex);
@@ -1335,7 +1336,7 @@ std::string config::shell_snapshot() const {
         {"theme-custom-colour", colour_to_hex(themeCustomColour)},
         {"theme-day-night-mode", day_night_mode_to_string(themeDayNightMode)},
         {"font-size", static_cast<int>(std::lround(textScale * 100.0))},
-        {"icon-color", colour_to_hex(iconColor)}, {"text-color", colour_to_hex(textColor)},
+        {"icon-color", iconColorAuto ? "auto" : colour_to_hex(iconColor)}, {"text-color", colour_to_hex(textColor)},
         {"clock-color", colour_to_hex(clockColor)}, {"particle-color", colour_to_hex(particleColor)},
         {"icon-style", iconStyle}, {"icon-glass-refraction", iconGlassRefraction},
         {"theme-waves-enabled", wavesEnabled}, {"theme-particles-enabled", particlesEnabled},

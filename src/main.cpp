@@ -44,7 +44,7 @@
 
 import sdl2;
 import spdlog;
-import dreamrender;
+import auroreengine;
 import argparse;
 import openxmb.app;
 import openxmb.debug;
@@ -202,7 +202,7 @@ int main(int argc, char *argv[])
 
     SDL_SetMainReady();
 
-    dreamrender::window_config window_config;
+    auroreengine::window_config window_config;
     window_config.name = "OpenXMB";
     window_config.title = "OpenXMB";
     window_config.preferredPresentMode = config::CONFIG.preferredPresentMode;
@@ -212,7 +212,7 @@ int main(int argc, char *argv[])
     window_config.height = program.get<int>("--height");
     window_config.fullscreen = !program.get<bool>("--no-fullscreen");
 
-    dreamrender::window window{window_config};
+    auroreengine::window window{window_config};
     window.init();
 
     spdlog::debug("Creating OpenXMB shell phase");

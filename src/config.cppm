@@ -106,6 +106,7 @@ export namespace config
             std::string iconStyle = "default";
             double textScale = 1.0;
             glm::vec3 iconColor{1.0f};
+            bool iconColorAuto=true;
             glm::vec3 textColor{1.0f};
             glm::vec3 clockColor{1.0f};
             bool wavesEnabled = true;

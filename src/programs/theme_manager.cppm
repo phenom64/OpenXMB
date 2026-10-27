@@ -19,8 +19,9 @@ export module openxmb.app:theme_manager;
 import :component;
 import :main;
 import :text_entry;
+import :xmb_presentation;
 import openxmb.utils;
-import dreamrender;
+import auroreengine;
 import glm;
 
 export namespace programs {
@@ -33,10 +34,10 @@ public:
 
   using apply_callback = std::function<void(const openxmb::themes::AppliedTheme&)>;
   using settings_callback = std::function<nlohmann::json()>;
-  theme_manager(dreamrender::resource_loader& loader,
+  theme_manager(auroreengine::resource_loader& loader,
                 std::shared_ptr<openxmb::themes::ThemeLibrary> library,
                 apply_callback apply, settings_callback current_settings = {})
-      : loader_(loader), library_(std::move(library)), apply_(std::move(apply)), current_settings_(std::move(current_settings)) { refresh(); }
+      : loader_(loader), library_(std::move(library)), apply_(std::move(apply)), current_settings_(std::move(current_settings)) { for(const auto* icon:{"theme/icon_setting","theme/icon_theme_setting","theme/icon_setting_item"}) icons_.load(loader_,icon);refresh(); }
 
   result tick(app::shell* shell) override {
     shell_ = shell;
@@ -137,61 +138,51 @@ public:
     } catch (const std::exception& error) { message_ = error.what(); return result::success | result::error_rumble; }
   }
 
-  void render(dreamrender::gui_renderer& renderer, app::shell* shell) override {
+  void render(auroreengine::gui_renderer& renderer, app::shell* shell) override {
     shell_ = shell;
-    renderer.draw_rect({0.045F, 0.075F}, {0.91F, 0.83F}, {0.018F, 0.025F, 0.04F, 0.96F});
-    renderer.draw_text("Theme Library", 0.085F, 0.14F, 0.05F);
-    renderer.draw_text(components_page_ ? "Components     < Library" : "Installed Themes     > Components", 0.085F, 0.205F, 0.029F, {0.62F, 0.78F, 0.95F, 1.0F});
-    if (components_page_) {
-      const std::array<std::pair<std::string_view, bool>, 6> options{{{"Background / animation", options_.background}, {"Icons", options_.icons},
-          {"Sound effects", options_.sounds}, {"Theme colors", options_.colors}, {"Font", options_.font}, {"Overlay layers", options_.overlay}}};
-      for (unsigned i = 0; i < options.size(); ++i)
-        render_row(renderer, std::string(options[i].first) + (options[i].second ? "   On" : "   Off"), i, i, selected_ == i);
-      renderer.draw_text("Choose the parts to use, then return to the Library to apply.", 0.085F, 0.76F, 0.025F);
-    } else {
-      constexpr std::size_t visible = 8;
-      const auto first = selected_ >= visible ? selected_ - visible + 1 : 0;
-      for (std::size_t i = first; i < std::min(first + visible, rows_.size()); ++i)
-        render_row(renderer, rows_[i].label, i - first, i, selected_ == i);
-      std::optional<openxmb::themes::ThemeInfo> preview;
-      if (selected_ < rows_.size() && rows_[selected_].kind == Kind::theme) {
-        try { preview = library_->preview(rows_[selected_].value); } catch (...) {}
-      } else if (!chosen_id_.empty()) { try { preview = library_->preview(chosen_id_); } catch (...) {} }
-      if (preview) {
-        const auto seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - started_).count();
-        const auto frame = openxmb::themes::ThemeLibrary::sample_animation(*preview, seconds);
-        auto image = frame.background.empty() ? preview->preview : frame.background;
-        draw_image(renderer, image, 0.57F, 0.28F, 0.31F, 0.28F);
-        for (const auto& layer : frame.layers) draw_image(renderer, layer.image, 0.57F + layer.x * 0.31F, 0.28F + layer.y * 0.28F,
-            layer.width * 0.31F, layer.height * 0.28F, layer.opacity);
-        for (const auto& draw : frame.draws) {
-          const auto texture = preview_texture(draw.image);
-          if (!texture || !texture->loaded) continue;
-          std::vector<dreamrender::image_renderer::textured_vertex> vertices;
-          vertices.reserve(draw.vertices.size());
-          for (const auto& vertex : draw.vertices)
-            vertices.push_back({{0.57F + vertex.x * 0.31F, 0.28F + vertex.y * 0.28F, vertex.z, vertex.w},
-                {vertex.u, vertex.v}, {vertex.color[0], vertex.color[1], vertex.color[2], vertex.color[3]}});
-          renderer.draw_textured_triangles(*texture, vertices, draw.additive, draw.depth);
-        }
-        renderer.draw_text(preview->name, 0.57F, 0.60F, 0.031F);
-        if (!preview->author.empty()) renderer.draw_text(preview->author, 0.57F, 0.645F, 0.025F);
-        const auto details = std::to_string(preview->icons.size()) + " icons  " + std::to_string(preview->sounds.size()) + " sounds" + (preview->dynamic ? "  Animated" : "");
-        renderer.draw_text(details, 0.57F, 0.69F, 0.023F);
-        if (!frame.warnings.empty()) renderer.draw_text(shorten(frame.warnings.front(), 62), 0.57F, 0.735F, 0.021F, {1.0F, 0.76F, 0.48F, 1.0F});
-      } else {
-        renderer.draw_text("Import .p3t / .zip themes or icon folders.", 0.57F, 0.34F, 0.025F);
-        renderer.draw_text("Inbox: " + shorten(library_->inbox().string(), 48), 0.57F, 0.40F, 0.022F);
-        renderer.draw_text("Theme originals are left unchanged.", 0.57F, 0.46F, 0.022F);
-      }
+    app::xmb_canvas c(renderer);
+    icons_.draw(c,"theme/icon_setting",309,279,117,0.4F);
+    icons_.draw(c,"theme/icon_theme_setting",316,515,78,0.75F);
+    c.text("Theme Settings",316,578,22,{1,1,1,0.7F},0,true);
+    const std::array<auroreengine::simple_renderer::vertex_data,3> arrow{{
+        {{(c.ox+430*c.scale)/renderer.frame_size.width,(c.oy+515*c.scale)/renderer.frame_size.height},{1,1,1,0.85F},{}},
+        {{(c.ox+458*c.scale)/renderer.frame_size.width,(c.oy+500*c.scale)/renderer.frame_size.height},{1,1,1,0.85F},{}},
+        {{(c.ox+458*c.scale)/renderer.frame_size.width,(c.oy+530*c.scale)/renderer.frame_size.height},{1,1,1,0.85F},{}}
+    }};renderer.draw_generic(arrow);
+    const std::size_t count=components_page_?6:rows_.size();
+    for(std::size_t i=0;i<count;++i) {
+      const auto delta=static_cast<int>(i)-static_cast<int>(selected_);
+      const float y=delta==0?515.0F:delta<0?120.0F+(delta+1)*80.0F:602.0F+delta*80.0F;
+      if(y<20||y>1120) continue;
+      const bool focused=i==selected_;const float opacity=focused?1.0F:0.48F;
+      std::string label;
+      if(components_page_) {
+        const std::array<std::string_view,6> names{"Background / animation","Icons","Sound effects","Theme colors","Font","Overlay layers"};
+        const std::array<bool,6> enabled{options_.background,options_.icons,options_.sounds,options_.colors,options_.font,options_.overlay};
+        label=std::string(names[i])+(enabled[i]?"   On":"   Off");
+      } else label=rows_[i].label;
+      icons_.draw(c,"theme/icon_setting_item",566,y,focused?180:78,opacity);
+      c.text(label,683,y+(focused?3:11),focused?34:30,{1,1,1,opacity},focused?app::xmb_canvas::pulse():0);
     }
-    renderer.draw_text(shorten(message_, 110), 0.085F, 0.82F, 0.024F);
-    render_controller_buttons(shell, renderer, 0.5F, 0.87F, std::array{
-      std::pair{action::ok, std::string_view{"Select / Apply"}}, std::pair{action::left, std::string_view{"Components"}},
-      std::pair{action::extra, std::string_view{"Refresh"}}, std::pair{action::cancel, std::string_view{"Back"}}
-    });
+    if(!components_page_&&selected_<rows_.size()&&rows_[selected_].kind==Kind::theme) {
+      const auto& id=rows_[selected_].value;
+      if(preview_id_!=id) {preview_id_=id;try {selected_preview_=library_->preview(id);}catch(...) {selected_preview_.reset();}}
+      if(selected_preview_) {
+        const auto& preview=*selected_preview_;
+        const auto seconds=std::chrono::duration<double>(std::chrono::steady_clock::now()-started_).count();
+        const auto frame=openxmb::themes::ThemeLibrary::sample_animation(preview,seconds);
+        const auto image=frame.background.empty()?preview.preview:frame.background;
+        draw_image(renderer,image,0.68F,0.39F,0.24F,0.24F);
+        c.text(preview.dynamic?"Animated Theme":"Theme",683,547,22,{1,1,1,0.82F});
+      }
+    } else if(!components_page_&&selected_==0) c.text("Restore the original appearance.",683,547,22,{1,1,1,0.82F});
+    if(!message_.empty()) c.text(shorten(message_,100),683,950,22,{1,1,1,0.85F});
+    render_controller_buttons(shell,renderer,0.5F,0.94F,std::array{
+        std::pair{action::ok,std::string_view{"Enter"}},std::pair{action::options,std::string_view{"Options"}},std::pair{action::cancel,std::string_view{"Back"}}});
   }
-  bool is_opaque() const override { return false; }
+
+  bool is_opaque() const override { return true; }
+  bool show_status_bar() const override { return true; }
 
 private:
   enum class Kind { defaults, theme, import_path, create_theme, inbox, export_theme, save_preset, remove_theme, preset };
@@ -199,7 +190,8 @@ private:
   struct WorkResult { std::string id, message; };
   static std::string shorten(const std::string& text, std::size_t maximum) { return text.size() > maximum ? text.substr(0, maximum - 3) + "..." : text; }
   void refresh() {
-    rows_.clear(); rows_.push_back({"Restore original appearance", Kind::defaults, {}});
+    preview_id_.clear();selected_preview_.reset();
+    rows_.clear(); rows_.push_back({"Original", Kind::defaults, {}});
     for (const auto& theme : library_->discover()) rows_.push_back({theme.name, Kind::theme, theme.id});
     rows_.push_back({"Import theme or icon pack...", Kind::import_path, {}});
     rows_.push_back({"Create Custom Theme...", Kind::create_theme, {}});
@@ -224,13 +216,13 @@ private:
     work_ = std::async(std::launch::async, std::forward<Function>(operation));
   }
   void require_chosen() { if (chosen_id_.empty()) throw openxmb::themes::ThemeError("Apply a theme first, then use this action."); }
-  void render_row(dreamrender::gui_renderer& renderer, const std::string& label, std::size_t row, std::size_t, bool selected) {
+  void render_row(auroreengine::gui_renderer& renderer, const std::string& label, std::size_t row, std::size_t, bool selected) {
     const auto y = 0.28F + static_cast<float>(row) * 0.057F;
     if (selected) renderer.draw_rect({0.075F, y - 0.023F}, {0.445F, 0.050F}, {0.24F, 0.40F, 0.62F, 0.75F});
     renderer.draw_text(shorten(label, 48), 0.095F, y, 0.030F);
   }
-  struct PreviewTexture { std::shared_ptr<dreamrender::texture> texture; std::shared_future<void> ready; std::uint64_t used = 0; };
-  std::shared_ptr<dreamrender::texture> preview_texture(const std::filesystem::path& path) {
+  struct PreviewTexture { std::shared_ptr<auroreengine::texture> texture; std::shared_future<void> ready; std::uint64_t used = 0; };
+  std::shared_ptr<auroreengine::texture> preview_texture(const std::filesystem::path& path) {
     if (path.empty()) return {};
     if (!textures_.contains(path) && textures_.size() >= 8) {
       auto oldest = textures_.end();
@@ -242,17 +234,17 @@ private:
     }
     auto& item = textures_[path];
     if (!item.texture) {
-      item.texture = std::make_shared<dreamrender::texture>(loader_.getDevice(), loader_.getAllocator());
+      item.texture = std::make_shared<auroreengine::texture>(loader_.getDevice(), loader_.getAllocator());
       item.ready = loader_.loadTexture(item.texture.get(), path);
     }
     item.used = ++texture_use_;
     return item.texture;
   }
-  void draw_image(dreamrender::gui_renderer& renderer, const std::filesystem::path& path, float x, float y, float width, float height, float opacity = 1.0F) {
+  void draw_image(auroreengine::gui_renderer& renderer, const std::filesystem::path& path, float x, float y, float width, float height, float opacity = 1.0F) {
     const auto texture = preview_texture(path);
     if (texture && texture->loaded) renderer.draw_image(texture->imageView.get(), x, y, width * renderer.aspect_ratio, height, {1.0F, 1.0F, 1.0F, opacity});
   }
-  dreamrender::resource_loader& loader_;
+  auroreengine::resource_loader& loader_;
   std::shared_ptr<openxmb::themes::ThemeLibrary> library_;
   apply_callback apply_;
   settings_callback current_settings_;
@@ -263,7 +255,10 @@ private:
   std::uint64_t texture_use_ = 0;
   std::future<WorkResult> work_;
   openxmb::themes::ComponentOptions options_;
-  std::string chosen_id_, message_ = "Select a theme to preview; confirm to apply.";
+  app::media_icons icons_;
+  std::optional<openxmb::themes::ThemeInfo> selected_preview_;
+  std::string preview_id_;
+  std::string chosen_id_, message_;
   std::size_t selected_ = 0;
   bool components_page_ = false;
   std::chrono::steady_clock::time_point started_ = std::chrono::steady_clock::now();

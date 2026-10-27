@@ -7,6 +7,7 @@ module;
 #include <cstddef>
 #include <cstdint>
 #include <cmath>
+#include <chrono>
 #include <string_view>
 #include <tuple>
 #include <vector>
@@ -15,7 +16,7 @@ module;
 
 export module openxmb.render:procedural_wave_renderer;
 
-import dreamrender;
+import auroreengine;
 import :shaders;
 import glm;
 import vulkan_hpp;
@@ -59,11 +60,11 @@ public:
         vk::PipelineDynamicStateCreateInfo dynamic({},states);
         vk::GraphicsPipelineCreateInfo pipeline({},stages,&input,&assembly,nullptr,&viewportState,
             &raster,&samples,&depth,&color,&dynamic,pipelineLayout_.get());
-        wavePipelines_=dreamrender::createPipelines(device_,cache,pipeline,renderPasses,"Procedural Ribbon");
+        wavePipelines_=auroreengine::createPipelines(device_,cache,pipeline,renderPasses,"Procedural Ribbon");
         blend.srcColorBlendFactor=vk::BlendFactor::eOne;
         blend.dstColorBlendFactor=vk::BlendFactor::eOne;
         color.setAttachments(blend);
-        particlePipelines_=dreamrender::createPipelines(device_,cache,pipeline,renderPasses,"Procedural Sparkles");
+        particlePipelines_=auroreengine::createPipelines(device_,cache,pipeline,renderPasses,"Procedural Sparkles");
 
         constexpr auto grid=openxmb::xmb::kProceduralWaveGrid;
         std::vector<std::uint16_t> indices;
@@ -125,6 +126,15 @@ public:
     }
     void reset_parameters() noexcept { waveSettings_={}; particleSettings_={}; sampler_.reset_history(); }
 
+    void set_music_mode(bool enabled) noexcept {
+        const auto now=std::chrono::steady_clock::now();
+        const float elapsed=std::clamp(std::chrono::duration<float>(now-music_updated_).count(),0.0F,0.85F);
+        music_updated_=now;
+        if(enabled!=music_target_) {music_target_=enabled;return;}
+        const float target=music_target_?1.0F:0.0F;
+        music_blend_+=std::clamp(target-music_blend_,-elapsed/0.85F,elapsed/0.85F);
+    }
+    float music_mix() const noexcept {return music_blend_*music_blend_*(3.0F-2.0F*music_blend_);}
     bool waves_enabled{true};
     bool particles_enabled{true};
     glm::vec3 particle_color{1.0F};
@@ -136,7 +146,18 @@ public:
         const auto waveIt=wavePipelines_.find(renderPass),particleIt=particlePipelines_.find(renderPass);
         if(waveIt==wavePipelines_.end() || particleIt==particlePipelines_.end()) return;
         auto& frame=frames_[static_cast<std::size_t>(frameIndex)%frames_.size()];
-        sampler_.update(static_cast<double>(seconds)+36.0,waveSettings_,particleSettings_);
+        const float blend=music_blend_*music_blend_*(3.0F-2.0F*music_blend_);
+        auto settings=waveSettings_;auto particles=particleSettings_;
+        const auto toward=[blend](float value,float music){return value+(music-value)*blend;};
+        settings.posY=toward(settings.posY,-0.02F);settings.tilt=toward(settings.tilt,0.12F);
+        settings.thickness=toward(settings.thickness,2.8F);settings.rowSpread=toward(settings.rowSpread,1.3F);
+        settings.fill=toward(settings.fill,0.6F);settings.edgeSoft=toward(settings.edgeSoft,0.8F);
+        settings.bandAmplitude=toward(settings.bandAmplitude,0.07F);settings.bandFrequency=toward(settings.bandFrequency,1.0F);
+        settings.opacity=toward(settings.opacity,0.4F);settings.brightness=toward(settings.brightness,0.85F);
+        particles.count=static_cast<std::uint32_t>(toward(static_cast<float>(particles.count),260));
+        particles.posY=toward(particles.posY,0.4F);particles.spreadY=toward(particles.spreadY,1.5F);
+        particles.sizeBase=toward(particles.sizeBase,2.4F);particles.sizeVar=toward(particles.sizeVar,2.0F);particles.opacity=toward(particles.opacity,0.8F);
+        sampler_.update(static_cast<double>(seconds)+36.0,settings,particles);
         const auto& data=sampler_.frame();
         allocator_.copyMemoryToAllocation(&data,frame.allocation.get(),0,sizeof(data));
         allocator_.flushAllocation(frame.allocation.get(),0,sizeof(data));
@@ -145,7 +166,7 @@ public:
         command.setViewport(0,viewport); command.setScissor(0,scissor);
         command.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,pipelineLayout_.get(),0,frame.set,{});
         Push push{glm::vec4(tint,1),glm::vec4(extent_.width,extent_.height,seconds+100.0F,std::max(0.0F,brightness)),
-                  glm::vec4(particle_color,1),glm::vec4(0,motion.x,motion.y,waves_enabled?1.0F:0.0F)};
+                  glm::vec4(glm::mix(particle_color,glm::vec3(1.0F,238.0F/255,252.0F/255),blend),1),glm::vec4(0,motion.x,motion.y,waves_enabled?1.0F:0.0F)};
         constexpr auto stages=vk::ShaderStageFlagBits::eVertex|vk::ShaderStageFlagBits::eFragment;
         if(waves_enabled) {
             command.bindPipeline(vk::PipelineBindPoint::eGraphics,waveIt->second.get());
@@ -157,7 +178,7 @@ public:
             push.mode_motion.x=1;
             command.bindPipeline(vk::PipelineBindPoint::eGraphics,particleIt->second.get());
             command.pushConstants(pipelineLayout_.get(),stages,0,sizeof(push),&push);
-            command.draw(6,std::min(particleSettings_.count,4096u),0,0);
+            command.draw(6,std::min(particles.count,4096u),0,0);
         }
     }
 
@@ -170,11 +191,14 @@ private:
     vk::UniqueDescriptorSetLayout descriptorLayout_;
     vk::UniquePipelineLayout pipelineLayout_;
     vk::UniqueDescriptorPool descriptorPool_;
-    dreamrender::UniquePipelineMap wavePipelines_,particlePipelines_;
+    auroreengine::UniquePipelineMap wavePipelines_,particlePipelines_;
     std::vector<Frame> frames_;
     vma::UniqueBuffer indexBuffer_;
     vma::UniqueAllocation indexAllocation_;
     std::uint32_t indexCount_{};
+    bool music_target_{};
+    float music_blend_{};
+    std::chrono::steady_clock::time_point music_updated_=std::chrono::steady_clock::now();
     openxmb::xmb::ProceduralWaveSettings waveSettings_;
     openxmb::xmb::ProceduralParticleSettings particleSettings_;
     openxmb::xmb::ProceduralWaveSampler sampler_;

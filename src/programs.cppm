@@ -43,7 +43,7 @@ namespace programs {
 export struct open_info {
     std::string name;
     bool is_external;
-    std::function<std::unique_ptr<app::component>(std::filesystem::path, dreamrender::resource_loader&)> create;
+    std::function<std::unique_ptr<app::component>(std::filesystem::path, auroreengine::resource_loader&)> create;
 };
 
 // JSON-based file info structure to replace Gio::FileInfo
@@ -95,12 +95,12 @@ struct register_program : program_registry {
     register_program(std::string name, std::initializer_list<std::string> mime_types,
                      std::initializer_list<std::string> file_extensions) {
         for(auto& mime_type : mime_types) {
-            do_register_program_mime(name, mime_type, {name, false, [](std::filesystem::path path, dreamrender::resource_loader& loader) {
+            do_register_program_mime(name, mime_type, {name, false, [](std::filesystem::path path, auroreengine::resource_loader& loader) {
                 return std::make_unique<T>(path, loader);
             }});
         }
         for(auto& ext : file_extensions) {
-            do_register_program_ext(name, ext, {name, false, [](std::filesystem::path path, dreamrender::resource_loader& loader) {
+            do_register_program_ext(name, ext, {name, false, [](std::filesystem::path path, auroreengine::resource_loader& loader) {
                 return std::make_unique<T>(path, loader);
             }});
         }

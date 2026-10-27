@@ -14,7 +14,7 @@ import :text_entry;
 import :message_overlay;
 import openxmb.config;
 import openxmb.utils;
-import dreamrender;
+import auroreengine;
 import glm;
 import vulkan_hpp;
 
@@ -23,7 +23,7 @@ class settings_center : public app::component, public action_receiver {
 public:
     float typography_scale() const override { return 2.5F; }
 
-    explicit settings_center(dreamrender::resource_loader&) {}
+    explicit settings_center(auroreengine::resource_loader&) {}
     result tick(app::shell* shell) override { shell_ = shell; return result::success; }
     result on_action(action a) override {
         if(a == action::cancel) { if(input_) { input_ = false; selection_ = 0; return result::success; } return result::close; }
@@ -75,7 +75,7 @@ public:
         cfg.save_config();
         return result::success | result::ok_sound;
     }
-    void render(dreamrender::gui_renderer& r, app::shell* shell) override {
+    void render(auroreengine::gui_renderer& r, app::shell* shell) override {
         shell_=shell;
         auto& c=config::CONFIG;
         r.draw_rect({0.06F,0.07F},{0.88F,0.86F},{0.018F,0.026F,0.045F,0.97F});

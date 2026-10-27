@@ -35,7 +35,7 @@ module openxmb.app;
 
 import spdlog;
 import i18n;
-import dreamrender;
+import auroreengine;
 import openxmb.config;
 
 import :applications_menu;
@@ -256,7 +256,7 @@ app_info::app_info(const std::filesystem::path& desktop_file) {
     }
 }
 
-applications_menu::applications_menu(std::string name, dreamrender::texture&& icon, app::shell* xmb, dreamrender::resource_loader& loader, AppFilter filter)
+applications_menu::applications_menu(std::string name, auroreengine::texture&& icon, app::shell* xmb, auroreengine::resource_loader& loader, AppFilter filter)
     : simple_menu(std::move(name), std::move(icon)), xmb(xmb), loader(loader), filter(filter)
 {
     auto scanned_apps = scan_applications();
@@ -282,7 +282,7 @@ std::unique_ptr<action_menu_entry> applications_menu::create_action_menu_entry(c
         spdlog::warn("Could not resolve icon for application: {}", app.name);
     }
 
-    dreamrender::texture icon_texture(loader.getDevice(), loader.getAllocator());
+    auroreengine::texture icon_texture(loader.getDevice(), loader.getAllocator());
     std::string name = app.name;
     if(hidden) {
         name += " (hidden)"_();

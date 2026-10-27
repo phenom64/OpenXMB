@@ -13,7 +13,7 @@ export module openxmb.app:library_manager;
 
 import :component;
 import openxmb.utils;
-import dreamrender;
+import auroreengine;
 import vulkan_hpp;
 
 export namespace programs {
@@ -22,13 +22,13 @@ public:
     float typography_scale() const override { return 2.5F; }
 
   using profile_callback = std::function<void(std::filesystem::path)>;
-  library_manager(std::string section, dreamrender::resource_loader &loader,
+  library_manager(std::string section, auroreengine::resource_loader &loader,
                   profile_callback switch_profile = {});
   ~library_manager() override;
   result tick(app::shell *shell) override;
   void prerender(vk::CommandBuffer command, int frame, app::shell *shell) override;
   result on_event(const app::event &event) override;
-  void render(dreamrender::gui_renderer &renderer, app::shell *shell) override;
+  void render(auroreengine::gui_renderer &renderer, app::shell *shell) override;
   bool is_opaque() const override { return false; }
 
 private:
@@ -55,7 +55,7 @@ private:
   struct Preview;
   std::unique_ptr<Preview> preview_;
   bool preview_suspended_{}, closing_{}, menu_dirty_{};
-  dreamrender::resource_loader &loader_;
+  auroreengine::resource_loader &loader_;
   profile_callback switch_profile_;
   std::unique_ptr<openxmb::desktop::Library> library_;
   Page page_{Page::games}, root_page_{Page::games};
@@ -69,7 +69,7 @@ private:
   std::function<void(app::shell *)> pending_;
   std::future<std::filesystem::path> artwork_download_;
   std::filesystem::path loaded_artwork_;
-  std::shared_ptr<dreamrender::texture> artwork_;
+  std::shared_ptr<auroreengine::texture> artwork_;
   std::future<void> artwork_ready_;
 };
 } // namespace programs

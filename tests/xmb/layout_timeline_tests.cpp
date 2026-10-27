@@ -88,17 +88,21 @@ void test_boot_timeline() {
               sample_boot_timeline(3.5).background_sweep < 1.0,
           "boot gradient uses xmb-web left-to-right sweep");
 
-  require_near(sample_boot_timeline(2.2).identity_opacity, 0.0, 1e-12,
-               "identity starts at 2.2s");
+  require_near(sample_boot_timeline(1.92).identity_opacity, 0.0, 1e-12,
+               "identity starts at 1.92s");
+  const auto partial_identity=sample_boot_timeline(2.26);
+  require_near(partial_identity.identity_gradient[0],0.31,1e-12,"left identity coverage at 2.26s");
+  require_near(partial_identity.identity_gradient[1],0.13,1e-12,"middle identity coverage at 2.26s");
+  require_near(partial_identity.identity_gradient[2],0.05+(0.06-0.05)*(2.26-2.22)/(2.29-2.22),1e-12,"right identity coverage at 2.26s");
   const auto identity_full = sample_boot_timeline(4.0);
   require_near(identity_full.identity_opacity, 1.0, 1e-12,
                "identity full at 4.0s");
   require_near(identity_full.identity_blur_px, 0.0, 1e-12,
                "identity sharp at 4.0s");
-  require_near(sample_boot_timeline(5.8).identity_opacity, 1.0, 1e-12,
-               "identity fade starts at 5.8s");
-  require_near(sample_boot_timeline(6.8).identity_opacity, 0.0, 1e-12,
-               "identity gone at 6.8s");
+  require_near(sample_boot_timeline(4.05).identity_opacity, 1.0, 1e-12,
+               "identity fade starts at 4.05s");
+  require_near(sample_boot_timeline(5.41).identity_opacity, 0.0, 1e-12,
+               "identity gone at 5.41s");
 
   require_near(sample_boot_timeline(7.665).warning_opacity, 1.0, 1e-12,
                "warning hard cut in");
@@ -138,9 +142,9 @@ void test_boot_timeline() {
 }
 
 void test_boot_text_layout() {
-  require_near(kBootIdentityRightX, 0.9165, 1e-12,
+  require_near(kBootIdentityRightX, 1764.0 / 1920.0, 1e-12,
                "identity right edge follows xmb-web logo gap");
-  require_near(kBootIdentityCenterY, 0.532, 1e-12,
+  require_near(kBootIdentityCenterY, 530.0 / 1080.0, 1e-12,
                "identity vertical center follows xmb-web logo center");
   require_near(kBootIdentityMaxWidth, 0.365, 1e-12,
                "identity text is fitted to the xmb-web logo box width");
@@ -151,9 +155,9 @@ void test_boot_text_layout() {
 
   const auto identity =
       place_startup_identity_text({.width = 0.52, .height = 0.07});
-  require_near(identity.x, 0.3965, 1e-12,
+  require_near(identity.x, 1764.0/1920.0-0.52, 1e-12,
                "identity text is right-aligned to the xmb-web logo gap");
-  require_near(identity.y, 0.497, 1e-12,
+  require_near(identity.y, 530.0/1080.0-0.035, 1e-12,
                "identity text is vertically centered on the xmb-web logo");
 
   constexpr std::array<double, 4> warning_widths{{0.31, 0.64, 0.58, 0.51}};
@@ -178,7 +182,7 @@ void test_root_scene() {
           "stable Users category ID");
   require_near(users.center.x, 566.0, 1e-12, "active category x");
   require_near(users.center.y, 279.0, 1e-12, "active category y lift");
-  require_near(users.icon_extent, 168.0, 1e-12, "active category extent");
+  require_near(users.icon_extent, 180.0, 1e-12, "active category extent");
   require_near(users.label_y, 342.0, 1e-12, "category label baseline");
   require_near(users.label_size, 20.0, 1e-12, "category label size");
 
@@ -187,8 +191,8 @@ void test_root_scene() {
                "inactive category baseline");
   require_near(initial.categories[1].icon_extent, 117.0, 1e-12,
                "inactive category extent");
-  require_near(initial.categories[1].alpha, 0.9, 1e-12, "near category alpha");
-  require_near(initial.categories[3].alpha, 0.25, 1e-12, "far category alpha");
+  require_near(initial.categories[1].alpha, 0.85, 1e-12, "near category alpha");
+  require_near(initial.categories[3].alpha, 0.85, 1e-12, "far category alpha");
 
   require(initial.users_items[0].definition.semantic_id ==
               "users.item.turn-off-system",

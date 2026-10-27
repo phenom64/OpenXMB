@@ -38,7 +38,7 @@ if(OPENXMB_BUILD_NATIVE_TESTS)
   target_compile_features(openxmb_config_style_tests PRIVATE cxx_std_23)
   target_include_directories(openxmb_config_style_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
   target_link_libraries(openxmb_config_style_tests PRIVATE
-    OpenXMB::ShellCore dreams::VulkanHppModule glm::glm spdlog::spdlog nlohmann_json::nlohmann_json)
+    OpenXMB::ShellCore auroreengine::VulkanHppModule glm::glm spdlog::spdlog nlohmann_json::nlohmann_json)
   if(WIN32)
     target_link_libraries(openxmb_config_style_tests PRIVATE shell32)
   else()

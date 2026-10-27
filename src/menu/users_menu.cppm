@@ -25,7 +25,7 @@ module;
 export module openxmb.app:users_menu;
 
 import :menu_base;
-import dreamrender;
+import auroreengine;
 
 namespace app {
     class shell;
@@ -50,7 +50,7 @@ struct user_info {
 
 class users_menu : public simple_menu {
     public:
-        users_menu(std::string name, dreamrender::texture&& icon, app::shell* xmb, dreamrender::resource_loader& loader);
+        users_menu(std::string name, auroreengine::texture&& icon, app::shell* xmb, auroreengine::resource_loader& loader);
         ~users_menu() override = default;
         
         result activate(action action) override;
@@ -61,7 +61,7 @@ class users_menu : public simple_menu {
         result activate_user(const user_info& user, action action);
         
         app::shell* xmb;
-        dreamrender::resource_loader& loader;
+        auroreengine::resource_loader& loader;
         std::vector<user_info> users;
 };
 

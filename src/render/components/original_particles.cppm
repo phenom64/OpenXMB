@@ -33,7 +33,7 @@ module;
 
 export module openxmb.render:particles_renderer;
 
-import dreamrender;
+import auroreengine;
 import :shaders;
 
 import glm;
@@ -178,7 +178,7 @@ export class particles_renderer {
       vk::PipelineDynamicStateCreateInfo dyn({}, dynStates);
 
       vk::GraphicsPipelineCreateInfo gp({}, stages, &vertexInput, &inputAsm, nullptr, &viewport, &rast, &ms, &ds, &blend, &dyn, pipelineLayout.get());
-      pipelines = dreamrender::createPipelines(device, pipelineCache, gp, renderPasses, "Original Particles Pipeline");
+      pipelines = auroreengine::createPipelines(device, pipelineCache, gp, renderPasses, "Original Particles Pipeline");
     }
 
     void prepare(int /*imageCount*/) {}
@@ -281,7 +281,7 @@ export class particles_renderer {
     vma::UniqueAllocation instanceVBAlloc;
 
     vk::UniquePipelineLayout pipelineLayout;
-    dreamrender::UniquePipelineMap pipelines;
+    auroreengine::UniquePipelineMap pipelines;
 };
 
 }

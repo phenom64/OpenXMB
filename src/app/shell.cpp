@@ -57,7 +57,7 @@ module openxmb.app;
 
 import i18n;
 import spdlog;
-import dreamrender;
+import auroreengine;
 import glm;
 import vulkan_hpp;
 import vma;
@@ -184,7 +184,7 @@ namespace app
         int size = 20;
     };
 
-    void component::render_controller_buttons(app::shell* xmb, dreamrender::gui_renderer& renderer, float x, float y, std::span<const std::pair<::action, std::string_view>> buttons) const
+    void component::render_controller_buttons(app::shell* xmb, auroreengine::gui_renderer& renderer, float x, float y, std::span<const std::pair<::action, std::string_view>> buttons) const
     {
         const auto saved_scale = renderer.text_scale;
         renderer.text_scale /= std::max(1.0F, typography_scale());
@@ -218,6 +218,8 @@ namespace app
             std::make_unique<openxmb::xmb::MonthlyBackgroundRenderer>(device, win->swapchainExtent);
 
         {
+            const auto background_format=win->swapchainFormat.format==vk::Format::eB8G8R8A8Srgb?vk::Format::eB8G8R8A8Unorm:
+                win->swapchainFormat.format==vk::Format::eR8G8B8A8Srgb?vk::Format::eR8G8B8A8Unorm:win->swapchainFormat.format;
             std::array<vk::SubpassDependency, 2> deps{
                 vk::SubpassDependency(vk::SubpassExternal, 0,
                     vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eLateFragmentTests,
@@ -234,7 +236,7 @@ namespace app
                 vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal);
             if(win->config.sampleCount == vk::SampleCountFlagBits::e1) {
                 const std::array attachments{
-                    vk::AttachmentDescription({}, win->swapchainFormat.format,
+                    vk::AttachmentDescription({}, background_format,
                         vk::SampleCountFlagBits::e1,
                         vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
                         vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
@@ -249,11 +251,11 @@ namespace app
                     vk::RenderPassCreateInfo({}, attachments, subpass, deps));
             } else {
                 const std::array attachments{
-                    vk::AttachmentDescription({}, win->swapchainFormat.format, win->config.sampleCount,
+                    vk::AttachmentDescription({}, background_format, win->config.sampleCount,
                         vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
                         vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
                         vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal),
-                    vk::AttachmentDescription({}, win->swapchainFormat.format, vk::SampleCountFlagBits::e1,
+                    vk::AttachmentDescription({}, background_format, vk::SampleCountFlagBits::e1,
                         vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eStore,
                         vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
                         vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal),
@@ -469,6 +471,7 @@ namespace app
         blurDescriptorPool.reset();
         blurExtraDescriptorPool.reset();
         renderImages.clear();
+        backgroundAttachmentViews.clear();backgroundMsaaViews.clear();
         backgroundResolve.clear();
         backgroundDepth.clear();
         blurFrames.clear();
@@ -513,6 +516,10 @@ namespace app
                     vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferSrc,
                     win->swapchainFormat.format, vk::SampleCountFlagBits::e1, false, vk::ImageAspectFlagBits::eColor);
                 debugName(device, tex->image, ("Background Resolve #"+std::to_string(i)).c_str());
+                const auto unorm=win->swapchainFormat.format==vk::Format::eB8G8R8A8Srgb?vk::Format::eB8G8R8A8Unorm:
+                    win->swapchainFormat.format==vk::Format::eR8G8B8A8Srgb?vk::Format::eR8G8B8A8Unorm:win->swapchainFormat.format;
+                backgroundAttachmentViews.push_back(tex->create_view(unorm));
+                if(win->config.sampleCount!=vk::SampleCountFlagBits::e1) backgroundMsaaViews.push_back(renderImages[i]->create_view(unorm));
                 backgroundResolve.push_back(std::move(tex));
             }
             blurFrames.emplace_back();
@@ -534,14 +541,14 @@ namespace app
             {
                 if(win->config.sampleCount == vk::SampleCountFlagBits::e1) {
                     const std::array attachments{
-                        backgroundResolve[i]->imageView.get(), backgroundDepth[i]->imageView.get()};
+                        backgroundAttachmentViews[i].get(), backgroundDepth[i]->imageView.get()};
                     backgroundFramebuffers.push_back(device.createFramebufferUnique(
                         vk::FramebufferCreateInfo({}, backgroundRenderPass.get(), attachments,
                             extent.width, extent.height, 1)));
                 } else {
                     const std::array attachments{
-                        renderImages[i]->imageView.get(),
-                        backgroundResolve[i]->imageView.get(), backgroundDepth[i]->imageView.get()};
+                        backgroundMsaaViews[i].get(),
+                        backgroundAttachmentViews[i].get(), backgroundDepth[i]->imageView.get()};
                     backgroundFramebuffers.push_back(device.createFramebufferUnique(
                         vk::FramebufferCreateInfo({}, backgroundRenderPass.get(), attachments,
                             extent.width, extent.height, 1)));
@@ -740,7 +747,7 @@ namespace app
                     {themeColour.base_colour.r, themeColour.base_colour.g,
                      themeColour.base_colour.b},
                     day_night_hour);
-            const auto background_gradient = config::CONFIG.themeOriginalColour
+            auto background_gradient = config::CONFIG.themeOriginalColour
                 ? original_gradient
                 : manual_gradient;
             // xmb-web's Original background lets the calendar-driven gradient
@@ -748,11 +755,16 @@ namespace app
             // neutral silver/white so they read over every month instead of
             // forcing the older OpenXMB theme colour (which made the scene feel
             // stuck on June/cyan).
-            constexpr glm::vec3 original_effect_tint{0.96F, 0.97F, 1.0F};
+            const bool music_scene=std::any_of(overlays.begin(),overlays.end(),[](const auto& overlay){return overlay->music_background();});
+            procedural_wave_render->set_music_mode(music_scene);
+            const float music_mix=procedural_wave_render->music_mix();background_gradient.music_mix=music_mix;
+            glm::vec3 effect_color{background_gradient.bottom_rgb[0],background_gradient.bottom_rgb[1],background_gradient.bottom_rgb[2]};
+            effect_color=glm::mix(glm::min(effect_color*1.6F,glm::vec3(1.0F)),glm::vec3(1.0F),0.35F);
+            const glm::vec3 original_effect_tint=glm::mix(effect_color,glm::vec3(192.0F/255,108.0F/255,200.0F/255),music_mix);
             constexpr float original_effect_brightness = 1.0F;
             const bool can_render_monthly_background =
-                config::CONFIG.backgroundType ==
-                    config::config::background_type::original &&
+                (music_scene||music_mix>0.001F||config::CONFIG.backgroundType ==
+                    config::config::background_type::original) &&
                 monthly_background_render->pipelines_ready() &&
                 !monthly_background_failed;
             // Always tint the background clear colour (for both Original and Classic)
@@ -767,6 +779,7 @@ namespace app
             std::array<vk::ClearValue, 3> background_clears{color, color, color};
             const auto depth_index = win->config.sampleCount == vk::SampleCountFlagBits::e1 ? 1u : 2u;
             background_clears[depth_index] = vk::ClearDepthStencilValue(1.0F, 0);
+            image_render->setOutputEncoded(true);
             commandBuffer.beginRenderPass(vk::RenderPassBeginInfo(backgroundRenderPass.get(), backgroundFramebuffers[frame].get(),
                 vk::Rect2D({0, 0}, win->swapchainExtent), depth_index + 1, background_clears.data()), vk::SubpassContents::eInline);
             vk::Viewport viewport(0.0f, 0.0f,
@@ -794,7 +807,7 @@ namespace app
                 openxmb::xmb::sample_boot_timeline(seconds);
 
             if(!ingame_mode) {
-                if(config::CONFIG.backgroundType == config::config::background_type::original) {
+                if(music_scene||music_mix>0.001F||config::CONFIG.backgroundType == config::config::background_type::original) {
                     if(can_render_monthly_background) {
                         try {
                             const std::array boot_background{
@@ -857,6 +870,7 @@ namespace app
                 }
             }
             commandBuffer.endRenderPass();
+            image_render->setOutputEncoded(false);
         }
         double blur_background_progress = utils::progress(now, last_blur_background_change, blur_background_transition_duration);
         const auto startup_blur_radius = std::max(0.0f, startup_background_blur_px);
@@ -1396,7 +1410,7 @@ namespace app
 
             // Interface/FX debug overlays: draw font atlas for verification
             if(openxmb::debug::interfacefx_debug) {
-                const dreamrender::texture* atlas = font_render->get_atlas();
+                const auroreengine::texture* atlas = font_render->get_atlas();
                 if(atlas && atlas->loaded) {
                     if(!openxmb::debug::interfacefx_debug_once_atlas_logged) {
                         spdlog::info("[InterfaceFXDEBUG] Font atlas: {}x{}", atlas->width, atlas->height);
@@ -1520,6 +1534,11 @@ namespace app
             }
             enable_cursor = overlays[i]->enable_cursor();
         }
+        if(!allow_menu && has_overlay && overlays[overlay_begin]->show_status_bar()) {
+            renderer.push_color(glm::vec4(config::CONFIG.clockColor,1.0F));
+            static_cast<void>(status_bar_render.render_local(renderer,openxmb::xmb::wall_clock_now()));
+            renderer.pop_color();
+        }
         if(overlay_transition && overlay_fade_direction == transition_direction::out &&
            old_overlay && old_overlay->do_fade_out()) {
             renderer.push_color(glm::mix(glm::vec4(0.0), glm::vec4(1.0), dir_progress));
@@ -1535,7 +1554,7 @@ namespace app
         }
 
         renderer.text_scale = static_cast<float>(config::CONFIG.textScale);
-        if(enable_cursor) {
+        if(enable_cursor && std::chrono::steady_clock::now()-cursor_active_at < std::chrono::seconds(2)) {
             constexpr float cursor_size = 0.05f;
             if(cursorTexture && cursorTexture->loaded) {
                 renderer.draw_image(*cursorTexture,
@@ -1914,6 +1933,7 @@ namespace app
         if(cursor_joystick_delta.x == 0.0f && cursor_joystick_delta.y == 0.0f) {
             return;
         }
+        cursor_active_at=std::chrono::steady_clock::now();
         cursor_position = glm::clamp(cursor_position + cursor_joystick_delta, glm::vec2{0.0f}, glm::vec2{1.0f});
         dispatch<events::cursor_move>(action::none, cursor_position.x, cursor_position.y);
     }
@@ -1921,6 +1941,7 @@ namespace app
     bool shell::handle_cursor(const event& event)
     {
         if(auto* d = event.get<events::mouse_move>()) {
+            cursor_active_at=std::chrono::steady_clock::now();
             cursor_position = glm::vec2{d->x, d->y};
             dispatch<events::cursor_move>(action::none, cursor_position.x, cursor_position.y);
             return true;

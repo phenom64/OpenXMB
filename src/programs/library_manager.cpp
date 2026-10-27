@@ -29,7 +29,7 @@ import :main;
 import :text_entry;
 import :programs;
 import glm;
-import dreamrender;
+import auroreengine;
 import vulkan_hpp;
 import vma;
 import openxmb.utils;
@@ -49,14 +49,14 @@ template<typename T> T find(const std::vector<T> &values, const std::string &id)
 }
 }
 struct library_manager::Preview {
-  dreamrender::resource_loader &loader;
+  auroreengine::resource_loader &loader;
   vk::Device device;
   vma::Allocator allocator;
-  dreamrender::window *window{};
+  auroreengine::window *window{};
   std::shared_ptr<const desktop::Game> selected;
   std::string selection_key;
   std::chrono::steady_clock::time_point selected_at{};
-  std::shared_ptr<dreamrender::texture> background;
+  std::shared_ptr<auroreengine::texture> background;
   std::future<void> background_ready;
   fs::path background_path;
   desktop::PreviewAudio audio;
@@ -64,13 +64,13 @@ struct library_manager::Preview {
 #if OPENXMB_ENABLE_VIDEO_PLAYER
   openxmb::video::worker movie;
   std::optional<openxmb::video::frame> pending;
-  std::unique_ptr<dreamrender::texture> movie_texture;
+  std::unique_ptr<auroreengine::texture> movie_texture;
   std::vector<vma::UniqueAllocation> allocations;
   std::vector<vma::UniqueBuffer> buffers;
   bool movie_initialized{}, movie_current{};
   double movie_aspect{16.0 / 9.0};
 #endif
-  explicit Preview(dreamrender::resource_loader &value)
+  explicit Preview(auroreengine::resource_loader &value)
       : loader(value), device(value.getDevice()), allocator(value.getAllocator()) {}
   ~Preview() {
     stop();
@@ -103,12 +103,12 @@ struct library_manager::Preview {
       background.reset(); background_path = selected->background;
       std::error_code error;
       if (!background_path.empty() && fs::is_regular_file(background_path, error)) {
-        background = std::make_shared<dreamrender::texture>(device, allocator);
+        background = std::make_shared<auroreengine::texture>(device, allocator);
         background_ready = loader.loadTexture(background.get(), background_path);
       }
     }
   }
-  void tick(dreamrender::window *value) {
+  void tick(auroreengine::window *value) {
     window = value;
     if (!selected) return;
     if (!started && std::chrono::steady_clock::now() - selected_at >= std::chrono::milliseconds(350)) {
@@ -138,14 +138,14 @@ struct library_manager::Preview {
 #endif
     duck(audible);
   }
-  void upload(vk::CommandBuffer command, int frame, dreamrender::window *value) {
+  void upload(vk::CommandBuffer command, int frame, auroreengine::window *value) {
     window = value;
 #if OPENXMB_ENABLE_VIDEO_PLAYER
     if (!pending) return;
     const auto &image = *pending;
     if (!movie_texture || movie_texture->width != image.width || movie_texture->height != image.height || buffers.size() != window->swapchainImageCount) {
       wait_gpu(); movie_texture.reset(); buffers.clear(); allocations.clear();
-      movie_texture = std::make_unique<dreamrender::texture>(device, allocator, image.width, image.height);
+      movie_texture = std::make_unique<auroreengine::texture>(device, allocator, image.width, image.height);
       buffers.resize(window->swapchainImageCount); allocations.resize(window->swapchainImageCount);
       const vk::BufferCreateInfo info({}, image.rgba.size(), vk::BufferUsageFlagBits::eTransferSrc, vk::SharingMode::eExclusive);
       const vma::AllocationCreateInfo memory({}, vma::MemoryUsage::eCpuToGpu);
@@ -177,11 +177,11 @@ struct library_manager::Preview {
     return false;
 #endif
   }
-  void draw_background(dreamrender::gui_renderer &r) {
+  void draw_background(auroreengine::gui_renderer &r) {
     if (selected && background && background->loaded)
       r.draw_image(background->imageView.get(), 0.0f, 0.0f, static_cast<float>(r.aspect_ratio), 1.0f, {1.0f, 1.0f, 1.0f, 0.80f});
   }
-  void draw_movie(dreamrender::gui_renderer &r) {
+  void draw_movie(auroreengine::gui_renderer &r) {
 #if OPENXMB_ENABLE_VIDEO_PLAYER
     if (!has_movie()) return;
     const float width = 0.25f * static_cast<float>(r.aspect_ratio);
@@ -195,7 +195,7 @@ struct library_manager::Preview {
 };
 
 library_manager::library_manager(std::string section,
-    dreamrender::resource_loader &loader, profile_callback callback)
+    auroreengine::resource_loader &loader, profile_callback callback)
     : preview_(std::make_unique<Preview>(loader)), loader_(loader), switch_profile_(std::move(callback)) {
   if (section == "users" || section == "profiles") page_ = Page::users;
   else if (section == "custom" || section == "sections") page_ = Page::custom;
@@ -262,7 +262,7 @@ result library_manager::tick(app::shell *shell) {
     artwork_.reset(); loaded_artwork_ = target;
     std::error_code error;
     if (!target.empty() && fs::is_regular_file(target, error)) {
-      artwork_ = std::make_shared<dreamrender::texture>(loader_.getDevice(), loader_.getAllocator());
+      artwork_ = std::make_shared<auroreengine::texture>(loader_.getDevice(), loader_.getAllocator());
       artwork_ready_ = loader_.loadTexture(artwork_.get(), target);
     }
   }
@@ -300,7 +300,7 @@ std::string library_manager::heading() const {
   }
   return "Library";
 }
-void library_manager::render(dreamrender::gui_renderer &r, app::shell *shell) {
+void library_manager::render(auroreengine::gui_renderer &r, app::shell *shell) {
   preview_->draw_background(r);
   r.draw_rect({0.06f, 0.08f}, {0.88f, 0.84f}, {0.025f, 0.035f, 0.065f, 0.82f});
   preview_->draw_movie(r);

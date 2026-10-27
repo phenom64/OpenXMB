@@ -34,8 +34,9 @@ module;
 
 module openxmb.app;
 import :choice_overlay;
+import :xmb_presentation;
 
-import dreamrender;
+import auroreengine;
 import glm;
 import openxmb.utils;
 import vulkan_hpp;
@@ -112,7 +113,7 @@ bool choice_overlay::select_relative(action dir) {
     return true;
 }
 
-void choice_overlay::render(dreamrender::gui_renderer& renderer, class shell* xmb) {
+void choice_overlay::render(auroreengine::gui_renderer& renderer, class shell* xmb) {
     (void)xmb;
 
     struct gradient_stop {
@@ -152,11 +153,11 @@ void choice_overlay::render(dreamrender::gui_renderer& renderer, class shell* xm
         c0.a *= open_alpha * panel_native_alpha_scale;
         c1.a *= open_alpha * panel_native_alpha_scale;
         renderer.draw_quad(std::array{
-            dreamrender::simple_renderer::vertex_data{{x0, 0.0f}, c0, {0.0f, 0.0f}},
-            dreamrender::simple_renderer::vertex_data{{x0, 1.0f}, c0, {0.0f, 1.0f}},
-            dreamrender::simple_renderer::vertex_data{{x1, 0.0f}, c1, {1.0f, 0.0f}},
-            dreamrender::simple_renderer::vertex_data{{x1, 1.0f}, c1, {1.0f, 1.0f}},
-        }, dreamrender::simple_renderer::params{});
+            auroreengine::simple_renderer::vertex_data{{x0, 0.0f}, c0, {0.0f, 0.0f}},
+            auroreengine::simple_renderer::vertex_data{{x0, 1.0f}, c0, {0.0f, 1.0f}},
+            auroreengine::simple_renderer::vertex_data{{x1, 0.0f}, c1, {1.0f, 0.0f}},
+            auroreengine::simple_renderer::vertex_data{{x1, 1.0f}, c1, {1.0f, 1.0f}},
+        }, auroreengine::simple_renderer::params{});
     }
 
     auto now = std::chrono::system_clock::now();
@@ -186,11 +187,11 @@ void choice_overlay::render(dreamrender::gui_renderer& renderer, class shell* xm
         const float ah = 6.0F / 1080.0F;
         const auto arrow_colour = glm::vec4(1.0F, 1.0F, 1.0F, 0.78F * open_alpha);
         renderer.draw_quad(std::array{
-            dreamrender::simple_renderer::vertex_data{{ax, top_action_y - ah}, arrow_colour, {0.0F, 0.0F}},
-            dreamrender::simple_renderer::vertex_data{{ax, top_action_y + ah}, arrow_colour, {0.0F, 1.0F}},
-            dreamrender::simple_renderer::vertex_data{{ax + aw, top_action_y}, arrow_colour, {1.0F, 0.5F}},
-            dreamrender::simple_renderer::vertex_data{{ax + aw, top_action_y}, arrow_colour, {1.0F, 0.5F}},
-        }, dreamrender::simple_renderer::params{});
+            auroreengine::simple_renderer::vertex_data{{ax, top_action_y - ah}, arrow_colour, {0.0F, 0.0F}},
+            auroreengine::simple_renderer::vertex_data{{ax, top_action_y + ah}, arrow_colour, {0.0F, 1.0F}},
+            auroreengine::simple_renderer::vertex_data{{ax + aw, top_action_y}, arrow_colour, {1.0F, 0.5F}},
+            auroreengine::simple_renderer::vertex_data{{ax + aw, top_action_y}, arrow_colour, {1.0F, 0.5F}},
+        }, auroreengine::simple_renderer::params{});
     }
 
     const auto visible_capacity = static_cast<std::size_t>(std::max(
@@ -239,16 +240,11 @@ void choice_overlay::render(dreamrender::gui_renderer& renderer, class shell* xm
             continue;
         }
         const std::string& entry = choices[i];
-        if(eased_focus > 0.02) {
-            float px = 1.2f / static_cast<float>(renderer.frame_size.width);
-            float py = 1.2f / static_cast<float>(renderer.frame_size.height);
-            glm::vec4 glow(1.0f, 1.0f, 1.0f, static_cast<float>(0.12 * eased_focus));
-            glow.a *= open_alpha;
-            renderer.draw_text(entry, text_x + x_shift + px, y + py, size, glow, false, true);
-            renderer.draw_text(entry, text_x + x_shift - px, y - py, size, glow * 0.65f, false, true);
-        }
-        renderer.draw_text(entry, text_x + x_shift, y, size,
-            glm::vec4(1, 1, 1, alpha * open_alpha), false, true);
+        renderer.draw_text_pixels(entry,(text_x+x_shift)*renderer.frame_size.width,
+            y*renderer.frame_size.height+8.0F*renderer.frame_size.height/1080.0F,
+            static_cast<float>(glm::mix(24.0,28.0,eased_focus))*renderer.frame_size.height/1080.0F,
+            {1,1,1,alpha*open_alpha},0.7F,focused?xmb_canvas::pulse():0.0F);
+
     }
 
     constexpr float arrow_size = 0.035F;

@@ -37,7 +37,7 @@ module;
 export module openxmb.app:main_menu;
 
 import :menu_base;
-import dreamrender;
+import auroreengine;
 import sdl2;
 import vulkan_hpp;
 import vma;
@@ -49,8 +49,8 @@ namespace app {
 class main_menu : public action_receiver {
     public:
         main_menu(class shell* xmb);
-        void preload(vk::Device device, vma::Allocator allocator, dreamrender::resource_loader& loader);
-        void render(dreamrender::gui_renderer& renderer);
+        void preload(vk::Device device, vma::Allocator allocator, auroreengine::resource_loader& loader);
+        void render(auroreengine::gui_renderer& renderer);
         [[nodiscard]] float background_blur_px() const;
         [[nodiscard]] float background_dim_alpha() const;
 
@@ -60,8 +60,8 @@ class main_menu : public action_receiver {
 
         class shell* xmb;
 
-        void render_crossbar(dreamrender::gui_renderer& renderer, time_point now);
-        void render_submenu(dreamrender::gui_renderer& renderer, time_point now);
+        void render_crossbar(auroreengine::gui_renderer& renderer, time_point now);
+        void render_submenu(auroreengine::gui_renderer& renderer, time_point now);
 
         enum class direction {
             left,
@@ -86,8 +86,8 @@ class main_menu : public action_receiver {
             const openxmb::xmb::SettingsActionPlan& plan);
         void seed_settings_dialog_values();
         void apply_initial_settings_route();
-        void render_settings_parent_layer(dreamrender::gui_renderer& renderer);
-        void render_settings_scene(dreamrender::gui_renderer& renderer, time_point now);
+        void render_settings_parent_layer(auroreengine::gui_renderer& renderer);
+        void render_settings_scene(auroreengine::gui_renderer& renderer, time_point now);
 
         std::vector<std::unique_ptr<menu::menu>> menus;
         int selected = 0;
@@ -112,8 +112,8 @@ class main_menu : public action_receiver {
 
         struct settings_icon_texture {
             std::string semantic_id;
-            std::unique_ptr<dreamrender::texture> texture;
-            std::unique_ptr<dreamrender::texture> glass_texture;
+            std::unique_ptr<auroreengine::texture> texture;
+            std::unique_ptr<auroreengine::texture> glass_texture;
         };
 
         std::optional<openxmb::xmb::Catalog> settings_catalog;

@@ -28,7 +28,7 @@ module;
 
 module openxmb.render;
 
-import dreamrender;
+import auroreengine;
 import vulkan_hpp;
 
 namespace render::shaders {
@@ -41,10 +41,10 @@ namespace blur {
     };
     #pragma clang diagnostic pop
 
-    constexpr std::array comp_shader = dreamrender::convert<std::to_array(comp_array), uint32_t>();
+    constexpr std::array comp_shader = auroreengine::convert<std::to_array(comp_array), uint32_t>();
 
     vk::UniqueShaderModule comp(vk::Device device) {
-        return dreamrender::createShader(device, comp_shader);
+        return auroreengine::createShader(device, comp_shader);
     }
 }
 
@@ -56,10 +56,10 @@ namespace downsample {
     };
     #pragma clang diagnostic pop
 
-    constexpr std::array comp_shader = dreamrender::convert<std::to_array(comp_array), uint32_t>();
+    constexpr std::array comp_shader = auroreengine::convert<std::to_array(comp_array), uint32_t>();
 
     vk::UniqueShaderModule comp(vk::Device device) {
-        return dreamrender::createShader(device, comp_shader);
+        return auroreengine::createShader(device, comp_shader);
     }
 }
 
@@ -71,10 +71,10 @@ namespace upsample {
     };
     #pragma clang diagnostic pop
 
-    constexpr std::array comp_shader = dreamrender::convert<std::to_array(comp_array), uint32_t>();
+    constexpr std::array comp_shader = auroreengine::convert<std::to_array(comp_array), uint32_t>();
 
     vk::UniqueShaderModule comp(vk::Device device) {
-        return dreamrender::createShader(device, comp_shader);
+        return auroreengine::createShader(device, comp_shader);
     }
 }
 
@@ -89,14 +89,14 @@ namespace wave_renderer {
     };
     #pragma clang diagnostic pop
 
-    constexpr std::array vert_shader = dreamrender::convert<std::to_array(vert_array), uint32_t>();
-    constexpr std::array frag_shader = dreamrender::convert<std::to_array(frag_array), uint32_t>();
+    constexpr std::array vert_shader = auroreengine::convert<std::to_array(vert_array), uint32_t>();
+    constexpr std::array frag_shader = auroreengine::convert<std::to_array(frag_array), uint32_t>();
 
     vk::UniqueShaderModule vert(vk::Device device) {
-        return dreamrender::createShader(device, vert_shader);
+        return auroreengine::createShader(device, vert_shader);
     }
     vk::UniqueShaderModule frag(vk::Device device) {
-        return dreamrender::createShader(device, frag_shader);
+        return auroreengine::createShader(device, frag_shader);
     }
 }
 
@@ -108,10 +108,10 @@ namespace yuv420p {
     };
     #pragma clang diagnostic pop
 
-    constexpr std::array decode_comp_shader = dreamrender::convert<std::to_array(decode_comp_array), uint32_t>();
+    constexpr std::array decode_comp_shader = auroreengine::convert<std::to_array(decode_comp_array), uint32_t>();
 
     vk::UniqueShaderModule decode_comp(vk::Device device) {
-        return dreamrender::createShader(device, decode_comp_shader);
+        return auroreengine::createShader(device, decode_comp_shader);
     }
 }
 
@@ -126,11 +126,11 @@ namespace original_bg {
     };
     #pragma clang diagnostic pop
 
-    constexpr std::array vert_shader = dreamrender::convert<std::to_array(vert_array), uint32_t>();
-    constexpr std::array frag_shader = dreamrender::convert<std::to_array(frag_array), uint32_t>();
+    constexpr std::array vert_shader = auroreengine::convert<std::to_array(vert_array), uint32_t>();
+    constexpr std::array frag_shader = auroreengine::convert<std::to_array(frag_array), uint32_t>();
 
-    vk::UniqueShaderModule vert(vk::Device device) { return dreamrender::createShader(device, vert_shader); }
-    vk::UniqueShaderModule frag(vk::Device device) { return dreamrender::createShader(device, frag_shader); }
+    vk::UniqueShaderModule vert(vk::Device device) { return auroreengine::createShader(device, vert_shader); }
+    vk::UniqueShaderModule frag(vk::Device device) { return auroreengine::createShader(device, frag_shader); }
 }
 
 namespace original_particles {
@@ -144,11 +144,11 @@ namespace original_particles {
     };
     #pragma clang diagnostic pop
 
-    constexpr std::array vert_shader = dreamrender::convert<std::to_array(vert_array), uint32_t>();
-    constexpr std::array frag_shader = dreamrender::convert<std::to_array(frag_array), uint32_t>();
+    constexpr std::array vert_shader = auroreengine::convert<std::to_array(vert_array), uint32_t>();
+    constexpr std::array frag_shader = auroreengine::convert<std::to_array(frag_array), uint32_t>();
 
-    vk::UniqueShaderModule vert(vk::Device device) { return dreamrender::createShader(device, vert_shader); }
-    vk::UniqueShaderModule frag(vk::Device device) { return dreamrender::createShader(device, frag_shader); }
+    vk::UniqueShaderModule vert(vk::Device device) { return auroreengine::createShader(device, vert_shader); }
+    vk::UniqueShaderModule frag(vk::Device device) { return auroreengine::createShader(device, frag_shader); }
 }
 
 namespace procedural_wave {
@@ -159,10 +159,10 @@ namespace procedural_wave {
     #embed "shaders/procedural_wave.frag.spv"
     };
     vk::UniqueShaderModule vert(vk::Device device) {
-        return dreamrender::createShader(device, dreamrender::convert<std::to_array(vert_data), uint32_t>());
+        return auroreengine::createShader(device, auroreengine::convert<std::to_array(vert_data), uint32_t>());
     }
     vk::UniqueShaderModule frag(vk::Device device) {
-        return dreamrender::createShader(device, dreamrender::convert<std::to_array(frag_data), uint32_t>());
+        return auroreengine::createShader(device, auroreengine::convert<std::to_array(frag_data), uint32_t>());
     }
 }
 
@@ -174,10 +174,10 @@ namespace video_background {
     #embed "shaders/video_background.frag.spv"
     };
     vk::UniqueShaderModule vert(vk::Device device) {
-        return dreamrender::createShader(device, dreamrender::convert<std::to_array(vert_data), uint32_t>());
+        return auroreengine::createShader(device, auroreengine::convert<std::to_array(vert_data), uint32_t>());
     }
     vk::UniqueShaderModule frag(vk::Device device) {
-        return dreamrender::createShader(device, dreamrender::convert<std::to_array(frag_data), uint32_t>());
+        return auroreengine::createShader(device, auroreengine::convert<std::to_array(frag_data), uint32_t>());
     }
 }
 
