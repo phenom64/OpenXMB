@@ -20,6 +20,7 @@ module;
 
 #include "openxmb/xmb/catalog.hpp"
 #include "desktop_settings_catalog.hpp"
+#include "media_motion.hpp"
 #include "openxmb/xmb/background.hpp"
 #include "openxmb/desktop/library.hpp"
 #include "openxmb/themes/library.hpp"
@@ -681,10 +682,11 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
     using ::menu::make_simple;
     using ::menu::make_simple_of;
 
+    finish_media_transition();
     const bool reloading=!menus.empty();
     const auto previous_route=settings_controller?settings_controller->route().id:std::string{};
     const auto previous_selection=settings_controller?settings_controller->route().selection:0U;
-    current_submenu=nullptr;submenu_stack.clear();in_submenu=false;
+    current_submenu=nullptr;submenu_stack.clear();in_submenu=false;media_depth_from=media_depth_to=0;
     settings_controller.reset();settings_catalog.reset();
     settings_previous_route.reset();
     settings_render_values.clear();settings_render_icons.clear();
@@ -915,29 +917,25 @@ bool main_menu::activate_current(action action) {
     if(settings_category_active()) {
         return activate_settings(action);
     }
+    finish_media_transition();
     auto& menu = *menus[selected];
     auto res = current_submenu ? current_submenu->activate(action) : menu.activate(action);
     if(res == result::submenu) {
         auto& entry = current_submenu ? current_submenu->get_submenu(current_submenu->get_selected_submenu())
             : menu.get_submenu(menu.get_selected_submenu());
         if(auto submenu = dynamic_cast<menu::menu*>(&entry)) {
-            {
-                if(current_submenu) {
-                    submenu_stack.push_back(current_submenu);
-                }
-
-                current_submenu = submenu;
-                last_submenu_transition=std::chrono::steady_clock::now();
-                current_submenu->on_open();
-                last_selected_submenu_item = current_submenu->get_selected_submenu();
-                last_selected_submenu_item_transition = std::chrono::steady_clock::now();
-
-                if(!in_submenu) {
-                    in_submenu = true;
-                    last_submenu_transition = std::chrono::steady_clock::now();
-                }
-                return true;
+            const auto now=std::chrono::steady_clock::now();
+            media_depth_from=in_submenu?static_cast<unsigned>(submenu_stack.size()+1):0;
+            media_depth_to=media_depth_from+1;media_returning=false;
+            if(current_submenu) {
+                outgoing_media=capture_media_scene(*current_submenu,now,false);
+                submenu_stack.push_back(current_submenu);
             }
+            current_submenu=submenu;in_submenu=true;last_submenu_transition=now;
+            current_submenu->on_open();
+            last_selected_submenu_item=current_submenu->get_selected_submenu();
+            last_selected_submenu_item_transition=now;
+            return true;
         }
         return false;
     }
@@ -948,18 +946,15 @@ bool main_menu::back() {
         return true;
     }
     if(in_submenu) {
-        current_submenu->on_close();
-        if(submenu_stack.empty()) {
-            current_submenu = nullptr;
-            in_submenu = false;
-            last_submenu_transition = std::chrono::steady_clock::now();
-        } else {
-            current_submenu = submenu_stack.back();
-            submenu_stack.pop_back();
-            last_selected_submenu_item=current_submenu->get_selected_submenu();
-            last_selected_submenu_item_transition=std::chrono::steady_clock::now();
-            last_submenu_transition=std::chrono::steady_clock::now();
-        }
+        finish_media_transition();
+        const auto now=std::chrono::steady_clock::now();
+        outgoing_media=capture_media_scene(*current_submenu,now,false);
+        close_after_transition=current_submenu;
+        media_depth_from=static_cast<unsigned>(submenu_stack.size()+1);
+        media_depth_to=media_depth_from-1;media_returning=true;
+        if(submenu_stack.empty()) {current_submenu=nullptr;in_submenu=false;}
+        else {current_submenu=submenu_stack.back();submenu_stack.pop_back();last_selected_submenu_item=current_submenu->get_selected_submenu();}
+        last_submenu_transition=now;last_selected_submenu_item_transition=now;
         return true;
     }
     return false;
@@ -1489,6 +1484,7 @@ void main_menu::select(int index) {
     if(index == selected) {
         return;
     }
+    finish_media_transition();
     if(index < 0 || index >= menus.size()) {
         return;
     }
@@ -1548,10 +1544,8 @@ void main_menu::render(auroreengine::gui_renderer& renderer) {
     std::vector<std::pair<action, std::string>> buttons{};
     buttons.reserve(5);
     menus[selected]->get_button_actions(buttons);
-    if(in_submenu_now && current_submenu) {
-        render_submenu(renderer, now);
-        current_submenu->get_button_actions(buttons);
-    }
+    if((in_submenu_now&&current_submenu)||outgoing_media)render_submenu(renderer,now);
+    if(in_submenu_now&&current_submenu)current_submenu->get_button_actions(buttons);
     if(in_submenu_now) {
         xmb->render_controller_buttons(renderer, 0.5f, 0.9f, buttons);
     }
@@ -1629,10 +1623,9 @@ void main_menu::render_crossbar(auroreengine::gui_renderer& renderer, time_point
 
     const auto submenu_linear = progress(
         now, last_submenu_transition, transition_submenu_activate_duration);
-    const auto submenu_eased = ease_out_cubic(submenu_linear);
     const auto submenu_transition = last_submenu_transition.time_since_epoch().count() == 0
         ? (in_submenu ? 1.0 : 0.0)
-        : (in_submenu ? submenu_eased : 1.0 - submenu_eased);
+        : media_motion::category(media_depth_from,media_depth_to,config::CONFIG.enabled("power.reduced.motion",false)?1.0:submenu_linear);
     auto chrome_transition = std::max(
         submenu_transition, settings_chrome_collapsed() ? 1.0 : 0.0);
     if(settings_category_active()&&settings_previous_route) {
@@ -1741,52 +1734,79 @@ void main_menu::render_crossbar(auroreengine::gui_renderer& renderer, time_point
     }
 }
 
-void main_menu::render_submenu(auroreengine::gui_renderer& renderer,time_point now) {
-    if(!current_submenu||!in_submenu)return;
-    const auto* parent=submenu_stack.empty()?menus[selected].get():submenu_stack.back();
-    const auto* child=current_submenu;
-    const auto count=child->get_submenus_count();
-    const auto selected_item=count?std::min<std::size_t>(child->get_selected_submenu(),count-1):0;
-    auto previous=count?std::min<std::size_t>(last_selected_submenu_item,count-1):0;
+void main_menu::finish_media_transition() {
+    outgoing_media.reset();
+    if(auto* closing=std::exchange(close_after_transition,nullptr)) {
+        xmb->get_window()->waitIdle();closing->on_close();
+    }
+}
+void main_menu::show_settings() {
+    finish_media_transition();
+    while(in_submenu){back();finish_media_transition();}
+    select(1);
+}
+std::unique_ptr<main_menu::media_scene_state> main_menu::capture_media_scene(menu::menu& child,time_point now,bool animate_focus) {
+    auto state=std::make_unique<media_scene_state>();
+    auto& presentation=state->catalog;
+    const auto count=child.get_submenus_count();
+    const auto selected_item=count?std::min<std::size_t>(child.get_selected_submenu(),count-1):0;
+    auto previous=count&&animate_focus?std::min<std::size_t>(last_selected_submenu_item,count-1):selected_item;
     if(std::abs(static_cast<long long>(previous)-static_cast<long long>(selected_item))>10)previous=selected_item;
     const auto first=std::min(selected_item,previous)>4?std::min(selected_item,previous)-4:0;
     const auto last=count?std::min<std::size_t>(count-1,std::max(selected_item,previous)+12):0;
-    openxmb::xmb::Catalog presentation;
     openxmb::xmb::CatalogNode root;root.id="category.settings.media";root.kind=openxmb::xmb::NodeKind::menu;
-    std::vector<openxmb::xmb::SettingsSceneIcon> icons;
-    // Live entries are projected into the same scene sampler and renderer used
-    // by Settings, preserving its geometry, focus animation and text treatment.
     if(count)for(std::size_t i=first;i<=last;++i) {
-        auto& entry=child->get_submenu(static_cast<unsigned>(i));
+        auto& entry=child.get_submenu(static_cast<unsigned>(i));
         openxmb::xmb::CatalogNode node;node.id="category.settings.media."+std::to_string(i);
         node.label_key=node.id+".label";node.description_key=node.id+".description";node.icon_ref=node.id+".icon";
         node.kind=dynamic_cast<const menu::menu*>(&entry)?openxmb::xmb::NodeKind::menu:openxmb::xmb::NodeKind::media;
         presentation.strings[node.label_key]=entry.get_name();presentation.strings[node.description_key]=entry.get_description();
         root.children.push_back(node.id);const auto id=node.id;presentation.nodes.emplace(id,std::move(node));
-        const auto& stored=presentation.nodes.at(id);icons.push_back({stored.icon_ref,&entry.get_icon(),entry.get_glass_icon()});
+        const auto& stored=presentation.nodes.at(id);state->icons.push_back({stored.icon_ref,&entry.get_icon(),entry.get_glass_icon()});
     }
     presentation.nodes.emplace("category.settings.media",std::move(root));
     const openxmb::xmb::NavigationRoute route{openxmb::xmb::NavigationLayer::nested_menu,"category.settings.media",selected_item-first};
-    const auto input=openxmb::xmb::make_settings_scene_input(route,previous-first,seconds_from_time_point(last_selected_submenu_item_transition),
-        openxmb::xmb::SettingsScenePresence::entering,seconds_from_time_point(last_submenu_transition));
-    const auto sampled=openxmb::xmb::sample_settings_scene(presentation,input,seconds_from_time_point(now));
-    const auto layout=make_contained_layout(renderer);
+    const auto input=openxmb::xmb::make_settings_scene_input(route,previous-first,seconds_from_time_point(last_selected_submenu_item_transition),openxmb::xmb::SettingsScenePresence::visible);
+    if(const auto sampled=openxmb::xmb::sample_settings_scene(presentation,input,seconds_from_time_point(now));sampled)state->snapshot=sampled.snapshot;
+    else state->empty=!count;
+    const auto* parent=submenu_stack.empty()?menus[selected].get():submenu_stack.back();
     for(unsigned i=0;i<parent->get_submenus_count();++i) {
         const auto delta=static_cast<int>(i)-static_cast<int>(parent->get_selected_submenu());
         const auto y=openxmb::xmb::SettingsSceneMetrics::focus_y+delta*settings_parent_spacing;
         if(y<-40||y>1120)continue;
         const auto& entry=parent->get_submenu(i);const auto alpha=delta==0?0.92:std::max(0.12,0.42-(std::abs(delta)-1)*0.05);
-        draw_icon(renderer,entry.get_icon(),entry.get_glass_icon(),layout,delta==0?settings_parent_col_x:settings_sibling_col_x,y,
-            openxmb::xmb::SettingsSceneMetrics::icon_extent,alpha);
+        state->parents.push_back({&entry.get_icon(),entry.get_glass_icon(),delta==0?settings_parent_col_x:settings_sibling_col_x,y,alpha});
     }
+    return state;
+}
+void main_menu::draw_media_scene(auroreengine::gui_renderer& renderer,const media_scene_state& state,double shift,double alpha,double parent_shift) {
+    const auto layout=make_contained_layout(renderer);
+    for(const auto& entry:state.parents)draw_icon(renderer,*entry.icon,entry.glass,layout,entry.x+parent_shift,entry.y,openxmb::xmb::SettingsSceneMetrics::icon_extent,entry.alpha*alpha);
+    auto snapshot=state.snapshot;
+    for(std::size_t i=0;i<snapshot.row_count;++i) {
+        auto& row=snapshot.rows[i];row.icon_center_x+=shift;row.label_x+=shift;row.description_x+=shift;
+        row.alpha*=alpha;row.value_alpha*=alpha;row.description_alpha*=alpha;
+    }
+    settings_scene_renderer.render(renderer,snapshot,state.icons,{.glass_icons=config::CONFIG.iconGlassRefraction});
+    if(state.empty)xmb_canvas(renderer).text("This folder is empty.",683+static_cast<float>(shift),515,34,{1,1,1,static_cast<float>(alpha)});
+}
+void main_menu::render_submenu(auroreengine::gui_renderer& renderer,time_point now) {
+    const auto raw=config::CONFIG.enabled("power.reduced.motion",false)?1.0:progress(now,last_submenu_transition,transition_submenu_activate_duration);
+    const auto layers=media_motion::layers(media_returning,raw);
+    if(outgoing_media&&raw<1)draw_media_scene(renderer,*outgoing_media,layers.outgoing_x,layers.outgoing_alpha,layers.outgoing_x);
+    else finish_media_transition();
+    if(in_submenu&&current_submenu) {
+        auto incoming=capture_media_scene(*current_submenu,now,true);
+        draw_media_scene(renderer,*incoming,layers.incoming_x,layers.incoming_alpha,0);
+        if(progress(now,last_selected_submenu_item_transition,transition_submenu_item_duration)>=1)last_selected_submenu_item=current_submenu->get_selected_submenu();
+    }
+    const auto layout=make_contained_layout(renderer);
+    const auto alpha=static_cast<float>(in_submenu?1.0:layers.outgoing_alpha);
     const std::array<auroreengine::simple_renderer::vertex_data,3> chevron{{
-        {{layout.x(430),layout.y(515)},{0.81F,0.81F,0.82F,0.95F},{0,0.5F}},
-        {{layout.x(462),layout.y(500)},{0.81F,0.81F,0.82F,0.95F},{1,0}},
-        {{layout.x(462),layout.y(530)},{0.47F,0.47F,0.49F,0.95F},{1,1}}}};
+        {{layout.x(430),layout.y(515)},{0.81F,0.81F,0.82F,alpha},{0,0.5F}},
+        {{layout.x(462),layout.y(500)},{0.81F,0.81F,0.82F,alpha},{1,0}},
+        {{layout.x(462),layout.y(530)},{0.47F,0.47F,0.49F,alpha},{1,1}}}};
     renderer.draw_generic(chevron);
-    if(sampled)settings_scene_renderer.render(renderer,sampled.snapshot,icons,{.glass_icons=config::CONFIG.iconGlassRefraction});
-    else if(!count)xmb_canvas(renderer).text("This folder is empty.",683,515,34);
-    if(progress(now,last_selected_submenu_item_transition,transition_submenu_item_duration)>=1)last_selected_submenu_item=static_cast<int>(selected_item);
 }
 
 }

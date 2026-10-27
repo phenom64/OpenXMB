@@ -20,6 +20,7 @@ module;
 
 #include "openxmb/xmb/catalog.hpp"
 #include "openxmb/xmb/settings_actions.hpp"
+#include "openxmb/xmb/settings_scene.hpp"
 #include "openxmb/xmb/settings_controller.hpp"
 
 #include <chrono>
@@ -50,7 +51,7 @@ class main_menu : public action_receiver {
         [[nodiscard]] float background_dim_alpha() const;
 
         result on_action(action action) override;
-        void show_settings() { if(in_submenu) { current_submenu=nullptr;submenu_stack.clear();in_submenu=false; } select(1); }
+        void show_settings();
     private:
         using time_point = std::chrono::time_point<std::chrono::steady_clock>;
 
@@ -58,6 +59,21 @@ class main_menu : public action_receiver {
 
         void render_crossbar(auroreengine::gui_renderer& renderer, time_point now);
         void render_submenu(auroreengine::gui_renderer& renderer, time_point now);
+        struct parent_icon {const auroreengine::texture* icon;const auroreengine::texture* glass;double x,y,alpha;};
+        struct media_scene_state {
+            openxmb::xmb::Catalog catalog;
+            openxmb::xmb::SettingsSceneSnapshot snapshot;
+            std::vector<openxmb::xmb::SettingsSceneIcon> icons;
+            std::vector<parent_icon> parents;
+            bool empty=false;
+        };
+        std::unique_ptr<media_scene_state> capture_media_scene(menu::menu& child,time_point now,bool focus_animation);
+        void draw_media_scene(auroreengine::gui_renderer&,const media_scene_state&,double x,double alpha,double parent_x);
+        void finish_media_transition();
+        std::unique_ptr<media_scene_state> outgoing_media;
+        menu::menu* close_after_transition=nullptr;
+        unsigned media_depth_from=0,media_depth_to=0;
+        bool media_returning=false;
 
         enum class direction {
             left,

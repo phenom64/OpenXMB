@@ -41,6 +41,7 @@ module;
 #include <nlohmann/json.hpp>
 #include "openxmb/music/player.hpp"
 #include "openxmb/music/library.hpp"
+#include "../programs/music_reentry.hpp"
 
 module openxmb.app;
 
@@ -488,7 +489,10 @@ namespace menu {
                     if(value==action::options) return music_actions(std::filesystem::path(info.name));
                     if(value!=action::ok) return result::unsupported;
                     const auto it=std::find_if(group_tracks.begin(),group_tracks.end(),[&](const auto& item){return item.path==std::filesystem::path(info.name);});
-                    if(openxmb::music::service().set_queue(group_tracks,static_cast<std::size_t>(it-group_tracks.begin())))
+                    auto& player=openxmb::music::service();
+                    if(openxmb::music::reentry::open(player,std::filesystem::path(info.name),config::CONFIG.preferences,[&] {
+                        return player.set_queue(group_tracks,static_cast<std::size_t>(it-group_tracks.begin()));
+                    }))
                         xmb->emplace_overlay<programs::music_player>(std::filesystem::path(info.name),loader);
                     else xmb->emplace_overlay<app::message_overlay>("Cannot Play Music",openxmb::music::service().snapshot().error);
                     return result::success;
@@ -515,7 +519,9 @@ namespace menu {
                 auto& player=openxmb::music::service();
                 if(index==0) {
                     const auto selected=tracks.front().path;
-                    if(!player.set_queue(std::move(tracks))) throw std::runtime_error(player.snapshot().error);
+                    if(!openxmb::music::reentry::start_new(player,config::CONFIG.preferences,[&] {
+                        return player.set_queue(std::move(tracks));
+                    })) throw std::runtime_error(player.snapshot().error);
                     xmb->emplace_overlay<programs::music_player>(selected,loader);
                 } else if(index==1 || index==2) {
                     if(!player.enqueue(std::move(tracks),index==1)) throw std::runtime_error(player.snapshot().error);
@@ -758,7 +764,10 @@ namespace menu {
                 tracks.push_back({item.path,item.info.display_name});
             }
             if(tracks.empty()) tracks.push_back({file_path,info.display_name});
-            if(openxmb::music::service().set_queue(std::move(tracks),selected))
+            auto& player=openxmb::music::service();
+            if(openxmb::music::reentry::open(player,file_path,config::CONFIG.preferences,[&] {
+                return player.set_queue(std::move(tracks),selected);
+            }))
                 xmb->emplace_overlay<programs::music_player>(file_path,loader);
             else xmb->emplace_overlay<app::message_overlay>("Cannot Play Music",openxmb::music::service().snapshot().error);
             return result::success;

@@ -9,6 +9,7 @@ layout(push_constant) uniform Push {
     vec4 particle_tint;
     vec4 mode_motion;
     vec4 effect;
+    vec4 audio;
 } pc;
 layout(location=0) in vec3 position;
 layout(location=1) in vec2 edge_sprite;
@@ -20,7 +21,7 @@ float flowHash(vec2 p) {return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float flowNoise(vec2 p) {vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(flowHash(i),flowHash(i+vec2(1,0)),f.x),mix(flowHash(i+vec2(0,1)),flowHash(i+vec2(1,1)),f.x),f.y);}
 float flowFbm(vec2 p) {float value=0.0,gain=0.5;for(int i=0;i<4;++i){value+=gain*flowNoise(p);p=mat2(1.6,1.2,-1.2,1.6)*p;gain*=0.5;}return value;}
 vec4 flowWeights(float seconds) {float t=mod(seconds,128.0);return vec4(flowWindow(t,15.0,65.0,12.0),flowWindow(t,59.0,91.0,10.0),flowWindow(t,79.0,109.0,10.0),flowWindow(t,101.0,117.0,6.0));}
-float flowHeight(vec2 world,float seconds) {
+float flowBaseHeight(vec2 world,float seconds) {
     vec4 w=flowWeights(seconds);
     float bend=world.x*0.85+sin(world.y*0.28-seconds*0.11)*0.9+sin(world.x*0.21+world.y*0.19)*0.45;
     float ridge=sin(bend*11.0-world.y*0.41)*0.072+sin(bend*22.0-world.y*0.72)*0.013;
@@ -29,7 +30,12 @@ float flowHeight(vec2 world,float seconds) {
     float ocean=sin(world.y*0.6+seconds*0.22)*0.09+sin(world.x*0.65+world.y*0.35)*0.055;
     float mountains=pow(flowFbm(world*0.17),1.6)*2.2-0.3;
     float h=mix(ridge,hills,w.x);h=mix(h,ocean,w.y);h=mix(h,mountains,w.z);h=mix(h,ocean*0.25,w.w);
-    return h*(1.0+pc.effect.y*0.16);
+    const float depth=max(0.0,world.y-seconds*0.22-3.0);
+    h+=(1.0-max(w.x,w.z))*sin(world.x*0.28+world.y*0.12-seconds*0.11)*depth*0.045;
+    return h;
+}
+float flowHeight(vec2 world,float seconds) {
+    return flowBaseHeight(world,seconds)*(1.0+pc.audio.x*0.28+pc.audio.w*0.18)+sin(world.x*2.8+world.y*1.1-seconds*0.8)*pc.audio.y*0.025;
 }
 vec3 flowSky(float seconds,float screenY) {
     float t=mod(seconds,128.0);vec4 w=flowWeights(seconds);
@@ -61,12 +67,14 @@ void main() {
         float detail=flowFbm(vec2(position.x,edge_sprite.y)*6.0);
         float lit=max(dot(n,normalize(vec3(-0.3,0.9,-0.25))),0.0);
         float terrain=max(w.x,w.z);
+        float strands=edge_sprite.x*48.0+edge_sprite.y*0.12+flowNoise(vec2(position.x,edge_sprite.y)*0.25)*4.0;
+        float filament=pow(0.5+0.5*sin(strands),10.0)/(1.0+fwidth(strands)*2.0);
         vec3 rgb=tint*(0.04+broad*0.22+crest*1.25);
-        vec3 land=tint*(0.2+lit*0.7)*(0.7+detail*0.5)+vec3(0.33)*pow(lit,12.0);
+        vec3 land=tint*(0.16+lit*0.72)*(0.7+detail*0.5)+vec3(0.45)*pow(lit,12.0)+mix(tint,vec3(0.8),0.55)*filament*(0.10+0.25*lit);
         rgb=mix(rgb,land,terrain);rgb=mix(rgb,tint*(0.05+lit*0.4)+vec3(0.12,0.35,0.9)*crest,w.y);
-        float fog=1.0-exp(-position.z*mix(0.055,0.11,w.w));
+        float fog=1.0-exp(-position.z*mix(0.085,0.14,w.w));
         rgb=mix(rgb,flowSky(seconds,0.54),clamp(fog+w.w*0.65,0.0,1.0));
-        color=vec4(rgb*(1.0+pc.effect.y*0.12),1);return;
+        color=vec4(rgb*(1.0+pc.effect.y*0.25+pc.audio.w*0.40),1);return;
     }
     if (pc.mode_motion.x>0.5) {
         float distanceSquared=dot(edge_sprite,edge_sprite);
@@ -89,8 +97,8 @@ void main() {
     float distance=position.x-center;
     float halo=exp(-distance*distance/0.22)*pc.effect.x;
     float core=exp(-distance*distance/0.016)*pc.effect.x;
-    vec3 tint=mix(pc.tint.rgb,vec3(1.0,0.88,1.0),clamp(halo*0.7+core*0.6,0.0,1.0));
-    a=clamp(a*(1.0+halo*0.6+core*0.7)*(1.0+pc.effect.y*0.12),0.0,0.9);
+    vec3 tint=mix(pc.tint.rgb,vec3(1.0,0.88,1.0),clamp(halo*0.7+core*0.6+pc.audio.w*0.2,0.0,1.0));
+    a=clamp(a*(1.0+halo*0.6+core*0.7)*(1.0+pc.effect.y*0.25+pc.audio.w*0.45),0.0,0.9);
     if(pc.effect.w>0.5) a*=halo*0.22;
     color=vec4(tint*(1.0+core*0.5),a);
 }

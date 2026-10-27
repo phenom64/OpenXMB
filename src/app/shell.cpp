@@ -53,6 +53,7 @@ module;
 #include "openxmb/xmb/background.hpp"
 #include "openxmb/music/player.hpp"
 #include "input_bindings.hpp"
+#include "components/media_motion.hpp"
 #include "openxmb/integrations/desktop.hpp"
 #include "openxmb/themes/library.hpp"
 #include <map>
@@ -771,9 +772,9 @@ namespace app
             procedural_wave_render->flow_mode=flow_scene;
             procedural_wave_render->visualizer_time=flow_scene?static_cast<float>(config::CONFIG.enabled("power.reduced.motion",false)?36.0:fixed_wave_seconds_from_environment().value_or(-1.0)):-1.0F;
             procedural_wave_render->music_vertical=reactive_scene?-0.02F:0.26F;
-            float energy=0;for(const auto band:openxmb::music::service().snapshot().spectrum)energy+=band;
-            energy/=static_cast<float>(openxmb::music::service().snapshot().spectrum.size());
-            procedural_wave_render->audio_energy+=(reactive_scene?energy-procedural_wave_render->audio_energy:-procedural_wave_render->audio_energy)*0.08F;
+            const auto& music_snapshot=openxmb::music::service().snapshot();
+            const bool reactive_audio=reactive_scene&&music_snapshot.status==openxmb::music::Status::playing&&!config::CONFIG.enabled("power.reduced.motion",false);
+            procedural_wave_render->set_music_signal(music_snapshot.spectrum,reactive_audio,music_snapshot.generation);
             procedural_wave_render->set_music_mode(music_scene);
             const float music_mix=procedural_wave_render->music_mix();background_gradient.music_mix=music_mix;
             if(flow_scene) {background_gradient.top_rgb={0,0,0};background_gradient.bottom_rgb={0,0,0};background_gradient.music_mix=0;}
@@ -880,8 +881,9 @@ namespace app
         double blur_background_progress = utils::progress(now, last_blur_background_change, blur_background_transition_duration);
         const auto startup_blur_radius = std::max(0.0f, startup_background_blur_px);
         const bool use_startup_blur_background = startup_blur_radius > 0.05f;
-        const auto menu_blur_radius = background_only ? 0.0F : menu.background_blur_px();
-        const auto menu_dim_alpha = background_only ? 0.0F : menu.background_dim_alpha();
+        const bool opaque_scene=std::any_of(overlays.begin(),overlays.end(),[](const auto& overlay){return overlay->is_opaque();});
+        const auto menu_blur_radius = background_only ? 0.0F : media_motion::backdrop(menu.background_blur_px(),opaque_scene);
+        const auto menu_dim_alpha = background_only ? 0.0F : media_motion::backdrop(menu.background_dim_alpha(),opaque_scene);
         const bool use_menu_blur_background = menu_blur_radius > 0.05F;
         const bool use_blur_background = blur_background || blur_background_progress < 1.0 ||
             use_startup_blur_background || use_menu_blur_background;
@@ -1828,6 +1830,10 @@ namespace app
             button_labels[i].clear();buttonTextures[i].reset();if(family=="none")continue;
             const bool keyboard=family=="keyboard";const auto index=input_bindings::glyph_index(config::CONFIG.preferences,!keyboard,i-1);
             const auto code=input_bindings::read(config::CONFIG.preferences,!keyboard,i-1);
+            if(family=="xbox") {
+                const auto artwork=input_bindings::xbox_artwork(code);
+                if(!artwork.empty()) {buttonTextures[i]=std::make_unique<texture>(device,allocator);loader->loadTexture(buttonTextures[i].get(),config::CONFIG.asset_directory/"icons/controller"/(std::string(artwork)+".png"));continue;}
+            }
             if(index<0||family=="default") {
                 if(keyboard)button_labels[i]=SDL_GetScancodeName(static_cast<SDL_Scancode>(code));
                 else {switch(code){case 0:button_labels[i]="South";break;case 1:button_labels[i]="East";break;case 2:button_labels[i]="West";break;case 3:button_labels[i]="North";break;case 4:button_labels[i]=family=="playstation"?"Select":"View";break;case 6:button_labels[i]=family=="playstation"?"Start":"Menu";break;case 9:button_labels[i]=family=="playstation"?"L1":"LB";break;case 10:button_labels[i]=family=="playstation"?"R1":"RB";break;default:button_labels[i]="Button "+std::to_string(code);}}

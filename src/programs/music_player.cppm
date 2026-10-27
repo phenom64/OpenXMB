@@ -2,6 +2,7 @@ module;
 
 #include "openxmb/music/player.hpp"
 #include "openxmb/music/library.hpp"
+#include "music_reentry.hpp"
 #include "../app/input_bindings.hpp"
 #include <SDL2/SDL_keyboard.h>
 #include <SDL2/SDL_gamecontroller.h>
@@ -166,17 +167,12 @@ public:
       : loader_(loader) {
     for(const auto* name:{"volume","visual","addplaylist","delete","display","prev","next","frev","ffwd","play","pause","stop","repeat","shuffle"}) icons_.load(loader_,std::string("system/mp_")+name);
     for(const auto* hint:{"start","select","l1","r1","l2","r2","square"})icons_.load(loader_,std::string("system/btn_mp_")+hint);
+    for(const auto* hint:{"start","back","lb","rb","lt","rt"})icons_.load(loader_,std::string("controller/xbox_")+hint);
     icons_.load(loader_,"theme/icon_music_default");
     for(const auto* name:{"flac","wav","mp3","aac","opus","vorbis","pcm","wma","alac","atrac"}) icons_.load(loader_,std::string("vp/fmt/")+name);
     auto &player = music::service();
-    player.set_shuffle(config::CONFIG.preference("music.shuffle","Off")=="On");
-    const auto repeat=config::CONFIG.preference("music.repeat","Off");
-    player.set_repeat(repeat=="One"?music::Repeat::one:repeat=="All"?music::Repeat::all:music::Repeat::off);
     player.set_background_enabled(config::CONFIG.enabled("music.background"));
-    const auto *current = player.queue().current();
-    std::error_code error;
-    if (!current || !std::filesystem::equivalent(current->path, path, error))
-      player.open(path);
+    music::reentry::open(player,path,config::CONFIG.preferences,[&] {return player.open(path);});
     queue_row_ = player.queue().current_index().value_or(0);
   }
   ~music_player() override {
@@ -411,7 +407,7 @@ private:
       }
     }
     const auto family=xmb_?xmb_->get_controller_type():std::string{"keyboard"};
-    const bool keyboard=family=="keyboard",playstation=family=="playstation";
+    const bool keyboard=family=="keyboard",playstation=family=="playstation",xbox=family=="xbox";
     std::string hint_asset,hint_text;const auroreengine::texture* direct{};
     const auto use_action=[&](action value){if(xmb_){direct=xmb_->get_button_icon(value);hint_text=xmb_->get_button_label(value);}};
     const auto shortcut_available=[&](int code,bool pad){for(std::size_t i=0;i<app::input_bindings::actions.size();++i)if(app::input_bindings::read(config::CONFIG.preferences,pad,i)==code&&i!=4)return false;return true;};
@@ -424,11 +420,13 @@ private:
         const int code=selected==4?4:selected==5?9:selected==6?10:6;
         if(!shortcut_available(code,true))use_action(action::ok);
         else if(playstation)hint_asset=std::string("system/btn_mp_")+(selected==4?"select":selected==5?"l1":selected==6?"r1":"start");
+        else if(xbox)hint_asset=std::string("controller/xbox_")+(selected==4?"back":selected==5?"lb":selected==6?"rb":"start");
         else hint_text=selected==4?"View":selected==5?"LB":selected==6?"RB":"Menu";
       }
     } else if(selected==7||selected==8) {
       if(keyboard)use_action(action::ok);
       else if(playstation)hint_asset=selected==7?"system/btn_mp_l2":"system/btn_mp_r2";
+      else if(xbox)hint_asset=selected==7?"controller/xbox_lt":"controller/xbox_rt";
       else hint_text=selected==7?"LT":"RT";
     }
     constexpr float size=25,height=29.16F,gap=9.6F,center=616;

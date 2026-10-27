@@ -10,6 +10,7 @@ layout(push_constant) uniform Push {
     vec4 particle_tint;
     vec4 mode_motion;
     vec4 effect;
+    vec4 audio;
 } pc;
 
 layout(location=0) out vec3 position;
@@ -47,6 +48,7 @@ vec3 wavePosition(vec2 a) {
     p.y-=s2.w*tanh((base+perturbation)*s2.z/s2.w);
     p.z-=displacement(vec2(fract(uv.x-time*s0.x*0.04*s1.w),uv.y))*s5.w;
     p.y=p.y*s6.z+s6.x+p.x*s6.y;
+    p.y+=(pc.audio.x*0.012+pc.audio.w*0.028)*sin(p.x*3.0+time*0.8);
     return p;
 }
 // Integer hashing keeps the cloud identical across runs and GPU vendors.
@@ -60,7 +62,7 @@ float flowHash(vec2 p) {return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float flowNoise(vec2 p) {vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(flowHash(i),flowHash(i+vec2(1,0)),f.x),mix(flowHash(i+vec2(0,1)),flowHash(i+vec2(1,1)),f.x),f.y);}
 float flowFbm(vec2 p) {float value=0.0,gain=0.5;for(int i=0;i<4;++i){value+=gain*flowNoise(p);p=mat2(1.6,1.2,-1.2,1.6)*p;gain*=0.5;}return value;}
 vec4 flowWeights(float seconds) {float t=mod(seconds,128.0);return vec4(flowWindow(t,15.0,65.0,12.0),flowWindow(t,59.0,91.0,10.0),flowWindow(t,79.0,109.0,10.0),flowWindow(t,101.0,117.0,6.0));}
-float flowHeight(vec2 world,float seconds) {
+float flowBaseHeight(vec2 world,float seconds) {
     vec4 w=flowWeights(seconds);
     float bend=world.x*0.85+sin(world.y*0.28-seconds*0.11)*0.9+sin(world.x*0.21+world.y*0.19)*0.45;
     float ridge=sin(bend*11.0-world.y*0.41)*0.072+sin(bend*22.0-world.y*0.72)*0.013;
@@ -69,7 +71,12 @@ float flowHeight(vec2 world,float seconds) {
     float ocean=sin(world.y*0.6+seconds*0.22)*0.09+sin(world.x*0.65+world.y*0.35)*0.055;
     float mountains=pow(flowFbm(world*0.17),1.6)*2.2-0.3;
     float h=mix(ridge,hills,w.x);h=mix(h,ocean,w.y);h=mix(h,mountains,w.z);h=mix(h,ocean*0.25,w.w);
-    return h*(1.0+pc.effect.y*0.16);
+    const float depth=max(0.0,world.y-seconds*0.22-3.0);
+    h+=(1.0-max(w.x,w.z))*sin(world.x*0.28+world.y*0.12-seconds*0.11)*depth*0.045;
+    return h;
+}
+float flowHeight(vec2 world,float seconds) {
+    return flowBaseHeight(world,seconds)*(1.0+pc.audio.x*0.28+pc.audio.w*0.18)+sin(world.x*2.8+world.y*1.1-seconds*0.8)*pc.audio.y*0.025;
 }
 vec3 flowSky(float seconds,float screenY) {
     float t=mod(seconds,128.0);vec4 w=flowWeights(seconds);
@@ -91,16 +98,20 @@ void main() {
         float seconds=pc.resolution_time_gain.z-100.0;
         vec4 w=flowWeights(seconds);float phase=mod(seconds,128.0);
         vec2 uv=vec2(float(gl_VertexIndex%512),float(gl_VertexIndex/512))/511.0;
-        float z=exp(mix(log(0.55),log(42.0),uv.y));
+        float z=exp(mix(log(0.045),log(42.0),uv.y));
         float x=(uv.x*2.0-1.0)*z*1.5;
         vec2 world=vec2(x+0.4*sin(seconds*0.035),z+seconds*0.22);
         float bend=world.x*0.85+sin(world.y*0.28-seconds*0.11)*0.9+sin(world.x*0.21+world.y*0.19)*0.45;
         float h=flowHeight(world,seconds);
-        float camera=mix(0.42,0.66,max(w.x,w.z));
+        float camera=0.5+flowBaseHeight(vec2(0.4*sin(seconds*0.035),seconds*0.22),seconds);
         float horizon=0.02+0.035*sin(seconds*0.025);
         position=vec3(world.x,h,z);edge_sprite=vec2(bend,world.y);
         float aspect=pc.resolution_time_gain.x/pc.resolution_time_gain.y;
-        gl_Position=vec4(x/(z*0.8*aspect),horizon+(camera-h)/(z*0.65),0,1);return;
+        // Keep homogeneous W for perspective-correct surface interpolation,
+        // and real depth so distant ridges cannot paint over the foreground.
+        const float nearPlane=0.04,farPlane=60.0;
+        gl_Position=vec4(x/(0.8*aspect),horizon*z+(camera-h)/0.65+x*0.025*sin(seconds*0.045),
+            farPlane/(farPlane-nearPlane)*z-farPlane*nearPlane/(farPlane-nearPlane),z);return;
     }
     if (pc.mode_motion.x<0.5) {
         vec2 a=vec2(float(gl_VertexIndex%100),float(gl_VertexIndex/100))/99.0*2.0-1.0;
