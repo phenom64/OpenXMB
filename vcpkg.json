@@ -24,7 +24,8 @@
         "ffmpeg",
         "ffprobe",
         "mp3lame",
-        "vorbis"
+        "vorbis",
+        "zlib"
       ]
     },
     "freetype",

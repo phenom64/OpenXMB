@@ -19,6 +19,7 @@ def validate_media_tools():
     ffmpeg = shutil.which('ffmpeg')
     if not ffmpeg:
         raise RuntimeError('Release validation requires the FFmpeg executable')
+    failures = []
     for option, required in [
         ('-encoders', {'libmp3lame', 'libvorbis', 'flac', 'ffv1', 'mpeg4',
                        'aac', 'pcm_s16le', 'mjpeg', 'png'}),
@@ -30,7 +31,9 @@ def validate_media_tools():
                      if len(fields := line.split()) >= 2}
         missing = required - available
         if missing:
-            raise RuntimeError('FFmpeg ' + option + ' missing required capabilities: ' + ', '.join(sorted(missing)))
+            failures.append(option + ': ' + ', '.join(sorted(missing)))
+    if failures:
+        raise RuntimeError('FFmpeg missing required capabilities: ' + '; '.join(failures))
     print('PASS FFmpeg fixture encoders and filters', flush=True)
 
 

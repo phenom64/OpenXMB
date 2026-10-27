@@ -25,8 +25,15 @@ def output(*args):
     return subprocess.check_output([str(x) for x in args], text=True).strip()
 
 
+def binary_magic(path):
+    if not path.is_file() or path.is_symlink():
+        return b''
+    with path.open('rb') as handle:
+        return handle.read(4)
+
+
 def is_macho(path):
-    return path.is_file() and not path.is_symlink() and path.open('rb').read(4) in MACHO
+    return binary_magic(path) in MACHO
 
 
 def notices(destination):
@@ -54,7 +61,7 @@ def linux(stage, destination):
         'Maintainer: phenom64 <75783341+phenom64@users.noreply.github.com>\n'
         '\nPackage: openxmb\nArchitecture: amd64\nDescription: OpenXMB desktop shell\n')
     executables = [p for p in (package / 'usr/bin').iterdir()
-                   if p.is_file() and p.open('rb').read(4) == b'\x7fELF']
+                   if binary_magic(p) == b'\x7fELF']
     command = ['dpkg-shlibdeps', '-O', *['-e' + str(p) for p in executables]]
     result = subprocess.check_output(command, cwd=metadata, text=True).strip()
     dependencies = result.removeprefix('shlibs:Depends=').split(', ')
@@ -257,13 +264,17 @@ def mac_thin(stage, destination, arch):
 
 
 def sign_and_verify(app):
-    for path in app.rglob('*'):
-        if is_macho(path):
+    main = app / 'Contents/MacOS/OpenXMB'
+    binaries = sorted(path for path in app.rglob('*') if is_macho(path))
+    for path in binaries:
+        for dependency in dependencies(path):
+            if not dependency.startswith(('/usr/lib/', '/System/Library/', '@executable_path/../Frameworks/')):
+                raise RuntimeError('Unbundled runtime dependency: ' + dependency)
+        # Signing a bundle's main executable implicitly signs the bundle and
+        # validates nested code. Sign helpers/libraries first on every platform.
+        if path != main:
             run('codesign', '--force', '--sign', '-', path)
-            for dependency in dependencies(path):
-                if not dependency.startswith(('/usr/lib/', '/System/Library/', '@executable_path/../Frameworks/')):
-                    raise RuntimeError('Unbundled runtime dependency: ' + dependency)
-    run('codesign', '--force', '--deep', '--sign', '-', app)
+    run('codesign', '--force', '--sign', '-', app)
     run('codesign', '--verify', '--deep', '--strict', app)
 
 

@@ -68,7 +68,7 @@ class MediaToolPreflightTests(unittest.TestCase):
         dependencies = {entry['name']: set(entry.get('features', []))
                         for entry in manifest['dependencies'] if isinstance(entry, dict)}
         self.assertTrue({'libflac', 'mpg123', 'opusfile', 'libmodplug'} <= dependencies['sdl2-mixer'])
-        self.assertTrue({'ffmpeg', 'ffprobe', 'mp3lame', 'vorbis'} <= dependencies['ffmpeg'])
+        self.assertTrue({'ffmpeg', 'ffprobe', 'mp3lame', 'vorbis', 'zlib'} <= dependencies['ffmpeg'])
 
     def test_missing_fixture_encoder_is_reported_before_compilation(self):
         with patch.object(build.shutil, 'which', return_value='/tools/ffmpeg'), \
@@ -84,6 +84,14 @@ class MediaToolPreflightTests(unittest.TestCase):
         with patch.object(build.shutil, 'which', return_value='/tools/ffmpeg'), \
              patch.object(build.subprocess, 'check_output', side_effect=listings):
             build.validate_media_tools()
+
+    def test_all_capability_groups_are_reported_together(self):
+        with patch.object(build.shutil, 'which', return_value='/tools/ffmpeg'), \
+             patch.object(build.subprocess, 'check_output', side_effect=[' A..... flac\n', ' ... sine\n']):
+            with self.assertRaises(RuntimeError) as failure:
+                build.validate_media_tools()
+        self.assertIn('-encoders:', str(failure.exception))
+        self.assertIn('-filters:', str(failure.exception))
 
 
 if __name__ == '__main__':
