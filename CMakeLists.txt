@@ -201,7 +201,15 @@ find_package(glm REQUIRED)
 find_package(Freetype REQUIRED)
 find_package(Gettext QUIET)
 find_package(Intl REQUIRED)
-find_package(fmt REQUIRED)
+# spdlog 1.15's external backend requires fmt 11+. Share that implementation
+# when available; linking two fmt 11 implementations duplicates Windows symbols.
+find_package(fmt 11 QUIET)
+if(fmt_FOUND)
+  set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "Use the application's fmt library for logging" FORCE)
+else()
+  find_package(fmt REQUIRED)
+  set(SPDLOG_FMT_EXTERNAL OFF CACHE BOOL "Use spdlog's bundled fmt with older system fmt" FORCE)
+endif()
 find_package(PkgConfig QUIET)
 find_package(FFMPEG QUIET)
 if(FFMPEG_FOUND)
@@ -302,6 +310,13 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/nlohmann/json.git
   GIT_TAG        v3.12.0
 )
+FetchContent_Declare(fast_float
+  GIT_REPOSITORY https://github.com/fastfloat/fast_float.git
+  GIT_TAG 50a80a73ab2ab256ba1c3bf86923ddd8b4202bc7
+  EXCLUDE_FROM_ALL
+)
+set(FASTFLOAT_INSTALL OFF CACHE BOOL "Do not install number-parser development files" FORCE)
+set(FASTFLOAT_TEST OFF CACHE BOOL "Disable dependency tests" FORCE)
 
 
 # For i18n++, we disable the optional tools (plugin, merge tool) and tests
@@ -313,7 +328,7 @@ set(BUILD_TESTING OFF CACHE BOOL "Disable i18n++ tests" FORCE)
 
 # make both dependencies available. CMake will use the options we just set
 # when it configures i18n++.
-FetchContent_MakeAvailable(i18n++ argparse nlohmann_json)
+FetchContent_MakeAvailable(i18n++ argparse nlohmann_json fast_float)
 
 add_library(i18nModule STATIC)
 target_sources(i18nModule PUBLIC FILE_SET CXX_MODULES FILES third_party/i18n.cppm)
@@ -344,6 +359,7 @@ add_library(openxmb_shell_core STATIC
 )
 add_library(OpenXMB::ShellCore ALIAS openxmb_shell_core)
 target_compile_features(openxmb_shell_core PUBLIC cxx_std_23)
+target_link_libraries(openxmb_shell_core PUBLIC FastFloat::fast_float)
 target_include_directories(openxmb_shell_core PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>

@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <bit>
-#include <charconv>
+#include <fast_float/fast_float.h>
 #include <cmath>
 #include <fstream>
 #include <limits>
@@ -311,7 +311,7 @@ private:
         double value = 0.0;
         const char* first = input_.data() + start;
         const char* last = input_.data() + position_;
-        const auto parsed = std::from_chars(first, last, value);
+        const auto parsed = fast_float::from_chars(first, last, value);
         if (parsed.ec != std::errc{} || parsed.ptr != last || !std::isfinite(value)) {
             return fail("invalid or non-finite JSON number");
         }

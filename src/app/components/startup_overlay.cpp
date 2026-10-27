@@ -20,7 +20,7 @@ module;
 
 #include <algorithm>
 #include <array>
-#include <charconv>
+#include <fast_float/fast_float.h>
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
@@ -65,9 +65,9 @@ std::optional<double> fixed_boot_seconds_from_environment() {
   }
   const std::string_view text{value};
   double seconds{};
-  const auto [end, error] = std::from_chars(
+  const auto [end, error] = fast_float::from_chars(
       text.data(), text.data() + text.size(), seconds,
-      std::chars_format::general);
+      fast_float::chars_format::general);
   if(error != std::errc{} || end != text.data() + text.size() ||
      !std::isfinite(seconds) || seconds < 0.0) {
     spdlog::warn(
