@@ -44,7 +44,9 @@ def main():
                    '-DVCPKG_TARGET_TRIPLET=x64-windows',
                    f'-DVulkan_INCLUDE_DIR={prefix}/include', f'-DVulkan_LIBRARY={prefix}/lib/vulkan-1.lib']
     elif platform.system() == 'Darwin':
-        config += [f'-DCMAKE_OSX_ARCHITECTURES={args.arch}', '-DCMAKE_OSX_DEPLOYMENT_TARGET=15.0']
+        sdk = subprocess.check_output(['xcrun', '--sdk', 'macosx', '--show-sdk-path'], text=True).strip()
+        config += [f'-DCMAKE_OSX_ARCHITECTURES={args.arch}', '-DCMAKE_OSX_DEPLOYMENT_TARGET=15.0',
+                   f'-DCMAKE_OSX_SYSROOT={sdk}']
     else:
         config += ['-DCMAKE_LINKER_TYPE=LLD']
     run(*config)
