@@ -1,8 +1,6 @@
-/* XMBShell, a console-like desktop shell
- * Copyright (C) 2025 - JCM
- *
- * This file (or substantial portions of it) is derived from XMBShell:
- *   https://github.com/JnCrMx/xmbshell
+/* This file is a part of the OpenXMB desktop experience project.
+ * Copyright (C) 2025-2026 Syndromatic Ltd. All rights reserved
+ * Designed by Kavish Krishnakumar in Manchester.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,9 +20,12 @@ module;
 
 #include <array>
 #include <algorithm>
+#include <charconv>
+#include <fast_float/fast_float.h>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <filesystem>
 #include <format>
 #include <memory>
@@ -44,11 +45,18 @@ module;
 
 #include <glm/vec2.hpp>
 
+#include "openxmb/xmb/boot_timeline.hpp"
+#include "openxmb/xmb/background.hpp"
+#include "openxmb/music/player.hpp"
+#include "openxmb/integrations/desktop.hpp"
+#include "openxmb/themes/library.hpp"
+#include <map>
+
 module openxmb.app;
 
 import i18n;
 import spdlog;
-import dreamrender;
+import auroreengine;
 import glm;
 import vulkan_hpp;
 import vma;
@@ -58,14 +66,48 @@ import openxmb.constants;
 import openxmb.render;
 import openxmb.debug;
 import openxmb.utils;
+import openxmb.xmb.captured_wave_renderer;
+import openxmb.xmb.monthly_background_renderer;
 import :startup_overlay;
 import :message_overlay;
+import :programs;
+import :theme_manager;
+import :integration_center;
+import :library_manager;
+import :settings_center;
 
 using namespace mfk::i18n::literals;
 
 namespace app
 {
+    struct shell::theme_state {
+        std::shared_ptr<openxmb::themes::ThemeLibrary> library;
+        std::optional<openxmb::themes::AppliedTheme> active;
+        std::chrono::steady_clock::time_point started=std::chrono::steady_clock::now();
+        openxmb::themes::AnimationFrame frame;
+        std::map<std::filesystem::path,std::unique_ptr<texture>> textures;
+    };
+
     namespace {
+        inline constexpr float xmb_web_native_steady_wave_fill_alpha = 0.078F;
+
+        bool truthy_environment_flag(const char* name) noexcept
+        {
+            const char* value = std::getenv(name);
+            if(value == nullptr || value[0] == '\0') {
+                return false;
+            }
+            const std::string_view text(value);
+            return text != "0" && text != "false" && text != "FALSE" &&
+                   text != "off" && text != "OFF" && text != "no" &&
+                   text != "NO";
+        }
+
+        bool force_headless_startup_overlay() noexcept
+        {
+            return truthy_environment_flag("OPENXMB_HEADLESS_STARTUP");
+        }
+
         events::logical_controller_button to_logical_button(sdl::GameControllerButton button)
         {
             return static_cast<events::logical_controller_button>(std::to_underlying(button));
@@ -101,6 +143,39 @@ namespace app
             }
             return path;
         }
+
+        [[nodiscard]] std::optional<double> fixed_seconds_from_environment(
+            const char* name)
+        {
+            const char* value = std::getenv(name);
+            if(value == nullptr || *value == '\0') {
+                return std::nullopt;
+            }
+
+            const std::string_view text{value};
+            double seconds{};
+            const auto [end, error] = fast_float::from_chars(
+                text.data(), text.data() + text.size(), seconds,
+                fast_float::chars_format::general);
+            if(error != std::errc{} || end != text.data() + text.size() ||
+               !std::isfinite(seconds) || seconds < 0.0) {
+                spdlog::warn(
+                    "Ignoring invalid {} value '{}'; expected a finite non-negative number",
+                    name, text);
+                return std::nullopt;
+            }
+            return seconds;
+        }
+
+        [[nodiscard]] std::optional<double> fixed_wave_seconds_from_environment()
+        {
+            return fixed_seconds_from_environment("OPENXMB_FIXED_WAVE_SECONDS");
+        }
+
+        [[nodiscard]] std::optional<double> fixed_boot_seconds_from_environment()
+        {
+            return fixed_seconds_from_environment("OPENXMB_FIXED_BOOT_SECONDS");
+        }
     }
 
     struct BlurConstants {
@@ -108,17 +183,21 @@ namespace app
         int size = 20;
     };
 
-    void component::render_controller_buttons(app::shell* xmb, dreamrender::gui_renderer& renderer, float x, float y, std::span<const std::pair<::action, std::string_view>> buttons) const
+    void component::render_controller_buttons(app::shell* xmb, auroreengine::gui_renderer& renderer, float x, float y, std::span<const std::pair<::action, std::string_view>> buttons) const
     {
+        const auto saved_scale = renderer.text_scale;
+        renderer.text_scale /= std::max(1.0F, typography_scale());
         xmb->render_controller_buttons(renderer, x, y, buttons);
+        renderer.text_scale = saved_scale;
     }
 
-    shell::shell(window* window) : phase(window)
+    shell::shell(window* window) : phase(window),theme(std::make_unique<theme_state>())
     {
     }
 
     shell::~shell()
     {
+        openxmb::music::service().shutdown();
     }
 
     void shell::preload()
@@ -127,55 +206,109 @@ namespace app
 
         font_render = std::make_unique<font_renderer>(config::CONFIG.fontPath.string(), 32, device, allocator, win->swapchainExtent, win->gpuFeatures);
         image_render = std::make_unique<image_renderer>(device, win->swapchainExtent, win->gpuFeatures);
+        image_render->setAllocator(allocator);
         simple_render = std::make_unique<simple_renderer>(device, allocator, win->swapchainExtent, win->gpuFeatures);
+#if OPENXMB_ENABLE_VIDEO_PLAYER
+        video_background_render = std::make_unique<render::video_background>(device, allocator, win);
+#endif
         wave_render = std::make_unique<render::wave_renderer>(device, allocator, win->swapchainExtent);
-        original_render = std::make_unique<render::original_renderer>(device, win->swapchainExtent);
+        procedural_wave_render = std::make_unique<render::procedural_wave_renderer>(device, allocator, win->swapchainExtent);
+        monthly_background_render =
+            std::make_unique<openxmb::xmb::MonthlyBackgroundRenderer>(device, win->swapchainExtent);
 
         {
-            std::array<vk::AttachmentDescription, 2> attachments = {
-                vk::AttachmentDescription({}, win->swapchainFormat.format, win->config.sampleCount,
-                    vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
-                    vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-                    vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal),
-                vk::AttachmentDescription({}, win->swapchainFormat.format, vk::SampleCountFlagBits::e1,
-                    vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eStore,
-                    vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-                    vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal)
-            };
-            vk::AttachmentReference ref(0, vk::ImageLayout::eColorAttachmentOptimal);
-            vk::AttachmentReference rref(1, vk::ImageLayout::eColorAttachmentOptimal);
-            vk::SubpassDescription subpass({}, vk::PipelineBindPoint::eGraphics, {}, ref, rref);
+            const auto background_format=win->swapchainFormat.format==vk::Format::eB8G8R8A8Srgb?vk::Format::eB8G8R8A8Unorm:
+                win->swapchainFormat.format==vk::Format::eR8G8B8A8Srgb?vk::Format::eR8G8B8A8Unorm:win->swapchainFormat.format;
             std::array<vk::SubpassDependency, 2> deps{
                 vk::SubpassDependency(vk::SubpassExternal, 0,
-                    vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                    vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eColorAttachmentWrite),
+                    vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eLateFragmentTests,
+                    vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests,
+                    vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite,
+                    vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite),
                 vk::SubpassDependency(0, vk::SubpassExternal,
                     vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader,
                     vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead)
             };
-            vk::RenderPassCreateInfo renderpass_info({}, attachments, subpass, deps);
-            backgroundRenderPass = device.createRenderPassUnique(renderpass_info);
+            const auto depth_attachment = vk::AttachmentDescription({}, vk::Format::eD32Sfloat,
+                win->config.sampleCount, vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
+                vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+                vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+            if(win->config.sampleCount == vk::SampleCountFlagBits::e1) {
+                const std::array attachments{
+                    vk::AttachmentDescription({}, background_format,
+                        vk::SampleCountFlagBits::e1,
+                        vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
+                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+                        vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal),
+                    depth_attachment
+                };
+                const vk::AttachmentReference color_ref(0, vk::ImageLayout::eColorAttachmentOptimal);
+                const vk::AttachmentReference depth_ref(1, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+                const vk::SubpassDescription subpass({}, vk::PipelineBindPoint::eGraphics,
+                    {}, color_ref, {}, &depth_ref);
+                backgroundRenderPass = device.createRenderPassUnique(
+                    vk::RenderPassCreateInfo({}, attachments, subpass, deps));
+            } else {
+                const std::array attachments{
+                    vk::AttachmentDescription({}, background_format, win->config.sampleCount,
+                        vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
+                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+                        vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal),
+                    vk::AttachmentDescription({}, background_format, vk::SampleCountFlagBits::e1,
+                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eStore,
+                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+                        vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal),
+                    depth_attachment
+                };
+                const vk::AttachmentReference color_ref(0, vk::ImageLayout::eColorAttachmentOptimal);
+                const vk::AttachmentReference resolve_ref(1, vk::ImageLayout::eColorAttachmentOptimal);
+                const vk::AttachmentReference depth_ref(2, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+                const vk::SubpassDescription subpass({}, vk::PipelineBindPoint::eGraphics,
+                    {}, color_ref, resolve_ref, &depth_ref);
+                backgroundRenderPass = device.createRenderPassUnique(
+                    vk::RenderPassCreateInfo({}, attachments, subpass, deps));
+            }
             debugName(device, backgroundRenderPass.get(), "Background Render Pass");
         }
         {
-            std::array<vk::AttachmentDescription, 2> attachments = {
-                vk::AttachmentDescription({}, win->swapchainFormat.format, win->config.sampleCount,
-                    vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
-                    vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-                    vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal),
-                vk::AttachmentDescription({}, win->swapchainFormat.format, vk::SampleCountFlagBits::e1,
-                    vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eStore,
-                    vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-                    vk::ImageLayout::eUndefined, win->swapchainFinalLayout)
-            };
-            vk::AttachmentReference ref(0, vk::ImageLayout::eColorAttachmentOptimal);
-            vk::AttachmentReference rref(1, vk::ImageLayout::eColorAttachmentOptimal);
-            vk::SubpassDescription subpass({}, vk::PipelineBindPoint::eGraphics, {}, ref, rref);
             vk::SubpassDependency dep(vk::SubpassExternal, 0,
                 vk::PipelineStageFlagBits::eTransfer | vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eColorAttachmentOutput,
                 vk::AccessFlagBits::eTransferWrite | vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eColorAttachmentWrite);
-            vk::RenderPassCreateInfo renderpass_info({}, attachments, subpass, dep);
-            shellRenderPass = device.createRenderPassUnique(renderpass_info);
+            if(win->config.sampleCount == vk::SampleCountFlagBits::e1) {
+                const std::array attachments{
+                    vk::AttachmentDescription({}, win->swapchainFormat.format,
+                        vk::SampleCountFlagBits::e1,
+                        vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
+                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+                        vk::ImageLayout::eUndefined, win->swapchainFinalLayout)
+                };
+                const vk::AttachmentReference color_ref(
+                    0, vk::ImageLayout::eColorAttachmentOptimal);
+                const vk::SubpassDescription subpass(
+                    {}, vk::PipelineBindPoint::eGraphics, {}, color_ref);
+                shellRenderPass = device.createRenderPassUnique(
+                    vk::RenderPassCreateInfo({}, attachments, subpass, dep));
+            } else {
+                const std::array attachments{
+                    vk::AttachmentDescription({}, win->swapchainFormat.format, win->config.sampleCount,
+                        vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
+                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+                        vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal),
+                    vk::AttachmentDescription({}, win->swapchainFormat.format, vk::SampleCountFlagBits::e1,
+                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eStore,
+                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+                        vk::ImageLayout::eUndefined, win->swapchainFinalLayout)
+                };
+                const vk::AttachmentReference color_ref(
+                    0, vk::ImageLayout::eColorAttachmentOptimal);
+                const vk::AttachmentReference resolve_ref(
+                    1, vk::ImageLayout::eColorAttachmentOptimal);
+                const vk::SubpassDescription subpass(
+                    {}, vk::PipelineBindPoint::eGraphics, {}, color_ref,
+                    resolve_ref);
+                shellRenderPass = device.createRenderPassUnique(
+                    vk::RenderPassCreateInfo({}, attachments, subpass, dep));
+            }
             debugName(device, shellRenderPass.get(), "Shell Render Pass");
         }
         {
@@ -217,21 +350,42 @@ namespace app
         image_render->preload({backgroundRenderPass.get(), shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
         simple_render->preload({shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
         wave_render->preload({backgroundRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
-        original_render->preload({backgroundRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
+        try {
+            monthly_background_render->preload(
+                {backgroundRenderPass.get()}, win->config.sampleCount,
+                win->pipelineCache.get());
+        } catch(const std::exception& error) {
+            monthly_background_failed = true;
+            spdlog::error(
+                "Monthly-background Vulkan pipeline initialization failed ({}); using the safe clear-colour fallback",
+                error.what());
+        }
+#if OPENXMB_ENABLE_VIDEO_PLAYER
+        video_background_render->preload({backgroundRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
+#endif
+        procedural_wave_render->preload({backgroundRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
 
         if(config::CONFIG.backgroundType == config::config::background_type::image) {
             backgroundTexture = std::make_unique<texture>(device, allocator);
             loader->loadTexture(backgroundTexture.get(), config::CONFIG.backgroundImage);
         }
+        iconGlassAmbientTexture = std::make_unique<texture>(device, allocator);
+        iconGlassEnvironmentTexture = std::make_unique<texture>(device, allocator);
+        const auto glass_environment_directory =
+            config::CONFIG.asset_directory / "materials";
+        loader->loadTexture(iconGlassAmbientTexture.get(),
+                            glass_environment_directory / "icon_amb.png");
+        loader->loadTexture(iconGlassEnvironmentTexture.get(),
+                            glass_environment_directory / "texenv.png");
         config::CONFIG.addCallback("background-type", [this](const std::string&){
-            if(config::CONFIG.backgroundType == config::config::background_type::image) {
+            if(config::CONFIG.backgroundType == config::config::background_type::image || config::CONFIG.backgroundType == config::config::background_type::video) {
                 reload_background();
             } else {
                 backgroundTexture.reset();
             }
         });
         config::CONFIG.addCallback("background-image", [this](const std::string&){
-            if(config::CONFIG.backgroundType == config::config::background_type::image) {
+            if(config::CONFIG.backgroundType == config::config::background_type::image || config::CONFIG.backgroundType == config::config::background_type::video) {
                 reload_background();
             } else {
                 backgroundTexture.reset();
@@ -249,7 +403,9 @@ namespace app
             win->recreateSwapchain();
         });
 
+        reload_background();
         if(!background_only) {
+            if(auto saved = theme_library()->active()) apply_theme(*saved);
             preload_fixed_components();
         }
     }
@@ -264,13 +420,13 @@ namespace app
         news.preload(device, allocator, *loader);
 
         if(!win->config.headless) {
-            ok_sound = sdl::mix::unique_chunk{sdl::mix::LoadWAV((config::CONFIG.asset_directory/"sounds/ok.wav").string().c_str())};
+            ok_sound = sdl::mix::unique_chunk{sdl::mix::LoadWAV(config::CONFIG.resolve_sound(config::CONFIG.asset_directory/"sounds/ok.wav").string().c_str())};
             if(!ok_sound) {
                 spdlog::warn("sdl::mix::LoadWAV: {}", sdl::mix::GetError());
             }
             auto load_sound_multi = [&](sdl::mix::unique_chunk& slot, std::initializer_list<const char*> names){
                 for(const char* n : names) {
-                    auto p = (config::CONFIG.asset_directory/"sounds"/n).string();
+                    auto p = config::CONFIG.resolve_sound(config::CONFIG.asset_directory/"sounds"/n).string();
                     slot = sdl::mix::unique_chunk{sdl::mix::LoadWAV(p.c_str())};
                     if(slot) { spdlog::debug("Loaded sound {}", p); return; }
                 }
@@ -292,10 +448,13 @@ namespace app
             config::CONFIG.asset_directory/"icons/icon_cursor.png",
             config::CONFIG.asset_directory/"icons/icon_category_settings.png"));
 
-        // Push startup splash overlay (plays jingle, fades text)
-        if(!win->config.headless) {
+        // Push startup splash overlay (plays jingle, fades text). Headless
+        // runs keep their settled-scene default unless visual verification
+        // explicitly opts into the real boot overlay.
+        if(!win->config.headless || force_headless_startup_overlay()) {
             emplace_overlay<app::startup_overlay>();
         }
+        fixed_components_loaded = true;
     }
 
     void shell::prepare(std::vector<vk::Image> swapchainImages, std::vector<vk::ImageView> swapchainViews)
@@ -311,48 +470,38 @@ namespace app
         blurDescriptorPool.reset();
         blurExtraDescriptorPool.reset();
         renderImages.clear();
+        backgroundAttachmentViews.clear();backgroundMsaaViews.clear();
         backgroundResolve.clear();
+        backgroundDepth.clear();
         blurFrames.clear();
+        procedural_wave_render->prepare(static_cast<int>(swapchainImages.size()));
+#if OPENXMB_ENABLE_VIDEO_PLAYER
+        video_background_render->prepare(imageCount);
+#endif
 
         if(imageCount == 0) {
             font_render->prepare(0);
             image_render->prepare(0);
             simple_render->prepare(0);
             wave_render->prepare(0);
-            original_render->prepare(0);
             return;
         }
 
         const auto extent = win->swapchainExtent;
-        const vk::Extent2D halfExtent{
-            std::max(1u, extent.width/2u),
-            std::max(1u, extent.height/2u)
-        };
-        const vk::Extent2D quarterExtent{
-            std::max(1u, halfExtent.width/2u),
-            std::max(1u, halfExtent.height/2u)
-        };
-        const auto blurUsage = vk::ImageUsageFlagBits::eStorage
-            | vk::ImageUsageFlagBits::eTransferSrc
-            | vk::ImageUsageFlagBits::eTransferDst
-            | vk::ImageUsageFlagBits::eSampled;
-        auto makeBlurTexture = [&](vk::Extent2D imageExtent) {
-            return std::make_unique<texture>(device, allocator,
-                imageExtent, blurUsage,
-                vk::Format::eR16G16B16A16Sfloat, vk::SampleCountFlagBits::e1,
-                false, vk::ImageAspectFlagBits::eColor);
-        };
-
         framebuffers.reserve(imageCount);
         backgroundFramebuffers.reserve(imageCount);
         renderImages.reserve(imageCount);
         backgroundResolve.reserve(imageCount);
+        backgroundDepth.reserve(imageCount);
         blurFrames.reserve(imageCount);
 
         for(std::uint32_t i=0; i<imageCount; i++)
         {
+            backgroundDepth.push_back(std::make_unique<texture>(device, allocator, extent,
+                vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::Format::eD32Sfloat,
+                win->config.sampleCount, false, vk::ImageAspectFlagBits::eDepth));
             debugName(device, swapchainImages[i], "Swapchain Image #"+std::to_string(i));
-            {
+            if(win->config.sampleCount != vk::SampleCountFlagBits::e1) {
                 renderImages.push_back(std::make_unique<texture>(device, allocator,
                     extent, vk::ImageUsageFlagBits::eColorAttachment,
                     win->swapchainFormat.format, win->config.sampleCount,
@@ -366,42 +515,43 @@ namespace app
                     vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferSrc,
                     win->swapchainFormat.format, vk::SampleCountFlagBits::e1, false, vk::ImageAspectFlagBits::eColor);
                 debugName(device, tex->image, ("Background Resolve #"+std::to_string(i)).c_str());
+                const auto unorm=win->swapchainFormat.format==vk::Format::eB8G8R8A8Srgb?vk::Format::eB8G8R8A8Unorm:
+                    win->swapchainFormat.format==vk::Format::eR8G8B8A8Srgb?vk::Format::eR8G8B8A8Unorm:win->swapchainFormat.format;
+                backgroundAttachmentViews.push_back(tex->create_view(unorm));
+                if(win->config.sampleCount!=vk::SampleCountFlagBits::e1) backgroundMsaaViews.push_back(renderImages[i]->create_view(unorm));
                 backgroundResolve.push_back(std::move(tex));
             }
+            blurFrames.emplace_back();
             {
-                blurFrames.emplace_back();
-                auto& blurFrame = blurFrames.back();
-
-                blurFrame.fullSrc = makeBlurTexture(extent);
-                debugName(device, blurFrame.fullSrc->image, "Blur Image Source #"+std::to_string(i));
-
-                blurFrame.fullDst = makeBlurTexture(extent);
-                debugName(device, blurFrame.fullDst->image, "Blur Image Destination #"+std::to_string(i));
-
-                blurFrame.halfSrc = makeBlurTexture(halfExtent);
-                debugName(device, blurFrame.halfSrc->image, "Blur Half Source #"+std::to_string(i));
-
-                blurFrame.halfDst = makeBlurTexture(halfExtent);
-                debugName(device, blurFrame.halfDst->image, "Blur Half Destination #"+std::to_string(i));
-
-                blurFrame.quarterSrc = makeBlurTexture(quarterExtent);
-                debugName(device, blurFrame.quarterSrc->image, "Blur Quarter Source #"+std::to_string(i));
-
-                blurFrame.quarterDst = makeBlurTexture(quarterExtent);
-                debugName(device, blurFrame.quarterDst->image, "Blur Quarter Destination #"+std::to_string(i));
-            }
-            {
-                std::array<vk::ImageView, 2> attachments = {renderImages[i]->imageView.get(), swapchainViews[i]};
-                vk::FramebufferCreateInfo framebuffer_info({}, shellRenderPass.get(), attachments,
-                    extent.width, extent.height, 1);
-                framebuffers.push_back(device.createFramebufferUnique(framebuffer_info));
+                if(win->config.sampleCount == vk::SampleCountFlagBits::e1) {
+                    const std::array attachments{swapchainViews[i]};
+                    framebuffers.push_back(device.createFramebufferUnique(
+                        vk::FramebufferCreateInfo({}, shellRenderPass.get(), attachments,
+                            extent.width, extent.height, 1)));
+                } else {
+                    const std::array attachments{
+                        renderImages[i]->imageView.get(), swapchainViews[i]};
+                    framebuffers.push_back(device.createFramebufferUnique(
+                        vk::FramebufferCreateInfo({}, shellRenderPass.get(), attachments,
+                            extent.width, extent.height, 1)));
+                }
                 debugName(device, framebuffers.back().get(), "XMB Shell Framebuffer #"+std::to_string(i));
             }
             {
-                std::array<vk::ImageView, 2> attachments = {renderImages[i]->imageView.get(), backgroundResolve[i]->imageView.get()};
-                vk::FramebufferCreateInfo framebuffer_info({}, backgroundRenderPass.get(), attachments,
-                    extent.width, extent.height, 1);
-                backgroundFramebuffers.push_back(device.createFramebufferUnique(framebuffer_info));
+                if(win->config.sampleCount == vk::SampleCountFlagBits::e1) {
+                    const std::array attachments{
+                        backgroundAttachmentViews[i].get(), backgroundDepth[i]->imageView.get()};
+                    backgroundFramebuffers.push_back(device.createFramebufferUnique(
+                        vk::FramebufferCreateInfo({}, backgroundRenderPass.get(), attachments,
+                            extent.width, extent.height, 1)));
+                } else {
+                    const std::array attachments{
+                        backgroundMsaaViews[i].get(),
+                        backgroundAttachmentViews[i].get(), backgroundDepth[i]->imageView.get()};
+                    backgroundFramebuffers.push_back(device.createFramebufferUnique(
+                        vk::FramebufferCreateInfo({}, backgroundRenderPass.get(), attachments,
+                            extent.width, extent.height, 1)));
+                }
                 debugName(device, backgroundFramebuffers.back().get(), "XMB Shell Background Framebuffer #"+std::to_string(i));
             }
         }
@@ -436,54 +586,46 @@ namespace app
             }
         }
 
-        std::vector<vk::DescriptorImageInfo> imageInfos(2*imageCount);
-        std::vector<vk::WriteDescriptorSet> writes(imageCount);
-        std::vector<vk::DescriptorImageInfo> extraInfos(12*imageCount);
-        std::vector<vk::WriteDescriptorSet> extraWrites(6*imageCount);
-
-        for(std::uint32_t i=0; i<imageCount; i++)
-        {
-            auto& blurFrame = blurFrames[i];
-            const auto imageInfoBase = 2*i;
-            imageInfos[imageInfoBase] = vk::DescriptorImageInfo({}, blurFrame.fullSrc->imageView.get(), vk::ImageLayout::eGeneral);
-            imageInfos[imageInfoBase+1] = vk::DescriptorImageInfo({}, blurFrame.fullDst->imageView.get(), vk::ImageLayout::eGeneral);
-            writes[i] = vk::WriteDescriptorSet(blurDescriptorSets[i], 0, 0, 2, vk::DescriptorType::eStorageImage, &imageInfos[imageInfoBase]);
-
-            const auto extraInfoBase = 12*i;
-            const auto extraWriteBase = 6*i;
-            // Downsample: input full src -> output half src
-            extraInfos[extraInfoBase+0] = vk::DescriptorImageInfo({}, blurFrame.fullSrc->imageView.get(), vk::ImageLayout::eGeneral);
-            extraInfos[extraInfoBase+1] = vk::DescriptorImageInfo({}, blurFrame.halfSrc->imageView.get(), vk::ImageLayout::eGeneral);
-            extraWrites[extraWriteBase+0] = vk::WriteDescriptorSet(blurFrame.downsampleSet, 0, 0, 2, vk::DescriptorType::eStorageImage, &extraInfos[extraInfoBase+0]);
-            // Half blur: input half src -> output half dst
-            extraInfos[extraInfoBase+2] = vk::DescriptorImageInfo({}, blurFrame.halfSrc->imageView.get(), vk::ImageLayout::eGeneral);
-            extraInfos[extraInfoBase+3] = vk::DescriptorImageInfo({}, blurFrame.halfDst->imageView.get(), vk::ImageLayout::eGeneral);
-            extraWrites[extraWriteBase+1] = vk::WriteDescriptorSet(blurFrame.halfBlurSet, 0, 0, 2, vk::DescriptorType::eStorageImage, &extraInfos[extraInfoBase+2]);
-            // Upsample: input half dst -> output full dst
-            extraInfos[extraInfoBase+4] = vk::DescriptorImageInfo({}, blurFrame.halfDst->imageView.get(), vk::ImageLayout::eGeneral);
-            extraInfos[extraInfoBase+5] = vk::DescriptorImageInfo({}, blurFrame.fullDst->imageView.get(), vk::ImageLayout::eGeneral);
-            extraWrites[extraWriteBase+2] = vk::WriteDescriptorSet(blurFrame.upsampleSet, 0, 0, 2, vk::DescriptorType::eStorageImage, &extraInfos[extraInfoBase+4]);
-            // Downsample2: input half src -> output quarter src
-            extraInfos[extraInfoBase+6] = vk::DescriptorImageInfo({}, blurFrame.halfSrc->imageView.get(), vk::ImageLayout::eGeneral);
-            extraInfos[extraInfoBase+7] = vk::DescriptorImageInfo({}, blurFrame.quarterSrc->imageView.get(), vk::ImageLayout::eGeneral);
-            extraWrites[extraWriteBase+3] = vk::WriteDescriptorSet(blurFrame.downsample2Set, 0, 0, 2, vk::DescriptorType::eStorageImage, &extraInfos[extraInfoBase+6]);
-            // Quarter blur: input quarter src -> output quarter dst
-            extraInfos[extraInfoBase+8] = vk::DescriptorImageInfo({}, blurFrame.quarterSrc->imageView.get(), vk::ImageLayout::eGeneral);
-            extraInfos[extraInfoBase+9] = vk::DescriptorImageInfo({}, blurFrame.quarterDst->imageView.get(), vk::ImageLayout::eGeneral);
-            extraWrites[extraWriteBase+4] = vk::WriteDescriptorSet(blurFrame.quarterBlurSet, 0, 0, 2, vk::DescriptorType::eStorageImage, &extraInfos[extraInfoBase+8]);
-            // Upsample2: input quarter dst -> output half dst
-            extraInfos[extraInfoBase+10] = vk::DescriptorImageInfo({}, blurFrame.quarterDst->imageView.get(), vk::ImageLayout::eGeneral);
-            extraInfos[extraInfoBase+11] = vk::DescriptorImageInfo({}, blurFrame.halfDst->imageView.get(), vk::ImageLayout::eGeneral);
-            extraWrites[extraWriteBase+5] = vk::WriteDescriptorSet(blurFrame.upsample2Set, 0, 0, 2, vk::DescriptorType::eStorageImage, &extraInfos[extraInfoBase+10]);
-        }
-        device.updateDescriptorSets(writes, {});
-        device.updateDescriptorSets(extraWrites, {});
-
         font_render->prepare(swapchainViews.size());
         image_render->prepare(swapchainViews.size());
         simple_render->prepare(swapchainViews.size());
         wave_render->prepare(swapchainViews.size());
-        original_render->prepare(swapchainViews.size());
+    }
+
+    void shell::ensure_blur(int frame) {
+        auto& resources = blurFrames.at(frame);
+        if(resources.fullSrc) return;
+        const auto extent = win->swapchainExtent;
+        const vk::Extent2D half{std::max(1u, extent.width / 2), std::max(1u, extent.height / 2)};
+        const vk::Extent2D quarter{std::max(1u, half.width / 2), std::max(1u, half.height / 2)};
+        const auto usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc |
+            vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
+        const auto make = [&](vk::Extent2D size) {
+            return std::make_unique<texture>(device, allocator, size, usage,
+                vk::Format::eR16G16B16A16Sfloat, vk::SampleCountFlagBits::e1, false);
+        };
+        resources.fullSrc = make(extent); resources.fullDst = make(extent);
+        resources.halfSrc = make(half); resources.halfDst = make(half);
+        resources.quarterSrc = make(quarter); resources.quarterDst = make(quarter);
+        const std::array<vk::DescriptorSet, 7> sets{blurDescriptorSets[frame],
+            resources.downsampleSet, resources.halfBlurSet, resources.upsampleSet,
+            resources.downsample2Set, resources.quarterBlurSet, resources.upsample2Set};
+        const std::array<std::array<texture*, 2>, 7> pairs{{
+            {resources.fullSrc.get(), resources.fullDst.get()},
+            {resources.fullSrc.get(), resources.halfSrc.get()},
+            {resources.halfSrc.get(), resources.halfDst.get()},
+            {resources.halfDst.get(), resources.fullDst.get()},
+            {resources.halfSrc.get(), resources.quarterSrc.get()},
+            {resources.quarterSrc.get(), resources.quarterDst.get()},
+            {resources.quarterDst.get(), resources.halfDst.get()}}};
+        std::array<std::array<vk::DescriptorImageInfo, 2>, 7> infos;
+        std::array<vk::WriteDescriptorSet, 7> writes;
+        for(std::size_t i = 0; i < sets.size(); ++i) {
+            for(std::size_t j = 0; j < 2; ++j)
+                infos[i][j] = vk::DescriptorImageInfo({}, pairs[i][j]->imageView.get(), vk::ImageLayout::eGeneral);
+            writes[i] = vk::WriteDescriptorSet(sets[i], 0, 0, 2, vk::DescriptorType::eStorageImage, infos[i].data());
+        }
+        device.updateDescriptorSets(writes, {});
     }
 
     void shell::reload_language() {
@@ -520,8 +662,7 @@ namespace app
             spdlog::info("Language set to '{}'; reloading menus", lang);
 
             // Rebuild main menu to refresh translated strings
-            menu = app::main_menu(this);
-            menu.preload(device, allocator, *loader);
+            reload_menu();
         } catch(const std::exception& e) {
             spdlog::error("reload_language failed: {}", e.what());
         }
@@ -535,25 +676,110 @@ namespace app
         auto& blurFrame = blurFrames[frame];
         auto now = std::chrono::steady_clock::now();
 
+        if(theme->active && !theme->active->animation.empty()) {
+            try {
+                const auto seconds = std::chrono::duration<double>(now-theme->started).count();
+                theme->frame = openxmb::themes::ThemeLibrary::sample_animation(*theme->active,
+                    fixed_wave_seconds_from_environment().value_or(seconds));
+                std::vector<std::filesystem::path> needed;
+                if(!theme->frame.background.empty()) needed.push_back(theme->frame.background);
+                for(const auto& layer : theme->frame.layers) needed.push_back(layer.image);
+                for(const auto& draw : theme->frame.draws) needed.push_back(draw.image);
+                for(const auto& path : needed) {
+                    const auto ext=path.extension().string();
+                    const bool video=ext==".mp4" || ext==".webm" || ext==".mkv" || ext==".mov" || ext==".avi";
+#if OPENXMB_ENABLE_VIDEO_PLAYER
+                    if(video && path==theme->frame.background) {
+                        if(background_video_path!=path) { video_background_render->set_path(path); background_video_path=path; }
+                        continue;
+                    }
+#endif
+                    if(path.empty() || video || theme->textures.contains(path)) continue;
+                    std::size_t bytes=0;
+                    for(const auto& [key, value] : theme->textures) if(value->loaded) bytes+=static_cast<std::size_t>(value->width)*value->height*4;
+                    if(theme->textures.size()>=128 || bytes>128u*1024u*1024u) {
+                        win->waitIdle();
+                        std::erase_if(theme->textures,[&](const auto& item) { return std::find(needed.begin(),needed.end(),item.first)==needed.end(); });
+                        if(theme->textures.size()>=128) break;
+                    }
+                    auto image=std::make_unique<texture>(device,allocator);
+                    loader->loadTexture(image.get(),path);
+                    theme->textures.emplace(path,std::move(image));
+                }
+            } catch(const std::exception& error) { spdlog::warn("Theme animation failed: {}",error.what()); }
+        }
+#if OPENXMB_ENABLE_VIDEO_PLAYER
+        const bool background_video_active=!background_video_path.empty() && !ingame_mode &&
+            (config::CONFIG.backgroundType==config::config::background_type::video || theme->frame.background==background_video_path);
+        video_background_render->set_active(background_video_active);
+        video_background_render->tick();
+#endif
         commandBuffer.begin(vk::CommandBufferBeginInfo());
+#if OPENXMB_ENABLE_VIDEO_PLAYER
+        video_background_render->prerender(commandBuffer,frame);
+#endif
         for(auto& overlay : std::views::reverse(overlays)) {
             overlay->prerender(commandBuffer, frame, this);
         }
         {
-            auto themeColour = utils::xmb_resolve_theme_colour(std::chrono::system_clock::now());
+            const auto wall_now = openxmb::xmb::wall_clock_now();
+            auto themeColour = utils::xmb_resolve_theme_colour(wall_now);
             glm::vec3 baseThemeColour = themeColour.base_colour;
-            float brightness = themeColour.brightness;
+            const auto wall_time = std::chrono::system_clock::to_time_t(wall_now);
+            std::tm local_time{};
+#if defined(_WIN32)
+            localtime_s(&local_time, &wall_time);
+#else
+            localtime_r(&wall_time, &local_time);
+#endif
+            const auto local_hour = static_cast<float>(local_time.tm_hour) +
+                static_cast<float>(local_time.tm_min) / 60.0F +
+                static_cast<float>(local_time.tm_sec) / 3600.0F;
+            const auto day_night_hour =
+                utils::xmb_effective_day_night_hour(local_hour);
+            const auto original_gradient =
+                openxmb::xmb::resolve_background_gradient(
+                    local_time.tm_mon, day_night_hour);
+            const auto manual_gradient =
+                openxmb::xmb::resolve_manual_background_gradient(
+                    {themeColour.base_colour.r, themeColour.base_colour.g,
+                     themeColour.base_colour.b},
+                    day_night_hour);
+            auto background_gradient = config::CONFIG.themeOriginalColour
+                ? original_gradient
+                : manual_gradient;
+            // xmb-web's Original background lets the calendar-driven gradient
+            // carry the hue.  The captured ribbon and dust/glints stay close to
+            // neutral silver/white so they read over every month instead of
+            // forcing the older OpenXMB theme colour (which made the scene feel
+            // stuck on June/cyan).
+            const bool music_scene=std::any_of(overlays.begin(),overlays.end(),[](const auto& overlay){return overlay->music_background();});
+            procedural_wave_render->set_music_mode(music_scene);
+            const float music_mix=procedural_wave_render->music_mix();background_gradient.music_mix=music_mix;
+            glm::vec3 effect_color{background_gradient.bottom_rgb[0],background_gradient.bottom_rgb[1],background_gradient.bottom_rgb[2]};
+            effect_color=glm::mix(glm::min(effect_color*1.6F,glm::vec3(1.0F)),glm::vec3(1.0F),0.35F);
+            const glm::vec3 original_effect_tint=glm::mix(effect_color,glm::vec3(192.0F/255,108.0F/255,200.0F/255),music_mix);
+            constexpr float original_effect_brightness = 1.0F;
+            const bool can_render_monthly_background =
+                (music_scene||music_mix>0.001F||config::CONFIG.backgroundType ==
+                    config::config::background_type::original) &&
+                monthly_background_render->pipelines_ready() &&
+                !monthly_background_failed;
             // Always tint the background clear colour (for both Original and Classic)
             vk::ClearValue color(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f});
-            {
+            if(!can_render_monthly_background) {
                 glm::vec3 c = themeColour.shaded_colour;
                 color = vk::ClearColorValue(std::array<float, 4>{ c.r, c.g, c.b, 1.0f });
             }
             if(ingame_mode) {
                 color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.5f});
             }
+            std::array<vk::ClearValue, 3> background_clears{color, color, color};
+            const auto depth_index = win->config.sampleCount == vk::SampleCountFlagBits::e1 ? 1u : 2u;
+            background_clears[depth_index] = vk::ClearDepthStencilValue(1.0F, 0);
+            image_render->setOutputEncoded(true);
             commandBuffer.beginRenderPass(vk::RenderPassBeginInfo(backgroundRenderPass.get(), backgroundFramebuffers[frame].get(),
-                vk::Rect2D({0, 0}, win->swapchainExtent), color), vk::SubpassContents::eInline);
+                vk::Rect2D({0, 0}, win->swapchainExtent), depth_index + 1, background_clears.data()), vk::SubpassContents::eInline);
             vk::Viewport viewport(0.0f, 0.0f,
                 static_cast<float>(win->swapchainExtent.width),
                 static_cast<float>(win->swapchainExtent.height), 0.0f, 1.0f);
@@ -561,10 +787,48 @@ namespace app
             commandBuffer.setViewport(0, viewport);
             commandBuffer.setScissor(0, scissor);
 
+            float seconds = std::chrono::duration<float>(
+                std::chrono::steady_clock::now() - shader_time_zero)
+                                .count();
+            if(win->config.headless && force_headless_startup_overlay()) {
+                if(const auto fixed_boot_seconds =
+                       fixed_boot_seconds_from_environment()) {
+                    seconds = static_cast<float>(*fixed_boot_seconds);
+                }
+            } else if(win->config.headless) {
+                // Headless visual verification intentionally omits the
+                // startup overlay, so begin in the same settled scene.
+                seconds += static_cast<float>(
+                    openxmb::xmb::BootMilestones::complete_seconds);
+            }
+            const auto boot =
+                openxmb::xmb::sample_boot_timeline(seconds);
+
             if(!ingame_mode) {
-                if(config::CONFIG.backgroundType == config::config::background_type::original) {
-                    float seconds = std::chrono::duration<float>(std::chrono::steady_clock::now() - shader_time_zero).count();
-                    original_render->render(commandBuffer, frame, backgroundRenderPass.get(), baseThemeColour, brightness, seconds);
+                if(music_scene||music_mix>0.001F||config::CONFIG.backgroundType == config::config::background_type::original) {
+                    if(can_render_monthly_background) {
+                        try {
+                            const std::array boot_background{
+                                static_cast<float>(boot.background_exposure_top),
+                                static_cast<float>(boot.background_exposure_bottom),
+                                static_cast<float>(boot.background_sweep),
+                                boot.background_active ? 1.0F : 0.0F,
+                            };
+                            monthly_background_render->render(
+                                commandBuffer, backgroundRenderPass.get(),
+                                background_gradient, boot_background);
+                        } catch(const std::exception& error) {
+                            monthly_background_failed = true;
+                            spdlog::error(
+                                "Monthly-background rendering failed ({}); using the safe clear-colour fallback",
+                                error.what());
+                        }
+                    }
+                    procedural_wave_render->render(
+                        commandBuffer, frame, backgroundRenderPass.get(),
+                        original_effect_tint, original_effect_brightness,
+                        static_cast<float>(fixed_wave_seconds_from_environment().value_or(seconds)));
+
                 }
                 else if(config::CONFIG.backgroundType == config::config::background_type::wave) {
                     wave_render->waveColor = baseThemeColour; // PS3 look: wave uses base, brightness on background only
@@ -581,12 +845,42 @@ namespace app
                 }
             }
 
+#if OPENXMB_ENABLE_VIDEO_PLAYER
+            if(background_video_active) video_background_render->render(commandBuffer,frame,backgroundRenderPass.get(),win->swapchainExtent);
+#endif
+            if(theme->active) {
+                gui_renderer theme_gui(commandBuffer,frame,backgroundRenderPass.get(),win->swapchainExtent,font_render.get(),image_render.get(),simple_render.get());
+                if(const auto it=theme->textures.find(theme->frame.background);it!=theme->textures.end() && it->second->loaded)
+                    image_render->renderImageSized(commandBuffer,frame,backgroundRenderPass.get(),*it->second,0,0,win->swapchainExtent.width,win->swapchainExtent.height);
+                for(const auto& layer : theme->frame.layers) {
+                    const auto it=theme->textures.find(layer.image);
+                    if(it!=theme->textures.end() && it->second->loaded)
+                        image_render->renderImageSized(commandBuffer,frame,backgroundRenderPass.get(),*it->second,layer.x,layer.y,
+                            layer.width*win->swapchainExtent.width,layer.height*win->swapchainExtent.height,glm::vec4(1,1,1,layer.opacity));
+                }
+                for(const auto& draw : theme->frame.draws) {
+                    const auto it=theme->textures.find(draw.image);
+                    if(it==theme->textures.end() || !it->second->loaded) continue;
+                    std::vector<image_renderer::textured_vertex> vertices;
+                    vertices.reserve(draw.vertices.size());
+                    for(const auto& v:draw.vertices) vertices.push_back({{v.x,v.y,v.z,v.w},{v.u,v.v},{v.color[0],v.color[1],v.color[2],v.color[3]}});
+                    theme_gui.draw_textured_triangles(*it->second,vertices,draw.additive,draw.depth);
+                }
+            }
             commandBuffer.endRenderPass();
+            image_render->setOutputEncoded(false);
         }
         double blur_background_progress = utils::progress(now, last_blur_background_change, blur_background_transition_duration);
-        const bool use_blur_background = blur_background || blur_background_progress < 1.0;
+        const auto startup_blur_radius = std::max(0.0f, startup_background_blur_px);
+        const bool use_startup_blur_background = startup_blur_radius > 0.05f;
+        const auto menu_blur_radius = background_only ? 0.0F : menu.background_blur_px();
+        const auto menu_dim_alpha = background_only ? 0.0F : menu.background_dim_alpha();
+        const bool use_menu_blur_background = menu_blur_radius > 0.05F;
+        const bool use_blur_background = blur_background || blur_background_progress < 1.0 ||
+            use_startup_blur_background || use_menu_blur_background;
         vk::ImageView compositedBackgroundView = backgroundResolve[frame]->imageView.get();
         if(use_blur_background) {
+            ensure_blur(frame);
             compositedBackgroundView = blurFrame.fullDst->imageView.get();
             commandBuffer.pipelineBarrier(
                 vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader,
@@ -646,7 +940,11 @@ namespace app
 
             // Decide path: full-res separable Gaussian for small radius; downsampled pipeline for larger
             BlurConstants constants{};
-            const int targetRadius = static_cast<int>(20 * (blur_background ? blur_background_progress : (1.0 - blur_background_progress)));
+            const int modalRadius = static_cast<int>(20 * (blur_background ? blur_background_progress : (1.0 - blur_background_progress)));
+            const int startupRadius = static_cast<int>(std::round(startup_blur_radius));
+            const int menuRadius = static_cast<int>(std::round(
+                menu_blur_radius * static_cast<float>(win->swapchainExtent.height) / 1080.0F));
+            const int targetRadius = std::max({modalRadius, startupRadius, menuRadius});
 
             if(targetRadius <= 4) {
                 int groupCountX = static_cast<int>(std::ceil(blurFrame.fullSrc->width/16.0));
@@ -1094,11 +1392,23 @@ namespace app
 
             image_render->renderImageSized(commandBuffer, frame, shellRenderPass.get(), compositedBackgroundView,
                 0.0f, 0.0f, static_cast<int>(win->swapchainExtent.width), static_cast<int>(win->swapchainExtent.height));
-
             gui_renderer ctx(commandBuffer, frame, shellRenderPass.get(), win->swapchainExtent, font_render.get(), image_render.get(), simple_render.get());
+            if(menu_dim_alpha > 0.001F) {
+                ctx.draw_rect(glm::vec2{0.0F, 0.0F}, glm::vec2{1.0F, 1.0F},
+                    glm::vec4{0.0F, 0.0F, 0.0F, menu_dim_alpha});
+            }
+            image_render->setGlassBackground(compositedBackgroundView);
+            image_render->setGlassMaterial(
+                iconGlassAmbientTexture && iconGlassAmbientTexture->loaded
+                    ? iconGlassAmbientTexture->imageView.get()
+                    : vk::ImageView{},
+                iconGlassEnvironmentTexture && iconGlassEnvironmentTexture->loaded
+                    ? iconGlassEnvironmentTexture->imageView.get()
+                    : vk::ImageView{});
+
             // Interface/FX debug overlays: draw font atlas for verification
             if(openxmb::debug::interfacefx_debug) {
-                const dreamrender::texture* atlas = font_render->get_atlas();
+                const auroreengine::texture* atlas = font_render->get_atlas();
                 if(atlas && atlas->loaded) {
                     if(!openxmb::debug::interfacefx_debug_once_atlas_logged) {
                         spdlog::info("[InterfaceFXDEBUG] Font atlas: {}x{}", atlas->width, atlas->height);
@@ -1124,14 +1434,33 @@ namespace app
 
         vk::PipelineStageFlags waitFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
         vk::SubmitInfo submit_info(imageAvailable, waitFlags, commandBuffer, renderFinished);
-        graphicsQueue.submit(submit_info, fence);
+        submit_graphics(submit_info, fence);
     }
 
     void shell::render_gui(gui_renderer& renderer) {
+        renderer.text_color = glm::vec4(config::CONFIG.textColor, 1.0F);
+        renderer.text_scale = static_cast<float>(config::CONFIG.textScale);
+        // Applying persisted settings here also covers a profile with no active
+        // imported theme. Unchanged parameters preserve the sampler's history.
+        if(procedural_wave_render) {
+            static const void* previous_renderer = nullptr;
+            static decltype(config::CONFIG.waveParameters) previous_parameters;
+            if(previous_renderer != procedural_wave_render.get() || previous_parameters != config::CONFIG.waveParameters) {
+                procedural_wave_render->reset_parameters();
+                for(const auto& [group, parameters] : config::CONFIG.waveParameters)
+                    for(const auto& [key, number] : parameters) procedural_wave_render->set_parameter(group, key, number);
+                previous_renderer = procedural_wave_render.get();
+                previous_parameters = config::CONFIG.waveParameters;
+            }
+            procedural_wave_render->waves_enabled = config::CONFIG.wavesEnabled;
+            procedural_wave_render->particles_enabled = config::CONFIG.particlesEnabled;
+            procedural_wave_render->particle_color = config::CONFIG.particleColor;
+        }
         bool render_menu = true;
         unsigned int overlay_begin = 0;
         bool has_overlay = !overlays.empty();
         bool top_is_message = has_overlay && (dynamic_cast<app::message_overlay*>(overlays.back().get()) != nullptr);
+        bool top_uses_shell_fade = has_overlay && overlays.back()->do_fade_in();
 
         if(has_overlay) {
             for(int i=static_cast<int>(overlays.size())-1; i >= 0; i--) {
@@ -1151,9 +1480,10 @@ namespace app
         // Consider fade-out of a message overlay (stored as old_overlay) as part of the transition too
         bool fading_out_message = (!has_overlay && overlay_transition && old_overlay && (dynamic_cast<app::message_overlay*>(old_overlay.get()) != nullptr));
         // If a message overlay is appearing/disappearing, still render menu during transition
-        bool allow_menu = render_menu || ((top_is_message || fading_out_message) && overlay_transition);
+        const bool shell_fade_transition = overlay_transition && top_uses_shell_fade;
+        bool allow_menu = render_menu || ((top_is_message || fading_out_message) && shell_fade_transition);
         if(allow_menu){
-            if(overlay_transition || has_overlay || fading_out_message) {
+            if(shell_fade_transition || fading_out_message) {
                 // Fade UI to transparency: scale RGB and A together by (1 - progress)
                 float s = 1.0f - static_cast<float>(dir_progress);
                 renderer.push_color(glm::vec4(s, s, s, s));
@@ -1167,24 +1497,24 @@ namespace app
             // Render the entire XMB UI (menu + time + news) within the zoom scope
             menu.render(renderer);
 
-#if __cpp_lib_chrono >= 201907L || defined(__GLIBCXX__)
-            static const std::chrono::time_zone* timezone = [](){
-                auto tz = std::chrono::current_zone();
-                auto system = std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now());
-                auto local = std::chrono::zoned_time(tz, system);
-                spdlog::debug("{}", std::format("Timezone: {}, System Time: {}, Local Time: {}", tz->name(), system, local));
-                return tz;
-            }();
-            auto local_now = std::chrono::zoned_time(timezone, std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now()));
-#else
-            auto local_now = std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now());
-#endif
-            renderer.draw_text(std::vformat("{:"+config::CONFIG.dateTimeFormat+"}", std::make_format_args(local_now)),
-                static_cast<float>(0.831770833f+config::CONFIG.dateTimeOffset), 0.086111111f, 0.021296296f*2.5f);
+            const auto text_color = renderer.text_color;
+            renderer.text_color = glm::vec4(1.0F);
+            renderer.push_color(glm::vec4(config::CONFIG.clockColor, 1.0F));
+            if(!status_bar_render.render_local(
+                   renderer, openxmb::xmb::wall_clock_now())) {
+                static bool status_bar_time_warning_logged = false;
+                if(!status_bar_time_warning_logged) {
+                    spdlog::warn(
+                        "The local civil time is unavailable; hiding the XMB status bar clock");
+                    status_bar_time_warning_logged = true;
+                }
+            }
 
-            news.render(renderer);
+            renderer.pop_color();
+            renderer.text_color = text_color;
+            // The reference root scene has no legacy placeholder ticker.
             if(pushed_zoom) renderer.pop_zoom();
-            if(overlay_transition || has_overlay || fading_out_message) {
+            if(shell_fade_transition || fading_out_message) {
                 renderer.pop_color();
             }
 
@@ -1192,7 +1522,8 @@ namespace app
 
         bool enable_cursor = false;
         for(unsigned int i=overlay_begin; i < overlays.size(); i++) {
-            if(i == overlays.size()-1 && overlay_transition) {
+            renderer.text_scale = static_cast<float>(config::CONFIG.textScale) * overlays[i]->typography_scale();
+            if(i == overlays.size()-1 && shell_fade_transition) {
                 renderer.push_color(glm::mix(glm::vec4(0.0), glm::vec4(1.0), dir_progress));
                 overlays[i]->render(renderer, this);
                 renderer.pop_color();
@@ -1201,8 +1532,18 @@ namespace app
             }
             enable_cursor = overlays[i]->enable_cursor();
         }
-        if(overlay_transition && overlay_fade_direction == transition_direction::out && old_overlay) {
+        if(!allow_menu && has_overlay && overlays[overlay_begin]->show_status_bar()) {
+            const auto overlay_text_scale = renderer.text_scale;
+            renderer.text_scale = static_cast<float>(config::CONFIG.textScale);
+            renderer.push_color(glm::vec4(config::CONFIG.clockColor,1.0F));
+            static_cast<void>(status_bar_render.render_local(renderer,openxmb::xmb::wall_clock_now()));
+            renderer.pop_color();
+            renderer.text_scale = overlay_text_scale;
+        }
+        if(overlay_transition && overlay_fade_direction == transition_direction::out &&
+           old_overlay && old_overlay->do_fade_out()) {
             renderer.push_color(glm::mix(glm::vec4(0.0), glm::vec4(1.0), dir_progress));
+            renderer.text_scale = static_cast<float>(config::CONFIG.textScale) * old_overlay->typography_scale();
             old_overlay->render(renderer, this);
             renderer.pop_color();
         } else if(old_overlay) {
@@ -1213,7 +1554,8 @@ namespace app
             old_overlay.reset();
         }
 
-        if(enable_cursor) {
+        renderer.text_scale = static_cast<float>(config::CONFIG.textScale);
+        if(enable_cursor && std::chrono::steady_clock::now()-cursor_active_at < std::chrono::seconds(2)) {
             constexpr float cursor_size = 0.05f;
             if(cursorTexture && cursorTexture->loaded) {
                 renderer.draw_image(*cursorTexture,
@@ -1249,7 +1591,143 @@ namespace app
         }
     }
 
+
+    std::shared_ptr<openxmb::themes::ThemeLibrary> shell::theme_library() {
+        const auto directory = config::CONFIG.profileConfigPath.empty()
+            ? openxmb::integrations::user_data_directory() / "themes"
+            : config::CONFIG.profileConfigPath.parent_path() / "themes";
+        if(!theme->library || theme->library->root() != directory) {
+            theme->library = std::make_shared<openxmb::themes::ThemeLibrary>(directory);
+            theme->library->set_baseline(nlohmann::json::parse(config::CONFIG.shell_snapshot()));
+        }
+        return theme->library;
+    }
+
+    void shell::reload_menu() {
+        if(!fixed_components_loaded) return;
+        win->waitIdle();
+        menu.preload(device, allocator, *loader);
+    }
+
+    void shell::open_panel(const std::string& name) {
+        if(name == "themes") {
+            emplace_overlay<programs::theme_manager>(*loader, theme_library(),
+                [this](const openxmb::themes::AppliedTheme& value) { apply_theme(value); },
+                [] { return nlohmann::json::parse(config::CONFIG.shell_snapshot()); });
+        } else if(name == "settings") {
+            emplace_overlay<programs::settings_center>(*loader);
+        } else if(name == "users" || name == "games" || name == "custom" || name == "friends" || name == "account" || name == "trophies") {
+            emplace_overlay<programs::library_manager>(name, *loader,
+                [this](const std::filesystem::path& path) { switch_profile(path); });
+        } else {
+            emplace_overlay<programs::integration_center>(name, *loader);
+        }
+    }
+
+    void shell::open_media(const std::filesystem::path& path) {
+        const auto programs = programs::get_open_infos(path, programs::file_info(path));
+        if(programs.empty()) {
+            emplace_overlay<app::message_overlay>("Cannot open file", "No viewer is available for " + path.extension().string(), std::vector<std::string>{"OK"});
+            return;
+        }
+        spdlog::info("Opening media: {} ({})", path.string(), programs.front().name);
+        push_overlay(programs.front().create(path, *loader));
+    }
+
+    void shell::switch_profile(const std::filesystem::path& path) {
+        win->waitIdle();
+        config::CONFIG.switch_profile(path);
+        theme->library.reset(); theme->active.reset(); theme->textures.clear();
+        config::CONFIG.themeIcons.clear(); config::CONFIG.themeSounds.clear();
+        if(auto saved = theme_library()->active()) apply_theme(*saved);
+        else { reload_background(); reload_fonts(); reload_menu(); }
+    }
+
+    void shell::apply_theme(const openxmb::themes::AppliedTheme& theme) {
+        win->waitIdle();
+        const auto previous_font = config::CONFIG.fontPath;
+        this->theme->active = theme;
+        this->theme->frame = {};
+        this->theme->started = std::chrono::steady_clock::now();
+        this->theme->textures.clear();
+        config::CONFIG.themeIcons = theme.icons;
+        config::CONFIG.themeSounds = theme.sounds;
+        auto value = theme.shell;
+        const auto& source = theme.settings;
+        const auto inherit = [&](const char* from, const char* to) {
+            if(source.contains(from) && !source[from].is_null()) value[to] = source[from];
+        };
+        // Native captured packs and MaXMB packs share the same validated style
+        // setters. Disabled components retain the pre-theme baseline.
+        if(theme.components.colors) {
+            inherit("icon-color", "icon-color"); inherit("text-color", "text-color");
+            inherit("clock-color", "clock-color"); inherit("particle-color", "particle-color");
+            inherit("dotColor", "particle-color");
+        }
+        if(theme.components.icons) { inherit("icon-style", "icon-style"); inherit("icon-glass-refraction", "icon-glass-refraction"); }
+        if(theme.components.font) inherit("font-size", "font-size");
+        if(theme.components.background) {
+            inherit("theme-waves-enabled", "theme-waves-enabled"); inherit("wavesEnabled", "theme-waves-enabled");
+            inherit("theme-particles-enabled", "theme-particles-enabled"); inherit("dotsEnabled", "theme-particles-enabled");
+        }
+        const auto text = [&](const char* key, auto&& setter) {
+            if(value.contains(key) && value[key].is_string()) setter(value[key].get<std::string>());
+        };
+        text("background-image", [](const auto& v) { config::CONFIG.setBackgroundImage(v); });
+        text("background-type", [](const auto& v) { config::CONFIG.setBackgroundType(v); });
+        text("background-color", [](const auto& v) { config::CONFIG.setBackgroundColor(v); });
+        text("wave-color", [](const auto& v) { config::CONFIG.setWaveColor(v); });
+        text("theme-custom-colour", [](const auto& v) { config::CONFIG.setThemeCustomColour(v); });
+        text("theme-colour-mode", [](const auto& v) { config::CONFIG.setThemeOriginalColour(v == "original"); });
+        text("theme-day-night-mode", [](const auto& v) { config::CONFIG.setThemeDayNightMode(v); });
+        text("font-path", [](const auto& v) { config::CONFIG.setFontPath(v); });
+        text("icon-color", [](const auto& v) { config::CONFIG.setIconColor(v); });
+        text("text-color", [](const auto& v) { config::CONFIG.setTextColor(v); });
+        text("clock-color", [](const auto& v) { config::CONFIG.setClockColor(v); });
+        text("particle-color", [](const auto& v) { config::CONFIG.setParticleColor(v == "auto" ? "#ffffff" : v); });
+        if(value.contains("font-size") && value["font-size"].is_number()) config::CONFIG.setTextScale(value["font-size"].get<double>() / 100.0);
+        if(value.contains("icon-glass-refraction") && value["icon-glass-refraction"].is_boolean()) config::CONFIG.setIconGlassRefraction(value["icon-glass-refraction"].get<bool>());
+        text("icon-style", [](const auto& v) { config::CONFIG.setIconStyle(v); });
+        if(value.contains("theme-waves-enabled") && value["theme-waves-enabled"].is_boolean()) config::CONFIG.setWavesEnabled(value["theme-waves-enabled"].get<bool>());
+        if(value.contains("theme-particles-enabled") && value["theme-particles-enabled"].is_boolean()) config::CONFIG.setParticlesEnabled(value["theme-particles-enabled"].get<bool>());
+        if(value.contains("wave-parameters") && value["wave-parameters"].is_object()) config::CONFIG.setWaveParameters(value["wave-parameters"].dump());
+        else config::CONFIG.setWaveParameters("{}");
+        procedural_wave_render->reset_parameters();
+        for(const auto& [group, parameters] : config::CONFIG.waveParameters)
+            for(const auto& [key, number] : parameters) procedural_wave_render->set_parameter(group, key, number);
+        procedural_wave_render->waves_enabled = config::CONFIG.wavesEnabled;
+        procedural_wave_render->particles_enabled = config::CONFIG.particlesEnabled;
+        procedural_wave_render->particle_color = config::CONFIG.particleColor;
+        if(previous_font != config::CONFIG.fontPath) reload_fonts();
+        if(fixed_components_loaded) {
+            const auto load = [&](auto& sound, const std::filesystem::path& path) {
+                sound = sdl::mix::unique_chunk{sdl::mix::LoadWAV(config::CONFIG.resolve_sound(path).string().c_str())};
+            };
+            const auto dir = config::CONFIG.asset_directory / "sounds";
+            load(ok_sound, dir/"ok.wav"); load(confirm_sound, dir/"NSE.ui.Confirm.wav");
+            load(back_sound, dir/"NSE.clicker.Cancel.wav"); load(cancel_sound, dir/"NSE.ui.Cancel.wav");
+            load(question_sound, dir/"NSE.questionMark.wav");
+            reload_menu();
+        }
+        config::CONFIG.save_config();
+    }
+
+    void shell::reload_fonts() {
+        win->waitIdle();
+        auto replacement = std::make_unique<font_renderer>(config::CONFIG.fontPath.string(), 32, device, allocator, win->swapchainExtent, win->gpuFeatures);
+        replacement->preload(loader, {shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get(), nullptr, 0x20, 0x1ff).get();
+        replacement->prepare(win->swapchainImageCount);
+        font_render = std::move(replacement);
+    }
+
     void shell::reload_background() {
+#if OPENXMB_ENABLE_VIDEO_PLAYER
+        if(config::CONFIG.backgroundType == config::config::background_type::video) {
+            background_video_path=config::CONFIG.backgroundImage;
+            video_background_render->set_path(background_video_path);
+            video_background_render->set_active(true);
+        }
+#endif
         if(config::CONFIG.backgroundType == config::config::background_type::image) {
             backgroundTexture = std::make_unique<texture>(device, allocator);
             loader->loadTexture(backgroundTexture.get(), config::CONFIG.backgroundImage);
@@ -1292,16 +1770,25 @@ namespace app
                     return "steam";
                 }
             }
-            return "ouya"; // totally sensible default :P
+            return "xbox";
         }
         return type;
     }
 
     void shell::tick() {
+        openxmb::music::service().tick();
         if(background_only) {
             return;
         }
 
+        if(!pending_panel.empty()) {
+            const auto panel = std::exchange(pending_panel, {});
+            open_panel(panel);
+        }
+        if(!pending_media.empty()) {
+            const auto path = std::exchange(pending_media, {});
+            open_media(path);
+        }
         for(unsigned int i=0; i<2; i++) {
             if(last_controller_axis_input[i]) {
                 auto time_since_input = std::chrono::duration<double>(std::chrono::steady_clock::now() - last_controller_axis_input_time[i]);
@@ -1446,6 +1933,7 @@ namespace app
         if(cursor_joystick_delta.x == 0.0f && cursor_joystick_delta.y == 0.0f) {
             return;
         }
+        cursor_active_at=std::chrono::steady_clock::now();
         cursor_position = glm::clamp(cursor_position + cursor_joystick_delta, glm::vec2{0.0f}, glm::vec2{1.0f});
         dispatch<events::cursor_move>(action::none, cursor_position.x, cursor_position.y);
     }
@@ -1453,6 +1941,7 @@ namespace app
     bool shell::handle_cursor(const event& event)
     {
         if(auto* d = event.get<events::mouse_move>()) {
+            cursor_active_at=std::chrono::steady_clock::now();
             cursor_position = glm::vec2{d->x, d->y};
             dispatch<events::cursor_move>(action::none, cursor_position.x, cursor_position.y);
             return true;
@@ -1514,35 +2003,18 @@ namespace app
     void shell::key_down(sdl::Keysym key)
     {
         spdlog::trace("Key down: {}", key.sym);
-        switch(key.sym) {
-            case sdl::KeyCode::SDLK_LEFT:
-                dispatch(event{action::left, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
-                break;
-            case sdl::KeyCode::SDLK_RIGHT:
-                dispatch(event{action::right, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
-                break;
-            case sdl::KeyCode::SDLK_UP:
-                dispatch(event{action::up, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
-                break;
-            case sdl::KeyCode::SDLK_DOWN:
-                dispatch(event{action::down, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
-                break;
-            case sdl::KeyCode::SDLK_RETURN:
-                dispatch(event{action::ok, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
-                break;
-            case sdl::KeyCode::SDLK_ESCAPE:
-                dispatch(event{action::cancel, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
-                break;
-            case sdl::KeyCode::SDLK_TAB:
-                dispatch(event{action::options, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
-                break;
-            case sdl::KeyCode::SDLK_CAPSLOCK:
-                dispatch(event{action::extra, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
-                break;
-            default:
-                dispatch(event{action::none, events::key_down{static_cast<unsigned int>(std::to_underlying(key.scancode))}});
-                break;
+        constexpr std::array<std::string_view,8> names{"left","right","up","down","ok","cancel","options","extra"};
+        constexpr std::array<unsigned,8> defaults{80,79,82,81,40,41,43,57};
+        const auto scan=static_cast<unsigned>(std::to_underlying(key.scancode));
+        for(std::size_t index=0;index<names.size();++index) {
+            unsigned binding=defaults[index];
+            if(const auto it=config::CONFIG.preferences.find("key."+std::string(names[index]));it!=config::CONFIG.preferences.end()) {
+                unsigned value{}; const auto [end,error]=std::from_chars(it->second.data(),it->second.data()+it->second.size(),value);
+                if(error==std::errc{} && end==it->second.data()+it->second.size() && value>=4 && value<=512) binding=value;
+            }
+            if(scan==binding) { dispatch(event{static_cast<action>(index+1),events::key_down{scan}}); return; }
         }
+        dispatch(event{action::none,events::key_down{scan}});
     }
 
     void shell::add_controller(sdl::GameController* controller)

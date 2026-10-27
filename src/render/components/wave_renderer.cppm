@@ -27,7 +27,7 @@ module;
 
 export module openxmb.render:wave_renderer;
 
-import dreamrender;
+import auroreengine;
 import :shaders;
 
 import glm;
@@ -153,7 +153,7 @@ export class wave_renderer {
 
                     vk::GraphicsPipelineCreateInfo pipeline_info({}, shaders, &vertex_input,
                         &input_assembly, &tesselation, &viewport, &rasterization, &multisample, &depthStencil, &colorBlend, &dynamic, pipelineLayout.get(), {});
-                    pipelines = dreamrender::createPipelines(device, pipelineCache, pipeline_info, renderPasses, "Wave Renderer Pipeline");
+                    pipelines = auroreengine::createPipelines(device, pipelineCache, pipeline_info, renderPasses, "Wave Renderer Pipeline");
                 }
             }
         }
@@ -196,7 +196,7 @@ export class wave_renderer {
         vma::UniqueAllocation indexAllocation;
 
         vk::UniquePipelineLayout pipelineLayout;
-        dreamrender::UniquePipelineMap pipelines;
+        auroreengine::UniquePipelineMap pipelines;
 };
 
 }

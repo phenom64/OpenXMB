@@ -29,7 +29,7 @@ module;
 
 module openxmb.app;
 
-import dreamrender;
+import auroreengine;
 import vulkan_hpp;
 import vma;
 
@@ -37,13 +37,13 @@ namespace app {
 
 news_display::news_display(class shell* shell) : shell(shell) {}
 
-void news_display::preload(vk::Device device, vma::Allocator allocator, dreamrender::resource_loader& loader) {
+void news_display::preload(vk::Device device, vma::Allocator allocator, auroreengine::resource_loader& loader) {
 }
 
 void news_display::tick() {
 }
 
-void news_display::render(dreamrender::gui_renderer& renderer) {
+void news_display::render(auroreengine::gui_renderer& renderer) {
     tick();
 
     constexpr float base_x = 0.75f;

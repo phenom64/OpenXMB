@@ -25,7 +25,7 @@ module;
 export module openxmb.app:base_viewer;
 
 import glm;
-import dreamrender;
+import auroreengine;
 import vulkan_hpp;
 import openxmb.utils;
 
@@ -42,7 +42,7 @@ export class base_viewer {
             offset = glm::clamp(offset + move_delta_pos, -limit, limit);
         }
 
-        void render(vk::ImageView view, float size, dreamrender::gui_renderer& renderer) {
+        void render(vk::ImageView view, float size, auroreengine::gui_renderer& renderer) {
             float bw = size*renderer.aspect_ratio;
             float bh = size;
 

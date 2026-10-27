@@ -34,6 +34,7 @@ module;
 #include <system_error>
 #include <glm/vec3.hpp>
 #include <nlohmann/json.hpp>
+#include "openxmb/xmb/procedural_wave.hpp"
 #include <spdlog/spdlog.h>
 #include <cstdlib>
 
@@ -50,11 +51,40 @@ namespace config
 
 namespace
 {
-    constexpr int current_config_version = 2;
+    constexpr int current_config_version = 5;
     constexpr double min_controller_cursor_speed = 0.10;
     constexpr double max_controller_cursor_speed = 4.0;
 
+    bool replace_config_file(const std::filesystem::path& temporary,
+                             const std::filesystem::path& destination,
+                             std::error_code& error) noexcept
+    {
+#if defined(_WIN32)
+        if(MoveFileExW(temporary.c_str(), destination.c_str(),
+                       MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) != 0) {
+            error.clear();
+            return true;
+        }
+        error = std::error_code(static_cast<int>(GetLastError()),
+                                std::system_category());
+        return false;
+#else
+        std::filesystem::rename(temporary, destination, error);
+        return !error;
+#endif
+    }
+
     const std::array<std::string, 12>& default_month_colours()
+    {
+        static const std::array<std::string, 12> colours = {
+            "#ffff60", "#87c545", "#eb6793", "#1c5c1a",
+            "#704d92", "#3ad2af", "#4aa2c2", "#c459df",
+            "#ffe750", "#684d2b", "#ce4644", "#ffffff",
+        };
+        return colours;
+    }
+
+    const std::array<std::string, 12>& legacy_month_colours()
     {
         static const std::array<std::string, 12> colours = {
             "#f2e6a6", "#9e4540", "#4da640", "#f299cc",
@@ -131,6 +161,45 @@ namespace
         return colour_to_hex(*colour);
     }
 
+    std::string_view day_night_mode_to_string(config::day_night_mode mode)
+    {
+        using day_night_mode = config::day_night_mode;
+        switch(mode) {
+            case day_night_mode::auto_time_of_day: return "auto.time.of.day";
+            case day_night_mode::day: return "day";
+            case day_night_mode::morning: return "morning";
+            case day_night_mode::dusk: return "dusk";
+            case day_night_mode::evening: return "evening";
+            case day_night_mode::night: return "night";
+        }
+        return "auto.time.of.day";
+    }
+
+    std::optional<config::day_night_mode> parse_day_night_mode(std::string_view mode)
+    {
+        using day_night_mode = config::day_night_mode;
+        if(mode == "auto" || mode == "auto.time.of.day" ||
+           mode == "automatic" || mode == "time.of.day") {
+            return day_night_mode::auto_time_of_day;
+        }
+        if(mode == "day") {
+            return day_night_mode::day;
+        }
+        if(mode == "morning") {
+            return day_night_mode::morning;
+        }
+        if(mode == "dusk") {
+            return day_night_mode::dusk;
+        }
+        if(mode == "evening") {
+            return day_night_mode::evening;
+        }
+        if(mode == "night") {
+            return day_night_mode::night;
+        }
+        return std::nullopt;
+    }
+
     std::filesystem::path expand_user_path(const std::string& path)
     {
         if(path == "~" || path.starts_with("~/")) {
@@ -156,6 +225,16 @@ namespace
             return value;
         }
         return {};
+    }
+
+    bool env_flag(const char* name)
+    {
+        if(const char* value = std::getenv(name); value != nullptr) {
+            const std::string_view text{value};
+            return text == "1" || text == "true" || text == "TRUE" ||
+                   text == "yes" || text == "YES";
+        }
+        return false;
     }
 
     std::filesystem::path user_config_directory()
@@ -208,7 +287,9 @@ namespace
             auto now = std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now());
 #if __cpp_lib_chrono >= 201907L || defined(__GLIBCXX__)
             auto local_now = std::chrono::zoned_time(std::chrono::current_zone(), now);
-            std::vformat("{:" + format + "}", std::make_format_args(local_now));
+            [[maybe_unused]] const auto formatted =
+                std::vformat("{:" + format + "}",
+                             std::make_format_args(local_now));
 #else
             std::vformat("{:" + format + "}", std::make_format_args(now));
 #endif
@@ -255,6 +336,7 @@ namespace
 
         auto& shell = config["shell"];
         auto& controller = config["controller"];
+        auto& render = config["render"];
 
         if(shell.contains("theme-color-mode") && !shell.contains("theme-colour-mode")) {
             shell["theme-colour-mode"] = shell["theme-color-mode"];
@@ -306,6 +388,25 @@ namespace
             shell["theme-month-time-colours"] = build_month_time_colours(default_month_colours());
             migrated = true;
         }
+        if(!shell.contains("theme-day-night-mode")) {
+            shell["theme-day-night-mode"] = "auto.time.of.day";
+            migrated = true;
+        }
+
+        if(version < 3) {
+            if(shell.contains("theme-month-colours") &&
+                shell["theme-month-colours"] == nlohmann::json(legacy_month_colours())) {
+                shell["theme-month-colours"] = default_month_colours();
+                shell["theme-month-time-colours"] = build_month_time_colours(default_month_colours());
+                migrated = true;
+            }
+            if(!render.contains("icon-glass-refraction") ||
+                (render["icon-glass-refraction"].is_boolean() &&
+                 !render["icon-glass-refraction"].get<bool>())) {
+                render["icon-glass-refraction"] = true;
+                migrated = true;
+            }
+        }
 
         if(version < current_config_version) {
             config["_meta"]["config_version"] = current_config_version;
@@ -353,19 +454,23 @@ void config::save_config() {
 }
 
 std::filesystem::path config::config_path_for_read() const {
+    if(!profileConfigPath.empty()) return profileConfigPath;
     if(auto path = env_path("OPENXMB_CONFIG"); !path.empty()) {
         return path;
     }
 
-    auto exe_config = exe_directory / "config.json";
-    if(std::filesystem::exists(exe_config)) {
-        return exe_config;
+    const auto user_config=user_config_directory()/"config.json";
+    if(std::filesystem::exists(user_config)) return user_config;
+    for(const auto& bundled:{exe_directory/"config.json",
+                            exe_directory/"../Resources/share/OpenXMB/config.json",
+                            exe_directory/"../share/OpenXMB/config.json"}) {
+        if(std::filesystem::exists(bundled)) return bundled;
     }
-
-    return user_config_directory() / "config.json";
+    return user_config;
 }
 
 std::filesystem::path config::config_path_for_write() const {
+    if(!profileConfigPath.empty()) return profileConfigPath;
     if(auto path = env_path("OPENXMB_CONFIG"); !path.empty()) {
         return path;
     }
@@ -376,6 +481,13 @@ void config::load_from_json() {
     set_default_user_dirs(*this);
     resetThemeColourStrings();
     setFontPath("default");
+    textScale = 1.0;
+    iconColor = textColor = clockColor = particleColor = glm::vec3(1.0f);
+    iconColorAuto=true;
+    iconStyle = "default";
+    iconGlassRefraction = true;
+    wavesEnabled = particlesEnabled = true;
+    waveParameters.clear();
     std::filesystem::path config_path = config_path_for_read();
     
     if (!std::filesystem::exists(config_path)) {
@@ -392,6 +504,9 @@ void config::load_from_json() {
         
         nlohmann::json config;
         config_file >> config;
+        // Windows does not allow the migration's atomic replacement while this
+        // stream still holds the original file open.
+        config_file.close();
         bool migrated = false;
         migrate_json(config, migrated);
         
@@ -418,6 +533,16 @@ void config::load_from_json() {
             if (shell.contains("font-path")) {
                 setFontPath(expand_user_path(shell["font-path"].get<std::string>()).string());
             }
+            if(shell.contains("font-size") && shell["font-size"].is_number()) setTextScale(shell["font-size"].get<double>() / 100.0);
+            if(shell.contains("text-scale") && shell["text-scale"].is_number()) setTextScale(shell["text-scale"].get<double>());
+            if(shell.contains("icon-color") && shell["icon-color"].is_string()) setIconColor(shell["icon-color"].get<std::string>());
+            if(shell.contains("text-color") && shell["text-color"].is_string()) setTextColor(shell["text-color"].get<std::string>());
+            if(shell.contains("clock-color") && shell["clock-color"].is_string()) setClockColor(shell["clock-color"].get<std::string>());
+            if(shell.contains("particle-color") && shell["particle-color"].is_string()) setParticleColor(shell["particle-color"].get<std::string>());
+            if(shell.contains("icon-style") && shell["icon-style"].is_string()) setIconStyle(shell["icon-style"].get<std::string>());
+            if(shell.contains("theme-waves-enabled") && shell["theme-waves-enabled"].is_boolean()) setWavesEnabled(shell["theme-waves-enabled"].get<bool>());
+            if(shell.contains("theme-particles-enabled") && shell["theme-particles-enabled"].is_boolean()) setParticlesEnabled(shell["theme-particles-enabled"].get<bool>());
+            if(shell.contains("wave-parameters") && shell["wave-parameters"].is_object()) setWaveParameters(shell["wave-parameters"].dump());
             
             if (shell.contains("date-time-format")) {
                 setDateTimeFormat(shell["date-time-format"].get<std::string>());
@@ -449,6 +574,9 @@ void config::load_from_json() {
             }
             if (shell.contains("theme-custom-colour")) {
                 setThemeCustomColour(shell["theme-custom-colour"].get<std::string>());
+            }
+            if (shell.contains("theme-day-night-mode")) {
+                setThemeDayNightMode(shell["theme-day-night-mode"].get<std::string>());
             }
             if (shell.contains("theme-month-colours") && shell["theme-month-colours"].is_array()) {
                 const auto& colours = shell["theme-month-colours"];
@@ -502,6 +630,11 @@ void config::load_from_json() {
             }
         }
         
+        preferences.clear();
+        if(config.contains("preferences") && config["preferences"].is_object())
+            for(const auto& [key, value] : config["preferences"].items())
+                if(value.is_string()) preferences[key] = value.get<std::string>();
+
         // Load controller settings
         if (config.contains("controller")) {
             auto& controller = config["controller"];
@@ -566,7 +699,12 @@ void config::load_from_json() {
         spdlog::info("Configuration loaded successfully");
         if(migrated) {
             spdlog::info("Configuration migrated to version {}", current_config_version);
-            save_to_json();
+            if(env_flag("OPENXMB_CONFIG_READ_ONLY")) {
+                spdlog::info(
+                    "Configuration override is read-only; migration remains in memory for this run");
+            } else {
+                save_to_json();
+            }
         }
         
     } catch (const std::exception& e) {
@@ -585,7 +723,7 @@ void config::save_to_json() {
         config["_meta"] = {
             {"project", "OpenXMB"},
             {"description", "Configuration file for the Syndromatic Open XcrossMediaBar desktop experience."},
-            {"app_version", "0.1.0-beta"},
+            {"app_version", OPENXMB_VERSION_STRING},
             {"config_version", current_config_version},
             {"author", "Kavish Krishnakumar / Syndromatic Limited Bharat Britannia"},
             {"copyright", "™ & © 2025-2026. Syndromatic Ltd. All rights reserved."},
@@ -594,6 +732,7 @@ void config::save_to_json() {
             {"generated_at", "2025-08-20T00:00:00Z"}
         };
         
+        config["preferences"] = preferences;
         // Shell settings
         config["shell"]["background-color"] = colour_to_hex(backgroundColor);
         
@@ -604,10 +743,20 @@ void config::save_to_json() {
             case background_type::wave: config["shell"]["background-type"] = "wave"; break;
             case background_type::color: config["shell"]["background-type"] = "color"; break;
             case background_type::image: config["shell"]["background-type"] = "image"; break;
+            case background_type::video: config["shell"]["background-type"] = "video"; break;
         }
         
         config["shell"]["background-image"] = backgroundImage.string();
         config["shell"]["font-path"] = fontPath.string();
+        config["shell"]["font-size"] = static_cast<int>(std::lround(textScale * 100.0));
+        config["shell"]["icon-color"] = iconColorAuto ? "auto" : colour_to_hex(iconColor);
+        config["shell"]["text-color"] = colour_to_hex(textColor);
+        config["shell"]["clock-color"] = colour_to_hex(clockColor);
+        config["shell"]["particle-color"] = colour_to_hex(particleColor);
+        config["shell"]["icon-style"] = iconStyle;
+        config["shell"]["theme-waves-enabled"] = wavesEnabled;
+        config["shell"]["theme-particles-enabled"] = particlesEnabled;
+        config["shell"]["wave-parameters"] = waveParameters;
         config["shell"]["date-time-format"] = dateTimeFormat;
         config["shell"]["date-time-x-offset"] = dateTimeOffset;
         config["shell"]["language"] = language;
@@ -626,6 +775,7 @@ void config::save_to_json() {
         // Theme/colour scheme
         config["shell"]["theme-colour-mode"] = themeOriginalColour ? "original" : "custom";
         config["shell"]["theme-custom-colour"] = colour_to_hex(themeCustomColour);
+        config["shell"]["theme-day-night-mode"] = day_night_mode_to_string(themeDayNightMode);
         config["shell"]["theme-month-colours"] = themeMonthColourStrings;
         config["shell"]["theme-month-time-colours"] = themeMonthTimeColourStrings;
 
@@ -659,8 +809,7 @@ void config::save_to_json() {
             config_file.close();
 
             std::error_code rename_error;
-            std::filesystem::rename(temp_path, config_path, rename_error);
-            if(rename_error) {
+            if(!replace_config_file(temp_path, config_path, rename_error)) {
                 spdlog::error("Failed to replace config file {}: {}", config_path.string(), rename_error.message());
                 std::error_code remove_error;
                 std::filesystem::remove(temp_path, remove_error);
@@ -781,6 +930,7 @@ void config::setBackgroundType(background_type type) {
         case background_type::wave: value = "wave"; break;
         case background_type::color: value = "color"; break;
         case background_type::image: value = "image"; break;
+        case background_type::video: value = "video"; break;
     }
     notifyCallbacks("background-type", value);
 }
@@ -792,6 +942,8 @@ void config::setBackgroundType(std::string_view type) {
         setBackgroundType(background_type::wave);
     } else if(type == "color") {
         setBackgroundType(background_type::color);
+    } else if(type == "video") {
+        setBackgroundType(background_type::video);
     } else if(type == "image") {
         setBackgroundType(background_type::image);
     } else {
@@ -882,6 +1034,28 @@ void config::setThemeCustomColour(const std::string& hex) {
     setThemeCustomColour(std::string_view(hex));
 }
 
+void config::setThemeDayNightMode(day_night_mode mode) {
+    if(themeDayNightMode == mode) {
+        return;
+    }
+    themeDayNightMode = mode;
+    notifyCallbacks("theme-day-night-mode", std::string(day_night_mode_to_string(themeDayNightMode)));
+}
+
+void config::setThemeDayNightMode(std::string_view mode) {
+    auto parsed = parse_day_night_mode(mode);
+    if(!parsed) {
+        spdlog::warn("Ignoring invalid theme-day-night-mode: {}", mode);
+        setThemeDayNightMode(day_night_mode::auto_time_of_day);
+        return;
+    }
+    setThemeDayNightMode(*parsed);
+}
+
+void config::setThemeDayNightMode(const std::string& mode) {
+    setThemeDayNightMode(std::string_view(mode));
+}
+
 void config::setDateTimeFormat(const std::string& format) {
     if(!valid_datetime_format(format)) {
         spdlog::warn("Ignoring invalid date-time-format: {}", format);
@@ -941,11 +1115,101 @@ void config::setShowMemory(bool show) {
 }
 
 void config::setIconGlassRefraction(bool enabled) {
+    if(!enabled) iconStyle = "flat";
+    else if(iconStyle == "flat") iconStyle = "default";
     if(iconGlassRefraction == enabled) {
         return;
     }
     iconGlassRefraction = enabled;
     notifyCallbacks("icon-glass-refraction", iconGlassRefraction ? "true" : "false");
+}
+
+void config::setIconStyle(std::string_view style) {
+    if(style != "default" && style != "glossy" && style != "flat") return;
+    iconStyle = style;
+    setIconGlassRefraction(style != "flat");
+    notifyCallbacks("icon-style", iconStyle);
+}
+
+void config::setTextScale(double scale) {
+    if(!std::isfinite(scale)) return;
+    scale = std::clamp(scale, 0.5, 2.0);
+    if(textScale == scale) return;
+    textScale = scale;
+    notifyCallbacks("font-size", std::to_string(static_cast<int>(std::lround(scale * 100.0))));
+}
+
+void config::setIconColor(std::string_view hex) {
+    if(hex=="auto"||hex=="original") {if(!iconColorAuto) {iconColorAuto=true;notifyCallbacks("icon-color","auto");}return;}
+    auto colour=parse_hex_colour(hex);if(!colour) return;
+    const bool changed=iconColorAuto||!colour_equal(iconColor,*colour);iconColorAuto=false;iconColor=*colour;
+    if(changed) notifyCallbacks("icon-color",colour_to_hex(iconColor));
+}
+void config::setTextColor(std::string_view hex) {
+    auto colour = parse_hex_colour(hex);
+    if(!colour || colour_equal(textColor, *colour)) return;
+    textColor = *colour;
+    notifyCallbacks("text-color", colour_to_hex(textColor));
+}
+void config::setClockColor(std::string_view hex) {
+    auto colour = parse_hex_colour(hex);
+    if(!colour || colour_equal(clockColor, *colour)) return;
+    clockColor = *colour;
+    notifyCallbacks("clock-color", colour_to_hex(clockColor));
+}
+void config::setParticleColor(std::string_view hex) {
+    auto colour = parse_hex_colour(hex);
+    if(!colour || colour_equal(particleColor, *colour)) return;
+    particleColor = *colour;
+    notifyCallbacks("particle-color", colour_to_hex(particleColor));
+}
+void config::setWavesEnabled(bool enabled) {
+    if(wavesEnabled == enabled) return;
+    wavesEnabled = enabled;
+    notifyCallbacks("theme-waves-enabled", enabled ? "true" : "false");
+}
+void config::setParticlesEnabled(bool enabled) {
+    if(particlesEnabled == enabled) return;
+    particlesEnabled = enabled;
+    notifyCallbacks("theme-particles-enabled", enabled ? "true" : "false");
+}
+
+void config::setWaveParameters(std::string_view encoded) {
+    try {
+        if(encoded.size() > 65536) return;
+        const auto source = nlohmann::json::parse(encoded);
+        if(!source.is_object() || source.size() > 128) return;
+        decltype(waveParameters) normalized;
+        const auto add = [&](const std::string& group, const std::string& key, const nlohmann::json& number) {
+            if(!number.is_number()) return;
+            float value = number.get<float>();
+            if(!std::isfinite(value)) return;
+            if(group == "spline") {
+                openxmb::xmb::ProceduralWaveSettings test;
+                if(!test.set(key, value)) return;
+            } else if(group == "particle") {
+                if(key == "count") value = std::floor(std::clamp(value, 0.0f, 4096.0f));
+                else if(key == "opacity") value = std::clamp(value, 0.0f, 1.0f);
+                else if(key == "sizeBase" || key == "sizeVar") value = std::clamp(value, 0.0f, 64.0f);
+                else if(key == "flowSpeed") value = std::clamp(value, -10.0f, 10.0f);
+                else if(key == "posY") value = std::clamp(value, -2.0f, 2.0f);
+                else if(key == "spreadY") value = std::clamp(value, 0.0f, 5.0f);
+                else return;
+            } else return;
+            normalized[group][key] = value;
+        };
+        for(const auto& [key, value] : source.items()) {
+            const auto separator = key.find(':');
+            if(separator != std::string::npos) add(key.substr(0, separator), key.substr(separator + 1), value);
+            else if(value.is_object() && value.size() <= 128)
+                for(const auto& [parameter, number] : value.items()) add(key, parameter, number);
+        }
+        if(normalized == waveParameters) return;
+        waveParameters = std::move(normalized);
+        notifyCallbacks("wave-parameters", nlohmann::json(waveParameters).dump());
+    } catch(const nlohmann::json::exception&) {
+        spdlog::warn("Ignoring invalid procedural wave parameters");
+    }
 }
 
 void config::setControllerRumble(bool enabled) {
@@ -1011,7 +1275,7 @@ void config::setAutostart(bool enabled) {
         return;
     }
     autostart = enabled;
-    spdlog::debug("Autostart preference changed; platform service integration is not implemented yet");
+    spdlog::debug("Autostart preference updated");
     notifyCallbacks("autostart", autostart ? "true" : "false");
 }
 
@@ -1022,6 +1286,88 @@ void config::excludeApplication(const std::string& application, bool exclude) {
         excludedApplications.erase(application);
     }
     notifyCallbacks("excluded-applications", application);
+}
+
+
+std::filesystem::path config::resolve_icon(const std::filesystem::path& path) const {
+    const auto find = [&](std::string name) -> std::filesystem::path {
+        if(auto it = themeIcons.find(name); it != themeIcons.end()) return it->second;
+        if(name.ends_with(".png")) name.resize(name.size()-4);
+        if(auto it = themeIcons.find(name); it != themeIcons.end()) return it->second;
+        return {};
+    };
+    if(auto result = find(path.filename().string()); !result.empty()) return result;
+    static const std::map<std::string, std::string> aliases{
+        {"icon_category_users", "icon_user"}, {"icon_category_settings", "icon_setting"},
+        {"icon_category_photo", "icon_photo"}, {"icon_category_music", "icon_music"},
+        {"icon_category_video", "icon_video"}, {"icon_category_tv", "icon_tv"},
+        {"icon_category_game", "icon_game"}, {"icon_category_application", "icon_game"},
+        {"icon_category_network", "icon_network"}, {"icon_category_friends", "icon_friend"},
+        {"xmb_icon_000", "icon_user"}, {"xmb_icon_001", "icon_setting"},
+        {"xmb_icon_002", "icon_photo"}, {"xmb_icon_003", "icon_music"},
+        {"xmb_icon_004", "icon_video"}, {"xmb_icon_005", "icon_game"},
+        {"xmb_icon_006", "icon_network"}, {"xmb_icon_007", "icon_friend"},
+        {"xmb_icon_psn", "icon_accountmanage"}, {"xmb_icon_008", "icon_update"},
+        {"xmb_icon_009", "icon_video_setting"}, {"xmb_icon_010", "icon_printer_setting"},
+        {"xmb_icon_012", "icon_system_setting"}, {"xmb_icon_014", "icon_datetime_setting"},
+        {"xmb_icon_015", "icon_accessory"}, {"xmb_icon_016", "icon_display_setting"},
+        {"xmb_icon_017", "icon_sound_setting"}, {"xmb_icon_018", "icon_security_setting"},
+        {"xmb_icon_020", "icon_remoteplay_setting"}, {"xmb_icon_023", "icon_theme_setting"}
+    };
+    if(auto alias = aliases.find(path.stem().string()); alias != aliases.end())
+        if(auto result = find(alias->second); !result.empty()) return result;
+    return path;
+}
+
+std::filesystem::path config::resolve_sound(const std::filesystem::path& path) const {
+    const auto name = path.stem().string();
+    if(auto it = themeSounds.find(name); it != themeSounds.end()) return it->second;
+    const auto semantic = name == "ok" ? "cursor" : name == "NSE.ui.Confirm" ? "enter" :
+        name == "NSE.ui.Cancel" || name == "NSE.clicker.Cancel" ? "back" :
+        name == "startup" || name == "NSE.startup.GameBoot" ? "coldboot" :
+        name == "NSE.questionMark" ? "options" : name;
+    if(auto it = themeSounds.find(semantic); it != themeSounds.end()) return it->second;
+    return path;
+}
+
+std::string config::shell_snapshot() const {
+    return nlohmann::json{
+        {"background-type", backgroundType == background_type::image ? "image" :
+          backgroundType == background_type::video ? "video" : backgroundType == background_type::wave ? "wave" :
+          backgroundType == background_type::color ? "color" : "original"},
+        {"background-image", backgroundImage.string()}, {"background-color", colour_to_hex(backgroundColor)},
+        {"wave-color", colour_to_hex(waveColor)}, {"font-path", fontPath.string()},
+        {"theme-colour-mode", themeOriginalColour ? "original" : "custom"},
+        {"theme-custom-colour", colour_to_hex(themeCustomColour)},
+        {"theme-day-night-mode", day_night_mode_to_string(themeDayNightMode)},
+        {"font-size", static_cast<int>(std::lround(textScale * 100.0))},
+        {"icon-color", iconColorAuto ? "auto" : colour_to_hex(iconColor)}, {"text-color", colour_to_hex(textColor)},
+        {"clock-color", colour_to_hex(clockColor)}, {"particle-color", colour_to_hex(particleColor)},
+        {"icon-style", iconStyle}, {"icon-glass-refraction", iconGlassRefraction},
+        {"theme-waves-enabled", wavesEnabled}, {"theme-particles-enabled", particlesEnabled},
+        {"wave-parameters", waveParameters}
+    }.dump();
+}
+
+void config::reset_to_defaults() {
+    auto retained_callbacks = std::move(callbacks);
+    const auto retained_profile = profileConfigPath;
+    *this = config{};
+    callbacks = std::move(retained_callbacks);
+    profileConfigPath = retained_profile;
+    set_default_user_dirs(*this);
+    setFontPath("default");
+    setLanguage("auto");
+    save_to_json();
+    for(const auto& [key, callback] : callbacks) callback("reset");
+}
+
+void config::switch_profile(const std::filesystem::path& path) {
+    if(path.empty() || path == profileConfigPath) return;
+    save_to_json();
+    profileConfigPath = path;
+    if(!std::filesystem::exists(path)) reset_to_defaults();
+    else load_from_json();
 }
 
 }

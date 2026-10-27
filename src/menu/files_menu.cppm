@@ -1,11 +1,6 @@
-/* XMBShell, a console-like desktop shell
- * Copyright (C) 2025 - JCM
- *
- * This file (or substantial portions of it) is derived from XMBShell:
- *   https://github.com/JnCrMx/xmbshell
- *
- * Modified by Syndromatic Ltd for OpenXMB.
- * Portions Copyright (C) 2025 Syndromatic Ltd, Kavish Krishnakumar.
+/* This file is a part of the OpenXMB desktop experience project.
+ * Copyright (C) 2025-2026 Syndromatic Ltd. All rights reserved
+ * Designed by Kavish Krishnakumar in Manchester.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,7 +34,7 @@ module;
 export module openxmb.app:files_menu;
 
 import spdlog;
-import dreamrender;
+import auroreengine;
 import openxmb.config;
 import openxmb.utils;
 import :menu_base;
@@ -50,6 +45,13 @@ namespace app {
 }
 
 export namespace menu {
+
+enum class files_menu_profile {
+    generic,
+    photo,
+    music,
+    video,
+};
 
 // JSON-based file info structure to replace Gio::FileInfo
 struct file_info {
@@ -68,7 +70,8 @@ struct file_info {
 
 class files_menu : public simple_menu {
     public:
-        files_menu(std::string name, dreamrender::texture&& icon, app::shell* xmb, std::filesystem::path path, dreamrender::resource_loader& loader);
+        files_menu(std::string name, auroreengine::texture&& icon, app::shell* xmb, std::filesystem::path path, auroreengine::resource_loader& loader,
+            files_menu_profile profile = files_menu_profile::generic);
         ~files_menu() override = default;
 
         void on_open() override;
@@ -134,7 +137,8 @@ class files_menu : public simple_menu {
 
         app::shell* xmb;
         std::filesystem::path path;
-        dreamrender::resource_loader& loader;
+        auroreengine::resource_loader& loader;
+        files_menu_profile profile = files_menu_profile::generic;
 
         struct extra_data {
             std::filesystem::path path;

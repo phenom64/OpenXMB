@@ -1,0 +1,135 @@
+#include "openxmb/xmb/background.hpp"
+
+#include <chrono>
+#include <cmath>
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <string_view>
+
+namespace {
+
+[[nodiscard]] bool near(float actual, float expected,
+                        float epsilon = 0.0001F) {
+  return std::abs(actual - expected) <= epsilon;
+}
+
+void require(bool condition, std::string_view message) {
+  if (!condition) {
+    std::cerr << "background contract failed: " << message << '\n';
+    std::exit(EXIT_FAILURE);
+  }
+}
+
+std::string read_text(const std::filesystem::path &path) {
+  std::ifstream stream(path, std::ios::binary);
+  require(static_cast<bool>(stream), "shader source is readable");
+  return {std::istreambuf_iterator<char>(stream),
+          std::istreambuf_iterator<char>()};
+}
+
+} // namespace
+
+int main() {
+  using openxmb::xmb::night_day_blend;
+  using openxmb::xmb::parse_unix_seconds;
+  using openxmb::xmb::resolve_background_gradient;
+  using openxmb::xmb::resolve_manual_background_gradient;
+
+  require(near(night_day_blend(13.0F), 0.0F), "midday is day");
+  require(near(night_day_blend(18.5F), 0.5F), "dusk midpoint");
+  require(near(night_day_blend(2.0F), 1.0F), "overnight is night");
+  require(near(night_day_blend(5.75F), 0.5F), "dawn midpoint");
+
+  const auto june = resolve_background_gradient(5, 13.0F);
+  require(near(june.top_rgb[0], 0.227573F), "June red anchor");
+  require(near(june.top_rgb[1], 0.821600F), "June green anchor");
+  require(near(june.top_rgb[2], 0.687950F), "June blue anchor");
+  require(june.top_rgb == june.bottom_rgb, "June has no bottom override");
+  require(near(june.night_day_blend, 0.0F), "June midday blend");
+
+  const auto january = resolve_background_gradient(0, 13.0F);
+  const auto may = resolve_background_gradient(4, 13.0F);
+  const auto september = resolve_background_gradient(8, 13.0F);
+  require(january.top_rgb != june.top_rgb, "Original is not fixed to June");
+  require(may.top_rgb != june.top_rgb, "May keeps its purple xmb-web anchor");
+  require(september.top_rgb != june.top_rgb,
+          "September keeps its gold xmb-web anchor");
+
+  const auto july = resolve_background_gradient(6, 22.0F);
+  require(july.top_rgb != july.bottom_rgb, "July bottom override");
+  require(near(july.night_day_blend, 1.0F), "July night blend");
+
+  const auto manual =
+      resolve_manual_background_gradient({1.25F, 0.88F, -0.10F}, 12.0F);
+  require(near(manual.bottom_rgb[0], 1.0F), "manual red clamps high");
+  require(near(manual.bottom_rgb[1], 0.88F), "manual green keeps palette");
+  require(near(manual.top_rgb[2], 0.0F), "manual blue clamps low");
+  require(manual.top_rgb[0] < manual.bottom_rgb[0] && manual.direct_gradient_span == 1.0F,
+          "manual colour has a darker top and a full-height direct gradient");
+  const auto manual_night = resolve_manual_background_gradient({1.0F,0.88F,0.0F},22.0F);
+  require(near(manual_night.night_day_blend,1.0F) &&
+          manual_night.top_rgb[0] < manual.top_rgb[0] &&
+          manual_night.bottom_rgb[0] < manual.bottom_rgb[0],
+          "night mode visibly darkens both ends of a custom-colour gradient");
+
+  const auto pinned = parse_unix_seconds("1781524800");
+  require(pinned.has_value(), "valid fixed timestamp parses");
+  require(std::chrono::duration_cast<std::chrono::seconds>(
+              pinned->time_since_epoch())
+              .count() == 1781524800,
+          "fixed timestamp value");
+  require(!parse_unix_seconds("1781524800garbage").has_value(),
+          "trailing garbage is rejected");
+  require(!parse_unix_seconds("").has_value(), "empty timestamp is rejected");
+
+  const auto source_root =
+      std::filesystem::path(__FILE__).parent_path().parent_path().parent_path();
+  const auto particle_vertex =
+      read_text(source_root / "shaders/original_particles.vert");
+  const auto particle_fragment =
+      read_text(source_root / "shaders/original_particles.frag");
+  const auto particle_renderer =
+      read_text(source_root / "src/render/components/original_particles.cppm");
+  const auto monthly_fragment =
+      read_text(source_root / "shaders/monthly_background.frag");
+  const auto shell = read_text(source_root / "src/app/shell.cpp");
+  const auto default_config = read_text(source_root / "config.json");
+  require(default_config.contains("\"background-type\": \"original\""),
+          "shipped config defaults to Original, not Classic");
+  require(default_config.contains("\"icon-glass-refraction\": true"),
+          "shipped config enables xmb-web icon glass by default");
+  require(particle_vertex.contains("Firmware cloud homes"),
+          "Original particles are projected from the xmb-web firmware cloud");
+  require(particle_vertex.contains("projFx = 1.12820041"),
+          "Original particles use the xmb-web particle projection constants");
+  require(particle_vertex.contains("spin0"),
+          "Original particles use the xmb-web spinning-normal specular model");
+  require(particle_vertex.contains("waveMotionDeltaY"),
+          "Original particles ride the captured wave motion");
+  require(particle_vertex.contains(
+              "vec2(sizePx / resolution.x, sizePx / resolution.y)"),
+          "Original particle sprites keep square pixel aspect on widescreen");
+  require(particle_fragment.contains("diffraction-spike"),
+          "Original particle fragment keeps xmb-web's glitter sparkle profile");
+  require(particle_fragment.contains("discard"),
+          "Original particle fragment renders round sprites, not square stars");
+  require(particle_renderer.contains("load_particle_cloud"),
+          "Original particle renderer can consume the imported xmb-web cloud");
+  require(particle_renderer.contains("make_instances"),
+          "Original particle renderer precomputes deterministic cloud instances");
+  require(monthly_fragment.contains("1.05 - 0.26 * dip"),
+          "Original gradient keeps xmb-web's dark menu-band envelope");
+  require(monthly_fragment.contains(
+              "top_multiplier = mix(0.30, 0.02, night)"),
+          "Original gradient keeps xmb-web's day/night top ramp");
+  require(monthly_fragment.contains("xmb_web_composite"),
+          "Original gradient bakes xmb-web's steady scene composite");
+  require(monthly_fragment.contains("0.899181"),
+          "Original gradient uses xmb-web HDR day white level");
+  require(shell.contains("procedural_wave_render->render") &&
+              !shell.contains("particles_render->preload"),
+          "Original renders the procedural wave without initializing an unused captured particle renderer");
+}

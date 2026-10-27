@@ -1,0 +1,7 @@
+# Clean-room localization core fixture. UTF-8, key<TAB>message.
+menu.greeting	Hello, {name}!
+menu.progress	Copied {count} of {total} files
+menu.literal	Use {{confirm}} to continue
+menu.unicode	Music • 日本語 • Ελληνικά
+menu.repeated	{name} invited {name}
+menu.plain	System Settings

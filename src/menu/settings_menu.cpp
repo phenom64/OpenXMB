@@ -37,6 +37,7 @@ module;
 #include <ranges>
 #include <string>
 #include <vector>
+#include "openxmb/integrations/desktop.hpp"
 
 #if __linux__
 #include <sys/wait.h>
@@ -46,7 +47,7 @@ module openxmb.app;
 
 import spdlog;
 import i18n;
-import dreamrender;
+import auroreengine;
 import openxmb.config;
 import vulkan_hpp;
 import glm;
@@ -173,7 +174,7 @@ namespace menu {
     };
 #endif
 
-    std::unique_ptr<action_menu_entry> entry_base(dreamrender::resource_loader& loader,
+    std::unique_ptr<action_menu_entry> entry_base(auroreengine::resource_loader& loader,
         std::string name, std::string description, const std::string& key,
         std::function<result()> callback)
     {
@@ -183,7 +184,7 @@ namespace menu {
                                               loader, callback, std::function<result(action)>{}, std::move(description));
     }
 
-    std::unique_ptr<action_menu_entry> entry_bool(dreamrender::resource_loader& loader, app::shell* xmb,
+    std::unique_ptr<action_menu_entry> entry_bool(auroreengine::resource_loader& loader, app::shell* xmb,
         std::string name, std::string description, const std::string& /*schema*/, const std::string& key)
     {
         return entry_base(loader, std::move(name), std::move(description), key, [xmb, key](){
@@ -206,12 +207,12 @@ namespace menu {
             } else if(key == "hide-power-options") {
                 current = config::CONFIG.hidePowerOptions ? 1u : 0u;
             } else if(key == "autostart") {
-                current = config::CONFIG.autostart ? 1u : 0u;
+                current = openxmb::integrations::autostart_enabled() ? 1u : 0u;
             }
 
             xmb->emplace_overlay<app::choice_overlay>(
                 std::vector<std::string>{"Off"_(), "On"_()}, current,
-                [key](unsigned int choice) {
+                [key, xmb](unsigned int choice) {
                     bool on = (choice == 1);
                     bool changed = false;
                     if(key == "vsync") {
@@ -240,7 +241,12 @@ namespace menu {
                         changed = (config::CONFIG.hidePowerOptions != on);
                         config::CONFIG.setHidePowerOptions(on);
                     } else if(key == "autostart") {
-                        changed = (config::CONFIG.autostart != on);
+                        const auto saved = openxmb::integrations::set_autostart(on, openxmb::integrations::executable_path());
+                        if(!saved) {
+                            xmb->emplace_overlay<app::message_overlay>("Startup at login", saved.message, std::vector<std::string>{"OK"});
+                            return;
+                        }
+                        changed = true;
                         config::CONFIG.setAutostart(on);
                     }
                     if(changed) {
@@ -252,7 +258,7 @@ namespace menu {
         });
     }
 
-    std::unique_ptr<action_menu_entry> entry_int(dreamrender::resource_loader& loader, app::shell* xmb,
+    std::unique_ptr<action_menu_entry> entry_int(auroreengine::resource_loader& loader, app::shell* xmb,
         std::string name, std::string description, const std::string& /*schema*/, const std::string& key, int min, int max, int step = 1)
     {
         return entry_base(loader, std::move(name), std::move(description), key, [xmb, key, min, max, step](){
@@ -320,7 +326,7 @@ namespace menu {
             return result::success;
         });
     }
-    std::unique_ptr<action_menu_entry> entry_int(dreamrender::resource_loader& loader, app::shell* xmb,
+    std::unique_ptr<action_menu_entry> entry_int(auroreengine::resource_loader& loader, app::shell* xmb,
         std::string name, std::string description, const std::string& /*schema*/, const std::string& key, std::ranges::range auto values)
         requires std::is_integral_v<std::ranges::range_value_t<decltype(values)>>
     {
@@ -356,7 +362,7 @@ namespace menu {
             return result::success;
         });
     }
-    std::unique_ptr<action_menu_entry> entry_enum(dreamrender::resource_loader& loader, app::shell* xmb,
+    std::unique_ptr<action_menu_entry> entry_enum(auroreengine::resource_loader& loader, app::shell* xmb,
         std::string name, std::string description, const std::string& /*schema*/, const std::string& key, std::ranges::range auto values)
     {
         return entry_base(loader, std::move(name), std::move(description), key, [xmb, key, values](){
@@ -377,7 +383,8 @@ namespace menu {
                         case config::config::background_type::original: return "original";
                         case config::config::background_type::wave:     return "wave";
                         case config::config::background_type::color:    return "color";
-                        case config::config::background_type::image:    return "image";
+                        case config::config::background_type::video:
+                case config::config::background_type::image:    return "image";
                     }
                 } else if(key == "language") {
                     return (config::CONFIG.language.empty() ? std::string{"auto"} : config::CONFIG.language);
@@ -446,38 +453,39 @@ namespace menu {
 #    define OPENXMB_HAVE_SDBUS_CPP 1
 #  endif
 #endif
-#if _WIN32
         constexpr char glibmm[] = {
+#if _WIN32 && __has_embed("share/licenses/glibmm-2.68/COPYING")
             #embed "share/licenses/glibmm-2.68/COPYING"
-        };
-        constexpr char sdl2[] = {
-            #embed "share/licenses/SDL2/LICENSE.txt"
-        };
-        constexpr char freetype[] = {
-            #embed "share/licenses/freetype/FTL.TXT"
-        };
-        constexpr char glm[] = {
-            #embed "share/licenses/glm/copying.txt"
-        };
 #else
-        constexpr char glibmm[] = {
             "LGPL-2.1"
+#endif
         };
         constexpr char sdl2[] = {
+#if _WIN32 && __has_embed("share/licenses/SDL2/LICENSE.txt")
+            #embed "share/licenses/SDL2/LICENSE.txt"
+#else
             "Zlib License"
+#endif
         };
         constexpr char freetype[] = {
+#if _WIN32 && __has_embed("share/licenses/freetype/FTL.TXT")
+            #embed "share/licenses/freetype/FTL.TXT"
+#else
             "FreeType License"
+#endif
         };
         constexpr char glm[] = {
+#if _WIN32 && __has_embed("share/licenses/glm/copying.txt")
+            #embed "share/licenses/glm/copying.txt"
+#else
             "MIT License"
-        };
 #endif
+        };
         // NOLINTEND(*-avoid-c-arrays)
         #pragma clang diagnostic pop
     }
 
-    settings_menu::settings_menu(std::string name, dreamrender::texture&& icon, app::shell* xmb, dreamrender::resource_loader& loader) : simple_menu(std::move(name), std::move(icon)) {
+    settings_menu::settings_menu(std::string name, auroreengine::texture&& icon, app::shell* xmb, auroreengine::resource_loader& loader) : simple_menu(std::move(name), std::move(icon)) {
         const std::filesystem::path& asset_dir = config::CONFIG.asset_directory;
         entries.push_back(make_simple<simple_menu>("Theme Settings"_(), asset_dir/"icons/icon_settings_personalization.png", loader,
             std::array{
@@ -555,7 +563,7 @@ namespace menu {
                     std::pair{"%m/%d/%Y %I:%M %p", "%m/%d/%Y %I:%M %p"},
                     std::pair{"%H:%M", "%H:%M"},
                 }),
-                entry_bool(loader, xmb, "Autostart"_(), "Save startup preference for future platform integration"_(), "re.jcm.xmbos.shell", "autostart"),
+                entry_bool(loader, xmb, "Autostart"_(), "Start OpenXMB when you sign in"_(), "re.jcm.xmbos.shell", "autostart"),
                 entry_bool(loader, xmb, "Hide Power Options"_(), "Hide shutdown and reboot entries where supported"_(), "re.jcm.xmbos.shell", "hide-power-options"),
                 entry_bool(loader, xmb, "Hide Login1 Options"_(), "Hide systemd login1 actions where supported"_(), "re.jcm.xmbos.shell", "hide-login1-options"),
             }
@@ -615,8 +623,7 @@ namespace menu {
         }));
         entries.push_back(make_simple<action_menu_entry>("Reset all Settings to default"_(), asset_dir/"icons/icon_settings_reset.png", loader, [](){
             spdlog::info("Settings reset request from XMB");
-            config::CONFIG.load();
-            config::CONFIG.save_config();
+            config::CONFIG.reset_to_defaults();
             return result::success;
         }));
 

@@ -4,6 +4,9 @@
  * This file (or substantial portions of it) is derived from XMBShell:
  *   https://github.com/JnCrMx/xmbshell
  *
+ * Modified by Syndromatic Ltd for OpenXMB.
+ * Portions Copyright (C) 2025 Syndromatic Ltd, Kavish Krishnakumar.
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -30,6 +33,8 @@ module;
 #include <utility>
 #include <variant>
 #include <vector>
+#include <map>
+namespace openxmb::themes { class ThemeLibrary; struct AppliedTheme; }
 
 #include <glm/vec2.hpp>
 
@@ -37,7 +42,10 @@ export module openxmb.app:main;
 
 import openxmb.render;
 import openxmb.utils;
-import dreamrender;
+import openxmb.xmb.captured_wave_renderer;
+import openxmb.xmb.monthly_background_renderer;
+import openxmb.xmb.status_bar_renderer;
+import auroreengine;
 import glm;
 import sdl2;
 import vulkan_hpp;
@@ -61,7 +69,7 @@ namespace app
         in, out
     };
 
-    using namespace dreamrender;
+    using namespace auroreengine;
     export class shell : public phase, public input::keyboard_handler, public input::controller_handler
     {
         public:
@@ -85,6 +93,14 @@ namespace app
             void reload_fonts();
             void reload_button_icons();
             void reload_language();
+            void reload_menu();
+            void open_panel(const std::string& name);
+            void open_media(const std::filesystem::path& path);
+            void switch_profile(const std::filesystem::path& path);
+            void apply_theme(const openxmb::themes::AppliedTheme& theme);
+            std::shared_ptr<openxmb::themes::ThemeLibrary> theme_library();
+            void queue_panel(std::string name) { pending_panel = std::move(name); }
+            void queue_media(std::filesystem::path path) { pending_media = std::move(path); }
 
             void dispatch(const event& event);
             template<typename T, typename... Args>
@@ -116,20 +132,19 @@ namespace app
                 float current_x = x - total_width/2;
                 for (const auto& [action, text] : buttons) {
                     auto icon = buttonTextures[std::to_underlying(action)].get();
-                    float width = std::max(min_width, space_x + renderer.measure_text(text, size).x);
-                    if(action != action::none && icon) {
-                        if(config::CONFIG.iconGlassRefraction) {
-                            renderer.draw_image_glass(*icon, current_x, y, size/2.0, size/2.0);
-                        } else {
-                            renderer.draw_image(*icon, current_x, y, size/2.0, size/2.0);
-                        }
-                        renderer.draw_text(text, current_x+space_x, y+size*0.033f, size);
-                    }
+                float width = std::max(min_width, space_x + renderer.measure_text(text, size).x);
+                if(action != action::none && icon) {
+                    // Controller glyphs are flat UI assets, not xmb-web normal maps.
+                    // The glass shader intentionally expects normal-map inputs now,
+                    // so non-XMB utility glyphs stay on the ordinary image path.
+                    renderer.draw_image(*icon, current_x, y, size/2.0, size/2.0);
+                    renderer.draw_text(text, current_x+space_x, y+size*0.033f, size);
+                }
                     current_x += width;
                 }
             }
 
-            dreamrender::window* get_window() const { return this->win; }
+            auroreengine::window* get_window() const { return this->win; }
 
             void set_ingame_mode(bool ingame_mode) { this->ingame_mode = ingame_mode; }
             bool get_ingame_mode() const { return ingame_mode; }
@@ -148,6 +163,18 @@ namespace app
                 last_blur_background_change = std::chrono::steady_clock::now();
             }
             bool get_blur_background() const { return blur_background; }
+            void set_startup_background_blur_px(float blur_px) {
+                startup_background_blur_px = std::max(0.0f, blur_px);
+            }
+            bool has_choice_overlay() const {
+                for(const auto& overlay : overlays) {
+                    if(dynamic_cast<app::choice_overlay*>(overlay.get()) != nullptr) {
+                        return true;
+                    }
+                }
+                return old_overlay &&
+                    dynamic_cast<app::choice_overlay*>(old_overlay.get()) != nullptr;
+            }
 
             app::component* push_overlay(std::unique_ptr<app::component>&& component) {
                 auto ptr = component.get();
@@ -229,12 +256,17 @@ namespace app
             std::unique_ptr<image_renderer> image_render;
             std::unique_ptr<simple_renderer> simple_render;
             std::unique_ptr<render::wave_renderer> wave_render;
-            std::unique_ptr<render::original_renderer> original_render;
+            std::unique_ptr<render::procedural_wave_renderer> procedural_wave_render;
+            std::unique_ptr<openxmb::xmb::MonthlyBackgroundRenderer> monthly_background_render;
+            openxmb::xmb::StatusBarRenderer status_bar_render;
+            bool monthly_background_failed{};
 
             vk::UniqueRenderPass backgroundRenderPass, shellRenderPass;
 
             // Per-frame resolve target for background (offscreen, avoids reusing swapchain mid-frame)
             std::vector<std::unique_ptr<texture>> backgroundResolve;
+            std::vector<vk::UniqueImageView> backgroundAttachmentViews,backgroundMsaaViews;
+            std::vector<std::unique_ptr<texture>> backgroundDepth;
             std::vector<vk::UniqueFramebuffer> backgroundFramebuffers;
 
             vk::UniqueDescriptorSetLayout blurDescriptorSetLayout;
@@ -269,10 +301,21 @@ namespace app
             vk::UniqueDescriptorPool blurExtraDescriptorPool;
 
             std::unique_ptr<texture> backgroundTexture;
+#if OPENXMB_ENABLE_VIDEO_PLAYER
+            std::unique_ptr<render::video_background> video_background_render;
+            std::filesystem::path background_video_path;
+#endif
+            // Keep JSON-heavy theme state out of the exported shell BMI.
+            struct theme_state;
+            std::unique_ptr<theme_state> theme;
+            std::string pending_panel;
+            std::filesystem::path pending_media;
             main_menu menu{this};
             news_display news{this};
             std::array<std::unique_ptr<texture>, std::to_underlying(action::_length)> buttonTextures;
             std::unique_ptr<texture> cursorTexture;
+            std::unique_ptr<texture> iconGlassAmbientTexture;
+            std::unique_ptr<texture> iconGlassEnvironmentTexture;
 
             sdl::mix::unique_chunk ok_sound;
             sdl::mix::unique_chunk question_sound;
@@ -280,6 +323,7 @@ namespace app
             sdl::mix::unique_chunk cancel_sound;
             sdl::mix::unique_chunk back_sound;
 
+            std::chrono::steady_clock::time_point cursor_active_at{};
             glm::vec2 cursor_position{0.5f, 0.5f};
             glm::vec2 cursor_joystick_delta{0.0f, 0.0f};
             glm::ivec2 last_mouse_position{0, 0};
@@ -293,6 +337,7 @@ namespace app
             void preload_fixed_components();
 
             void render_gui(gui_renderer& renderer);
+            void ensure_blur(int frame);
 
             // input handling
             constexpr static int controller_axis_input_threshold = 10000;
@@ -311,6 +356,7 @@ namespace app
 
             bool blur_background = false;
             time_point last_blur_background_change;
+            float startup_background_blur_px = 0.0f;
 
             std::vector<std::unique_ptr<app::component>> overlays;
 

@@ -4,6 +4,9 @@
  * This file (or substantial portions of it) is derived from XMBShell:
  *   https://github.com/JnCrMx/xmbshell
  *
+ * Modified by Syndromatic Ltd for OpenXMB.
+ * Portions Copyright (C) 2025 Syndromatic Ltd, Kavish Krishnakumar.
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -30,7 +33,7 @@ module;
 #include <vector>
 
 export module openxmb.app:menu_base;
-import dreamrender;
+import auroreengine;
 import openxmb.utils;
 
 export namespace menu {
@@ -41,7 +44,10 @@ class menu_entry {
 
         virtual std::string_view get_name() const = 0;
         virtual std::string_view get_description() const = 0;
-        virtual const dreamrender::texture& get_icon() const = 0;
+        virtual const auroreengine::texture& get_icon() const = 0;
+        virtual const auroreengine::texture* get_glass_icon() const {
+            return nullptr;
+        }
         virtual result activate(action action) {
             return result::unsupported;
         }
@@ -72,7 +78,7 @@ class menu : public menu_entry {
 template<typename T>
 class simple : public T {
     public:
-        using icon_type = dreamrender::texture;
+        using icon_type = auroreengine::texture;
 
         simple(std::string name, icon_type&& icon, std::string description = "") :
             name(std::move(name)), icon(std::move(icon)), description(std::move(description)) {}
@@ -84,22 +90,30 @@ class simple : public T {
         std::string_view get_description() const override {
             return description;
         }
-        const dreamrender::texture& get_icon() const override {
+        const auroreengine::texture& get_icon() const override {
             return icon;
         }
-        dreamrender::texture& get_icon() {
+        const auroreengine::texture* get_glass_icon() const override {
+            return glass_icon.get();
+        }
+        auroreengine::texture& get_icon() {
             return icon;
+        }
+        auroreengine::texture& emplace_glass_icon(auroreengine::texture&& texture) {
+            glass_icon = std::make_unique<auroreengine::texture>(std::move(texture));
+            return *glass_icon;
         }
     private:
         std::string name;
         std::string description;
         icon_type icon;
+        std::unique_ptr<auroreengine::texture> glass_icon;
 };
 
 template<typename T>
 class simple_shared : public T {
     public:
-        using icon_type = std::shared_ptr<dreamrender::texture>;
+        using icon_type = std::shared_ptr<auroreengine::texture>;
 
         simple_shared(std::string name, icon_type&& icon, std::string description = "") :
             name(std::move(name)), icon(std::move(icon)), description(std::move(description)) {}
@@ -111,16 +125,24 @@ class simple_shared : public T {
         std::string_view get_description() const override {
             return description;
         }
-        const dreamrender::texture& get_icon() const override {
+        const auroreengine::texture& get_icon() const override {
             return *icon;
         }
-        dreamrender::texture& get_icon() {
+        const auroreengine::texture* get_glass_icon() const override {
+            return glass_icon.get();
+        }
+        auroreengine::texture& get_icon() {
             return *icon;
+        }
+        auroreengine::texture& emplace_glass_icon(auroreengine::texture&& texture) {
+            glass_icon = std::make_unique<auroreengine::texture>(std::move(texture));
+            return *glass_icon;
         }
     private:
         std::string name;
         std::string description;
         icon_type icon;
+        std::unique_ptr<auroreengine::texture> glass_icon;
 };
 
 using simple_menu_shallow = simple<menu>;

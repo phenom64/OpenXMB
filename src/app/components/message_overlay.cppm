@@ -30,7 +30,7 @@ module;
 
 export module openxmb.app:message_overlay;
 
-import dreamrender;
+import auroreengine;
 import sdl2;
 import vulkan_hpp;
 import vma;
@@ -50,7 +50,7 @@ export class message_overlay : public component, public action_receiver {
         // Enable fade-in/out transitions so shell can animate background zoom/dim
         [[nodiscard]] bool do_fade_in() const override { return true; }
         [[nodiscard]] bool do_fade_out() const override { return true; }
-        void render(dreamrender::gui_renderer& renderer, class shell* xmb) override;
+        void render(auroreengine::gui_renderer& renderer, class shell* xmb) override;
         result on_action(action action) override;
     private:
         std::string title;

@@ -24,7 +24,7 @@ module;
 
 export module openxmb.render:original_renderer;
 
-import dreamrender;
+import auroreengine;
 import :shaders;
 
 import glm;
@@ -69,7 +69,7 @@ export class original_renderer {
         vk::PipelineDynamicStateCreateInfo dynamic({}, dynamicStates);
 
         vk::GraphicsPipelineCreateInfo pipeline_info({}, stages, &vertex_input, &input_assembly, {}, &viewport, &rasterization, &multisample, &depthStencil, &colorBlend, &dynamic, pipelineLayout.get(), {});
-        pipelines = dreamrender::createPipelines(device, pipelineCache, pipeline_info, renderPasses, "Original Background Pipeline");
+        pipelines = auroreengine::createPipelines(device, pipelineCache, pipeline_info, renderPasses, "Original Background Pipeline");
     }
 
     void prepare(int /*imageCount*/) {}
@@ -98,7 +98,7 @@ export class original_renderer {
     vk::Device device;
     vk::Extent2D frameSize;
     vk::UniquePipelineLayout pipelineLayout;
-    dreamrender::UniquePipelineMap pipelines;
+    auroreengine::UniquePipelineMap pipelines;
 };
 
 }

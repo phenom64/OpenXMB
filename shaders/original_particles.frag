@@ -19,25 +19,36 @@
 // Original background particles (fragment)
 #version 450
 
-layout(location=0) in vec2 vLocal;  // unit quad [-0.5,0.5]
-layout(location=1) in float vAlpha;  // per-sprite alpha
+layout(location=0) in vec2 vLocal;   // unit quad [-0.5,0.5]
+layout(location=1) in float vBright; // HDR particle brightness
+layout(location=2) in vec3 vColor;   // iridescent/metallic particle colour
+layout(location=3) in float vSpark;  // diffraction-spike sparkle amount
 
 layout(location=0) out vec4 FragColor;
 
 layout(push_constant) uniform PC {
     vec4 tint;
-    vec2 resolution;
-    float time;
-    float brightness;
+    vec4 resolution_time_brightness;
+    vec4 particle_params;
 } pc;
 
 void main(){
-    // Soft circular falloff
-    float r = length(vLocal*2.0);             // 0 at center, ~1 at edges
-    float halo = smoothstep(1.0, 0.0, r);     // soft edge
-    float core = smoothstep(0.34, 0.0, r);    // tiny bright center
-    float a = halo*halo*0.70 + core*0.30;
-    // Subtle tint; avoid stark white specks
-    vec3 c = mix(pc.tint.rgb, vec3(1.0), 0.38);
-    FragColor = vec4(c, a * vAlpha);
+    vec2 coord = vLocal * 2.0;
+    float d2 = dot(coord, coord);
+    if(d2 > 1.0) {
+        discard;
+    }
+
+    // xmb-web's sprite is round: a sharp specular core, a soft bokeh glow, and
+    // a sparse four-point diffraction cross for larger/brighter glints.
+    float core = exp(-d2 * 9.0);
+    float glow = exp(-d2 * 1.8) * 0.40;
+    float cross = (exp(-coord.y * coord.y * 70.0) +
+                   exp(-coord.x * coord.x * 70.0)) * exp(-d2 * 1.2);
+    float spark = cross * vSpark * 0.7;
+    float alpha = (core + glow + spark) * vBright;
+
+    float hot = clamp(vBright * 0.6 - 0.6, 0.0, 1.0);
+    vec3 color = mix(vColor, vec3(1.0), hot);
+    FragColor = vec4(color * alpha, alpha);
 }

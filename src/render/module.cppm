@@ -23,4 +23,8 @@ export module openxmb.render;
 export import :wave_renderer;
 export import :original_renderer;
 export import :particles_renderer;
+export import :procedural_wave_renderer;
+#if OPENXMB_ENABLE_VIDEO_PLAYER
+export import :video_background;
+#endif
 export import :shaders;

@@ -9,15 +9,15 @@
     {
       "name": "default",
       "displayName": "Release",
-      "description": "Portable Release build with optional alpha modules disabled.",
+      "description": "Native desktop Release build with media and desktop integrations.",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/default",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "ENABLE_BROWSER": "OFF",
+        "ENABLE_BROWSER": "ON",
         "ENABLE_VIDEO_PLAYER": "ON",
-        "ENABLE_DISC_MEDIA": "OFF",
-        "ENABLE_LIBRETRO": "OFF",
+        "ENABLE_DISC_MEDIA": "ON",
+        "ENABLE_LIBRETRO": "ON",
         "INTERFACE_FX_DEBUG": "OFF"
       }
     },
@@ -68,7 +68,7 @@
       "inherits": "windows-vcpkg",
       "binaryDir": "${sourceDir}/build/windows-local-aurore",
       "cacheVariables": {
-        "DREAMRENDER_LOCAL": "$env{USERPROFILE}/Developer/AuroreEngine"
+        "AUROREENGINE_LOCAL": "$env{USERPROFILE}/Developer/AuroreEngine"
       }
     },
     {
@@ -76,6 +76,42 @@
       "displayName": "Windows vcpkg Debug",
       "inherits": "windows-local-aurore",
       "binaryDir": "${sourceDir}/build/windows-vcpkg-dev",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "windows-native",
+      "displayName": "Native XMB Windows Release",
+      "description": "Self-discovering LLVM/Windows SDK/vcpkg build against the local AuroreEngine checkout.",
+      "inherits": "default",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "binaryDir": "${sourceDir}/build/native",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/windows-clang-vcpkg.cmake",
+      "cacheVariables": {
+        "AUROREENGINE_LOCAL": "$env{USERPROFILE}/Developer/AuroreEngine",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "BUILD_TESTING": "ON",
+        "OPENXMB_IMPORT_XMB_WEB_COMPAT": "ON",
+        "OPENXMB_XMB_WEB_SOURCE": "$env{USERPROFILE}/Developer/xmb-web"
+      }
+    },
+    {
+      "name": "windows-native-c",
+      "displayName": "Native XMB Windows Release (Clang build dir)",
+      "description": "Same as windows-native but outputs to build/native-c — the parity workflow build directory used for headless captures and visual regression.",
+      "inherits": "windows-native",
+      "binaryDir": "${sourceDir}/build/native-c"
+    },
+    {
+      "name": "windows-native-dev",
+      "displayName": "Native XMB Windows Debug",
+      "inherits": "windows-native",
+      "binaryDir": "${sourceDir}/build/native-dev",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
@@ -105,6 +141,21 @@
     {
       "name": "windows-vcpkg-dev",
       "configurePreset": "windows-vcpkg-dev"
+    },
+    {
+      "name": "windows-native",
+      "configurePreset": "windows-native",
+      "jobs": 2
+    },
+    {
+      "name": "windows-native-c",
+      "configurePreset": "windows-native-c",
+      "jobs": 2
+    },
+    {
+      "name": "windows-native-dev",
+      "configurePreset": "windows-native-dev",
+      "jobs": 2
     }
   ]
 }

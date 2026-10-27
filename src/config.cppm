@@ -1,11 +1,6 @@
-/* XMBShell, a console-like desktop shell
- * Copyright (C) 2025 - JCM
- *
- * This file (or substantial portions of it) is derived from XMBShell:
- *   https://github.com/JnCrMx/xmbshell
- *
- * Modified by Syndromatic Ltd for OpenXMB.
- * Portions Copyright (C) 2025 Syndromatic Ltd, Kavish Krishnakumar.
+/* This file is a part of the OpenXMB desktop experience project.
+ * Copyright (C) 2025-2026 Syndromatic Ltd. All rights reserved
+ * Designed by Kavish Krishnakumar in Manchester.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +20,7 @@ module;
 
 #include <array>
 #include <chrono>
+#include <cstdint>
 #include <cstdlib>
 #include <filesystem>
 #include <functional>
@@ -32,6 +28,7 @@ module;
 #include <stdexcept>
 #include <unordered_set>
 #include <version>
+#include <vector>
 
 #include <glm/vec3.hpp>
 
@@ -40,6 +37,9 @@ module;
 #define NOMINMAX
 #endif
 #include <windows.h>
+#endif
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
 #endif
 
 export module openxmb.config;
@@ -55,7 +55,10 @@ export namespace config
             config();
 
             enum class background_type {
-                original, wave, color, image
+                original, wave, color, image, video
+            };
+            enum class day_night_mode {
+                auto_time_of_day, day, morning, dusk, evening, night
             };
 
 #if __linux__
@@ -69,6 +72,15 @@ export namespace config
                 }
                 return std::filesystem::path(buffer.data()).parent_path();
             }();
+#elif defined(__APPLE__)
+            std::filesystem::path exe_directory = [](){
+                std::uint32_t size=0;
+                _NSGetExecutablePath(nullptr,&size);
+                std::vector<char> buffer(size);
+                if(_NSGetExecutablePath(buffer.data(),&size)!=0)
+                    throw std::runtime_error("Could not locate the OpenXMB executable");
+                return std::filesystem::weakly_canonical(buffer.data()).parent_path();
+            }();
 #else
             std::filesystem::path exe_directory = std::filesystem::current_path(); // best guess for other platforms
 #endif
@@ -76,12 +88,20 @@ export namespace config
                 if(auto v = std::getenv("XMB_ASSET_DIR"); v != nullptr) {
                     return std::filesystem::path(v);
                 }
+#ifdef __APPLE__
+                const auto bundled=exe_directory/"../Resources/share/shell";
+                if(std::filesystem::is_directory(bundled)) return bundled;
+#endif
                 return exe_directory / std::string(constants::asset_directory);
             }();
             std::filesystem::path locale_directory = [this](){
                 if(auto v = std::getenv("XMB_LOCALE_DIR"); v != nullptr) {
                     return std::filesystem::path(v);
                 }
+#ifdef __APPLE__
+                const auto bundled=exe_directory/"../Resources/share/locale";
+                if(std::filesystem::is_directory(bundled)) return bundled;
+#endif
                 // Prefer build-tree locales (CMake symlinks) when running from build dir
                 auto build_locales = exe_directory / "locales";
                 if(std::filesystem::exists(build_locales)) {
@@ -89,7 +109,7 @@ export namespace config
                 }
                 return exe_directory / std::string(constants::locale_directory);
             }();
-            std::filesystem::path fallback_font = exe_directory / std::string(constants::fallback_font);
+            std::filesystem::path fallback_font = asset_directory / "Play-Regular.ttf";
 
             vk::PresentModeKHR      preferredPresentMode = vk::PresentModeKHR::eFifoRelaxed; //aka VSync
             vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e4; // aka Anti-aliasing
@@ -99,7 +119,17 @@ export namespace config
 
             bool showFPS    = false;
             bool showMemory = false;
-            bool iconGlassRefraction = false;
+            bool iconGlassRefraction = true;
+            std::string iconStyle = "default";
+            double textScale = 1.0;
+            glm::vec3 iconColor{1.0f};
+            bool iconColorAuto=true;
+            glm::vec3 textColor{1.0f};
+            glm::vec3 clockColor{1.0f};
+            bool wavesEnabled = true;
+            bool particlesEnabled = true;
+            glm::vec3 particleColor{1.0f};
+            std::map<std::string, std::map<std::string, float>> waveParameters;
 
             std::filesystem::path   fontPath;
             background_type			backgroundType = background_type::original;
@@ -116,6 +146,7 @@ export namespace config
             glm::vec3               themeCustomColour{0.65f, 0.30f, 0.65f};
             std::array<std::string, 12> themeMonthColourStrings{};
             std::array<std::array<std::string, 24>, 12> themeMonthTimeColourStrings{};
+            day_night_mode          themeDayNightMode = day_night_mode::auto_time_of_day;
 
             std::filesystem::path   picturesPath;
             std::filesystem::path   musicPath;
@@ -131,6 +162,17 @@ export namespace config
             double controllerCursorSpeed = 1.0;
 
             std::string controllerType;
+
+            std::map<std::string, std::filesystem::path> themeIcons;
+            std::map<std::string, std::filesystem::path> themeSounds;
+            std::map<std::string, std::string> preferences;
+            std::filesystem::path profileConfigPath;
+
+            std::filesystem::path resolve_icon(const std::filesystem::path& path) const;
+            std::filesystem::path resolve_sound(const std::filesystem::path& path) const;
+            void reset_to_defaults();
+            void switch_profile(const std::filesystem::path& path);
+            std::string shell_snapshot() const;
 
             void load();
             void reload();
@@ -154,6 +196,9 @@ export namespace config
             void setThemeCustomColour(glm::vec3 color);
             void setThemeCustomColour(std::string_view hex);
             void setThemeCustomColour(const std::string& hex);
+            void setThemeDayNightMode(day_night_mode mode);
+            void setThemeDayNightMode(std::string_view mode);
+            void setThemeDayNightMode(const std::string& mode);
             void setDateTimeFormat(const std::string& format);
             void setDateTimeOffset(double offset);
             void setLanguage(const std::string& lang);
@@ -161,6 +206,15 @@ export namespace config
             void setShowFPS(bool show);
             void setShowMemory(bool show);
             void setIconGlassRefraction(bool enabled);
+            void setIconStyle(std::string_view style);
+            void setTextScale(double scale);
+            void setIconColor(std::string_view hex);
+            void setTextColor(std::string_view hex);
+            void setClockColor(std::string_view hex);
+            void setWavesEnabled(bool enabled);
+            void setParticlesEnabled(bool enabled);
+            void setParticleColor(std::string_view hex);
+            void setWaveParameters(std::string_view json);
             void setControllerRumble(bool enabled);
             void setControllerAnalogStick(bool enabled);
             void setControllerCursorSpeed(double speed);

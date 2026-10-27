@@ -55,4 +55,14 @@ namespace original_particles {
     vk::UniqueShaderModule frag(vk::Device device);
 }
 
+namespace procedural_wave {
+    vk::UniqueShaderModule vert(vk::Device device);
+    vk::UniqueShaderModule frag(vk::Device device);
+}
+
+namespace video_background {
+    vk::UniqueShaderModule vert(vk::Device device);
+    vk::UniqueShaderModule frag(vk::Device device);
+}
+
 }

@@ -28,7 +28,7 @@ module;
 
 export module openxmb.app:applications_menu;
 import :menu_base;
-import dreamrender;
+import auroreengine;
 import spdlog;
 
 namespace app {
@@ -89,7 +89,7 @@ constexpr auto excludeFilter(const std::unordered_set<std::string>& ids) {
 
 class applications_menu : public simple_menu {
     public:
-        applications_menu(std::string name, dreamrender::texture&& icon, app::shell* xmb, dreamrender::resource_loader& loader, AppFilter filter = noFilter());
+        applications_menu(std::string name, auroreengine::texture&& icon, app::shell* xmb, auroreengine::resource_loader& loader, AppFilter filter = noFilter());
         ~applications_menu() override = default;
 
         result activate(action action) override;
@@ -101,7 +101,7 @@ class applications_menu : public simple_menu {
         std::vector<app_info> scan_applications();
 
         app::shell* xmb;
-        dreamrender::resource_loader& loader;
+        auroreengine::resource_loader& loader;
 
         bool show_hidden = false;
         AppFilter filter;

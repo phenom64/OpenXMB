@@ -24,6 +24,9 @@
 module;
 
 #include <filesystem>
+#include <algorithm>
+#include <cctype>
+#include <set>
 #include <functional>
 #include <iterator>
 #include <memory>
@@ -40,7 +43,7 @@ namespace programs {
 export struct open_info {
     std::string name;
     bool is_external;
-    std::function<std::unique_ptr<app::component>(std::filesystem::path, dreamrender::resource_loader&)> create;
+    std::function<std::unique_ptr<app::component>(std::filesystem::path, auroreengine::resource_loader&)> create;
 };
 
 // JSON-based file info structure to replace Gio::FileInfo
@@ -58,46 +61,52 @@ export struct file_info {
 };
 
 class program_registry {
-    static std::unordered_multimap<std::string, open_info> programs_by_mimetype;
-    static std::unordered_multimap<std::string, open_info> programs_by_file_extension;
+    using associations = std::unordered_multimap<std::string, open_info>;
+    // Viewer registrations run during module initialization. Construct each
+    // table on its first access rather than depending on global constructor order.
+    static associations& programs_by_mimetype() {
+        static associations table;
+        return table;
+    }
+    static associations& programs_by_file_extension() {
+        static associations table;
+        return table;
+    }
 
     protected:
         friend std::vector<open_info> get_open_infos(const std::filesystem::path& path, const file_info& info);
 
         void do_register_program_mime(std::string name, std::string mime_type, open_info info) {
-            programs_by_mimetype.emplace(mime_type, info);
+            programs_by_mimetype().emplace(mime_type, info);
         }
         void do_register_program_ext(std::string name, std::string ext, open_info info) {
-            programs_by_file_extension.emplace(ext, info);
+            programs_by_file_extension().emplace(ext, info);
         }
 
         static void get_program_mime(std::string mime_type, std::output_iterator<open_info> auto out) {
-            auto range = programs_by_mimetype.equal_range(mime_type);
+            auto range = programs_by_mimetype().equal_range(mime_type);
             for(auto it = range.first; it != range.second; ++it) {
                 *out++ = it->second;
             }
         }
         static void get_program_ext(std::string ext, std::output_iterator<open_info> auto out) {
-            auto range = programs_by_file_extension.equal_range(ext);
+            auto range = programs_by_file_extension().equal_range(ext);
             for(auto it = range.first; it != range.second; ++it) {
                 *out++ = it->second;
             }
         }
 };
-std::unordered_multimap<std::string, open_info> program_registry::programs_by_mimetype{};
-std::unordered_multimap<std::string, open_info> program_registry::programs_by_file_extension{};
-
 export template<typename T>
 struct register_program : program_registry {
     register_program(std::string name, std::initializer_list<std::string> mime_types,
                      std::initializer_list<std::string> file_extensions) {
         for(auto& mime_type : mime_types) {
-            do_register_program_mime(name, mime_type, {name, false, [](std::filesystem::path path, dreamrender::resource_loader& loader) {
+            do_register_program_mime(name, mime_type, {name, false, [](std::filesystem::path path, auroreengine::resource_loader& loader) {
                 return std::make_unique<T>(path, loader);
             }});
         }
         for(auto& ext : file_extensions) {
-            do_register_program_ext(name, ext, {name, false, [](std::filesystem::path path, dreamrender::resource_loader& loader) {
+            do_register_program_ext(name, ext, {name, false, [](std::filesystem::path path, auroreengine::resource_loader& loader) {
                 return std::make_unique<T>(path, loader);
             }});
         }
@@ -108,7 +117,11 @@ export std::vector<open_info> get_open_infos(const std::filesystem::path& path, 
     std::vector<open_info> infos;
 
     program_registry::get_program_mime(info.fast_content_type, std::back_inserter(infos));
-    program_registry::get_program_ext(path.extension().string(), std::back_inserter(infos));
+    auto extension = path.extension().string();
+    std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    program_registry::get_program_ext(extension, std::back_inserter(infos));
+    std::set<std::string> names;
+    std::erase_if(infos, [&names](const open_info& info) { return !names.insert(info.name).second; });
 
     return infos;
 }

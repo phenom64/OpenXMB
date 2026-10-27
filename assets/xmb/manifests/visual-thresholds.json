@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "description": "Pre-registered OpenXMB 1920x1080 visual parity thresholds. Anchor and baseline assertions remain separate hard gates.",
+  "metric_units": "linear normalized sRGB channel difference in [0, 1]",
+  "scenes": {
+    "root": {
+      "reference_sha256": "03939efb4c1bee999e68f70991b705e516d02dfbf5f401ef16ec226a23dc255e",
+      "thresholds": {
+        "mae": 0.06,
+        "rmse": 0.12,
+        "p95_absolute_error": 0.20,
+        "fraction_pixels_over_32": 0.18
+      }
+    },
+    "settings": {
+      "reference_sha256": "e408f84b8f3eb853a27ecd02e9b31bc8ef615022696255931769d0a92d81b378",
+      "thresholds": {
+        "mae": 0.06,
+        "rmse": 0.12,
+        "p95_absolute_error": 0.20,
+        "fraction_pixels_over_32": 0.18
+      }
+    },
+    "theme": {
+      "reference_sha256": "708999bc89787e2aeeb9fc42f9820e864a96c8d95bd6781527908037c5da4c26",
+      "thresholds": {
+        "mae": 0.06,
+        "rmse": 0.12,
+        "p95_absolute_error": 0.20,
+        "fraction_pixels_over_32": 0.18
+      }
+    },
+    "theme-panel": {
+      "reference_sha256": "a949d54220bce696d97569c1ac859a123b5499a447eb12a53700b7908b12abb9",
+      "thresholds": {
+        "mae": 0.06,
+        "rmse": 0.12,
+        "p95_absolute_error": 0.20,
+        "fraction_pixels_over_32": 0.18
+      }
+    }
+  }
+}

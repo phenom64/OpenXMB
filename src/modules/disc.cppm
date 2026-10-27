@@ -17,10 +17,13 @@
  */
 
 module;
+#include "openxmb/integrations/disc.hpp"
 
 export module openxmb.modules.disc;
 
 export namespace modules::disc {
-    inline void init() {}
+  inline auto scan() { return openxmb::integrations::discover_discs(); }
+  inline auto probe(const std::filesystem::path& path) { return openxmb::integrations::probe_disc(path); }
+  inline auto play(const openxmb::integrations::DiscInfo& disc) { return openxmb::integrations::play_disc(disc); }
+  inline auto init() { return scan(); }
 }
-

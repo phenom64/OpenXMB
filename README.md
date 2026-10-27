@@ -14,12 +14,12 @@ The rendering backend is powered by [**AuroreEngine**](https://github.com/phenom
 ## Screenshots
 
 <p align="center">
-  <img src="interfaceFX/GraphicsServer/Screenshot 2025-09-02 203702.png" alt="OpenXMB main menu and settings" width="300"/>
-  <img src="interfaceFX/GraphicsServer/Screenshot 2025-08-30 201458.png" alt="Dynamic XMB colour schemes" width="300"/>
+  <img src="docs/screenshots/rsx26/desktop.png" alt="OpenXMB home menu with a red wave background" width="300"/>
+  <img src="docs/screenshots/rsx26/music.png" alt="OpenXMB music player and visualizer" width="300"/>
 </p>
 
 <p align="center">
-  <em>Left: OpenXMB main menu & settings (pre-alpha) · Right: Dynamic XMB colour schemes adapting to time/month</em>
+  <em>Left: Home menu and settings · Right: Music playback and visualizer</em>
 </p>
 
 ## Features
@@ -31,9 +31,9 @@ The rendering backend is powered by [**AuroreEngine**](https://github.com/phenom
 *   **Built-in Media Viewers:**
     *   Image viewer for common formats.
     *   Text viewer.
-    *   FFmpeg-based video player with GPU-accelerated YUV decoding.
+    *   FFmpeg-based video player with GPU YUV conversion.
 *   **Highly Configurable:** Runtime behavior, colors, fonts, and more can be configured via a simple `config.json` file.
-*   **Optional Modules:** The build system allows enabling or disabling major features like the video player, a planned CEF-based web browser, and libretro core support.
+*   **Optional Modules:** The build system allows enabling or disabling major features like the video player, an optional WebKitGTK browser surface, and libretro core support.
 
 ## Getting Started
 
@@ -44,24 +44,34 @@ Before you begin, ensure you have the following tools and libraries installed (v
 - Git
 - CMake 3.28+
 - Ninja build system
-- C++23-capable compiler:
-  - Linux: Clang 17+ (Clang 19 recommended) or GCC 13+
-  - macOS: Homebrew LLVM/Clang with `clang-scan-deps` + Vulkan loader/MoltenVK packages
-  - Windows: LLVM/Clang with `clang-scan-deps` (MSVC support is blocked by the current `#embed` shader/resource path)
+- `glslangValidator` (provided by `glslang-tools` on Ubuntu)
+- LLVM/Clang with C++23 module scanning and a matching `clang-scan-deps`:
+  - Linux: Clang 19 with a recent C++ standard library (the CI setup uses GCC 14's library)
+  - macOS: Homebrew `llvm@20`
+  - Windows: LLVM/Clang 20 with Visual Studio Build Tools and the Windows SDK
+  - The current shader/resource embedding path uses `#embed`; GCC 13 and MSVC are not supported build paths.
 - Vulkan 1.2 capable GPU + drivers (MoltenVK on macOS)
 - Libraries (names as found on Ubuntu 24.04-like distros):
   - Vulkan headers and loader: `libvulkan-dev`, `vulkan-utility-libraries-dev`
   - SDL2 core + image + mixer: `libsdl2-dev`, `libsdl2-image-dev`, `libsdl2-mixer-dev`
-  - FFmpeg (if `ENABLE_VIDEO_PLAYER=ON`): `libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev`
+  - FFmpeg (music, previews and optional video): `libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev`
   - Freetype: `libfreetype-dev`
   - glm: `libglm-dev`
   - fmt: `libfmt-dev`
   - gettext (i18n): `gettext`
-- Optional (used by dependencies): `harfbuzz`, `glslang-tools`, `spirv-tools`, `pkg-config`
+  - Theme/comic archives: `libarchive-dev`, `zlib1g-dev`
+  - Linux desktop integration: `libx11-dev`, `libxtst-dev`
+  - Optional embedded Linux browser: `libwebkit2gtk-4.1-dev`, `libgtk-3-dev`
+  - PDF viewing: Poppler tools (`pdfinfo`, `pdftoppm`); printing uses `lp` or `lpr`
+  - Optional online game metadata: libcurl and a user-supplied provider key
+- Recommended: `pkg-config` for FFmpeg and optional WebKitGTK discovery; HarfBuzz
+  enables text shaping. `spirv-tools` is optional.
+
+See [desktop workflows and validation](docs/desktop-release.md) for the expanded shell, themes and native media tools.
 
 ### Build Instructions
 
-The default preset builds a Release configuration with optional alpha modules disabled:
+The default preset builds a Release configuration with native desktop media, browser, disc and emulation integrations enabled:
 
 ```bash
 cmake --preset default
@@ -74,9 +84,8 @@ For editor/debug work, use `cmake --preset dev && cmake --build --preset dev`.
 
 1.  **Install Dependencies (via Homebrew):**
     ```bash
-    brew install cmake ninja pkg-config llvm ffmpeg sdl2 sdl2_image sdl2_mixer gettext fmt freetype glm
-    # Install Vulkan loader, shader tools, and MoltenVK
-    brew install vulkan-loader glslang molten-vk
+    brew install cmake ninja pkg-config llvm@20 ffmpeg sdl2 sdl2_image sdl2_mixer \
+        gettext fmt freetype harfbuzz glm libarchive zlib vulkan-loader glslang molten-vk poppler
     ```
 
 2.  **Build OpenXMB:**
@@ -86,7 +95,8 @@ For editor/debug work, use `cmake --preset dev && cmake --build --preset dev`.
     cd OpenXMB
 
     # Configure and build the project
-    LLVM_PREFIX=$(brew --prefix llvm)
+    LLVM_PREFIX=$(brew --prefix llvm@20)
+    export PATH="$LLVM_PREFIX/bin:$PATH"
     CC="$LLVM_PREFIX/bin/clang" CXX="$LLVM_PREFIX/bin/clang++" cmake --preset default
     cmake --build --preset default
 
@@ -102,10 +112,11 @@ For editor/debug work, use `cmake --preset dev && cmake --build --preset dev`.
     ```bash
     sudo apt update
     sudo apt install build-essential git cmake ninja-build pkg-config \
-        clang-18 clang-tools-18 libvulkan-dev vulkan-utility-libraries-dev glslang-tools spirv-tools \
+        clang-19 clang-tools-19 g++-14 libvulkan-dev vulkan-utility-libraries-dev glslang-tools spirv-tools \
         libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev \
         libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev \
-        libglm-dev libfreetype-dev gettext libfmt-dev
+        libglm-dev libfreetype-dev libharfbuzz-dev gettext libfmt-dev libarchive-dev zlib1g-dev \
+        libx11-dev libxtst-dev poppler-utils
     ```
 
 2.  **Build OpenXMB:**
@@ -115,7 +126,7 @@ For editor/debug work, use `cmake --preset dev && cmake --build --preset dev`.
     cd OpenXMB
 
     # Configure and build the project
-    CC=clang-18 CXX=clang++-18 cmake --preset default
+    CC=clang-19 CXX=clang++-19 cmake --preset default
     cmake --build --preset default
 
     # (Optional) Install the application system-wide
@@ -157,13 +168,14 @@ For editor/debug work, use `cmake --preset dev && cmake --build --preset dev`.
     # (Optional) Install the application
     cmake --install build/windows-vcpkg --prefix "C:/OpenXMB"
     ```
-    When developing OpenXMB and AuroreEngine together, use `windows-local-aurore` or pass `-DDREAMRENDER_LOCAL=<path-to-AuroreEngine>` so OpenXMB builds against your local engine checkout.
+    When developing OpenXMB and AuroreEngine together, use `windows-local-aurore` or pass `-DAUROREENGINE_LOCAL=<path-to-AuroreEngine>` so OpenXMB builds against your local engine checkout.
 
 ### Build Options
 
-You can customize the build using the following CMake options:
+The default preset enables desktop integrations. Direct CMake builds use the following options and defaults:
+
 *   `-DENABLE_VIDEO_PLAYER=ON/OFF`: Enable the FFmpeg-based video player (Default: ON)
-*   `-DENABLE_BROWSER=ON/OFF`: Enable the CEF-based browser module [ALPHA] (Default: OFF)
+*   `-DENABLE_BROWSER=ON/OFF`: Enable desktop browser integration (Default: OFF)
 *   `-DENABLE_DISC_MEDIA=ON/OFF`: Enable DVD/Blu-ray support [ALPHA] (Default: OFF)
 *   `-DENABLE_LIBRETRO=ON/OFF`: Enable the libretro core host for emulation [ALPHA] (Default: OFF)
 *   `-DINTERFACE_FX_DEBUG=ON/OFF`: Enable interface/UI graphics+text debug overlays (Default: OFF)
@@ -188,7 +200,16 @@ On Windows, use the `windows-vcpkg` preset and verify both a windowed launch and
 
 ## Configuration
 
-OpenXMB is configured using the `config.json` file. At runtime it checks `OPENXMB_CONFIG` first, then `config.json` beside the executable, and finally a per-user config location such as `%LOCALAPPDATA%/OpenXMB/config.json` on Windows. You can edit this file to change settings like:
+OpenXMB stores settings in `config.json`. The active profile has its own settings;
+setting `OPENXMB_CONFIG` selects an explicit configuration file instead of restoring
+the active profile at startup. Without an override, OpenXMB loads saved user
+settings before falling back to packaged defaults. It saves changes to the active
+profile or explicit file, or to the user configuration directory when neither is
+selected. Default user configuration locations are `~/.config/openxmb` on Linux
+(or `$XDG_CONFIG_HOME/openxmb`), `~/Library/Application Support/OpenXMB` on
+macOS and `%LOCALAPPDATA%/OpenXMB` on Windows.
+
+You can change settings such as:
 
 *   Background colors and type (`wave`, `color`, `image`)
 *   Fonts and date/time display
@@ -199,18 +220,24 @@ The Unix launcher sets `XMB_ASSET_DIR` and `XMB_LOCALE_DIR` when they are not al
 
 ## Roadmap
 
-*   **✅ M1: Scaffold:** App compiles & runs; static XMB; JSON config.
-*   **✅ M2: Menus, Fonts, Icons:** Fully navigable XMB with text & icons; async file menu scanning; local placeholder assets packaged for build/install runs.
-*   **🚧 M3: Audio & Music:** UI sound effects are wired; background music playback and visualizer remain planned.
-*   **🚧 M4: Video Player:** File playback with GPU-accelerated YUV decoding; subtitle support next.
-*   ** M5: Libretro Overlay:** Emulation support via a libretro core host.
-*   ** M6: Web Browser:** Integration of a CEF-based browser.
-*   ** M7: Disc Media:** Support for DVD/Blu-ray playback.
-*   **🚧 M8: Performance/Release Pass:** Release/IPO defaults, presets, staged install smoke, CI matrix, steady-clock timing, async I/O; engine-side loader/pipeline tweaks and further descriptor/pool tuning planned.
+| Milestone | Status | Remaining work |
+| --- | --- | --- |
+| M1: Shell and configuration | ✅ Implemented | Platform installation and runtime validation. |
+| M2: Menus, fonts and icons | ✅ Implemented | Continue visual and platform refinements. |
+| M3: Music and visualizer | ✅ Implemented | Expand audio management and validate sustained playback. |
+| M4: Video player | 🏗️ Partially implemented | Add hardware decoding and bitmap subtitles. |
+| M5: Emulation | 🏗️ Partially implemented | Extend software libretro support to hardware-context cores. |
+| M6: Browser | 🏗️ Partially implemented | Expand platform support and validate native Wayland input. |
+| M7: Disc media | 🏗️ Partially implemented | Expand optical-device and format coverage. |
+| M8: Performance and release | 🏗️ Partially implemented | Complete release checks and target-hardware measurements. |
+
+OpenGL ES, H700/RG34XX support and a handheld distribution are deferred. See
+[milestones.txt](milestones.txt) and [desktop workflows](docs/desktop-release.md)
+for details.
 
 ### Notes on AuroreEngine
 
-OpenXMB uses AuroreEngine as the rendering backend. By default, the build fetches it automatically. For development or local changes, use the `windows-local-aurore` preset on Windows or point CMake to a local checkout with `-DDREAMRENDER_LOCAL=/path/to/AuroreEngine`.
+OpenXMB uses AuroreEngine as the rendering backend. By default, the build fetches it automatically. For development or local changes, use the `windows-local-aurore` preset on Windows or point CMake to a local checkout with `-DAUROREENGINE_LOCAL=/path/to/AuroreEngine`.
 
 ## License
 

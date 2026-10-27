@@ -27,6 +27,7 @@ module;
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -42,7 +43,7 @@ module;
 
 export module openxmb.app:text_viewer;
 
-import dreamrender;
+import auroreengine;
 import glm;
 import spdlog;
 import vulkan_hpp;
@@ -69,6 +70,7 @@ class mapped_memory {
                 close(m_fd);
                 throw std::runtime_error("Failed to get file size");
             }
+            if(m_size == 0) { m_data = nullptr; return; }
             m_data = mmap(nullptr, m_size, PROT_READ, MAP_PRIVATE, m_fd, 0);
             if(m_data == MAP_FAILED) {
                 spdlog::error("Failed to map file {}: {}", path.string(), strerror(errno));
@@ -125,7 +127,7 @@ class mapped_memory {
                 spdlog::error("Failed to open file {}: {}", path.string(), strerror(errno));
                 throw std::runtime_error("Failed to open file");
             }
-            std::streamsize size = -1;
+            std::streamsize size = file.tellg();
             if(size < 0) {
                 spdlog::error("Failed to get size of file {}: {}", path.string(), strerror(errno));
                 throw std::runtime_error("Failed to get file size");
@@ -212,7 +214,7 @@ namespace {
 
 export class text_viewer : public component, public action_receiver, public event_receiver {
     public:
-        text_viewer(const std::filesystem::path& path, dreamrender::resource_loader& loader) : title(path.string()), src(mapped_memory(path)) {
+        text_viewer(const std::filesystem::path& path, auroreengine::resource_loader& loader) : title(path.string()), src(mapped_memory(path)) {
             text = std::string_view{std::span<const char>{std::get<mapped_memory>(src)}};
             lines = std::ranges::count(text, '\n') + 1;
             update();
@@ -228,7 +230,7 @@ export class text_viewer : public component, public action_receiver, public even
             update();
         }
 
-        void render(dreamrender::gui_renderer& renderer, class shell* xmb) override {
+        void render(auroreengine::gui_renderer& renderer, class shell* xmb) override {
             constexpr float x = (1.0f - width) / 2;
             constexpr float y = (1.0f - height) / 2;
             const double offset_x = 0.01;

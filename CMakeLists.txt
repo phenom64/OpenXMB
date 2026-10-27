@@ -18,7 +18,18 @@ set(COLOR_RED     "${ESC}[31m")
 set(COLOR_YELLOW  "${ESC}[33m")
 set(COLOR_GREEN   "${ESC}[32m")
 
-project(OpenXMB VERSION 0.1.0 LANGUAGES CXX)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" OPENXMB_RELEASE_VERSION)
+string(STRIP "${OPENXMB_RELEASE_VERSION}" OPENXMB_RELEASE_VERSION)
+string(REGEX MATCH "^[0-9]+\\.[0-9]+\\.[0-9]+" OPENXMB_NUMERIC_VERSION "${OPENXMB_RELEASE_VERSION}")
+project(OpenXMB VERSION ${OPENXMB_NUMERIC_VERSION} LANGUAGES CXX)
+add_compile_definitions(OPENXMB_VERSION_STRING="${OPENXMB_RELEASE_VERSION}")
+if(WIN32)
+  add_compile_definitions(NOMINMAX)
+endif()
+
+# OpenXMB uses CTest for backend-neutral engine and product contract tests.
+# Keep this independent of third-party BUILD_TESTING cache options below.
+enable_testing()
 
 message(STATUS "${COLOR_GREEN}Starting OpenXMB Builder...${COLOR_RESET}")
 message(STATUS "${COLOR_YELLOW}™ & © 2025-2026 Syndromatic Ltd Britannia, Syndromatic Ltd Bharat. All rights reserved.${COLOR_RESET}")
@@ -79,6 +90,7 @@ endif()
 # Optionally enable CPU-specific tuning (off by default for portability)
 option(OPENXMB_ENABLE_NATIVE_OPTIMIZATIONS "Enable -march=native or /arch:..." OFF)
 option(OPENXMB_ENABLE_FAST_MATH "Enable fast-math where safe" OFF)
+option(OPENXMB_ENABLE_IPO "Enable interprocedural optimization/LTO" OFF)
 
 set(OPENXMB_APPLE_PREFIXES "" CACHE STRING "Additional macOS dependency prefixes, separated by semicolons")
 set(OPENXMB_APPLE_INCLUDE_DIRS "")
@@ -103,9 +115,13 @@ endif()
 # Interprocedural optimization (LTO/IPO) for Release builds if supported
 include(CheckIPOSupported)
 check_ipo_supported(RESULT IPO_SUPPORTED OUTPUT IPO_ERROR)
-if(IPO_SUPPORTED)
+if(OPENXMB_ENABLE_IPO AND IPO_SUPPORTED)
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO ON)
+elseif(NOT OPENXMB_ENABLE_IPO)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE OFF)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO OFF)
+  message(STATUS "${COLOR_YELLOW}IPO/LTO disabled (enable OPENXMB_ENABLE_IPO after validating the active compiler/module combination).${COLOR_RESET}")
 else()
   message(STATUS "${COLOR_YELLOW}IPO/LTO not supported: ${IPO_ERROR}${COLOR_RESET}")
 endif()
@@ -116,10 +132,15 @@ endif()
 message(STATUS "${COLOR_CYAN}Building version ${BUILD_VERSION}${COLOR_RESET}")
 
 # --- Feature Options ---
-option(ENABLE_BROWSER "Enable CEF-based browser module" OFF)
+option(ENABLE_BROWSER "Enable native desktop browser integration" OFF)
 option(ENABLE_VIDEO_PLAYER "Enable FFmpeg video player" ON)
 option(ENABLE_DISC_MEDIA "Enable DVD/Blu-ray support" OFF)
 option(ENABLE_LIBRETRO "Enable libretro core host" OFF)
+option(OPENXMB_BUILD_NATIVE_TESTS "Build deterministic native OpenXMB contract tests" ON)
+option(OPENXMB_IMPORT_XMB_WEB_COMPAT "Import the local-only xmb-web compatibility asset pack" OFF)
+option(OPENXMB_VISUAL_REGRESSION "Enable optional visual regression CTest targets (requires reference frames)" OFF)
+set(OPENXMB_XMB_WEB_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../xmb-web" CACHE PATH
+  "Pinned local TheGammaSqueeze/xmb-web checkout used for the restricted compatibility pack")
 set(HWACCEL "auto" CACHE STRING "Preferred hardware video decode backend")
 set_property(CACHE HWACCEL PROPERTY STRINGS auto off vaapi d3d11 videotoolbox)
 
@@ -180,7 +201,6 @@ find_package(glm REQUIRED)
 find_package(Freetype REQUIRED)
 find_package(Gettext QUIET)
 find_package(Intl REQUIRED)
-find_package(fmt REQUIRED)
 find_package(PkgConfig QUIET)
 find_package(FFMPEG QUIET)
 if(FFMPEG_FOUND)
@@ -225,48 +245,66 @@ openxmb_append_sdl2_parent_include(SDL2_mixer::SDL2_mixer)
 
 include(FetchContent)
 
+# Keep logging and application formatting on one tested implementation. Older
+# distro/vcpkg releases differ in ABI and compile-time format checking behavior.
+FetchContent_Declare(fmt
+  GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+  GIT_TAG 40626af88bd7df9a5fb80be7b25ac85b122d6c21
+  EXCLUDE_FROM_ALL
+)
+set(FMT_INSTALL OFF CACHE BOOL "Do not install formatter development files" FORCE)
+set(FMT_TEST OFF CACHE BOOL "Disable dependency tests" FORCE)
+set(FMT_DOC OFF CACHE BOOL "Disable dependency documentation" FORCE)
+FetchContent_MakeAvailable(fmt)
+# SDK include roots (notably vcpkg's FFmpeg/Vulkan directory) can also contain
+# another fmt release. Keep the pinned headers first in every consuming target,
+# including the logging module; matching inline namespaces do not ensure ABI compatibility.
+include_directories(BEFORE "${fmt_SOURCE_DIR}/include")
+set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "Use the application's pinned formatter" FORCE)
+
 if(APPLE)
   find_package(Vulkan REQUIRED)
 endif()
 
 FetchContent_Declare(i18n++
   GIT_REPOSITORY https://github.com/JnCrMx/i18n-cpp.git
-  GIT_TAG        trunk    #trunk = master branch
+  GIT_TAG        998ba2e80e3a8967f916df68d8543659dd1c453f
 )
 
 # We are using our own stable, maintained fork of the rendering engine.
 # Allow overriding the engine source with a local path for development.
-set(DREAMS_BUILD_WITH_POSIX_THREADS ON CACHE BOOL "" FORCE)
-set(DREAMS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(DREAMS_FIND_PACKAGES ON CACHE BOOL "Allow AuroreEngine to create required package targets" FORCE)
+set(AUROREENGINE_BUILD_WITH_POSIX_THREADS ON CACHE BOOL "" FORCE)
+set(AUROREENGINE_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(AUROREENGINE_BUILD_V2_TESTS ON CACHE BOOL "Build Aurore v2 contract tests during OpenXMB integration" FORCE)
+set(AUROREENGINE_FIND_PACKAGES ON CACHE BOOL "Allow AuroreEngine to create required package targets" FORCE)
 
-set(DREAMRENDER_LOCAL "" CACHE PATH "Path to local AuroreEngine checkout (optional)")
-if(DREAMRENDER_LOCAL)
-  get_filename_component(_dreamrender_local "${DREAMRENDER_LOCAL}" ABSOLUTE)
-  if(NOT EXISTS "${_dreamrender_local}/CMakeLists.txt")
-    message(FATAL_ERROR "DREAMRENDER_LOCAL does not point to an AuroreEngine checkout: ${_dreamrender_local}")
+set(AUROREENGINE_LOCAL "" CACHE PATH "Path to local AuroreEngine checkout (optional)")
+if(AUROREENGINE_LOCAL)
+  get_filename_component(_auroreengine_local "${AUROREENGINE_LOCAL}" ABSOLUTE)
+  if(NOT EXISTS "${_auroreengine_local}/CMakeLists.txt")
+    message(FATAL_ERROR "AUROREENGINE_LOCAL does not point to an AuroreEngine checkout: ${_auroreengine_local}")
   endif()
-  message(STATUS "${COLOR_YELLOW}Using local AuroreEngine at ${COLOR_CYAN}${_dreamrender_local}${COLOR_RESET}")
-  add_subdirectory("${_dreamrender_local}" "${CMAKE_CURRENT_BINARY_DIR}/_deps/dreamrender-build")
+  message(STATUS "${COLOR_YELLOW}Using local AuroreEngine at ${COLOR_CYAN}${_auroreengine_local}${COLOR_RESET}")
+  add_subdirectory("${_auroreengine_local}" "${CMAKE_CURRENT_BINARY_DIR}/_deps/auroreengine-build")
 else()
-  FetchContent_Declare(dreamrender
+  FetchContent_Declare(auroreengine
     GIT_REPOSITORY https://github.com/phenom64/AuroreEngine.git
-    GIT_TAG        a55db74aab697a7642e439ebf0fa9222f40683ff
+    GIT_TAG        e6fdf88985d15a385673184d72308fc1f8ddf406
     OVERRIDE_FIND_PACKAGE
   )
-  FetchContent_GetProperties(dreamrender)
-  if(NOT dreamrender_POPULATED)
-    FetchContent_Populate(dreamrender)
-    add_subdirectory("${dreamrender_SOURCE_DIR}" "${dreamrender_BINARY_DIR}")
+  FetchContent_GetProperties(auroreengine)
+  if(NOT auroreengine_POPULATED)
+    FetchContent_Populate(auroreengine)
+    add_subdirectory("${auroreengine_SOURCE_DIR}" "${auroreengine_BINARY_DIR}")
   endif()
 endif()
 
-if(TARGET SDL2::SDL2 AND TARGET dreams_sdl2Module)
+if(TARGET SDL2::SDL2 AND TARGET auroreengine_sdl2Module)
   get_target_property(_openxmb_sdl2_includes SDL2::SDL2 INTERFACE_INCLUDE_DIRECTORIES)
   foreach(_sdl2_include_dir IN LISTS _openxmb_sdl2_includes)
     get_filename_component(_sdl2_include_parent "${_sdl2_include_dir}" DIRECTORY)
     if(EXISTS "${_sdl2_include_parent}/SDL2/SDL.h")
-      target_include_directories(dreams_sdl2Module PUBLIC "${_sdl2_include_parent}")
+      target_include_directories(auroreengine_sdl2Module PUBLIC "${_sdl2_include_parent}")
     endif()
   endforeach()
 endif()
@@ -280,6 +318,13 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/nlohmann/json.git
   GIT_TAG        v3.12.0
 )
+FetchContent_Declare(fast_float
+  GIT_REPOSITORY https://github.com/fastfloat/fast_float.git
+  GIT_TAG 50a80a73ab2ab256ba1c3bf86923ddd8b4202bc7
+  EXCLUDE_FROM_ALL
+)
+set(FASTFLOAT_INSTALL OFF CACHE BOOL "Do not install number-parser development files" FORCE)
+set(FASTFLOAT_TEST OFF CACHE BOOL "Disable dependency tests" FORCE)
 
 
 # For i18n++, we disable the optional tools (plugin, merge tool) and tests
@@ -291,7 +336,7 @@ set(BUILD_TESTING OFF CACHE BOOL "Disable i18n++ tests" FORCE)
 
 # make both dependencies available. CMake will use the options we just set
 # when it configures i18n++.
-FetchContent_MakeAvailable(i18n++ argparse nlohmann_json)
+FetchContent_MakeAvailable(i18n++ argparse nlohmann_json fast_float)
 
 add_library(i18nModule STATIC)
 target_sources(i18nModule PUBLIC FILE_SET CXX_MODULES FILES third_party/i18n.cppm)
@@ -307,6 +352,148 @@ target_compile_features(argparseModule PUBLIC cxx_std_23)
 target_link_libraries(argparseModule PUBLIC argparse::argparse)
 if(NOT WIN32)
   target_compile_options(argparseModule PRIVATE -pthread)
+endif()
+
+# Backend-neutral OpenXMB model and presentation substrate. Keeping this out of
+# the module/Vulkan graph makes the asset parser, clocks, and layout testable by
+# Clang, GCC, and MSVC in isolation.
+add_library(openxmb_shell_core STATIC
+  src/xmb/model/procedural_wave.cpp
+  src/xmb/model/wave_data.cpp
+  src/xmb/presentation/background.cpp
+  src/xmb/presentation/boot_timeline.cpp
+  src/xmb/presentation/layout.cpp
+  src/xmb/presentation/status_bar.cpp
+)
+add_library(OpenXMB::ShellCore ALIAS openxmb_shell_core)
+target_compile_features(openxmb_shell_core PUBLIC cxx_std_23)
+target_link_libraries(openxmb_shell_core PUBLIC FastFloat::fast_float)
+target_include_directories(openxmb_shell_core PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+set_target_properties(openxmb_shell_core PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+
+add_library(openxmb_media_core STATIC
+  src/media/catalog.cpp
+  src/media/clock.cpp
+  src/media/player_state.cpp
+)
+add_library(OpenXMB::MediaCore ALIAS openxmb_media_core)
+target_compile_features(openxmb_media_core PUBLIC cxx_std_23)
+target_include_directories(openxmb_media_core PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+set_target_properties(openxmb_media_core PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+
+add_library(openxmb_catalog_core STATIC
+  src/xmb/model/catalog.cpp
+  src/xmb/model/navigation_state.cpp
+  src/xmb/model/settings_actions.cpp
+  src/xmb/model/settings_controller.cpp
+  src/xmb/presentation/settings_scene.cpp
+)
+add_library(OpenXMB::CatalogCore ALIAS openxmb_catalog_core)
+target_compile_features(openxmb_catalog_core PUBLIC cxx_std_23)
+target_include_directories(openxmb_catalog_core PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(openxmb_catalog_core PUBLIC nlohmann_json::nlohmann_json)
+set_target_properties(openxmb_catalog_core PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+
+add_library(openxmb_settings_core STATIC
+  src/settings/domain.cpp
+)
+add_library(OpenXMB::SettingsCore ALIAS openxmb_settings_core)
+target_compile_features(openxmb_settings_core PUBLIC cxx_std_23)
+target_include_directories(openxmb_settings_core PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+set_target_properties(openxmb_settings_core PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+
+add_library(openxmb_dialogs_core STATIC
+  src/dialogs/model.cpp
+  src/dialogs/state_machine.cpp
+  src/dialogs/recovery.cpp
+)
+add_library(OpenXMB::DialogsCore ALIAS openxmb_dialogs_core)
+target_compile_features(openxmb_dialogs_core PUBLIC cxx_std_23)
+target_include_directories(openxmb_dialogs_core PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+set_target_properties(openxmb_dialogs_core PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+
+add_library(openxmb_localization_core STATIC
+  src/localization/catalog.cpp
+  src/localization/locale.cpp
+  src/localization/message.cpp
+)
+add_library(OpenXMB::LocalizationCore ALIAS openxmb_localization_core)
+target_compile_features(openxmb_localization_core PUBLIC cxx_std_23)
+target_include_directories(openxmb_localization_core PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+set_target_properties(openxmb_localization_core PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+
+if(OPENXMB_IMPORT_XMB_WEB_COMPAT)
+  find_package(Python3 3.10 REQUIRED COMPONENTS Interpreter)
+  if(NOT EXISTS "${OPENXMB_XMB_WEB_SOURCE}/wave_geo.bin")
+    message(FATAL_ERROR
+      "OPENXMB_IMPORT_XMB_WEB_COMPAT requires the pinned xmb-web checkout at "
+      "${OPENXMB_XMB_WEB_SOURCE}. Disable the option for the clean Classic fallback.")
+  endif()
+
+  set(OPENXMB_COMPAT_DIR
+    "${CMAKE_CURRENT_BINARY_DIR}/shell/compat/xmb-ui-compat")
+  set(_openxmb_compat_manifest
+    "${OPENXMB_COMPAT_DIR}/manifest.json")
+  set(_openxmb_compat_family_inputs)
+  foreach(_openxmb_compat_family IN ITEMS
+      assets backgrounds dialogs icons images normalmaps photos video)
+    file(GLOB_RECURSE _openxmb_compat_family_files
+      CONFIGURE_DEPENDS
+      LIST_DIRECTORIES FALSE
+      "${OPENXMB_XMB_WEB_SOURCE}/${_openxmb_compat_family}/*")
+    list(APPEND _openxmb_compat_family_inputs
+      ${_openxmb_compat_family_files})
+  endforeach()
+  add_custom_command(
+    OUTPUT "${_openxmb_compat_manifest}"
+    BYPRODUCTS
+      "${OPENXMB_COMPAT_DIR}/data/month-gradient.json"
+      "${OPENXMB_COMPAT_DIR}/data/particle-cloud.bin"
+      "${OPENXMB_COMPAT_DIR}/normalmaps/nmap_000.png"
+      "${OPENXMB_COMPAT_DIR}/wave/wave_geo.bin"
+      "${OPENXMB_COMPAT_DIR}/wave/wave_seq2.bin"
+      "${OPENXMB_COMPAT_DIR}/wave/wave_seq2.json"
+      "${OPENXMB_COMPAT_DIR}/wave/wave_boot.bin"
+      "${OPENXMB_COMPAT_DIR}/wave/wave_boot.json"
+    COMMAND "${Python3_EXECUTABLE}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/tools/xmb/import_xmb_web.py"
+      --source "${OPENXMB_XMB_WEB_SOURCE}"
+      --output "${OPENXMB_COMPAT_DIR}"
+    DEPENDS
+      tools/xmb/import_xmb_web.py
+      assets/xmb/manifests/xmb-web-source.json
+      "${OPENXMB_XMB_WEB_SOURCE}/wave_geo.bin"
+      "${OPENXMB_XMB_WEB_SOURCE}/wave_seq2.bin"
+      "${OPENXMB_XMB_WEB_SOURCE}/wave_seq2.json"
+      "${OPENXMB_XMB_WEB_SOURCE}/wave_boot.bin"
+      "${OPENXMB_XMB_WEB_SOURCE}/wave_boot.json"
+      "${OPENXMB_XMB_WEB_SOURCE}/normalmaps/nmap_000.png"
+      "${OPENXMB_XMB_WEB_SOURCE}/index.html"
+      "${OPENXMB_XMB_WEB_SOURCE}/particle_cloud.js"
+      ${_openxmb_compat_family_inputs}
+    COMMENT "Verifying and importing the local-only OpenXMB xmb-web compatibility pack"
+    VERBATIM
+  )
+  add_custom_target(openxmb_compat_assets ALL
+    DEPENDS "${_openxmb_compat_manifest}")
 endif()
 
 set(XMS_SOURCES
@@ -329,6 +516,7 @@ set(XMS_SOURCES
   src/programs.cpp
 )
 set(XMS_MODULE_SOURCES
+  src/app/components/text_entry.cppm
   src/app/module.cppm
   src/app/shell.cppm
   src/app/component.cppm
@@ -356,6 +544,12 @@ set(XMS_MODULE_SOURCES
   src/render/components/wave_renderer.cppm
   src/render/components/original_renderer.cppm
   src/render/components/original_particles.cppm
+  src/render/components/procedural_wave_renderer.cppm
+  src/xmb/presentation/root_scene.cppm
+  src/xmb/renderer/captured_wave_renderer.cppm
+  src/xmb/renderer/monthly_background_renderer.cppm
+  src/xmb/renderer/settings_scene_renderer.cppm
+  src/xmb/renderer/status_bar_renderer.cppm
   src/utils.cppm
 )
 list(APPEND XMS_MODULE_SOURCES src/debug.cppm)
@@ -388,6 +582,8 @@ else()
   add_compile_definitions(OPENXMB_ENABLE_DISC_MEDIA=0)
 endif()
 set(XMS_SHADERS
+  shaders/procedural_wave.vert
+  shaders/procedural_wave.frag
   shaders/blur.comp
   shaders/downsample.comp
   shaders/upsample.comp
@@ -397,10 +593,17 @@ set(XMS_SHADERS
   shaders/original.frag
   shaders/original_particles.vert
   shaders/original_particles.frag
+  shaders/captured_wave.vert
+  shaders/captured_wave.frag
+  shaders/monthly_background.vert
+  shaders/monthly_background.frag
   shaders/yuv420p_decode.comp
 )
 
 add_executable(XMS ${XMS_SOURCES})
+if(TARGET openxmb_compat_assets)
+  add_dependencies(XMS openxmb_compat_assets)
+endif()
 target_sources(XMS PUBLIC
   FILE_SET CXX_MODULES
   BASE_DIRS src
@@ -417,7 +620,7 @@ if(MSVC)
   target_link_options(XMS PRIVATE $<$<CONFIG:Release>:/LTCG>)
 else()
   target_compile_options(XMS PRIVATE
-    $<$<CONFIG:Release>:-O3 -DNDEBUG>
+    $<$<CONFIG:Release>:-O2 -DNDEBUG>
     $<$<CONFIG:RelWithDebInfo>:-O2>
     $<$<AND:$<CONFIG:Release>,$<BOOL:${OPENXMB_ENABLE_FAST_MATH}>>:-ffast-math>
     $<$<BOOL:${OPENXMB_ENABLE_NATIVE_OPTIMIZATIONS}>:-march=native>
@@ -445,12 +648,18 @@ endif()
 target_compile_options(XMS PRIVATE --embed-dir=${CMAKE_CURRENT_BINARY_DIR}/shaders)
 target_compile_options(XMS PRIVATE --embed-dir=${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(XMS PRIVATE dreams::dreamrender)
-target_link_libraries(XMS PRIVATE dreams::sdl2Module)
-target_link_libraries(XMS PRIVATE dreams::glmModule)
-target_link_libraries(XMS PRIVATE dreams::VulkanHppModule)
-target_link_libraries(XMS PRIVATE dreams::vmaModule)
-target_link_libraries(XMS PRIVATE dreams::spdlogModule)
+target_link_libraries(XMS PRIVATE auroreengine::auroreengine)
+target_link_libraries(XMS PRIVATE OpenXMB::ShellCore)
+target_link_libraries(XMS PRIVATE OpenXMB::MediaCore)
+target_link_libraries(XMS PRIVATE OpenXMB::CatalogCore)
+target_link_libraries(XMS PRIVATE OpenXMB::SettingsCore)
+target_link_libraries(XMS PRIVATE OpenXMB::DialogsCore)
+target_link_libraries(XMS PRIVATE OpenXMB::LocalizationCore)
+target_link_libraries(XMS PRIVATE auroreengine::sdl2Module)
+target_link_libraries(XMS PRIVATE auroreengine::glmModule)
+target_link_libraries(XMS PRIVATE auroreengine::VulkanHppModule)
+target_link_libraries(XMS PRIVATE auroreengine::vmaModule)
+target_link_libraries(XMS PRIVATE auroreengine::spdlogModule)
 target_link_libraries(XMS PRIVATE Freetype::Freetype)
 target_link_libraries(XMS PRIVATE i18nModule)
 target_link_libraries(XMS PRIVATE argparseModule)
@@ -464,6 +673,292 @@ if(TARGET Intl::Intl)
   target_link_libraries(XMS PRIVATE Intl::Intl)
 endif()
 target_link_libraries(XMS PRIVATE fmt::fmt)
+
+include(cmake/Desktop.cmake)
+include(cmake/Music.cmake)
+include(cmake/Photos.cmake)
+include(cmake/Documents.cmake)
+include(cmake/Themes.cmake)
+include(cmake/Integrations.cmake)
+target_link_libraries(XMS PRIVATE OpenXMB::MusicCore OpenXMB::Integrations OpenXMB::DesktopCore)
+target_sources(XMS PRIVATE src/programs/library_manager.cpp)
+target_sources(XMS PUBLIC FILE_SET CXX_MODULES FILES
+  src/app/xmb_presentation.cppm
+  src/programs/music_player.cppm
+  src/programs/integration_center.cppm
+  src/programs/library_manager.cppm
+  src/programs/settings_center.cppm)
+
+if(ENABLE_VIDEO_PLAYER)
+  target_sources(XMS PRIVATE src/video.cpp src/video_worker.cpp)
+  target_sources(XMS PUBLIC FILE_SET CXX_MODULES FILES src/render/components/video_background.cppm)
+  auroreengine_add_shader(XMS shaders/video_background.vert)
+  auroreengine_add_shader(XMS shaders/video_background.frag)
+endif()
+
+if(OPENXMB_BUILD_NATIVE_TESTS AND ENABLE_VIDEO_PLAYER)
+  add_executable(openxmb_video_tests tests/video/video_playback_test.cpp src/video.cpp src/video_worker.cpp)
+  target_include_directories(openxmb_video_tests PRIVATE include ${OPENXMB_FFMPEG_INCLUDE_DIRS})
+  target_link_directories(openxmb_video_tests PRIVATE ${OPENXMB_FFMPEG_LIBRARY_DIRS})
+  target_link_libraries(openxmb_video_tests PRIVATE SDL2::SDL2 SDL2_mixer::SDL2_mixer ${OPENXMB_FFMPEG_LIBRARIES})
+  set_target_properties(openxmb_video_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  find_package(Python3 REQUIRED COMPONENTS Interpreter)
+  add_test(NAME openxmb_video_playback
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/video/run_video_playback_test.py"
+      --player "$<TARGET_FILE:openxmb_video_tests>" --output "${CMAKE_CURRENT_BINARY_DIR}/video-fixtures")
+  set_tests_properties(openxmb_video_playback PROPERTIES TIMEOUT 120 ENVIRONMENT "SDL_AUDIODRIVER=dummy")
+endif()
+
+if(WIN32 AND DEFINED _VCPKG_INSTALLED_DIR AND DEFINED VCPKG_TARGET_TRIPLET)
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(_openxmb_vcpkg_runtime_dir
+      "${_VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/debug/bin")
+  else()
+    set(_openxmb_vcpkg_runtime_dir
+      "${_VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/bin")
+  endif()
+  add_custom_target(openxmb_stage_windows_runtime ALL
+    COMMAND "${CMAKE_COMMAND}" -E copy_directory
+      "${_openxmb_vcpkg_runtime_dir}"
+      "$<TARGET_FILE_DIR:XMS>"
+    DEPENDS XMS
+    COMMENT "Staging vcpkg runtime libraries beside OpenXMB"
+    VERBATIM)
+endif()
+
+if(OPENXMB_BUILD_NATIVE_TESTS)
+  add_test(NAME openxmb_startup_help COMMAND XMS --help)
+  add_test(NAME openxmb_startup_version COMMAND XMS --version)
+  set_tests_properties(openxmb_startup_help openxmb_startup_version PROPERTIES
+    TIMEOUT 30 ENVIRONMENT "OPENXMB_STARTUP_TRACE=1" LABELS "startup")
+  set_tests_properties(openxmb_startup_help PROPERTIES PASS_REGULAR_EXPRESSION "--open-panel")
+  set_tests_properties(openxmb_startup_version PROPERTIES PASS_REGULAR_EXPRESSION "${OPENXMB_RELEASE_VERSION}")
+
+  function(openxmb_configure_native_test target_name)
+    target_compile_features(${target_name} PRIVATE cxx_std_23)
+    target_include_directories(${target_name} PRIVATE include)
+    if(MSVC)
+      target_compile_options(${target_name} PRIVATE /W4 /WX)
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+      target_compile_options(${target_name} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    endif()
+  endfunction()
+
+  add_test(NAME openxmb_source_invariants
+    COMMAND "${CMAKE_COMMAND}"
+      -DOPENXMB_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckSourceInvariants.cmake)
+
+  add_executable(openxmb_layout_timeline_tests
+    tests/xmb/layout_timeline_tests.cpp
+  )
+  target_sources(openxmb_layout_timeline_tests PRIVATE
+    FILE_SET CXX_MODULES
+    BASE_DIRS src
+    FILES src/xmb/presentation/root_scene.cppm
+  )
+  target_link_libraries(openxmb_layout_timeline_tests PRIVATE OpenXMB::ShellCore)
+  openxmb_configure_native_test(openxmb_layout_timeline_tests)
+  add_test(NAME openxmb_layout_timeline_tests
+    COMMAND openxmb_layout_timeline_tests)
+
+  add_executable(openxmb_procedural_wave_tests tests/xmb/procedural_wave_tests.cpp)
+  target_link_libraries(openxmb_procedural_wave_tests PRIVATE OpenXMB::ShellCore)
+  set_target_properties(openxmb_procedural_wave_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  openxmb_configure_native_test(openxmb_procedural_wave_tests)
+  add_test(NAME openxmb_procedural_wave_tests COMMAND openxmb_procedural_wave_tests)
+
+  add_executable(openxmb_wave_data_tests
+    tests/xmb/wave_data_tests.cpp
+  )
+  target_link_libraries(openxmb_wave_data_tests PRIVATE OpenXMB::ShellCore)
+  set_target_properties(openxmb_wave_data_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  openxmb_configure_native_test(openxmb_wave_data_tests)
+  add_test(NAME openxmb_wave_data_tests COMMAND openxmb_wave_data_tests)
+  if(OPENXMB_IMPORT_XMB_WEB_COMPAT)
+    add_test(NAME openxmb_wave_reference_tests COMMAND openxmb_wave_data_tests "${CMAKE_CURRENT_SOURCE_DIR}/../xmb-web")
+  endif()
+
+  add_executable(openxmb_identity_tests
+    tests/xmb/identity_tests.cpp
+  )
+  set_target_properties(openxmb_identity_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  openxmb_configure_native_test(openxmb_identity_tests)
+  add_test(NAME openxmb_identity_tests
+    COMMAND openxmb_identity_tests
+      "${CMAKE_CURRENT_SOURCE_DIR}")
+
+  add_executable(openxmb_background_tests
+    tests/xmb/background_tests.cpp
+  )
+  target_link_libraries(openxmb_background_tests PRIVATE OpenXMB::ShellCore)
+  set_target_properties(openxmb_background_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  openxmb_configure_native_test(openxmb_background_tests)
+  add_test(NAME openxmb_background_tests
+    COMMAND openxmb_background_tests)
+
+  add_executable(openxmb_status_bar_tests
+    tests/xmb/status_bar_tests.cpp
+  )
+  target_link_libraries(openxmb_status_bar_tests PRIVATE OpenXMB::ShellCore)
+  set_target_properties(openxmb_status_bar_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  openxmb_configure_native_test(openxmb_status_bar_tests)
+  add_test(NAME openxmb_status_bar_tests
+    COMMAND openxmb_status_bar_tests)
+
+  add_executable(openxmb_live_crossbar_contract_tests
+    tests/xmb/live_crossbar_contract_tests.cpp
+  )
+  target_sources(openxmb_live_crossbar_contract_tests PRIVATE
+    FILE_SET CXX_MODULES
+    BASE_DIRS src
+    FILES src/xmb/presentation/root_scene.cppm
+  )
+  target_link_libraries(openxmb_live_crossbar_contract_tests PRIVATE OpenXMB::ShellCore)
+  openxmb_configure_native_test(openxmb_live_crossbar_contract_tests)
+  add_test(NAME openxmb_live_crossbar_contract_tests
+    COMMAND openxmb_live_crossbar_contract_tests)
+
+  add_executable(openxmb_media_foundation_tests
+    tests/media/media_foundation_tests.cpp
+  )
+  target_link_libraries(openxmb_media_foundation_tests PRIVATE OpenXMB::MediaCore)
+  set_target_properties(openxmb_media_foundation_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  openxmb_configure_native_test(openxmb_media_foundation_tests)
+  add_test(NAME openxmb_media_foundation_tests
+    COMMAND openxmb_media_foundation_tests)
+
+  add_executable(openxmb_catalog_state_tests
+    tests/xmb/catalog_state_tests.cpp
+  )
+  target_link_libraries(openxmb_catalog_state_tests PRIVATE OpenXMB::CatalogCore)
+  set_target_properties(openxmb_catalog_state_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  openxmb_configure_native_test(openxmb_catalog_state_tests)
+  add_test(NAME openxmb_catalog_state_tests
+    COMMAND openxmb_catalog_state_tests)
+
+  add_executable(openxmb_settings_domain_tests
+    tests/settings/settings_domain_tests.cpp
+  )
+  target_link_libraries(openxmb_settings_domain_tests PRIVATE OpenXMB::SettingsCore)
+  set_target_properties(openxmb_settings_domain_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  openxmb_configure_native_test(openxmb_settings_domain_tests)
+  add_test(NAME openxmb_settings_domain_tests
+    COMMAND openxmb_settings_domain_tests)
+
+  add_executable(openxmb_dialog_wizard_state_tests
+    tests/dialogs/dialog_wizard_state_tests.cpp
+  )
+  target_link_libraries(openxmb_dialog_wizard_state_tests PRIVATE OpenXMB::DialogsCore)
+  set_target_properties(openxmb_dialog_wizard_state_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  openxmb_configure_native_test(openxmb_dialog_wizard_state_tests)
+  add_test(NAME openxmb_dialog_wizard_state_tests
+    COMMAND openxmb_dialog_wizard_state_tests)
+
+  add_executable(openxmb_settings_scene_tests
+    tests/xmb/settings_scene_tests.cpp
+  )
+  target_link_libraries(openxmb_settings_scene_tests PRIVATE OpenXMB::CatalogCore)
+  set_target_properties(openxmb_settings_scene_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  openxmb_configure_native_test(openxmb_settings_scene_tests)
+  add_test(NAME openxmb_settings_scene_tests
+    COMMAND openxmb_settings_scene_tests)
+
+  add_executable(openxmb_settings_actions_tests
+    tests/xmb/settings_actions_tests.cpp
+  )
+  target_link_libraries(openxmb_settings_actions_tests PRIVATE OpenXMB::CatalogCore)
+  set_target_properties(openxmb_settings_actions_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  openxmb_configure_native_test(openxmb_settings_actions_tests)
+  add_test(NAME openxmb_settings_actions_tests
+    COMMAND openxmb_settings_actions_tests)
+
+  add_executable(openxmb_settings_controller_tests
+    tests/xmb/settings_controller_tests.cpp
+  )
+  target_link_libraries(openxmb_settings_controller_tests PRIVATE OpenXMB::CatalogCore)
+  set_target_properties(openxmb_settings_controller_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  openxmb_configure_native_test(openxmb_settings_controller_tests)
+  add_test(NAME openxmb_settings_controller_tests
+    COMMAND openxmb_settings_controller_tests)
+
+  add_executable(openxmb_localization_core_tests
+    tests/localization/localization_core_tests.cpp
+  )
+  target_link_libraries(openxmb_localization_core_tests PRIVATE OpenXMB::LocalizationCore)
+  set_target_properties(openxmb_localization_core_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  openxmb_configure_native_test(openxmb_localization_core_tests)
+  add_test(NAME openxmb_localization_core_tests
+    COMMAND openxmb_localization_core_tests)
+
+  add_executable(openxmb_icon_resolver_tests
+    tests/xmb/icon_resolver_tests.cpp
+  )
+  target_include_directories(openxmb_icon_resolver_tests PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include")
+  set_target_properties(openxmb_icon_resolver_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  openxmb_configure_native_test(openxmb_icon_resolver_tests)
+  add_test(NAME openxmb_icon_resolver_tests
+    COMMAND openxmb_icon_resolver_tests)
+  if(OPENXMB_IMPORT_XMB_WEB_COMPAT)
+    add_test(NAME openxmb_compat_icon_materials
+      COMMAND openxmb_icon_resolver_tests
+        "${CMAKE_BINARY_DIR}/shell/compat/xmb-ui-compat")
+  endif()
+
+  add_executable(openxmb_visual_harness_tests
+    tests/xmb/visual_harness_tests.cpp
+  )
+  set_target_properties(openxmb_visual_harness_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  openxmb_configure_native_test(openxmb_visual_harness_tests)
+  add_test(NAME openxmb_visual_harness_tests
+    COMMAND openxmb_visual_harness_tests
+      "${CMAKE_CURRENT_SOURCE_DIR}")
+
+  find_package(Python3 COMPONENTS Interpreter)
+  if(Python3_FOUND)
+    set(_openxmb_reference_root
+      "${CMAKE_CURRENT_SOURCE_DIR}/tests/xmb/reference_frames/root.png")
+    add_test(NAME openxmb_verify_reference_frames
+      COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/xmb/verify_reference_frames.py"
+        --reference-dir
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/xmb/reference_frames"
+        --thresholds
+        "${CMAKE_CURRENT_SOURCE_DIR}/assets/xmb/manifests/visual-thresholds.json")
+    set_tests_properties(openxmb_verify_reference_frames PROPERTIES
+      LABELS "visual-regression")
+    if(NOT EXISTS "${_openxmb_reference_root}")
+      set_tests_properties(openxmb_verify_reference_frames PROPERTIES DISABLED TRUE)
+    endif()
+
+    if(OPENXMB_VISUAL_REGRESSION)
+      if(EXISTS "${_openxmb_reference_root}")
+        if(WIN32)
+          add_test(NAME openxmb_visual_regression
+            COMMAND pwsh -NoProfile -File
+              "${CMAKE_CURRENT_SOURCE_DIR}/tools/xmb/run_visual_regression.ps1"
+              -RepoRoot "${CMAKE_CURRENT_SOURCE_DIR}"
+              -BuildDir "${CMAKE_BINARY_DIR}"
+              -SkipCapture
+              -Heatmap)
+        else()
+          add_test(NAME openxmb_visual_regression
+            COMMAND "${Python3_EXECUTABLE}"
+              "${CMAKE_CURRENT_SOURCE_DIR}/tools/xmb/compare_frames.py"
+              --reference "${CMAKE_CURRENT_SOURCE_DIR}/tests/xmb/reference_frames/root.png"
+              --actual "${CMAKE_BINARY_DIR}/visual-regression/captures/root/root.png"
+              --thresholds "${CMAKE_CURRENT_SOURCE_DIR}/assets/xmb/manifests/visual-thresholds.json"
+              --scene root)
+          set_tests_properties(openxmb_visual_regression PROPERTIES
+            DISABLED TRUE
+            LABELS "visual-regression")
+        endif()
+        set_tests_properties(openxmb_visual_regression PROPERTIES LABELS "visual-regression")
+      endif()
+    endif()
+  endif()
+endif()
 
 if(APPLE)
   target_link_libraries(XMS PRIVATE ${Vulkan_LIBRARIES})
@@ -479,7 +974,7 @@ if(UNIX AND NOT APPLE)
 endif()
 
 foreach(shader ${XMS_SHADERS})
-  dreams_add_shader(XMS ${shader})
+  auroreengine_add_shader(XMS ${shader})
 endforeach()
 target_include_directories(XMS PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/shaders)
 
@@ -599,6 +1094,10 @@ if(UNIX)
         FILES ${CMAKE_CURRENT_SOURCE_DIR}/config.json
         DESTINATION "${OPENXMB_CONFIG_INSTALL_DIR}"
     )
+    install(
+        FILES ${CMAKE_CURRENT_SOURCE_DIR}/assets/xmb/catalog/en.json
+        DESTINATION "${OPENXMB_SHELL_INSTALL_DIR}/catalog"
+    )
 
     # Install assets from interfaceFX (icons, sounds, fonts) into share/shell
     install(CODE "
@@ -674,6 +1173,11 @@ if(UNIX)
     set(_dev_shell_dir "${CMAKE_CURRENT_BINARY_DIR}/share/shell")
     file(MAKE_DIRECTORY "${_dev_shell_dir}/icons")
     file(MAKE_DIRECTORY "${_dev_shell_dir}/sounds")
+    file(MAKE_DIRECTORY "${_dev_shell_dir}/catalog")
+    openxmb_configure_copy_if_exists(
+      "${CMAKE_CURRENT_SOURCE_DIR}/assets/xmb/catalog/en.json"
+      "${_dev_shell_dir}/catalog/en.json"
+    )
     # Font
     openxmb_configure_copy_if_exists(
       "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/TypefaceServer/Play-Regular.ttf"
@@ -719,6 +1223,11 @@ if(WIN32)
     set(_win_icon_src_dir "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/GraphicsServer/HomeMenu")
     file(MAKE_DIRECTORY "${_win_dev_shell_dir}/icons")
     file(MAKE_DIRECTORY "${_win_dev_shell_dir}/sounds")
+    file(MAKE_DIRECTORY "${_win_dev_shell_dir}/catalog")
+    openxmb_configure_copy_if_exists(
+      "${CMAKE_CURRENT_SOURCE_DIR}/assets/xmb/catalog/en.json"
+      "${_win_dev_shell_dir}/catalog/en.json"
+    )
     openxmb_configure_copy_if_exists(
       "${CMAKE_CURRENT_SOURCE_DIR}/interfaceFX/TypefaceServer/Play-Regular.ttf"
       "${_win_dev_shell_dir}/Play-Regular.ttf"
@@ -786,9 +1295,9 @@ endif()
 if(ENABLE_DISC_MEDIA)
   find_package(PkgConfig QUIET)
   if(PkgConfig_FOUND)
-    pkg_check_modules(BLURAY libbluray QUIET)
-    pkg_check_modules(DVDREAD libdvdread QUIET)
-    pkg_check_modules(DVDNAV libdvdnav QUIET)
+    pkg_check_modules(BLURAY QUIET IMPORTED_TARGET libbluray)
+    pkg_check_modules(DVDREAD QUIET IMPORTED_TARGET libdvdread)
+    pkg_check_modules(DVDNAV QUIET IMPORTED_TARGET libdvdnav)
     if(BLURAY_FOUND)
       target_link_libraries(XMS PRIVATE PkgConfig::BLURAY)
     endif()
@@ -848,3 +1357,5 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/po/LINGUAS" AND GETTEXT_FOUND)
 elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/po/LINGUAS")
   message(STATUS "${COLOR_YELLOW}Gettext tools not found; skipping compiled locale catalogs.${COLOR_RESET}")
 endif()
+
+include(cmake/ShellAssets.cmake)

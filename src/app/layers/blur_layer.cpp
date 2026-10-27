@@ -28,7 +28,7 @@ module;
 module openxmb.app;
 import :blur_layer;
 import openxmb.render;
-import dreamrender;
+import auroreengine;
 import glm;
 import vulkan_hpp;
 import vma;
@@ -88,7 +88,7 @@ blur_layer::blur_layer(shell* xmb) :
     }
 }
 
-void blur_layer::render(dreamrender::gui_renderer& renderer, shell* xmb) {
+void blur_layer::render(auroreengine::gui_renderer& renderer, shell* xmb) {
     auto cmd = renderer.get_command_buffer();
     int frame = renderer.get_frame();
     auto extent = xmb->win->swapchainExtent;

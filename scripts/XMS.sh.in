@@ -1,18 +1,6 @@
 #!/bin/sh
 # Launcher script for OpenXMB
 DIR=$(cd "$(dirname "$0")" && pwd)
-# Copy the config file if it doesn't exist, so the user has a default.
-if [ ! -f "config.json" ]; then
-    for DEFAULT_CONFIG in \
-        "$DIR/../share/OpenXMB/config.json" \
-        "$DIR/share/OpenXMB/config.json" \
-        "$DIR/../config.json"; do
-        if [ -f "$DEFAULT_CONFIG" ]; then
-            cp "$DEFAULT_CONFIG" "config.json"
-            break
-        fi
-    done
-fi
 
 # On macOS, help the Vulkan loader find MoltenVK if not configured.
 UNAME=$(uname -s 2>/dev/null)

@@ -17,10 +17,14 @@
  */
 
 module;
+#include "openxmb/integrations/desktop.hpp"
 
 export module openxmb.modules.libretro;
 
 export namespace modules::libretro {
-    inline void init() {}
+  inline auto cores() { return openxmb::integrations::discover_libretro_cores(); }
+  inline auto launch(const std::filesystem::path& core, const std::filesystem::path& content = {}) {
+    return openxmb::integrations::launch_libretro(core, content);
+  }
+  inline auto init() { return cores(); }
 }
-

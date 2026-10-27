@@ -23,11 +23,15 @@
 
 module;
 
+#include <openxmb/xmb/icon_resolver.hpp>
+
 #include <array>
 #include <cstdlib>
 #include <cerrno>
+#include <cctype>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -43,7 +47,9 @@ module;
 #endif
 
 export module openxmb.app:menu_utils;
-import dreamrender;
+import auroreengine;
+import vulkan_hpp;
+import openxmb.config;
 import :menu_base;
 
 #if !defined(_WIN32)
@@ -132,6 +138,12 @@ inline std::filesystem::path icon_or_fallback(std::filesystem::path icon_path)
     }
 
     return icon_path;
+}
+
+inline std::optional<std::filesystem::path> xmb_web_normal_map_for_icon(
+    const std::filesystem::path& icon_path)
+{
+    return openxmb::xmb::xmb_web_normal_map_for_icon(icon_path);
 }
 
 inline bool launch_detached(const std::vector<std::string>& args)
@@ -228,17 +240,23 @@ inline std::vector<std::string> terminal_command(std::vector<std::string> comman
 
 template<typename Menu, typename... Args>
 std::unique_ptr<Menu> make_simple(std::string name, std::filesystem::path icon_path,
-    dreamrender::resource_loader& loader,
+    auroreengine::resource_loader& loader,
     Args&&... args)
 {
-    auto menu = std::make_unique<Menu>(std::move(name), dreamrender::texture(loader.getDevice(), loader.getAllocator()), std::forward<Args>(args)...);
-    loader.loadTexture(&menu->get_icon(), icon_or_fallback(std::move(icon_path)));
+    auto menu = std::make_unique<Menu>(std::move(name), auroreengine::texture(loader.getDevice(), loader.getAllocator()), std::forward<Args>(args)...);
+    const auto resolved_icon = icon_or_fallback(config::CONFIG.resolve_icon(icon_path));
+    loader.loadTexture(&menu->get_icon(), resolved_icon);
+    if(const auto normal_map = xmb_web_normal_map_for_icon(resolved_icon)) {
+        auto& glass_icon = menu->emplace_glass_icon(
+            auroreengine::texture(loader.getDevice(),loader.getAllocator(),vk::ImageUsageFlagBits::eSampled,vk::Format::eR8G8B8A8Unorm));
+        loader.loadTexture(&glass_icon, *normal_map);
+    }
     return menu;
 }
 
 template<typename Menu, typename... Args>
 std::unique_ptr<simple<Menu>> make_simple_of(std::string name, std::filesystem::path icon_path,
-    dreamrender::resource_loader& loader,
+    auroreengine::resource_loader& loader,
     Args&&... args)
 {
     return make_simple<simple<Menu>>(std::move(name), std::move(icon_path), loader, std::forward<Args>(args)...);
