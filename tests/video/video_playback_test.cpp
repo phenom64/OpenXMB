@@ -62,6 +62,26 @@ int main(int argc, char** argv) {
         catch(const std::exception&) { rejected = true; }
         check(rejected, "Missing file did not report an open failure");
 
+        // Compare identical decoded frames with both output contracts. Native
+        // transfer must preserve odd-size chroma geometry and reduce uploads.
+        {
+            video::session rgba(fixture, {.hardware_acceleration = "off", .audio_output = false});
+            video::session native(fixture, {.hardware_acceleration = "off", .audio_output = false, .native_yuv = true});
+            rgba.pause(true); native.pause(true);
+            rgba.pump(); native.pump();
+            auto packed = rgba.take_frame();
+            auto planar = native.take_frame();
+            check(packed && planar, "Both output pipelines must produce a paused frame");
+            check(packed->format == video::pixel_format::rgba && packed->rgba.size() == 96 * 64 * 4, "RGBA default contract changed");
+            check(planar->format == video::pixel_format::yuv420p && planar->rgba.empty(), "Native YUV must bypass RGBA conversion");
+            check(planar->planes[0].width == 96 && planar->planes[0].height == 64 && planar->planes[0].stride == 96, "Native luma geometry changed");
+            for(int plane = 1; plane < 3; ++plane)
+                check(planar->planes[plane].width == 48 && planar->planes[plane].height == 32 && planar->planes[plane].bytes.size() == 48 * 32, "Native chroma geometry changed");
+            check(native.statistics().native_frames > 0 && native.statistics().rgba_frames == 0, "Native diagnostics did not count bypassed conversions");
+            check(native.statistics().upload_bytes * 8 == rgba.statistics().upload_bytes * 3, "YUV420 uploads must use 62.5 percent fewer bytes");
+            check(native.statistics().preparation_ms > 0 && rgba.statistics().preparation_ms > 0, "Pipeline preparation measurements missing");
+        }
+
         {
             video::session player(fixture, {.hardware_acceleration = "off"});
             check(player.info().width == 96 && player.info().height == 64, "Fixture dimensions did not decode");

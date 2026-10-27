@@ -235,6 +235,7 @@ struct session::implementation {
     AVFrame* transferred = nullptr;
     audio_sink audio;
     information metadata;
+    pipeline_statistics measurements;
     options settings;
     state status = state::playing;
     std::string failure;
@@ -414,27 +415,64 @@ struct session::implementation {
         auto* descriptor = av_pix_fmt_desc_get(static_cast<AVPixelFormat>(frame->format));
         if(descriptor && (descriptor->flags & AV_PIX_FMT_FLAG_HWACCEL)) {
             av_frame_unref(transferred);
+            const auto download_start = clock_type::now();
             require(av_hwframe_transfer_data(transferred, frame, 0), "Download decoded hardware frame");
+            ++measurements.hardware_downloads;
+            measurements.hardware_download_ms += std::chrono::duration<double, std::milli>(clock_type::now() - download_start).count();
             source = transferred;
         }
         if(source->width <= 0 || source->height <= 0 || source->width > 16384 || source->height > 16384) throw std::runtime_error("Unsupported decoded dimensions");
-        scaler = sws_getCachedContext(scaler, source->width, source->height, static_cast<AVPixelFormat>(source->format), source->width, source->height, AV_PIX_FMT_RGBA, SWS_BILINEAR, nullptr, nullptr, nullptr);
-        if(!scaler) throw std::runtime_error("Cannot create video colour converter");
-        // Respect limited/full range and stream colour matrix instead of using
-        // one hard-coded YUV420 matrix for every source.
-        auto colorspace = frame->colorspace == AVCOL_SPC_BT709 ? SWS_CS_ITU709 : frame->colorspace == AVCOL_SPC_BT2020_NCL ? SWS_CS_BT2020 : SWS_CS_ITU601;
-        auto* coefficients = sws_getCoefficients(colorspace);
-        sws_setColorspaceDetails(scaler, coefficients, frame->color_range == AVCOL_RANGE_JPEG, coefficients, 1, 0, 1 << 16, 1 << 16);
+        const auto preparation_start = clock_type::now();
         struct frame output;
         output.width = source->width;
         output.height = source->height;
         output.timestamp = std::max(0.0, pts);
         output.aspect_ratio = metadata.aspect_ratio;
-        auto bytes = static_cast<std::size_t>(source->width) * source->height * 4u;
-        output.rgba.resize(bytes);
-        uint8_t* destination[] = {output.rgba.data(), nullptr, nullptr, nullptr};
-        int stride[] = {source->width * 4, 0, 0, 0};
-        require(sws_scale(scaler, source->data, source->linesize, 0, source->height, destination, stride), "Convert video frame");
+        auto space = frame->colorspace;
+        if(space == AVCOL_SPC_UNSPECIFIED) space = video_codec->colorspace;
+        if(space == AVCOL_SPC_UNSPECIFIED) space = source->width >= 1280 || source->height > 576 ? AVCOL_SPC_BT709 : AVCOL_SPC_SMPTE170M;
+        output.matrix = space == AVCOL_SPC_BT709 ? color_matrix::bt709 :
+            space == AVCOL_SPC_BT2020_NCL ? color_matrix::bt2020 : color_matrix::bt601;
+        auto range = frame->color_range;
+        if(range == AVCOL_RANGE_UNSPECIFIED) range = video_codec->color_range;
+        output.full_range = range == AVCOL_RANGE_JPEG || source->format == AV_PIX_FMT_YUVJ420P;
+        bool native = settings.native_yuv && (space == AVCOL_SPC_BT709 || space == AVCOL_SPC_BT2020_NCL ||
+            space == AVCOL_SPC_SMPTE170M || space == AVCOL_SPC_BT470BG || space == AVCOL_SPC_FCC);
+        const bool planar = source->format == AV_PIX_FMT_YUV420P || source->format == AV_PIX_FMT_YUVJ420P;
+        native = native && (planar || source->format == AV_PIX_FMT_NV12);
+        std::size_t bytes = 0;
+        if(native) {
+            output.format = planar ? pixel_format::yuv420p : pixel_format::nv12;
+            for(int index = 0; index < (planar ? 3 : 2); ++index) {
+                auto& plane = output.planes[index];
+                plane.width = index == 0 ? source->width : (source->width + 1) / 2;
+                plane.height = index == 0 ? source->height : (source->height + 1) / 2;
+                plane.stride = plane.width * (!planar && index == 1 ? 2 : 1);
+                if(!source->data[index] || std::abs(static_cast<int64_t>(source->linesize[index])) < plane.stride)
+                    throw std::runtime_error("Invalid decoded video plane stride");
+                plane.bytes.resize(static_cast<std::size_t>(plane.stride) * plane.height);
+                for(int row = 0; row < plane.height; ++row)
+                    std::memcpy(plane.bytes.data() + static_cast<std::size_t>(row) * plane.stride,
+                        source->data[index] + static_cast<std::ptrdiff_t>(row) * source->linesize[index], plane.stride);
+                bytes += plane.bytes.size();
+            }
+            ++measurements.native_frames;
+        } else {
+            scaler = sws_getCachedContext(scaler, source->width, source->height, static_cast<AVPixelFormat>(source->format), source->width, source->height, AV_PIX_FMT_RGBA, SWS_BILINEAR, nullptr, nullptr, nullptr);
+            if(!scaler) throw std::runtime_error("Cannot create video colour converter");
+            const auto colorspace = output.matrix == color_matrix::bt709 ? SWS_CS_ITU709 : output.matrix == color_matrix::bt2020 ? SWS_CS_BT2020 : SWS_CS_ITU601;
+            auto* coefficients = sws_getCoefficients(colorspace);
+            require(sws_setColorspaceDetails(scaler, coefficients, output.full_range, coefficients, 1, 0, 1 << 16, 1 << 16), "Set video colour matrix");
+            bytes = static_cast<std::size_t>(source->width) * source->height * 4u;
+            output.rgba.resize(bytes);
+            uint8_t* destination[] = {output.rgba.data(), nullptr, nullptr, nullptr};
+            int stride[] = {source->width * 4, 0, 0, 0};
+            require(sws_scale(scaler, source->data, source->linesize, 0, source->height, destination, stride), "Convert video frame");
+            ++measurements.rgba_frames;
+        }
+        ++measurements.frames;
+        measurements.upload_bytes += bytes;
+        measurements.preparation_ms += std::chrono::duration<double, std::milli>(clock_type::now() - preparation_start).count();
         frames.push_back(std::move(output));
     }
 
@@ -593,7 +631,26 @@ struct session::implementation {
             }
         } catch(const std::exception& exception) {
             av_packet_unref(packet);
-            failure = exception.what();
+            // Device/driver failures can occur after a successful codec open,
+            // including during hwframe download. Retry the same presentation
+            // position once with a fresh software decoder and cleared queues.
+            if(hardware_device && video_codec) {
+                const double resume_at = current_position();
+                const auto resume_state = status;
+                audio.pause(true);
+                avcodec_free_context(&video_codec);
+                av_buffer_unref(&hardware_device);
+                hardware_format = AV_PIX_FMT_NONE;
+                try {
+                    video_codec = open_codec(video_index, false);
+                    metadata.decoder = std::string(video_codec->codec->name) + " · software";
+                    if(!seek_to(resume_at)) throw std::runtime_error(failure);
+                    status = resume_state;
+                    return;
+                } catch(const std::exception& fallback) {
+                    failure = std::string(exception.what()) + "; software fallback failed: " + fallback.what();
+                }
+            } else failure = exception.what();
             set_clock(current_position());
             status = state::failed;
             audio.pause(true);
@@ -609,6 +666,7 @@ const std::string& session::error() const { return impl->failure; }
 double session::position() const { return std::max(0.0, impl->current_position()); }
 double session::buffered_audio_seconds() const { return impl->audio.buffered(); }
 std::size_t session::played_audio_frames() const { return impl->audio.consumed_frames.load(); }
+const pipeline_statistics& session::statistics() const { return impl->measurements; }
 void session::pump() { impl->pump(); }
 std::optional<frame> session::take_frame() { return std::exchange(impl->published, std::nullopt); }
 bool session::seek(double seconds) { return std::isfinite(seconds) && impl->seek_to(seconds); }
