@@ -19,3 +19,191 @@ Y button: https://commons.wikimedia.org/wiki/File:Xbox_button_Y.svg
 Author: VictorPines
 License: CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0)
 Changes: rasterised SVG at 256x256 for the OpenXMB renderer.
+
+Additional Xbox controller artwork: Start, Back, bumpers, triggers, D-pad and sticks
+
+Xbox_Start_button.svg
+PNG: assets/shell/icons/controller/xbox_start.png
+Unmodified SVG: assets/shell/controller-art/Xbox_Start_button.svg
+Source: https://commons.wikimedia.org/wiki/File:Xbox_Start_button.svg
+Original file: https://upload.wikimedia.org/wikipedia/commons/5/59/Xbox_Start_button.svg
+Author: VictorPines (https://commons.wikimedia.org/wiki/User:VictorPines)
+Original revision: 2016-02-27T21:28:05Z
+License: CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0)
+Changes: rasterised original SVG with 4x supersampling and Lanczos3
+downsampling to a maximum dimension of 512 pixels; transparent borders
+trimmed, original aspect ratio preserved. No artwork redesign.
+Original SHA-1: 6c34f898bfe3e34a9691e0d42f5b1b3808f606c5
+
+Xbox_Back_button.svg
+PNG: assets/shell/icons/controller/xbox_back.png
+Unmodified SVG: assets/shell/controller-art/Xbox_Back_button.svg
+Source: https://commons.wikimedia.org/wiki/File:Xbox_Back_button.svg
+Original file: https://upload.wikimedia.org/wikipedia/commons/a/ac/Xbox_Back_button.svg
+Author: VictorPines (https://commons.wikimedia.org/wiki/User:VictorPines)
+Original revision: 2016-02-27T21:28:02Z
+License: CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0)
+Changes: rasterised original SVG with 4x supersampling and Lanczos3
+downsampling to a maximum dimension of 512 pixels; transparent borders
+trimmed, original aspect ratio preserved. No artwork redesign.
+Original SHA-1: a86dacccb07513542caf56513e1d495463af1bfb
+
+Xbox_Left_Bumper.svg
+PNG: assets/shell/icons/controller/xbox_lb.png
+Unmodified SVG: assets/shell/controller-art/Xbox_Left_Bumper.svg
+Source: https://commons.wikimedia.org/wiki/File:Xbox_Left_Bumper.svg
+Original file: https://upload.wikimedia.org/wikipedia/commons/8/8c/Xbox_Left_Bumper.svg
+Author: VictorPines (https://commons.wikimedia.org/wiki/User:VictorPines)
+Original revision: 2015-11-21T04:03:08Z
+License: CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0)
+Changes: rasterised original SVG with 4x supersampling and Lanczos3
+downsampling to a maximum dimension of 512 pixels; transparent borders
+trimmed, original aspect ratio preserved. No artwork redesign.
+Original SHA-1: a311671831453a858c8dbbae2706a75273b1a304
+
+Xbox_Right_Bumper.svg
+PNG: assets/shell/icons/controller/xbox_rb.png
+Unmodified SVG: assets/shell/controller-art/Xbox_Right_Bumper.svg
+Source: https://commons.wikimedia.org/wiki/File:Xbox_Right_Bumper.svg
+Original file: https://upload.wikimedia.org/wikipedia/commons/8/89/Xbox_Right_Bumper.svg
+Author: VictorPines (https://commons.wikimedia.org/wiki/User:VictorPines)
+Original revision: 2015-11-21T04:03:09Z
+License: CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0)
+Changes: rasterised original SVG with 4x supersampling and Lanczos3
+downsampling to a maximum dimension of 512 pixels; transparent borders
+trimmed, original aspect ratio preserved. No artwork redesign.
+Original SHA-1: fa9e62283d3092ead5700877b1c602e922a99053
+
+Xbox_Left_Trigger.svg
+PNG: assets/shell/icons/controller/xbox_lt.png
+Unmodified SVG: assets/shell/controller-art/Xbox_Left_Trigger.svg
+Source: https://commons.wikimedia.org/wiki/File:Xbox_Left_Trigger.svg
+Original file: https://upload.wikimedia.org/wikipedia/commons/2/23/Xbox_Left_Trigger.svg
+Author: VictorPines (https://commons.wikimedia.org/wiki/User:VictorPines)
+Original revision: 2015-11-21T04:03:09Z
+License: CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0)
+Changes: rasterised original SVG with 4x supersampling and Lanczos3
+downsampling to a maximum dimension of 512 pixels; transparent borders
+trimmed, original aspect ratio preserved. No artwork redesign.
+Original SHA-1: fd408f1e7ebc153302c3f4383f530e5dcb122460
+
+Xbox_Right_Trigger.svg
+PNG: assets/shell/icons/controller/xbox_rt.png
+Unmodified SVG: assets/shell/controller-art/Xbox_Right_Trigger.svg
+Source: https://commons.wikimedia.org/wiki/File:Xbox_Right_Trigger.svg
+Original file: https://upload.wikimedia.org/wikipedia/commons/7/7a/Xbox_Right_Trigger.svg
+Author: VictorPines (https://commons.wikimedia.org/wiki/User:VictorPines)
+Original revision: 2015-11-21T04:03:10Z
+License: CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0)
+Changes: rasterised original SVG with 4x supersampling and Lanczos3
+downsampling to a maximum dimension of 512 pixels; transparent borders
+trimmed, original aspect ratio preserved. No artwork redesign.
+Original SHA-1: 851c9f36ebff251f4594cd9bb577f152b6a1119e
+
+Xbox_D-Pad_Left.svg
+PNG: assets/shell/icons/controller/xbox_dpad_left.png
+Unmodified SVG: assets/shell/controller-art/Xbox_D-Pad_Left.svg
+Source: https://commons.wikimedia.org/wiki/File:Xbox_D-Pad_Left.svg
+Original file: https://upload.wikimedia.org/wikipedia/commons/3/36/Xbox_D-Pad_Left.svg
+Author: VictorPines (https://commons.wikimedia.org/wiki/User:VictorPines)
+Original revision: 2015-11-21T04:03:07Z
+License: CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0)
+Changes: rasterised original SVG with 4x supersampling and Lanczos3
+downsampling to a maximum dimension of 512 pixels; transparent borders
+trimmed, original aspect ratio preserved. No artwork redesign.
+Original SHA-1: 16f1e6fd3fe142eb0188147ef9cc7043ead1ab94
+
+Xbox_D-Pad_Right.svg
+PNG: assets/shell/icons/controller/xbox_dpad_right.png
+Unmodified SVG: assets/shell/controller-art/Xbox_D-Pad_Right.svg
+Source: https://commons.wikimedia.org/wiki/File:Xbox_D-Pad_Right.svg
+Original file: https://upload.wikimedia.org/wikipedia/commons/a/a2/Xbox_D-Pad_Right.svg
+Author: VictorPines (https://commons.wikimedia.org/wiki/User:VictorPines)
+Original revision: 2015-11-21T04:03:07Z
+License: CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0)
+Changes: rasterised original SVG with 4x supersampling and Lanczos3
+downsampling to a maximum dimension of 512 pixels; transparent borders
+trimmed, original aspect ratio preserved. No artwork redesign.
+Original SHA-1: 9ad661e8cb00321085aa62898601cb8923e36453
+
+Xbox_D-Pad_Up.svg
+PNG: assets/shell/icons/controller/xbox_dpad_up.png
+Unmodified SVG: assets/shell/controller-art/Xbox_D-Pad_Up.svg
+Source: https://commons.wikimedia.org/wiki/File:Xbox_D-Pad_Up.svg
+Original file: https://upload.wikimedia.org/wikipedia/commons/c/c4/Xbox_D-Pad_Up.svg
+Author: VictorPines (https://commons.wikimedia.org/wiki/User:VictorPines)
+Original revision: 2015-11-21T04:03:08Z
+License: CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0)
+Changes: rasterised original SVG with 4x supersampling and Lanczos3
+downsampling to a maximum dimension of 512 pixels; transparent borders
+trimmed, original aspect ratio preserved. No artwork redesign.
+Original SHA-1: f52e7ee5c36472c74ec31ed33498ebf5570de072
+
+Xbox_D-Pad_Down.svg
+PNG: assets/shell/icons/controller/xbox_dpad_down.png
+Unmodified SVG: assets/shell/controller-art/Xbox_D-Pad_Down.svg
+Source: https://commons.wikimedia.org/wiki/File:Xbox_D-Pad_Down.svg
+Original file: https://upload.wikimedia.org/wikipedia/commons/f/fe/Xbox_D-Pad_Down.svg
+Author: VictorPines (https://commons.wikimedia.org/wiki/User:VictorPines)
+Original revision: 2015-11-21T04:03:07Z
+License: CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0)
+Changes: rasterised original SVG with 4x supersampling and Lanczos3
+downsampling to a maximum dimension of 512 pixels; transparent borders
+trimmed, original aspect ratio preserved. No artwork redesign.
+Original SHA-1: 38a0e626e9b80dda672d39ab25d54cf1a2e45881
+
+Xbox_Left_stick.svg
+PNG: assets/shell/icons/controller/xbox_left_stick.png
+Unmodified SVG: assets/shell/controller-art/Xbox_Left_stick.svg
+Source: https://commons.wikimedia.org/wiki/File:Xbox_Left_stick.svg
+Original file: https://upload.wikimedia.org/wikipedia/commons/6/68/Xbox_Left_stick.svg
+Author: VictorPines (https://commons.wikimedia.org/wiki/User:VictorPines)
+Original revision: 2015-11-21T04:03:08Z
+License: CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0)
+Changes: rasterised original SVG with 4x supersampling and Lanczos3
+downsampling to a maximum dimension of 512 pixels; transparent borders
+trimmed, original aspect ratio preserved. No artwork redesign.
+Original SHA-1: 2863e7c155de0f0d4dc5ba1ece8c0d65ed4bf887
+
+Xbox_Right_stick.svg
+PNG: assets/shell/icons/controller/xbox_right_stick.png
+Unmodified SVG: assets/shell/controller-art/Xbox_Right_stick.svg
+Source: https://commons.wikimedia.org/wiki/File:Xbox_Right_stick.svg
+Original file: https://upload.wikimedia.org/wikipedia/commons/5/5f/Xbox_Right_stick.svg
+Author: VictorPines (https://commons.wikimedia.org/wiki/User:VictorPines)
+Original revision: 2015-11-21T04:03:10Z
+License: CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0)
+Changes: rasterised original SVG with 4x supersampling and Lanczos3
+downsampling to a maximum dimension of 512 pixels; transparent borders
+trimmed, original aspect ratio preserved. No artwork redesign.
+Original SHA-1: dce7c4c5fc1771633e561ee0f836f249dfbbc503
+
+Xbox_Left_stick_button.svg
+PNG: assets/shell/icons/controller/xbox_left_stick_button.png
+Unmodified SVG: assets/shell/controller-art/Xbox_Left_stick_button.svg
+Source: https://commons.wikimedia.org/wiki/File:Xbox_Left_stick_button.svg
+Original file: https://upload.wikimedia.org/wikipedia/commons/4/4f/Xbox_Left_stick_button.svg
+Author: VictorPines (https://commons.wikimedia.org/wiki/User:VictorPines)
+Original revision: 2015-11-21T04:03:09Z
+License: CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0)
+Changes: rasterised original SVG with 4x supersampling and Lanczos3
+downsampling to a maximum dimension of 512 pixels; transparent borders
+trimmed, original aspect ratio preserved. No artwork redesign.
+Original SHA-1: 821b28885343c2ff80456780f67e3c70b572dad4
+
+Xbox_Right_stick_button.svg
+PNG: assets/shell/icons/controller/xbox_right_stick_button.png
+Unmodified SVG: assets/shell/controller-art/Xbox_Right_stick_button.svg
+Source: https://commons.wikimedia.org/wiki/File:Xbox_Right_stick_button.svg
+Original file: https://upload.wikimedia.org/wikipedia/commons/d/d5/Xbox_Right_stick_button.svg
+Author: VictorPines (https://commons.wikimedia.org/wiki/User:VictorPines)
+Original revision: 2015-11-21T04:03:10Z
+License: CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0)
+Changes: rasterised original SVG with 4x supersampling and Lanczos3
+downsampling to a maximum dimension of 512 pixels; transparent borders
+trimmed, original aspect ratio preserved. No artwork redesign.
+Original SHA-1: 98783dfecef903c38ab5850f37e5ea2962a9faa3
+
+The additional SVG originals and PNG derivatives are distributed under
+CC BY-SA 4.0. Attribution, license link and indication of changes must be
+preserved; adaptations must use the same or a compatible license.

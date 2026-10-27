@@ -30,4 +30,15 @@ inline int glyph_index(const std::map<std::string,std::string>& preferences,bool
     for(std::size_t i=0;i<actions.size();++i)if(code==(pad?controller[i]:keyboard[i]))return static_cast<int>(i);
     return -1;
 }
+inline std::string_view xbox_artwork(int button) {
+    switch(button) {
+    case 4:return "xbox_back";case 6:return "xbox_start";
+    case 7:return "xbox_left_stick_button";case 8:return "xbox_right_stick_button";
+    case 9:return "xbox_lb";case 10:return "xbox_rb";
+    case 11:return "xbox_dpad_up";case 12:return "xbox_dpad_down";
+    case 13:return "xbox_dpad_left";case 14:return "xbox_dpad_right";
+    default:return {};
+    }
+}
+
 }

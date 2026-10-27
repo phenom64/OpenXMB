@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 16.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 width="14.999px" height="12.113px" viewBox="0 0 14.999 12.113" enable-background="new 0 0 14.999 12.113" xml:space="preserve">
+<g>
+	<g>
+		
+			<linearGradient id="SVGID_1_" gradientUnits="userSpaceOnUse" x1="-900.7495" y1="0" x2="-900.7495" y2="10.8416" gradientTransform="matrix(-1 0 0 1 -893.25 0)">
+			<stop  offset="0" style="stop-color:#5B5B5F"/>
+			<stop  offset="0.0231" style="stop-color:#59595D"/>
+			<stop  offset="0.4507" style="stop-color:#333335"/>
+			<stop  offset="0.7912" style="stop-color:#1C1C1D"/>
+			<stop  offset="1" style="stop-color:#141414"/>
+		</linearGradient>
+		<path fill="url(#SVGID_1_)" d="M0,6.057c0,3.346,2.711,6.057,6.057,6.057h2.886c3.346,0,6.057-2.711,6.057-6.057l0,0
+			C14.999,2.713,12.288,0,8.942,0H6.057C2.711,0,0,2.713,0,6.057L0,6.057z"/>
+		
+			<linearGradient id="SVGID_2_" gradientUnits="userSpaceOnUse" x1="-900.7495" y1="0" x2="-900.7495" y2="12.1133" gradientTransform="matrix(-1 0 0 1 -893.25 0)">
+			<stop  offset="0" style="stop-color:#5B5B5F"/>
+			<stop  offset="0.0807" style="stop-color:#505053"/>
+			<stop  offset="0.3078" style="stop-color:#363638"/>
+			<stop  offset="0.5369" style="stop-color:#232324"/>
+			<stop  offset="0.767" style="stop-color:#181818"/>
+			<stop  offset="1" style="stop-color:#141414"/>
+		</linearGradient>
+		<path fill="url(#SVGID_2_)" d="M6.057,1.201h2.886c2.678,0,4.855,2.178,4.855,4.855c0,2.678-2.178,4.856-4.855,4.856H6.057
+			c-2.678,0-4.855-2.178-4.855-4.856C1.201,3.379,3.379,1.201,6.057,1.201 M6.057,0C2.711,0,0,2.713,0,6.057
+			c0,3.346,2.711,6.057,6.057,6.057h2.886c3.346,0,6.057-2.711,6.057-6.057C14.999,2.713,12.288,0,8.942,0H6.057L6.057,0z"/>
+	</g>
+	<g>
+		<polygon fill="#EAEAEA" points="8.917,6.058 8.917,3.554 6.75,4.806 4.582,6.058 6.75,7.309 8.917,8.56 		"/>
+	</g>
+</g>
+</svg>
