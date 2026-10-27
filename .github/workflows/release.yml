@@ -52,26 +52,36 @@ jobs:
       - run: bash scripts/ci/setup-linux.sh
       - run: python -m pip install -r scripts/ci/requirements.txt
       - name: Build, run regression tests and install
+        id: build
         run: python scripts/ci/build.py --arch x86_64
       - name: Prepare software Vulkan
+        if: ${{ !cancelled() && steps.build.outputs.installed == 'true' }}
         run: python scripts/ci/software_vulkan.py
-      - name: Native settings and browser smoke tests
+      - name: Native settings smoke tests
+        if: ${{ !cancelled() && steps.build.outputs.installed == 'true' }}
+        run: python tests/desktop/native_settings_smoke.py --app build/release/XMS.bin --output dist/settings-smoke
+      - name: Native browser smoke tests
+        if: ${{ !cancelled() && steps.build.outputs.installed == 'true' }}
         env:
           WEBKIT_DISABLE_COMPOSITING_MODE: '1'
-        run: |
-          python tests/desktop/native_settings_smoke.py --app build/release/XMS.bin --output dist/settings-smoke
-          python tests/integrations/web_view_smoke.py --helper dist/stage/bin/openxmb-web --output dist/browser-smoke
+        run: python tests/integrations/web_view_smoke.py --helper dist/stage/bin/openxmb-web --output dist/browser-smoke
       - name: Render the DMG wave using OpenXMB itself
+        if: ${{ !cancelled() && steps.build.outputs.installed == 'true' }}
+        id: wave
         run: python scripts/packaging/smoke.py --app dist/stage/bin/XMS.bin --assets dist/stage/share/shell --background dist/dmg-wave.png --output dist/stage-smoke
       - name: Build Debian package
+        if: ${{ !cancelled() && steps.build.outputs.installed == 'true' }}
+        id: package
         run: python scripts/packaging/package.py linux
       - name: Test the installed browser with its packaged AppArmor profile
+        if: ${{ !cancelled() && steps.package.outcome == 'success' }}
         env:
           WEBKIT_DISABLE_COMPOSITING_MODE: '1'
         run: |
           sudo dpkg -i dist/packages/*.deb
           python tests/integrations/web_view_smoke.py --helper /usr/bin/openxmb-web --output dist/installed-browser-smoke
       - name: Install and render in a clean Ubuntu container
+        if: ${{ !cancelled() && steps.package.outcome == 'success' }}
         run: |
           docker run --rm -v "$PWD:/src:ro" ubuntu:24.04 bash -ec '
             export DEBIAN_FRONTEND=noninteractive
@@ -81,6 +91,7 @@ jobs:
             python3 /src/scripts/packaging/smoke.py --app /usr/bin/XMS.bin --assets /usr/share/shell --render --output /tmp/openxmb-smoke
           '
       - uses: actions/upload-artifact@v7.0.2
+        if: ${{ !cancelled() && steps.package.outcome == 'success' }}
         with:
           name: release-linux
           path: |
@@ -88,6 +99,7 @@ jobs:
             dist/packages/*.sha256
           if-no-files-found: error
       - uses: actions/upload-artifact@v7.0.2
+        if: ${{ !cancelled() && steps.wave.outcome == 'success' }}
         with:
           name: dmg-wave
           path: dist/dmg-wave.png
@@ -125,6 +137,7 @@ jobs:
             build/vcpkg_installed
             ~/AppData/Local/vcpkg/archives
           key: vcpkg-release-windows-${{ hashFiles('vcpkg.json', 'scripts/ci/triplets/*.cmake') }}
+          restore-keys: vcpkg-release-windows-
       - name: Install pinned Windows dependencies
         shell: pwsh
         run: ./scripts/ci/setup-windows.ps1
@@ -138,12 +151,19 @@ jobs:
           key: vcpkg-release-windows-${{ hashFiles('vcpkg.json', 'scripts/ci/triplets/*.cmake') }}
       - run: python -m pip install -r scripts/ci/requirements.txt
       - name: Build, run regression tests and install
+        id: build
         run: python scripts/ci/build.py --arch x86_64
       - name: Build portable ZIP with runtime dependencies
+        if: ${{ !cancelled() && steps.build.outputs.installed == 'true' }}
+        id: package
         run: python scripts/packaging/package.py windows
       - name: Prepare software Vulkan
+        if: ${{ !cancelled() && steps.package.outcome == 'success' }}
+        id: vulkan
         run: python scripts/ci/software_vulkan.py
       - name: Extract and test the portable package
+        if: ${{ !cancelled() && steps.vulkan.outcome == 'success' }}
+        id: smoke
         shell: pwsh
         run: |
           $archive = Get-ChildItem dist/packages/*.zip | Select-Object -First 1
@@ -153,6 +173,7 @@ jobs:
           python scripts/packaging/smoke.py --app $app.FullName --assets (Join-Path $app.Directory.FullName 'shell') --render --output dist/package-smoke
           if ($LASTEXITCODE) { throw 'Portable package smoke failed' }
       - uses: actions/upload-artifact@v7.0.2
+        if: ${{ !cancelled() && steps.smoke.outcome == 'success' }}
         with:
           name: release-windows
           path: |
@@ -193,17 +214,23 @@ jobs:
       - run: bash scripts/ci/setup-macos.sh
       - run: python -m pip install -r scripts/ci/requirements.txt
       - name: Build and test the native architecture
+        id: build
         run: python scripts/ci/build.py --arch ${{ matrix.arch }}
       - name: Bundle application and every non-system dylib
+        if: ${{ !cancelled() && steps.build.outputs.installed == 'true' }}
+        id: package
         run: python scripts/packaging/package.py mac-thin --arch ${{ matrix.arch }}
       - name: Test the relocated application bundle and helpers
+        if: ${{ !cancelled() && steps.package.outcome == 'success' }}
         run: python scripts/packaging/smoke.py --app dist/packages/OpenXMB.app/Contents/MacOS/OpenXMB --assets dist/packages/OpenXMB.app/Contents/Resources/share/shell --output dist/package-smoke
       - name: Locate a software Vulkan driver when available
+        if: ${{ !cancelled() && steps.package.outcome == 'success' }}
         run: python scripts/ci/software_vulkan.py --optional
       - name: Render using the packaged application
-        if: env.OPENXMB_SOFTWARE_VULKAN == '1'
+        if: ${{ !cancelled() && steps.package.outcome == 'success' && env.OPENXMB_SOFTWARE_VULKAN == '1' }}
         run: python scripts/packaging/smoke.py --app dist/packages/OpenXMB.app/Contents/MacOS/OpenXMB --assets dist/packages/OpenXMB.app/Contents/Resources/share/shell --render --output dist/render-smoke
       - uses: actions/upload-artifact@v7.0.2
+        if: ${{ !cancelled() && steps.package.outcome == 'success' }}
         with:
           name: macos-thin-${{ matrix.arch }}
           path: dist/packages/*.tar.gz
@@ -218,6 +245,7 @@ jobs:
 
   universal:
     name: Universal macOS DMG
+    if: ${{ !cancelled() }}
     needs: [linux, macos]
     runs-on: macos-15
     timeout-minutes: 30
@@ -251,7 +279,7 @@ jobs:
           hdiutil attach dist/packages/*.dmg -nobrowse -mountpoint "$PWD/dist/mounted"
           trap 'hdiutil detach "$PWD/dist/mounted"' EXIT
           test -L dist/mounted/Applications
-          lipo -verify_arch x86_64 arm64 dist/mounted/OpenXMB.app/Contents/MacOS/OpenXMB
+          lipo dist/mounted/OpenXMB.app/Contents/MacOS/OpenXMB -verify_arch x86_64 arm64
           codesign --verify --deep --strict dist/mounted/OpenXMB.app
       - uses: actions/upload-artifact@v7.0.2
         with:

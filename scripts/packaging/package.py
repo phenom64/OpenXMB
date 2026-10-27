@@ -115,6 +115,9 @@ def windows(stage, destination):
         raise RuntimeError('The MSVC redistributable directory is required')
     for path in (Path(redist) / 'x64').glob('Microsoft.VC*.CRT/*.dll'):
         shutil.copy2(path, app / path.name)
+    for name in ['msvcp140.dll', 'vcruntime140.dll', 'vcruntime140_1.dll']:
+        if not (app / name).is_file():
+            raise RuntimeError('Missing portable MSVC runtime: ' + name)
     notices(app / 'licenses')
     for path in (prefix / 'share').glob('*/copyright'):
         shutil.copy2(path, app / 'licenses' / (path.parent.name + '.txt'))
@@ -170,19 +173,14 @@ def mac_thin(stage, destination, arch):
             'NSHighResolutionCapable': True, 'NSPrincipalClass': 'NSApplication',
         }, handle)
     from PIL import Image
-    iconset = destination / 'OpenXMB.iconset'
-    iconset.mkdir(exist_ok=True)
     image = Image.open(ROOT / 'interfaceFX/GraphicsServer/SyndromaticOrb.png').convert('RGBA')
-    for size in [16, 32, 128, 256, 512]:
-        for scale in [1, 2]:
-            image.resize((size * scale, size * scale), Image.Resampling.LANCZOS).save(
-                iconset / f'icon_{size}x{size}{"@2x" if scale == 2 else ""}.png')
-    run('iconutil', '-c', 'icns', iconset, '-o', resources / 'OpenXMB.icns')
+    image.save(resources / 'OpenXMB.icns', format='ICNS')
     notices(resources / 'Licenses')
     brew = Path(output('brew', '--prefix'))
     certificates = resources / 'certs'
     certificates.mkdir()
-    shutil.copy2(brew / 'etc/ca-certificates/cert.pem', certificates / 'cert.pem')
+    ca = Path(output('brew', '--prefix', 'ca-certificates')) / 'share/ca-certificates/cacert.pem'
+    shutil.copy2(ca, certificates / 'cert.pem')
     poppler_data = brew / 'share/poppler'
     if poppler_data.exists():
         shutil.copytree(poppler_data, resources / 'share/poppler', dirs_exist_ok=True)
@@ -241,7 +239,7 @@ def mac_thin(stage, destination, arch):
             run('install_name_tool', '-change', dependency, '@executable_path/../Frameworks/' + name, target)
         paths = rpaths(target)
         for path in paths:
-            if path.startswith(('/opt/homebrew/', '/usr/local/')):
+            if path.startswith((str(brew) + '/', '/opt/homebrew/', '/usr/local/')):
                 run('install_name_tool', '-delete_rpath', path, target)
         if '@executable_path/../Frameworks' not in paths:
             run('install_name_tool', '-add_rpath', '@executable_path/../Frameworks', target)
@@ -290,7 +288,7 @@ def universal(intel, arm, background, destination):
             thin_files = []
             for root, arch in zip(roots, ['x86_64', 'arm64']):
                 source = root / relative
-                run('lipo', '-verify_arch', arch, source)
+                run('lipo', source, '-verify_arch', arch)
                 thin = destination / ('thin-' + arch)
                 arches = output('lipo', '-archs', source).split()
                 if len(arches) == 1:
@@ -300,7 +298,7 @@ def universal(intel, arm, background, destination):
                 thin_files.append(thin)
             run('lipo', '-create', *thin_files, '-output', path)
             path.chmod(0o755)
-            run('lipo', '-verify_arch', 'x86_64', 'arm64', path)
+            run('lipo', path, '-verify_arch', 'x86_64', 'arm64')
         elif path.read_bytes() != counterpart.read_bytes():
             raise RuntimeError('Architecture resources differ: ' + str(relative))
     extra = {p.relative_to(roots[1]) for p in roots[1].rglob('*') if p.is_file() and '_CodeSignature' not in p.parts} - {

@@ -201,15 +201,6 @@ find_package(glm REQUIRED)
 find_package(Freetype REQUIRED)
 find_package(Gettext QUIET)
 find_package(Intl REQUIRED)
-# spdlog 1.15's external backend requires fmt 11+. Share that implementation
-# when available; linking two fmt 11 implementations duplicates Windows symbols.
-find_package(fmt 11 QUIET)
-if(fmt_FOUND)
-  set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "Use the application's fmt library for logging" FORCE)
-else()
-  find_package(fmt REQUIRED)
-  set(SPDLOG_FMT_EXTERNAL OFF CACHE BOOL "Use spdlog's bundled fmt with older system fmt" FORCE)
-endif()
 find_package(PkgConfig QUIET)
 find_package(FFMPEG QUIET)
 if(FFMPEG_FOUND)
@@ -253,6 +244,19 @@ openxmb_append_sdl2_parent_include(SDL2_image::SDL2_image)
 openxmb_append_sdl2_parent_include(SDL2_mixer::SDL2_mixer)
 
 include(FetchContent)
+
+# Keep logging and application formatting on one tested implementation. Older
+# distro/vcpkg releases differ in ABI and compile-time format checking behavior.
+FetchContent_Declare(fmt
+  GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+  GIT_TAG 40626af88bd7df9a5fb80be7b25ac85b122d6c21
+  EXCLUDE_FROM_ALL
+)
+set(FMT_INSTALL OFF CACHE BOOL "Do not install formatter development files" FORCE)
+set(FMT_TEST OFF CACHE BOOL "Disable dependency tests" FORCE)
+set(FMT_DOC OFF CACHE BOOL "Disable dependency documentation" FORCE)
+FetchContent_MakeAvailable(fmt)
+set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "Use the application's pinned formatter" FORCE)
 
 if(APPLE)
   find_package(Vulkan REQUIRED)

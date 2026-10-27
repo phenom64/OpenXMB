@@ -75,7 +75,7 @@ void games(const fs::path &root) {
   require(library.game_roots().size() == 1, "duplicate canonical roots deduplicated");
   require(library.scan_games() == 1 && library.scan_games() == 0, "scan imports one game and repeat scan deduplicates");
   auto game = library.games().front();
-  require(game.title == "Fixture Game" && game.genre == "Fixture" && game.icon == folder / "cover.png", "manifest metadata and relative media resolve");
+  require(game.title == "Fixture Game" && game.genre == "Fixture" && game.icon == fs::weakly_canonical(folder / "cover.png"), "manifest metadata and relative media resolve");
   game.arguments = {"literal ; $(touch injected) & spaced value"};
   game.favorite = true;
   library.save_game(game);

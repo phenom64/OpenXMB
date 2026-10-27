@@ -15,17 +15,38 @@ def run(*args):
     subprocess.run([str(value) for value in args], check=True, cwd=ROOT)
 
 
+def validate_media_tools():
+    ffmpeg = shutil.which('ffmpeg')
+    if not ffmpeg:
+        raise RuntimeError('Release validation requires the FFmpeg executable')
+    for option, required in [
+        ('-encoders', {'libmp3lame', 'libvorbis', 'flac', 'ffv1', 'mpeg4',
+                       'aac', 'pcm_s16le', 'mjpeg', 'png'}),
+        ('-filters', {'color', 'sine', 'testsrc2'}),
+    ]:
+        listing = subprocess.check_output([ffmpeg, '-hide_banner', option],
+                                          text=True, stderr=subprocess.STDOUT, timeout=30)
+        available = {fields[1] for line in listing.splitlines()
+                     if len(fields := line.split()) >= 2}
+        missing = required - available
+        if missing:
+            raise RuntimeError('FFmpeg ' + option + ' missing required capabilities: ' + ', '.join(sorted(missing)))
+    print('PASS FFmpeg fixture encoders and filters', flush=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--arch', required=True)
     parser.add_argument('--build-dir', type=Path, default=Path('build/release'))
     parser.add_argument('--stage', type=Path, default=Path('dist/stage'))
     args = parser.parse_args()
+    validate_media_tools()
     build = args.build_dir.resolve()
     stage = args.stage.resolve()
     config = [
         'cmake', '-S', ROOT, '-B', build, '-G', 'Ninja',
         '-DCMAKE_BUILD_TYPE=Release', f'-DCMAKE_INSTALL_PREFIX={stage}',
+        '-DBUILD_SHARED_LIBS=OFF',
         '-DCMAKE_INSTALL_BINDIR=bin', '-DCMAKE_INSTALL_DATAROOTDIR=share',
         '-DAUROREENGINE_LOCAL=', '-DOPENXMB_IMPORT_XMB_WEB_COMPAT=OFF',
         '-DOPENXMB_BUILD_NATIVE_TESTS=ON', '-DAUROREENGINE_BUILD_V2_TESTS=ON',
@@ -57,13 +78,21 @@ def main():
         config += ['-DCMAKE_LINKER_TYPE=LLD']
     run(*config)
     run('cmake', '--build', build, '--parallel', os.environ.get('CMAKE_BUILD_PARALLEL_LEVEL', '2'))
-    run('ctest', '--test-dir', build, '--output-on-failure', '--no-tests=error', '-j', '1')
+    # Stage a successfully compiled application even if a regression test fails.
+    # The job still fails below, while independent packaging checks can expose
+    # their own errors in the same CI run instead of hiding behind that failure.
+    tests = subprocess.run(['ctest', '--test-dir', str(build), '--output-on-failure',
+                            '--no-tests=error', '-j', '1'], cwd=ROOT)
     run('cmake', '--install', build)
     stage.mkdir(parents=True, exist_ok=True)
     (stage / 'build-info.json').write_text(json.dumps({
         'version': (ROOT / 'VERSION').read_text().strip(), 'architecture': args.arch,
         'commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
     }, indent=2) + '\n')
+    if os.environ.get('GITHUB_OUTPUT'):
+        with Path(os.environ['GITHUB_OUTPUT']).open('a') as handle:
+            handle.write('installed=true\n')
+    tests.check_returncode()
 
 
 if __name__ == '__main__':
