@@ -24,7 +24,7 @@ export module openxmb.constants;
 
 export namespace constants
 {
-    constexpr auto displayname = "XMB Shell";
+    constexpr auto displayname = "OpenXMB";
     constexpr auto name = "shell";
 
     constexpr uint32_t version = 1;

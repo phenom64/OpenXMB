@@ -22,6 +22,10 @@ file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" OPENXMB_RELEASE_VERSION)
 string(STRIP "${OPENXMB_RELEASE_VERSION}" OPENXMB_RELEASE_VERSION)
 string(REGEX MATCH "^[0-9]+\\.[0-9]+\\.[0-9]+" OPENXMB_NUMERIC_VERSION "${OPENXMB_RELEASE_VERSION}")
 project(OpenXMB VERSION ${OPENXMB_NUMERIC_VERSION} LANGUAGES CXX)
+add_compile_definitions(OPENXMB_VERSION_STRING="${OPENXMB_RELEASE_VERSION}")
+if(WIN32)
+  add_compile_definitions(NOMINMAX)
+endif()
 
 # OpenXMB uses CTest for backend-neutral engine and product contract tests.
 # Keep this independent of third-party BUILD_TESTING cache options below.
@@ -573,7 +577,6 @@ set(XMS_SHADERS
 )
 
 add_executable(XMS ${XMS_SOURCES})
-target_compile_definitions(XMS PRIVATE OPENXMB_VERSION_STRING="${OPENXMB_RELEASE_VERSION}")
 if(TARGET openxmb_compat_assets)
   add_dependencies(XMS openxmb_compat_assets)
 endif()

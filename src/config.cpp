@@ -720,7 +720,7 @@ void config::save_to_json() {
         config["_meta"] = {
             {"project", "OpenXMB"},
             {"description", "Configuration file for the Syndromatic Open XcrossMediaBar desktop experience."},
-            {"app_version", "0.1.0-beta"},
+            {"app_version", OPENXMB_VERSION_STRING},
             {"config_version", current_config_version},
             {"author", "Kavish Krishnakumar / Syndromatic Limited Bharat Britannia"},
             {"copyright", "™ & © 2025-2026. Syndromatic Ltd. All rights reserved."},

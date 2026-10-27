@@ -549,7 +549,13 @@ AnimationFrame sample_raf_animation(const json& descriptor,const fs::path& direc
     struct Cache {std::string key;std::unique_ptr<RafRuntime> runtime;double origin;};static thread_local std::vector<Cache> cache;
     static thread_local std::string activeKey;
     auto key=fs::weakly_canonical(directory).string()+"|"+descriptor.dump();
-    for(const auto* field:{"scene_file","script_file"})if(descriptor.contains(field)){const auto path=resource(directory,descriptor[field]);key+='|'+std::to_string(fs::last_write_time(path).time_since_epoch().count())+':'+std::to_string(fs::file_size(path));}
+    for(const auto* field:{"scene_file","script_file"})if(descriptor.contains(field)){
+        const auto path=resource(directory,descriptor[field]);
+        const auto elapsed=fs::last_write_time(path).time_since_epoch();
+        const auto seconds=std::chrono::duration_cast<std::chrono::seconds>(elapsed);
+        const auto nanoseconds=std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed-seconds);
+        key+='|'+std::to_string(seconds.count())+'.'+std::to_string(nanoseconds.count())+':'+std::to_string(fs::file_size(path));
+    }
     auto it=std::find_if(cache.begin(),cache.end(),[&](const Cache& c){return c.key==key;});
     if(it==cache.end()){if(cache.size()>=2)cache.erase(cache.begin());const ImportLimits limits;json scene;
         if(descriptor.contains("scene"))scene=descriptor["scene"];else{auto source=load(resource(directory,descriptor.at("scene_file")),limits.file_bytes);scene=json::parse(source.begin(),source.end());}

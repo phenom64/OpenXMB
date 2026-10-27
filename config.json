@@ -2,7 +2,7 @@
     "_meta": {
         "project": "OpenXMB",
         "description": "Configuration file for the Syndromatic Open XcrossMediaBar desktop experience.",
-        "app_version": "0.1.0-beta",
+        "app_version": "0.2.0-beta.2",
         "config_version": 2,
         "author": "Kavish Krishnakumar / Syndromatic Limited Bharat Britannia",
         "copyright": "™ & © 2025-2026. Syndromatic Ltd. All rights reserved.",

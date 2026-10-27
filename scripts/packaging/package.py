@@ -106,7 +106,10 @@ def windows(stage, destination):
         source = next((prefix / 'tools/ffmpeg').rglob(name))
         shutil.copy2(source, app / name)
     poppler = Path(os.environ['OPENXMB_POPPLER_BIN'])
-    shutil.copytree(poppler.parent, app / 'tools/poppler', dirs_exist_ok=True)
+    for name in ['bin', 'share', 'etc']:
+        source = poppler.parent / name
+        if source.is_dir():
+            shutil.copytree(source, app / 'tools/poppler' / name, dirs_exist_ok=True)
     redist = os.environ.get('VCToolsRedistDir')
     if not redist:
         raise RuntimeError('The MSVC redistributable directory is required')

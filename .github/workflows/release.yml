@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: openxmb-${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
+  group: openxmb-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 jobs:
@@ -76,7 +76,7 @@ jobs:
           docker run --rm -v "$PWD:/src:ro" ubuntu:24.04 bash -ec '
             export DEBIAN_FRONTEND=noninteractive
             apt-get update
-            apt-get install -y /src/dist/packages/*.deb mesa-vulkan-drivers python3 python3-pil
+            apt-get -o "Dpkg::Options::=--path-include=/usr/share/locale/*" install -y /src/dist/packages/*.deb mesa-vulkan-drivers python3 python3-pil
             export VK_ICD_FILENAMES=$(find /usr/share/vulkan/icd.d -name "*lvp*.json" -print -quit)
             python3 /src/scripts/packaging/smoke.py --app /usr/bin/XMS.bin --assets /usr/share/shell --render --output /tmp/openxmb-smoke
           '
