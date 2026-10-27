@@ -5,6 +5,7 @@
 /.workflow/
 /tests/xmb/reference_frames/
 /docs/superpowers/
+/docs/source-provenance.md
 /.vscode/
 /.idea/
 /.codex/
