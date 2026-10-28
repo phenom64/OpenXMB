@@ -279,7 +279,6 @@ set(AUROREENGINE_BUILD_V2_TESTS ON CACHE BOOL "Build Aurore v2 contract tests du
 set(AUROREENGINE_FIND_PACKAGES ON CACHE BOOL "Allow AuroreEngine to create required package targets" FORCE)
 
 set(AUROREENGINE_LOCAL "" CACHE PATH "Path to local AuroreEngine checkout (optional)")
-include(cmake/AuroreTypography.cmake)
 if(AUROREENGINE_LOCAL)
   get_filename_component(_auroreengine_local "${AUROREENGINE_LOCAL}" ABSOLUTE)
   if(NOT EXISTS "${_auroreengine_local}/CMakeLists.txt")
@@ -290,13 +289,12 @@ if(AUROREENGINE_LOCAL)
 else()
   FetchContent_Declare(auroreengine
     GIT_REPOSITORY https://github.com/phenom64/AuroreEngine.git
-    GIT_TAG        a57ca6aa7f17647244a034c05a3863126615997d
+    GIT_TAG        52c724e316c4154637da317a400a7c15928eaef4
     OVERRIDE_FIND_PACKAGE
   )
   FetchContent_GetProperties(auroreengine)
   if(NOT auroreengine_POPULATED)
     FetchContent_Populate(auroreengine)
-    openxmb_configure_aurore_typography("${auroreengine_SOURCE_DIR}")
     add_subdirectory("${auroreengine_SOURCE_DIR}" "${auroreengine_BINARY_DIR}")
   endif()
 endif()

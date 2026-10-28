@@ -266,6 +266,7 @@ namespace app
             bool monthly_background_failed{};
 
             vk::UniqueRenderPass backgroundRenderPass, shellRenderPass;
+            vk::SampleCountFlagBits renderPassSamples{};
 
             // Per-frame resolve target for background (offscreen, avoids reusing swapchain mid-frame)
             std::vector<std::unique_ptr<texture>> backgroundResolve;
@@ -339,6 +340,7 @@ namespace app
             bool handle_cursor(const event& event);
 
             bool fixed_components_loaded = false;
+            void create_render_passes();
             void preload_fixed_components();
 
             void render_gui(gui_renderer& renderer);

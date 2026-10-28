@@ -227,101 +227,8 @@ namespace app
         monthly_background_render =
             std::make_unique<openxmb::xmb::MonthlyBackgroundRenderer>(device, win->swapchainExtent);
 
-        {
-            const auto background_format=win->swapchainFormat.format==vk::Format::eB8G8R8A8Srgb?vk::Format::eB8G8R8A8Unorm:
-                win->swapchainFormat.format==vk::Format::eR8G8B8A8Srgb?vk::Format::eR8G8B8A8Unorm:win->swapchainFormat.format;
-            std::array<vk::SubpassDependency, 2> deps{
-                vk::SubpassDependency(vk::SubpassExternal, 0,
-                    vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eLateFragmentTests,
-                    vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests,
-                    vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite,
-                    vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite),
-                vk::SubpassDependency(0, vk::SubpassExternal,
-                    vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader,
-                    vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead)
-            };
-            const auto depth_attachment = vk::AttachmentDescription({}, vk::Format::eD32Sfloat,
-                win->config.sampleCount, vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
-                vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-                vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal);
-            if(win->config.sampleCount == vk::SampleCountFlagBits::e1) {
-                const std::array attachments{
-                    vk::AttachmentDescription({}, background_format,
-                        vk::SampleCountFlagBits::e1,
-                        vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
-                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-                        vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal),
-                    depth_attachment
-                };
-                const vk::AttachmentReference color_ref(0, vk::ImageLayout::eColorAttachmentOptimal);
-                const vk::AttachmentReference depth_ref(1, vk::ImageLayout::eDepthStencilAttachmentOptimal);
-                const vk::SubpassDescription subpass({}, vk::PipelineBindPoint::eGraphics,
-                    {}, color_ref, {}, &depth_ref);
-                backgroundRenderPass = device.createRenderPassUnique(
-                    vk::RenderPassCreateInfo({}, attachments, subpass, deps));
-            } else {
-                const std::array attachments{
-                    vk::AttachmentDescription({}, background_format, win->config.sampleCount,
-                        vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
-                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-                        vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal),
-                    vk::AttachmentDescription({}, background_format, vk::SampleCountFlagBits::e1,
-                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eStore,
-                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-                        vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal),
-                    depth_attachment
-                };
-                const vk::AttachmentReference color_ref(0, vk::ImageLayout::eColorAttachmentOptimal);
-                const vk::AttachmentReference resolve_ref(1, vk::ImageLayout::eColorAttachmentOptimal);
-                const vk::AttachmentReference depth_ref(2, vk::ImageLayout::eDepthStencilAttachmentOptimal);
-                const vk::SubpassDescription subpass({}, vk::PipelineBindPoint::eGraphics,
-                    {}, color_ref, resolve_ref, &depth_ref);
-                backgroundRenderPass = device.createRenderPassUnique(
-                    vk::RenderPassCreateInfo({}, attachments, subpass, deps));
-            }
-            debugName(device, backgroundRenderPass.get(), "Background Render Pass");
-        }
-        {
-            vk::SubpassDependency dep(vk::SubpassExternal, 0,
-                vk::PipelineStageFlagBits::eTransfer | vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                vk::AccessFlagBits::eTransferWrite | vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eColorAttachmentWrite);
-            if(win->config.sampleCount == vk::SampleCountFlagBits::e1) {
-                const std::array attachments{
-                    vk::AttachmentDescription({}, win->swapchainFormat.format,
-                        vk::SampleCountFlagBits::e1,
-                        vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
-                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-                        vk::ImageLayout::eUndefined, win->swapchainFinalLayout)
-                };
-                const vk::AttachmentReference color_ref(
-                    0, vk::ImageLayout::eColorAttachmentOptimal);
-                const vk::SubpassDescription subpass(
-                    {}, vk::PipelineBindPoint::eGraphics, {}, color_ref);
-                shellRenderPass = device.createRenderPassUnique(
-                    vk::RenderPassCreateInfo({}, attachments, subpass, dep));
-            } else {
-                const std::array attachments{
-                    vk::AttachmentDescription({}, win->swapchainFormat.format, win->config.sampleCount,
-                        vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
-                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-                        vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal),
-                    vk::AttachmentDescription({}, win->swapchainFormat.format, vk::SampleCountFlagBits::e1,
-                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eStore,
-                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-                        vk::ImageLayout::eUndefined, win->swapchainFinalLayout)
-                };
-                const vk::AttachmentReference color_ref(
-                    0, vk::ImageLayout::eColorAttachmentOptimal);
-                const vk::AttachmentReference resolve_ref(
-                    1, vk::ImageLayout::eColorAttachmentOptimal);
-                const vk::SubpassDescription subpass(
-                    {}, vk::PipelineBindPoint::eGraphics, {}, color_ref,
-                    resolve_ref);
-                shellRenderPass = device.createRenderPassUnique(
-                    vk::RenderPassCreateInfo({}, attachments, subpass, dep));
-            }
-            debugName(device, shellRenderPass.get(), "Shell Render Pass");
-        }
+        create_render_passes();
+        renderPassSamples = win->config.sampleCount;
         {
             std::array<vk::DescriptorSetLayoutBinding, 2> bindings = {
                 vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eStorageImage, 1, vk::ShaderStageFlagBits::eCompute),
@@ -422,6 +329,105 @@ namespace app
         }
     }
 
+    void shell::create_render_passes()
+    {
+        {
+            const auto background_format=win->swapchainFormat.format==vk::Format::eB8G8R8A8Srgb?vk::Format::eB8G8R8A8Unorm:
+                win->swapchainFormat.format==vk::Format::eR8G8B8A8Srgb?vk::Format::eR8G8B8A8Unorm:win->swapchainFormat.format;
+            std::array<vk::SubpassDependency, 2> deps{
+                vk::SubpassDependency(vk::SubpassExternal, 0,
+                    vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eLateFragmentTests,
+                    vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests,
+                    vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite,
+                    vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite),
+                vk::SubpassDependency(0, vk::SubpassExternal,
+                    vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader,
+                    vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead)
+            };
+            const auto depth_attachment = vk::AttachmentDescription({}, vk::Format::eD32Sfloat,
+                win->config.sampleCount, vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
+                vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+                vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+            if(win->config.sampleCount == vk::SampleCountFlagBits::e1) {
+                const std::array attachments{
+                    vk::AttachmentDescription({}, background_format,
+                        vk::SampleCountFlagBits::e1,
+                        vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
+                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+                        vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal),
+                    depth_attachment
+                };
+                const vk::AttachmentReference color_ref(0, vk::ImageLayout::eColorAttachmentOptimal);
+                const vk::AttachmentReference depth_ref(1, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+                const vk::SubpassDescription subpass({}, vk::PipelineBindPoint::eGraphics,
+                    {}, color_ref, {}, &depth_ref);
+                backgroundRenderPass = device.createRenderPassUnique(
+                    vk::RenderPassCreateInfo({}, attachments, subpass, deps));
+            } else {
+                const std::array attachments{
+                    vk::AttachmentDescription({}, background_format, win->config.sampleCount,
+                        vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
+                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+                        vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal),
+                    vk::AttachmentDescription({}, background_format, vk::SampleCountFlagBits::e1,
+                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eStore,
+                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+                        vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal),
+                    depth_attachment
+                };
+                const vk::AttachmentReference color_ref(0, vk::ImageLayout::eColorAttachmentOptimal);
+                const vk::AttachmentReference resolve_ref(1, vk::ImageLayout::eColorAttachmentOptimal);
+                const vk::AttachmentReference depth_ref(2, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+                const vk::SubpassDescription subpass({}, vk::PipelineBindPoint::eGraphics,
+                    {}, color_ref, resolve_ref, &depth_ref);
+                backgroundRenderPass = device.createRenderPassUnique(
+                    vk::RenderPassCreateInfo({}, attachments, subpass, deps));
+            }
+            debugName(device, backgroundRenderPass.get(), "Background Render Pass");
+        }
+        {
+            vk::SubpassDependency dep(vk::SubpassExternal, 0,
+                vk::PipelineStageFlagBits::eTransfer | vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                vk::AccessFlagBits::eTransferWrite | vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eColorAttachmentWrite);
+            if(win->config.sampleCount == vk::SampleCountFlagBits::e1) {
+                const std::array attachments{
+                    vk::AttachmentDescription({}, win->swapchainFormat.format,
+                        vk::SampleCountFlagBits::e1,
+                        vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
+                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+                        vk::ImageLayout::eUndefined, win->swapchainFinalLayout)
+                };
+                const vk::AttachmentReference color_ref(
+                    0, vk::ImageLayout::eColorAttachmentOptimal);
+                const vk::SubpassDescription subpass(
+                    {}, vk::PipelineBindPoint::eGraphics, {}, color_ref);
+                shellRenderPass = device.createRenderPassUnique(
+                    vk::RenderPassCreateInfo({}, attachments, subpass, dep));
+            } else {
+                const std::array attachments{
+                    vk::AttachmentDescription({}, win->swapchainFormat.format, win->config.sampleCount,
+                        vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
+                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+                        vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal),
+                    vk::AttachmentDescription({}, win->swapchainFormat.format, vk::SampleCountFlagBits::e1,
+                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eStore,
+                        vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+                        vk::ImageLayout::eUndefined, win->swapchainFinalLayout)
+                };
+                const vk::AttachmentReference color_ref(
+                    0, vk::ImageLayout::eColorAttachmentOptimal);
+                const vk::AttachmentReference resolve_ref(
+                    1, vk::ImageLayout::eColorAttachmentOptimal);
+                const vk::SubpassDescription subpass(
+                    {}, vk::PipelineBindPoint::eGraphics, {}, color_ref,
+                    resolve_ref);
+                shellRenderPass = device.createRenderPassUnique(
+                    vk::RenderPassCreateInfo({}, attachments, subpass, dep));
+            }
+            debugName(device, shellRenderPass.get(), "Shell Render Pass");
+        }
+    }
+
     void shell::preload_fixed_components()
     {
         if(fixed_components_loaded) {
@@ -483,11 +489,35 @@ namespace app
         blurDescriptorSets.clear();
         blurDescriptorPool.reset();
         blurExtraDescriptorPool.reset();
-        renderImages.clear();
         backgroundAttachmentViews.clear();backgroundMsaaViews.clear();
+        renderImages.clear();
         backgroundResolve.clear();
         backgroundDepth.clear();
         blurFrames.clear();
+
+        // recreateSwapchain has already idled the device. Retire framebuffers
+        // first, then rebuild every pipeline against the matching render passes
+        // before allocating attachments for the new sample count.
+        if(renderPassSamples != win->config.sampleCount) {
+            procedural_wave_render->prepare(0);
+            create_render_passes();
+            font_render->rebuild_pipelines({shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
+            image_render->preload({backgroundRenderPass.get(), shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
+            simple_render->preload({shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
+            wave_render->preload({backgroundRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
+            try {
+                monthly_background_render->preload({backgroundRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
+                monthly_background_failed = false;
+            } catch(const std::exception& error) {
+                monthly_background_failed = true;
+                spdlog::error("Monthly-background Vulkan pipeline initialization failed ({}); using the safe clear-colour fallback", error.what());
+            }
+#if OPENXMB_ENABLE_VIDEO_PLAYER
+            video_background_render->preload({backgroundRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
+#endif
+            procedural_wave_render->preload({backgroundRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
+            renderPassSamples = win->config.sampleCount;
+        }
         procedural_wave_render->prepare(static_cast<int>(swapchainImages.size()));
 #if OPENXMB_ENABLE_VIDEO_PLAYER
         video_background_render->prepare(imageCount);
