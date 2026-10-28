@@ -106,9 +106,9 @@ DEB, portable Linux archive and universal macOS DMG; it does not create a tag or
 uses the runner's detected CPU count unless `CMAKE_BUILD_PARALLEL_LEVEL` is
 explicitly set. Native regression tests remain serialized.
 
-After an authorized push, select a successful **Build, test and release** push
-run whose head is the exact master commit intended for release. Obtain explicit
-approval for that full SHA before dispatching **Publish validated release**:
+After the push and release have been authorised, select a successful **Build,
+test and release** push run whose head is the exact master commit intended for
+release. Record that full SHA when dispatching **Publish validated release**:
 
 ```powershell
 gh run list --workflow release.yml --branch master --limit 20
@@ -120,8 +120,24 @@ The publication workflow requires the successful push run, its required platform
 jobs, its own checkout and current master to match the approved full SHA. It
 verifies the four checksums, reserves the tag for that commit, finds an existing
 draft if necessary, uploads the verified assets and publishes only after the
-draft contains exactly those assets. If master advances, validate and approve the
-new master commit before publication. Dispatching publication is an external write.
+draft contains exactly those assets. If master advances, validate the new master
+commit and confirm it remains within the authorised release scope before
+publication. Dispatching publication is an external write.
+
+For a failed portable Linux check, **Recheck portable Linux archive** tests an
+existing `release-linux` artifact without compiling the other platforms again:
+
+```sh
+gh workflow run recheck-linux-portable.yml --ref master -f run_id=<BUILD_RUN_ID>
+```
+
+This diagnostic workflow uses the same container checks as the release build.
+Its result cannot authorise publication: the complete master push workflow must
+still pass at the release commit. Browser failures print the helper log and
+retain readable evidence. The disposable containers allow nested user namespaces
+and procfs mounts so WebKit can establish its own sandbox; the checks require a
+non-root browser with a separate mount namespace and seccomp filtering, plus
+rendered HTML, HTTPS and saved site data after restart.
 
 The portable Linux archive bundles application libraries and helpers while using
 the host's glibc and graphics driver. Its baseline is glibc 2.39, matching the
