@@ -771,7 +771,9 @@ namespace app
             const bool flow_scene=reactive_scene&&config::CONFIG.preference("music.visualizer","Wave")=="Flow";
             procedural_wave_render->flow_mode=flow_scene;
             procedural_wave_render->visualizer_time=flow_scene?static_cast<float>(config::CONFIG.enabled("power.reduced.motion",false)?36.0:fixed_wave_seconds_from_environment().value_or(-1.0)):-1.0F;
-            procedural_wave_render->music_vertical=reactive_scene?-0.02F:0.26F;
+            // Preserve the departing scene's endpoint until its mix reaches
+            // zero; switching endpoints on close made the ribbon jump first.
+            if(music_scene)procedural_wave_render->music_vertical=reactive_scene?-0.02F:0.26F;
             const auto& music_snapshot=openxmb::music::service().snapshot();
             const bool reactive_audio=reactive_scene&&music_snapshot.status==openxmb::music::Status::playing&&!config::CONFIG.enabled("power.reduced.motion",false);
             procedural_wave_render->set_music_signal(music_snapshot.spectrum,reactive_audio,music_snapshot.generation);
