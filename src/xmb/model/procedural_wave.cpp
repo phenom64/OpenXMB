@@ -130,49 +130,6 @@ void ProceduralWaveSampler::update(double seconds, const ProceduralWaveSettings&
             frame_.control[row*kProceduralWaveControlPoints+i]=mix(legacy,core,s.rePipelineBlend);
         }
     }
-    // The RPCS3 captures show two or three broad, smooth sheets rather than
-    // the row-to-row folds the kernel produces, so low-pass the field across
-    // rows (and lightly along them) before the GPU fits its splines.
-    {
-        constexpr int rows=static_cast<int>(kProceduralWaveRows),points=static_cast<int>(kProceduralWaveControlPoints);
-        constexpr float row_sigma=0.8F,point_sigma=1.0F,height_gain=2.1F;
-        std::array<float,kProceduralWaveRows*kProceduralWaveControlPoints> blurred{};
-        const auto spread=[&](const auto& field,int i,float& mean) {
-            mean=0;for(int r=0;r<rows;++r)mean+=field[r*points+i];mean/=rows;
-            float variance=0;for(int r=0;r<rows;++r){const float d=field[r*points+i]-mean;variance+=d*d;}
-            return std::sqrt(variance/rows);
-        };
-        std::array<float,kProceduralWaveControlPoints> original_spread{};
-        for(int i=0;i<points;++i){float mean;original_spread[i]=spread(frame_.control,i,mean);}
-        const auto gauss=[](float d,float sigma){return std::exp(-0.5F*d*d/(sigma*sigma));};
-        for(int r=0;r<rows;++r)for(int i=0;i<points;++i) {
-            float sum=0,weight=0;
-            for(int k=-21;k<=21;++k) {
-                const int rr=std::clamp(r+k,0,rows-1);const float w=gauss(static_cast<float>(k),row_sigma);
-                sum+=frame_.control[rr*points+i]*w;weight+=w;
-            }
-            blurred[r*points+i]=sum/weight;
-        }
-        for(int r=0;r<rows;++r)for(int i=0;i<points;++i) {
-            float sum=0,weight=0;
-            for(int k=-4;k<=4;++k) {
-                const int ii=std::clamp(i+k,0,points-1);const float w=gauss(static_cast<float>(k),point_sigma);
-                sum+=blurred[r*points+ii]*w;weight+=w;
-            }
-            frame_.control[r*points+i]=sum/weight;
-        }
-        // Smoothing shrinks the spread between rows, which sets the sheet's
-        // height on screen; restore each column's original spread.
-        // The sheets also twist: their thickness pinches and bulges along the
-        // screen, and the pinches travel slowly.
-        for(int i=0;i<points;++i) {
-            float mean;const float now=spread(frame_.control,i,mean);
-            const float along=static_cast<float>(i)/(points-1);
-            const float twist=0.35F+0.9F*(0.5F+0.5F*std::sin(along*tau*0.9F+flow*0.21F));
-            const float gain=std::min(original_spread[i]/std::max(now,1e-5F),6.0F)*height_gain*twist;
-            for(int r=0;r<rows;++r)frame_.control[r*points+i]=mean+(frame_.control[r*points+i]-mean)*gain;
-        }
-    }
     frame_.settings[0]={s.flowSpeed,s.tension,s.damping,s.length};
     frame_.settings[1]={s.spacing,s.perturbation,s.perturbationScale,s.timeStep};
     frame_.settings[2]={s.waveCosAmp,s.waveBias,s.waveHeightScale,std::max(s.waveSoftClip,0.0001F)};

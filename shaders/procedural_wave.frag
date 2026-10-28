@@ -79,9 +79,9 @@ void main() {
         if(distanceSquared>1.0) discard;
         float d=sqrt(distanceSquared);
         // Motes: a sharp core a quarter of the quad wide plus a soft glow.
-        // Bokeh: a flat out-of-focus disc with a soft rim.
+        // Bokeh: a soft, filled out-of-focus disc, slightly brighter inside.
         float mote=exp(-distanceSquared*48.0)+0.20*exp(-d*7.0)*(1.0-distanceSquared);
-        float disc=(1.0-smoothstep(0.5,1.0,d))*(0.9+0.1*smoothstep(0.3,0.8,d));
+        float disc=(1.0-smoothstep(0.3,1.0,d))*(0.8+0.35*(1.0-d));
         float glow=mix(mote,disc,particle_style.a);
         float a=clamp(particle_alpha*wave.settings[9].x*glow*pc.resolution_time_gain.w,0.0,1.0);
         color=vec4(pc.particle_tint.rgb*particle_style.rgb*a,a);
@@ -92,9 +92,9 @@ void main() {
     vec3 n=normalize(particle_style.xyz);n.z=abs(n.z);
     vec4 material=wave.settings[7];
     float fresnel=material.w*pow(max(0.0,1.0-n.z),material.z);
-    float soft=wave.settings[8].y;
-    float edge=soft>0.0 ? 1.0-smoothstep(1.0-soft,1.0,abs(edge_sprite.x)) : 1.0;
-    float a=clamp((fresnel+wave.settings[8].x)*material.x*material.y*edge*pc.resolution_time_gain.w,0.0,1.0);
+    // edge_sprite: x = rim weight, y = ribbon visibility (both per vertex).
+    float edge=edge_sprite.y;
+    float a=clamp((fresnel+wave.settings[8].x+0.14*edge_sprite.x)*material.x*material.y*edge*pc.resolution_time_gain.w,0.0,1.0);
     // A travelling highlight wraps only while fully beyond the visible ribbon.
     float center=1.8-mod(pc.resolution_time_gain.z*0.12,3.6);
     float distance=position.x-center;

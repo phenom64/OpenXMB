@@ -14,6 +14,8 @@ param(
     # Overrides the pinned wave animation time (seconds); below -1 lets the
     # wave run live so a sequence shows its motion.
     [double]$WaveSeconds = -1,
+    # Renders with a custom theme colour (e.g. "#2b4d9e") instead of the scene's.
+    [string]$ThemeColour = "",
     [switch]$BackgroundOnly
 )
 
@@ -63,6 +65,7 @@ function Invoke-SceneCapture {
     $cfg = Get-Content -Raw -LiteralPath $configPath | ConvertFrom-Json
     $cfg.shell.'background-type' = $defaults.background_type
     $cfg.shell.'theme-colour-mode' = $defaults.theme_colour_mode
+    if ($ThemeColour) { $cfg.shell.'theme-colour-mode' = "custom"; $cfg.shell.'theme-custom-colour' = $ThemeColour }
     $cfg.render.'sample-count' = [int]$defaults.sample_count
     $cfg.render.vsync = $false
     $cfg.render.'max-fps' = [int]$defaults.max_fps
