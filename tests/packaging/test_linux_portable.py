@@ -58,6 +58,39 @@ class PortableTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'compiled-in'):
             self.module.relocate_webkit_bytes(b'no path', old)
 
+    def test_webkit_injected_bundle_relocation_scans_all_elfs(self):
+        self.assertTrue(hasattr(self.module, 'relocate_webkit_injected_bundle'))
+        old = b'/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1'
+        with tempfile.TemporaryDirectory() as tmp:
+            app = Path(tmp)
+            (app / 'libexec/webkit').mkdir(parents=True)
+            library = app / 'libexec/webkit/WebKitWebProcess'
+            original = b'\x7fELF prefix\0' + old + b'/injected-bundle/\0suffix'
+            library.write_bytes(original)
+            (app / 'ordinary.txt').write_bytes(old + b'/injected-bundle/\0')
+            self.module.relocate_webkit_injected_bundle(app, old)
+            patched = library.read_bytes()
+            self.assertEqual(len(patched), len(original))
+            self.assertIn(b'./libexec/webkit/injected-bundle/\0', patched)
+            self.assertNotIn(old + b'/injected-bundle/\0', patched)
+            self.assertEqual((app / 'ordinary.txt').read_bytes(), old + b'/injected-bundle/\0')
+            with self.assertRaisesRegex(RuntimeError, 'injected'):
+                self.module.relocate_webkit_injected_bundle(app, old)
+            library.write_bytes(original + original)
+            other = app / 'libexec/webkit/WebKitNetworkProcess'
+            other.write_bytes(original)
+            self.module.relocate_webkit_injected_bundle(app, old)
+            self.assertEqual(library.read_bytes().count(b'./libexec/webkit/injected-bundle/\0'), 2)
+            self.assertEqual(other.read_bytes().count(b'./libexec/webkit/injected-bundle/\0'), 1)
+
+    def test_launcher_fontconfig_uses_bundled_relative_fonts(self):
+        self.assertIn('export FONTCONFIG_FILE="$DIR/etc/fonts/fonts.conf"', self.module.launcher_environment())
+        self.assertTrue(hasattr(self.module, 'fontconfig_configuration'))
+        config = self.module.fontconfig_configuration()
+        self.assertIn('<include ignore_missing="yes">/etc/fonts/fonts.conf</include>', config)
+        self.assertIn('<dir prefix="relative">../../share/shell/fonts</dir>', config)
+        self.assertIn('<cachedir prefix="xdg">fontconfig</cachedir>', config)
+
     def test_resource_contract_rejects_missing_browser(self):
         self.assertIsNotNone(self.module, 'portable packager is missing')
         with self.assertRaisesRegex(RuntimeError, 'openxmb-web'):
@@ -108,6 +141,32 @@ class PortableTests(unittest.TestCase):
             with patch.object(self.module, 'command', side_effect=ldd), patch.object(self.module, 'parse_ldd', side_effect=fixture_parse):
                 with self.assertRaisesRegex(RuntimeError, 'Conflicting ELF dependency'):
                     self.module.collect_elf_dependencies(app)
+
+    def test_gles_dlopen_client_is_packaged_and_dependency_scanned(self):
+        if os.name == 'nt':
+            self.skipTest('Linux ELF symlinks require Linux')
+        self.assertTrue(hasattr(self.module, 'copy_gles_client'))
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            real = root / 'host/libGLESv2.so.2.1.0'
+            real.parent.mkdir()
+            real.write_bytes(b'\x7fELF GLES client')
+            soname = real.parent / 'libGLESv2.so.2'
+            soname.symlink_to(real.name)
+            app = root / 'app'
+            app.mkdir()
+            source = self.module.copy_gles_client(app, soname)
+            self.assertEqual(source, real.resolve())
+            self.assertEqual((app / 'lib/libGLESv2.so.2').read_bytes(), real.read_bytes())
+            observed = []
+            def inspect(_program, binary):
+                observed.append(binary.name)
+                return ''
+            with patch.object(self.module, 'command', side_effect=inspect):
+                self.module.collect_elf_dependencies(app)
+            self.assertIn(real.name, observed)
+            with self.assertRaisesRegex(RuntimeError, 'GLES'):
+                self.module.copy_gles_client(app, root / 'missing')
 
     def test_launcher_executes_from_unusual_path_without_changing_cwd(self):
         self.assertIsNotNone(self.module, 'portable packager is missing')
@@ -185,6 +244,7 @@ class PortableTests(unittest.TestCase):
                 library.write_bytes(b'webkit')
                 return library, root / 'webkit'
             module = self.module
+            gles_source = root / 'trusted-gles-client'
             with patch.object(module.platform, 'system', return_value='Linux'), \
                  patch.object(module.platform, 'machine', return_value='x86_64'), \
                  patch.object(module.platform, 'libc_ver', return_value=('glibc', '2.39')), \
@@ -193,13 +253,17 @@ class PortableTests(unittest.TestCase):
                  patch.object(Path, 'is_file', is_file), \
                  patch.object(module, 'copy_gio_modules'), \
                  patch.object(module, 'collect_elf_dependencies', return_value=set()), \
+                 patch.object(module, 'copy_gles_client', return_value=gles_source), \
                  patch.object(module, 'webkit_helpers', side_effect=helpers), \
                  patch.object(module, 'relocate_webkit_bytes', return_value=b'webkit'), \
+                 patch.object(module, 'relocate_webkit_injected_bundle'), \
                  patch.object(module, 'prepare_fallbacks'), \
-                 patch.object(module, 'copy_copyright'):
+                 patch.object(module, 'copy_copyright') as copy_copyright:
                 module.build(stage, output, '0.3.0-beta.3')
+                self.assertIn(gles_source, copy_copyright.call_args.args[0])
             archive = output / 'OpenXMB-0.3.0-beta.3-linux-x86_64.tar.gz'
             with tarfile.open(archive, 'r:gz') as tar:
+                self.assertIn(b'../../share/shell/fonts', tar.extractfile('OpenXMB-0.3.0-beta.3-linux-x86_64/etc/fonts/fonts.conf').read())
                 for name in STAGED_FONTS:
                     member = f'OpenXMB-0.3.0-beta.3-linux-x86_64/share/shell/fonts/{name}'
                     self.assertEqual(tar.extractfile(member).read(), (stage / 'share/shell/fonts' / name).read_bytes())
@@ -257,6 +321,53 @@ class PortableTests(unittest.TestCase):
             subprocess.run([str(bash), str(bootstrap)], env=env, check=True)
             self.assertNotIn('/fallback/cxx', capture.read_text())
             self.assertIn('/fallback/gcc', capture.read_text())
+
+    def test_host_graphics_providers_apply_to_all_launchers_and_missing_fallback(self):
+        if os.name == 'nt':
+            self.skipTest('Linux dynamic-loader behavior requires Linux')
+        bash = Path('C:/Program Files/Git/bin/bash.exe') if os.name == 'nt' else Path('/bin/sh')
+        if not bash.exists():
+            self.skipTest('no POSIX shell available')
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'portable'
+            (root / 'bin').mkdir(parents=True)
+            (root / 'libexec').mkdir()
+            host = Path(tmp) / 'host'
+            host.mkdir()
+            for name in ('libwayland-client.so.0', 'libxcb-dri3.so.0'):
+                (host / name).write_text('fixture')
+            ldconfig = root / 'bin/ldconfig'
+            ldconfig.write_text('#!/bin/sh\np=$(dirname "$0")/../../host\n'
+                                'for n in libwayland-client.so.0 libxcb-dri3.so.0; do\n'
+                                '  [ ! -f "$p/$n" ] || printf "%s (libc6,x86-64) => %s/%s\\n" "$n" "$p" "$n"\n'
+                                'done\n', newline='\n')
+            ldconfig.chmod(0o755)
+            capture = Path(tmp) / 'capture'
+            for script, contents in (('OpenXMB', self.module.launcher_script()),
+                                     ('bin/openxmb-web', self.module.browser_launcher_script()),
+                                     ('libexec/openxmb-exec', self.module.portable_executor_script())):
+                (root / script).write_text(contents, encoding='utf-8', newline='\n')
+                (root / script).chmod(0o755)
+            for binary in ('bin/XMS.bin', 'bin/openxmb-web.bin', 'bin/capture'):
+                path = root / binary
+                path.write_text('#!/bin/sh\nprintf "%s" "${LD_PRELOAD-}" > "$CAPTURE"\n', newline='\n')
+                path.chmod(0o755)
+            env = dict(os.environ, CAPTURE=str(capture))
+            env.pop('LD_PRELOAD', None)
+            for command in ([str(root / 'OpenXMB')], [str(root / 'bin/openxmb-web')],
+                            [str(root / 'libexec/openxmb-exec'), str(root / 'bin/capture')]):
+                subprocess.run([str(bash), *command], env=env, check=True, capture_output=True)
+                value = capture.read_text()
+                self.assertIn('libwayland-client.so.0', value)
+                self.assertIn('libxcb-dri3.so.0', value)
+                self.assertNotIn('/portable/lib/libwayland', value)
+            (host / 'libxcb-dri3.so.0').unlink()
+            subprocess.run([str(bash), str(root / 'OpenXMB')], env=env, check=True, capture_output=True)
+            self.assertIn('libwayland-client.so.0', capture.read_text())
+            self.assertNotIn('libxcb-dri3.so.0', capture.read_text())
+            (host / 'libwayland-client.so.0').unlink()
+            subprocess.run([str(bash), str(root / 'OpenXMB')], env=env, check=True, capture_output=True)
+            self.assertEqual(capture.read_text(), '')
 
     def test_fallback_manifests_include_all_version_needs(self):
         with tempfile.TemporaryDirectory() as tmp:

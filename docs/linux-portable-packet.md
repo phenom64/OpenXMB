@@ -1,7 +1,7 @@
 # Linux portable archive integration
 
-This packet is a candidate for the Beta 3 release, not evidence of a tested
-release. Build on Ubuntu 24.04 x86-64, from the trusted CMake install stage:
+These instructions describe the portable build and its release checks. Build on
+Ubuntu 24.04 x86-64, from the trusted CMake install stage:
 
 ```sh
 python3 scripts/packaging/linux_portable.py \
@@ -11,7 +11,10 @@ python3 scripts/packaging/linux_portable.py \
 It produces `OpenXMB-0.3.0-beta.3-linux-x86_64.tar.gz` and its `.sha256`.
 The builder requires Python 3, patchelf, ldd, readelf, dpkg-query,
 gio-querymodules, FFmpeg, Poppler tools, WebKitGTK 4.1 with its process
-executables, and glib-networking. The release build driver provisions pinned
+executables, the GLVND GLES client (`libGLESv2.so.2`), and glib-networking.
+The builder copies that dlopen-only client and scans its dependencies; Mesa GPU
+drivers and EGL vendor implementations remain host-provided. The release build
+driver provisions pinned
 Noto fonts and OFL notices into the install stage; the portable builder requires
 those files in `share/shell/fonts`. It uses ldd, so the stage and all
 build-host libraries must be trusted. Build on glibc 2.39; the archive does not
@@ -20,13 +23,23 @@ services, `bwrap`, `xdg-dbus-proxy`, and system certificates are host needs.
 The bundled Vulkan loader discovers the host's ICDs. Paths containing `:` are
 not supported by the ELF loader's search-path environment variable.
 
+The shared launcher environment selects host `libwayland-client.so.0` and
+`libxcb-dri3.so.0` by their x86-64 loader-cache paths when available, ahead of
+the bundled copies, so host Vulkan drivers can use their own protocol libraries.
+If a host provider is missing or its path is unsuitable for `LD_PRELOAD`, that
+SONAME falls back to the bundle. This applies to the app, helper executor and
+standalone browser wrapper; it does not replace bundled files or the Vulkan
+loader. Other display-library families are not currently selected from the host.
+
 The launcher keeps the caller's working directory and arguments, including
 relative `--force-dir` paths. It selects a compatible host `libstdc++` and
 `libgcc_s` before using the bundled fallbacks. If a fallback is necessary, a
 host GPU driver can still require newer symbols than that fallback provides;
 test that case on the target system. Packaged GIO modules include the TLS
 backend. The staged Noto fonts, OFL licenses, and copyright notices are preserved
-in `share/shell/fonts`.
+in `share/shell/fonts`. The shared launcher environment selects a bundled
+fontconfig file that includes the host configuration when available, scans those
+private fonts relative to the archive, and uses the XDG font cache.
 
 Runner invocation (the archive is extracted to a temporary path containing
 spaces and non-ASCII characters):
@@ -48,17 +61,18 @@ its own runtime. Containers do not prove physical-GPU behavior.
 
 Ubuntu release WebKitGTK embeds its process directory in the shared library;
 the developer-only `WEBKIT_EXEC_PATH` override is insufficient. The builder
-copies the matching WebKit processes and rewrites the exact embedded directory
-to a relative bundle path; it fails if it cannot find that path unambiguously.
+copies the matching WebKit processes and injected bundle. It rewrites the exact
+compiled-in process and injected-bundle directories to relative bundle paths,
+and fails if either location cannot be identified unambiguously. The injected
+path scan covers every bundled ELF, not only the main WebKit library.
 Only the browser child changes its working directory. The launcher places the
 bundle directories in `LD_LIBRARY_PATH`, which WebKit's bubblewrap code uses
-as sandbox bind paths. The sandbox is never disabled. This is an unverified
-relocation strategy until a real browser integration test succeeds: verify
+as sandbox bind paths. The sandbox is never disabled. Browser release gates verify
 matching WebKit library and processes, an actual sandboxed HTTPS page load,
 TLS, user data, process lifetime, and resource loading on each distribution,
 including an extraction path with spaces and Unicode. Also verify the host's
 `bwrap` and `xdg-dbus-proxy` work with the inherited library environment. If
-these fail, do not release this packet as browser-capable; a parent-owned
+these fail, do not release the archive as browser-capable; a
 source change or another verified runtime layout may be required.
 
 On Ubuntu with AppArmor namespace restrictions, the installed DEB profile for

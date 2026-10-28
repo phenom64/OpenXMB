@@ -86,11 +86,31 @@ for item in cxx gcc; do
     fi
 done
 export LD_LIBRARY_PATH="$LIBPATH"
+export FONTCONFIG_FILE="$DIR/etc/fonts/fonts.conf"
 export GIO_MODULE_DIR="$DIR/lib/gio/modules"
 export GSETTINGS_SCHEMA_DIR="$DIR/share/glib-2.0/schemas"
 export XDG_DATA_DIRS="$DIR/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
 export XMB_ASSET_DIR="${XMB_ASSET_DIR:-$DIR/share/shell}"
 export XMB_LOCALE_DIR="${XMB_LOCALE_DIR:-$DIR/share/locale}"
+# A host ICD may depend on newer display-protocol libraries than the bundle.
+# Select only the host providers proved necessary; absent ones use bundled copies.
+provider_cache=$(command -v ldconfig 2>/dev/null || true)
+[ -n "$provider_cache" ] || [ ! -x /sbin/ldconfig ] || provider_cache=/sbin/ldconfig
+providers=${LD_PRELOAD-}
+if [ -n "$provider_cache" ]; then
+    for provider in libwayland-client.so.0 libxcb-dri3.so.0; do
+        candidate=$("$provider_cache" -p 2>/dev/null | while IFS= read -r line; do
+            case "$line" in *"$provider "*x86-64*'=> '*) printf '%s\\n' "${line#*=> }"; break;; esac
+        done)
+        case "$candidate" in
+            /*) case "$candidate" in *[[:space:]:]*) continue;; esac;;
+            *) continue;;
+        esac
+        [ -r "$candidate" ] || continue
+        case ":$providers:" in *":$candidate:"*) ;; *) providers="$candidate${providers:+:$providers}";; esac
+    done
+fi
+[ -z "$providers" ] || export LD_PRELOAD="$providers"
 '''
 
 
@@ -147,6 +167,37 @@ def relocate_webkit_bytes(data, original):
     if len(replacement) > len(original) or data.count(pattern) != 1:
         raise RuntimeError('Cannot relocate WebKit compiled-in helper path unambiguously')
     return data.replace(pattern, replacement + b'\0' * (len(pattern) - len(replacement)), 1)
+
+
+def relocate_webkit_injected_bundle(app, original):
+    """Rewrite each exact compiled-in injected-bundle directory across packaged ELFs."""
+    pattern = original + b'/injected-bundle/\0'
+    replacement = b'./libexec/webkit/injected-bundle/'
+    if len(replacement) >= len(pattern):
+        raise RuntimeError('Cannot relocate WebKit injected-bundle path without changing ELF size')
+    matches = []
+    for binary in app.rglob('*'):
+        if is_elf(binary):
+            data = binary.read_bytes()
+            count = data.count(pattern)
+            if count:
+                matches.append((binary, data, count))
+    if not matches:
+        raise RuntimeError('Cannot locate exact WebKit injected-bundle path')
+    replacement = replacement + b'\0' * (len(pattern) - len(replacement))
+    for binary, data, _ in matches:
+        binary.write_bytes(data.replace(pattern, replacement))
+
+
+def fontconfig_configuration():
+    return '''<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<fontconfig>
+  <include ignore_missing="yes">/etc/fonts/fonts.conf</include>
+  <dir prefix="relative">../../share/shell/fonts</dir>
+  <cachedir prefix="xdg">fontconfig</cachedir>
+</fontconfig>
+'''
 
 
 def command(*args):
@@ -207,6 +258,32 @@ def collect_elf_dependencies(app):
             if alias != target and not alias.exists():
                 alias.symlink_to(target.name)
     return sources
+
+
+def copy_gles_client(app, source=Path('/usr/lib/x86_64-linux-gnu/libGLESv2.so.2')):
+    """Bundle the dlopen-only GLVND client, leaving the host's GPU drivers on the host."""
+    if not source.is_file():
+        raise RuntimeError('Missing GLES client: ' + str(source))
+    source = source.resolve(strict=True)
+    if not is_elf(source):
+        raise RuntimeError('GLES client is not an ELF: ' + str(source))
+    libdir = app / 'lib'
+    libdir.mkdir(exist_ok=True)
+    target = libdir / source.name
+    if target.exists() and hashlib.sha256(target.read_bytes()).digest() != hashlib.sha256(source.read_bytes()).digest():
+        raise RuntimeError('Conflicting GLES client: ' + str(target))
+    if not target.exists():
+        shutil.copy2(source, target)
+    alias = libdir / 'libGLESv2.so.2'
+    if alias != target:
+        if alias.is_symlink() and not alias.exists():
+            raise RuntimeError('Broken GLES client alias: ' + str(alias))
+        if alias.exists():
+            if hashlib.sha256(alias.read_bytes()).digest() != hashlib.sha256(source.read_bytes()).digest():
+                raise RuntimeError('Conflicting GLES client alias: ' + str(alias))
+        else:
+            alias.symlink_to(target.name)
+    return source
 
 
 def copy_copyright(sources, destination):
@@ -342,6 +419,9 @@ def build(stage, output, version):
         app = Path(temporary) / name
         shutil.copytree(stage, app, symlinks=False)
         copy_portable_notes(app)
+        fontconfig = app / 'etc/fonts/fonts.conf'
+        fontconfig.parent.mkdir(parents=True, exist_ok=True)
+        fontconfig.write_text(fontconfig_configuration(), encoding='utf-8', newline='\n')
         for binary in (p for p in app.rglob('*') if is_elf(p)):
             if host_only(binary.name):
                 raise RuntimeError('The stage contains a host-only library or driver: ' + str(binary))
@@ -363,9 +443,11 @@ def build(stage, output, version):
         browser.rename(app / 'bin/openxmb-web.bin')
         executable(browser, browser_launcher_script())
         sources = collect_elf_dependencies(app)
+        sources.add(copy_gles_client(app))
         webkit_lib, webkit_dir = webkit_helpers(app)
         sources |= collect_elf_dependencies(app)
         webkit_lib.write_bytes(relocate_webkit_bytes(webkit_lib.read_bytes(), os.fsencode(str(webkit_dir))))
+        relocate_webkit_injected_bundle(app, os.fsencode(str(webkit_dir)))
         prepare_fallbacks(app)
         # Every packaged ELF gets a location-independent RUNPATH. LD_LIBRARY_PATH
         # also covers plugin processes and is inherited by packaged child tools.

@@ -11,7 +11,9 @@ The archive includes application libraries, FFmpeg, PDF helpers, fonts and the
 WebKit browser resources. It requires an x86-64 Linux system with glibc 2.39 or
 newer, a Vulkan-capable host graphics driver, and desktop display services. Its
 embedded browser currently uses X11/XWayland and needs host `bwrap`,
-`xdg-dbus-proxy`, and trusted system certificates. FUSE is not required.
+`xdg-dbus-proxy`, a working EGL graphics driver, and trusted system certificates.
+The archive includes the EGL/GLES client libraries; graphics drivers stay on the
+host. FUSE is not required.
 
 Keep the extracted directory together and use the launcher rather than invoking
 `bin/XMS.bin` directly. Paths with spaces or Unicode are supported; paths with a

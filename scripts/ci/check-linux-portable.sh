@@ -12,13 +12,13 @@ case "$distro" in
   ubuntu)
     export DEBIAN_FRONTEND=noninteractive
     apt-get -o Acquire::Retries=3 update
-    apt-get -o Acquire::Retries=3 install -y --no-install-recommends python3 python3-pil ca-certificates mesa-vulkan-drivers libvulkan1 fontconfig xvfb xauth imagemagick libxtst6 bubblewrap xdg-dbus-proxy dbus-x11 util-linux
+    apt-get -o Acquire::Retries=3 install -y --no-install-recommends python3 python3-pil ca-certificates mesa-vulkan-drivers libvulkan1 libegl-mesa0 fontconfig xvfb xauth imagemagick libxtst6 bubblewrap xdg-dbus-proxy dbus-x11 util-linux
     ;;
   fedora)
-    dnf -y install python3 python3-pillow ca-certificates mesa-vulkan-drivers vulkan-loader fontconfig xorg-x11-server-Xvfb xorg-x11-xauth ImageMagick libXtst bubblewrap xdg-dbus-proxy dbus-daemon util-linux
+    dnf -y install python3 python3-pillow ca-certificates mesa-vulkan-drivers mesa-libEGL vulkan-loader fontconfig xorg-x11-server-Xvfb xorg-x11-xauth ImageMagick libXtst bubblewrap xdg-dbus-proxy dbus-daemon util-linux
     ;;
   arch)
-    pacman -Syu --noconfirm --needed python python-pillow ca-certificates vulkan-swrast vulkan-icd-loader fontconfig xorg-server-xvfb xorg-xauth imagemagick libxtst bubblewrap xdg-dbus-proxy dbus util-linux
+    pacman -Syu --noconfirm --needed python python-pillow ca-certificates mesa vulkan-swrast vulkan-icd-loader fontconfig xorg-server-xvfb xorg-xauth imagemagick libxtst bubblewrap xdg-dbus-proxy dbus util-linux
     ;;
   *) echo "Unknown portability target: $distro" >&2; exit 2 ;;
 esac
@@ -55,7 +55,11 @@ def test_archive(app, smoke_output, version, render):
     subprocess.run([sys.executable, '/src/tests/integrations/web_view_smoke.py',
                     '--helper', str(app / 'bin/openxmb-web'),
                     '--output', str(Path(output) / 'browser'), '--https-check',
-                    '--require-sandbox', '--persistence-check'], check=True)
+                    '--require-sandbox', '--persistence-check'],
+                   # xvfb-run's Xauthority setup cannot handle a spaced TMPDIR.
+                   # Keep the extracted application path's spaces and Unicode;
+                   # use a plain directory only for the display's auth files.
+                   env=dict(os.environ, TMPDIR='/tmp'), check=True)
 
 portable_smoke.run_extracted = test_archive
 sys.argv = ['portable_smoke.py', '--archive', archive, '--output', str(Path(output) / 'portable')]
