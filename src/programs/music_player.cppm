@@ -4,6 +4,8 @@ module;
 #include "openxmb/music/library.hpp"
 #include "music_reentry.hpp"
 #include "../app/input_bindings.hpp"
+#include "../menu/media_preview_queue.hpp"
+#include <cstring>
 #include <SDL2/SDL_keyboard.h>
 #include <SDL2/SDL_gamecontroller.h>
 
@@ -43,7 +45,7 @@ namespace music = openxmb::music;
 export void create_music_playlist(shell* xmb, std::vector<music::QueueEntry> tracks = {}, std::function<void()> changed = {}) {
   xmb->emplace_overlay<text_entry_overlay>("New Playlist", "", [xmb, tracks=std::move(tracks), changed=std::move(changed)](std::string name) {
     try {
-      const auto path = music::PlaylistStore(config::CONFIG.musicPath).create(name, tracks);
+      const auto path = music::PlaylistStore(config::CONFIG.music_path()).create(name, tracks);
       if(changed) changed();
       xmb->emplace_overlay<message_overlay>("Playlist Created", path.stem().string() + "\n" + std::to_string(tracks.size()) + " tracks");
     } catch(const std::exception& error) { xmb->emplace_overlay<message_overlay>("Cannot Create Playlist", error.what()); }
@@ -51,7 +53,7 @@ export void create_music_playlist(shell* xmb, std::vector<music::QueueEntry> tra
 }
 
 export void add_to_music_playlist(shell* xmb, std::vector<music::QueueEntry> tracks) {
-  const auto paths = music::PlaylistStore(config::CONFIG.musicPath).list();
+  const auto paths = music::PlaylistStore(config::CONFIG.music_path()).list();
   std::vector<std::string> choices{"New Playlist..."};
   for(const auto& path : paths) choices.push_back(path.stem().string());
   xmb->emplace_overlay<choice_overlay>(choices, 0, [xmb, paths, tracks=std::move(tracks)](unsigned index) {
@@ -127,7 +129,7 @@ private:
   void options() {
     xmb_->emplace_overlay<choice_overlay>(std::vector<std::string>{"Save", "Add Track / Folder / Playlist...", "Add Current Play Queue", "Rename Playlist...", "Delete Playlist...", "Reload Saved Playlist", "Edit Selected Track"}, 0, [this](unsigned choice) {
       if(choice == 0) save();
-      else if(choice == 1) xmb_->emplace_overlay<text_entry_overlay>("Track, Folder or Playlist Path", config::CONFIG.musicPath.string(), [this](std::string value) {
+      else if(choice == 1) xmb_->emplace_overlay<text_entry_overlay>("Track, Folder or Playlist Path", config::CONFIG.music_path().string(), [this](std::string value) {
         try { auto added=music::collect_tracks(std::filesystem::path(value)); if(added.empty()) throw std::runtime_error("No supported music tracks were found"); tracks_.insert(tracks_.end(), added.begin(), added.end()); dirty_=true; }
         catch(const std::exception& failure) { error(failure.what()); }
       });
@@ -196,15 +198,34 @@ public:
     const bool artwork_enabled = config::CONFIG.preference("music.artwork", "On") == "On";
     if (generation_ != state.generation || artwork_enabled_ != artwork_enabled) {
       if (artwork_ready_.valid()) artwork_ready_.wait();
+      if(artwork_)xmb->get_window()->waitIdle();
       artwork_.reset();
-      artwork_data_ = state.metadata.artwork;
+      artwork_request_.reset();
       generation_ = state.generation;
       artwork_enabled_ = artwork_enabled;
-      if (artwork_enabled && (artwork_data_ || !state.metadata.artwork_path.empty())) {
-        artwork_ = std::make_shared<auroreengine::texture>(loader_.getDevice(), loader_.getAllocator());
-        if (artwork_data_) artwork_ready_ = loader_.loadTexture(artwork_.get(), auroreengine::LoadDataView(*artwork_data_, state.metadata.artwork_type));
-        else artwork_ready_ = loader_.loadTexture(artwork_.get(), state.metadata.artwork_path);
+      if (artwork_enabled && player.queue().current()) {
+        artwork_request_=std::make_shared<openxmb::menu_preview::Request>();
+        artwork_request_->path=player.queue().current()->path;
+        artwork_request_->kind=openxmb::menu_preview::Kind::music;
       }
+    }
+    if(artwork_request_) {
+      using openxmb::menu_preview::State;
+      const auto status=artwork_request_->state.load(std::memory_order_acquire);
+      if(status==State::idle)artwork_decoder_.enqueue(artwork_request_);
+      if(status==State::ready&&!artwork_) {
+        const auto request=artwork_request_;
+        artwork_=std::make_shared<auroreengine::texture>(loader_.getDevice(),loader_.getAllocator(),request->image.width,request->image.height);
+        artwork_ready_=loader_.loadTexture(artwork_.get(),auroreengine::LoaderFunction{
+          [request](std::uint8_t* pixels,std::size_t capacity) {
+            if(request->image.rgba.size()>capacity)throw std::runtime_error("Album art exceeds texture upload capacity");
+            std::memcpy(pixels,request->image.rgba.data(),request->image.rgba.size());
+          }});
+      }
+    }
+    if(artwork_ready_.valid()&&artwork_ready_.wait_for(std::chrono::seconds(0))==std::future_status::ready) {
+      try {artwork_ready_.get();}
+      catch(const std::exception& error) {notice_=error.what();}
     }
     return result::success;
   }
@@ -465,7 +486,8 @@ private:
   std::size_t control_row_{1},control_col_{4},queue_row_{};
   std::uint64_t generation_{~std::uint64_t{}};
   std::shared_ptr<auroreengine::texture> artwork_;
-  std::shared_ptr<const std::vector<std::uint8_t>> artwork_data_;
+  openxmb::menu_preview::Queue artwork_decoder_;
+  std::shared_ptr<openxmb::menu_preview::Request> artwork_request_;
   std::future<void> artwork_ready_;
   std::string notice_;
 };

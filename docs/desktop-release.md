@@ -42,6 +42,11 @@ target. The current milestone status is tracked in [milestones.txt](../milestone
   not implement an online console network. Console-specific catalog labels do
   not establish that equivalent operating-system services exist.
 
+`--force-dir "E:\Test Media"` uses the specified directory as the root of Photo,
+Music and Video for the current run. Each category retains its file filters and
+folder navigation. Saved library paths remain unchanged; the option also accepts
+`--force-dir="E:\Test Media"`. The directory must already exist.
+
 `--open-media /path/to/file` opens a registered native viewer. `--open-panel`
 accepts `settings`, `themes`, `users`, `games`, `custom`, `friends`, `account`,
 `trophies`, `browser`, `emulation`, `discs` or `system`.

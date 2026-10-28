@@ -1359,9 +1359,11 @@ std::string config::shell_snapshot() const {
 void config::reset_to_defaults() {
     auto retained_callbacks = std::move(callbacks);
     const auto retained_profile = profileConfigPath;
+    const auto retained_media_directory = forcedMediaDirectory;
     *this = config{};
     callbacks = std::move(retained_callbacks);
     profileConfigPath = retained_profile;
+    forcedMediaDirectory = retained_media_directory;
     set_default_user_dirs(*this);
     setFontPath("default");
     setLanguage("auto");

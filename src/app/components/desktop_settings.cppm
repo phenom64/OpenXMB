@@ -109,9 +109,9 @@ export std::string value(const std::string& key,shell* host=nullptr) {
     if(key=="controller.type") return c.controllerType;
     if(key=="controller.rumble") return c.controllerRumble?"On":"Off";
     if(key=="controller.analog") return c.controllerAnalogStick?"On":"Off";
-    if(key=="pictures.folder") return c.picturesPath.string();
-    if(key=="music.folder") return c.musicPath.string();
-    if(key=="videos.folder") return c.videosPath.string();
+    if(key=="pictures.folder") return c.pictures_path().string();
+    if(key=="music.folder") return c.music_path().string();
+    if(key=="videos.folder") return c.videos_path().string();
     if(key=="debug.fps") return c.showFPS?"On":"Off";
     if(key=="debug.memory") return c.showMemory?"On":"Off";
     if(key=="about") return "OpenXMB " OPENXMB_VERSION_STRING;

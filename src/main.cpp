@@ -198,6 +198,8 @@ int main(int argc, char *argv[]) try {
         .help("Enable interface/UI graphics debug overlays (e.g., font atlas)");
 
     program.add_argument("--open-media").default_value(std::string{}).help("Open a media file in its native viewer after startup");
+    program.add_argument("--force-dir").default_value(std::string{}).metavar("DIRECTORY")
+        .help("Use this directory for Photo, Music and Video libraries for this run only");
     program.add_argument("--open-panel").default_value(std::string{}).help("Open themes, browser, emulation, discs or system");
     try {
         startup_trace("parsing arguments");
@@ -209,6 +211,15 @@ int main(int argc, char *argv[]) try {
         std::exit(1);
     }
 
+    std::filesystem::path forced_media_directory;
+    if(const auto directory=program.get<std::string>("--force-dir");!directory.empty()) {
+        std::error_code error;
+        forced_media_directory=std::filesystem::absolute(std::filesystem::u8path(directory),error).lexically_normal();
+        if(error||!std::filesystem::is_directory(forced_media_directory,error)||error) {
+            std::cerr<<"--force-dir must name an existing directory: "<<directory<<'\n';
+            return 1;
+        }
+    }
     spdlog::info("Welcome to OpenXMB!");
     // Initialize interface/FX debug mode from compile-time, env, or runtime flag
 #ifdef IFXDEBUG
@@ -237,6 +248,7 @@ int main(int argc, char *argv[]) try {
         } catch(const std::exception& error) { spdlog::warn("Could not restore local profile: {}",error.what()); }
     }
     // Initialize gettext/i18n: bind domain to our locale directory and use UTF-8
+    config::CONFIG.forcedMediaDirectory=std::move(forced_media_directory);
     // Note: even without compiled translations, gettext will fall back to the
     // original strings, so text should still render in English.
     bindtextdomain(constants::name, config::CONFIG.locale_directory.string().c_str());

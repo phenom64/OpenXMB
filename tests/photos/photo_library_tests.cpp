@@ -24,6 +24,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <stdexcept>
 
 namespace photos=openxmb::photos;
@@ -37,11 +38,90 @@ void fixture(const std::filesystem::path& path) {
     const int status=IMG_SavePNG(image,path.string().c_str()); SDL_FreeSurface(image);
     require(status==0,"save PNG fixture");
 }
-int main() {
+void decode_regressions(const std::filesystem::path& root) {
+    const auto fixtures=std::filesystem::path(__FILE__).parent_path()/"fixtures";
+    const auto png=root/"decode.png";
+    fixture(png);
+    int failures=0;
+    auto check=[&](const char* name, auto test) {
+        try { test(); std::cout << "PASS " << name << '\n'; }
+        catch(const std::exception& error) { ++failures; std::cerr << "FAIL " << name << ": " << error.what() << '\n'; }
+    };
+    check("Unicode PNG path",[&] {
+        const auto folder=root/std::filesystem::path(u8"\u65c5\u884c-\u00e9-\U0001f4f7");
+        std::filesystem::create_directory(folder);
+        const auto path=folder/std::filesystem::path(u8"\u5199\u771f.png");
+        std::filesystem::copy_file(png,path);
+        require(photos::load_bitmap(path).rgba==photos::load_bitmap(png).rgba,"Unicode PNG pixels");
+    });
+    check("baseline JPEG and EXIF orientation",[&] {
+        const auto loaded=photos::load_photo(fixtures/"baseline.jpg");
+        require(loaded.image.width==2 && loaded.image.height==4,"EXIF rotated JPEG dimensions");
+        require(loaded.metadata.width==4 && loaded.metadata.height==2 && loaded.metadata.orientation==6,"EXIF metadata preserved");
+        require(loaded.image.rgba[0]>240 && loaded.image.rgba[2]<15 && loaded.image.rgba[3]==255,"JPEG RGBA red pixel");
+        const auto small=photos::load_bitmap(fixtures/"baseline.jpg",2);
+        require(small.width==1 && small.height==2,"JPEG bounded oriented preview");
+    });
+    check("progressive JPEG",[&] {
+        const auto image=photos::load_bitmap(fixtures/"progressive.jpeg");
+        require(image.width==4 && image.height==2 && image.rgba[0]>240,"progressive JPEG pixels");
+    });
+    check("JPEG signature overrides extension",[&] {
+        for(const auto* name : {"jpeg.png","jpeg.bin","jpeg"}) {
+            const auto path=root/name;
+            std::filesystem::copy_file(fixtures/"baseline.jpg",path);
+            require(photos::load_bitmap(path).height==4,"JPEG recognized by content");
+        }
+    });
+    check("PNG signature overrides JPEG extension",[&] {
+        const auto path=root/"png.jpeg";
+        std::filesystem::copy_file(png,path);
+        require(photos::load_bitmap(path).rgba==photos::load_bitmap(png).rgba,"PNG recognized by content");
+    });
+    check("Unicode JPEG path",[&] {
+        const auto path=root/std::filesystem::path(u8"\u65c5\u884c-\U0001f4f7.jpeg");
+        std::filesystem::copy_file(fixtures/"progressive.jpeg",path);
+        require(photos::load_bitmap(path).width==4,"Unicode JPEG dimensions");
+    });
+    check("JPEG pixel limit preserved",[&] {
+        std::ifstream input(fixtures/"baseline.jpg",std::ios::binary);
+        std::string bytes((std::istreambuf_iterator<char>(input)),{});
+        const auto sof=bytes.find(std::string("\xff\xc0",2));
+        require(sof!=std::string::npos && sof+9<bytes.size(),"baseline SOF marker");
+        // A valid JPEG header claiming 8192 x 8192 must fail before allocation.
+        bytes[sof+5]=bytes[sof+7]=0x20;
+        bytes[sof+6]=bytes[sof+8]=0;
+        const auto path=root/"oversized.jpg";
+        std::ofstream(path,std::ios::binary).write(bytes.data(),bytes.size());
+        bool rejected=false;
+        try { photos::load_bitmap(path); }
+        catch(const std::runtime_error& error) { rejected=std::string(error.what()).find("32 megapixel")!=std::string::npos; }
+        require(rejected,"JPEG pixel limit rejected with limit diagnostic");
+    });
+    check("file byte limit preserved",[&] {
+        const auto path=root/"oversized-file.jpg";
+        std::ofstream(path,std::ios::binary).put('\0');
+        std::filesystem::resize_file(path,128ULL*1024*1024+1);
+        bool rejected=false;
+        try { photos::load_bitmap(path); }
+        catch(const std::runtime_error& error) { rejected=std::string(error.what()).find("128 MiB")!=std::string::npos; }
+        require(rejected,"file byte limit rejected with limit diagnostic");
+    });
+    check("invalid JPEG rejected",[&] {
+        const auto path=root/"broken.jpg";
+        std::ofstream(path,std::ios::binary).write("\xff\xd8\xff\xe0\x00\x10",6);
+        bool rejected=false;
+        try { photos::load_bitmap(path); } catch(const std::runtime_error&) { rejected=true; }
+        require(rejected,"invalid JPEG rejected");
+    });
+    require(failures==0,"photo decode regressions failed");
+}
+int main(int argc,char** argv) {
     const auto root=std::filesystem::temp_directory_path()/("openxmb-photo-tests-"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
     std::filesystem::create_directories(root);
     struct Cleanup { std::filesystem::path path; ~Cleanup() { std::error_code ec; std::filesystem::remove_all(path,ec); } } cleanup{root};
     try {
+        if(argc>1 && std::string(argv[1])=="--decode-focused") { decode_regressions(root); return 0; }
         const auto original=root/"A photograph ; $(not-a-command).PNG";
         fixture(original); fixture(root/"b.png"); fixture(root/".hidden.png");
         std::ofstream(root/"notes.txt") << "not an image";
@@ -73,6 +153,7 @@ int main() {
         require(std::filesystem::exists(recoverable.parent_path().parent_path()/"original-path.txt"),"trash origin recorded");
         bool invalid=false; try { photos::load_bitmap(root/"notes.txt"); } catch(const std::exception&) { invalid=true; }
         require(invalid,"invalid image reports failure");
+        decode_regressions(root);
         std::cout << "Photo tests passed: gallery, metadata, rotation, crop, bounded previews, save-copy, trash and invalid input\n";
     } catch(const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }
 }

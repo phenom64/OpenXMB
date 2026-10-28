@@ -153,6 +153,11 @@ export namespace config
             std::filesystem::path   picturesPath;
             std::filesystem::path   musicPath;
             std::filesystem::path   videosPath;
+            // Command-line library root; never serialised into profile settings.
+            std::filesystem::path   forcedMediaDirectory;
+            const std::filesystem::path& pictures_path() const {return forcedMediaDirectory.empty()?picturesPath:forcedMediaDirectory;}
+            const std::filesystem::path& music_path() const {return forcedMediaDirectory.empty()?musicPath:forcedMediaDirectory;}
+            const std::filesystem::path& videos_path() const {return forcedMediaDirectory.empty()?videosPath:forcedMediaDirectory;}
 
             std::unordered_set<std::string> excludedApplications;
             bool hideLogin1Options = false;

@@ -42,6 +42,9 @@ module;
 #include "openxmb/music/player.hpp"
 #include "openxmb/music/library.hpp"
 #include "../programs/music_reentry.hpp"
+#include "media_preview_queue.hpp"
+#include <cstring>
+#include <future>
 
 module openxmb.app;
 
@@ -64,7 +67,62 @@ import i18n;
 namespace menu {
     using namespace mfk::i18n::literals;
 
+    struct file_preview_context {
+        openxmb::menu_preview::Queue queue;
+        auroreengine::resource_loader& loader;
+        std::map<std::filesystem::path,std::shared_ptr<auroreengine::texture>> defaults;
+        explicit file_preview_context(auroreengine::resource_loader& value):loader(value) {}
+        std::shared_ptr<auroreengine::texture> fallback(const std::filesystem::path& path) {
+            auto& texture=defaults[path];
+            if(!texture) {
+                texture=std::make_shared<auroreengine::texture>(loader.getDevice(),loader.getAllocator());
+                loader.loadTexture(texture.get(),path).get();
+            }
+            return texture;
+        }
+    };
+
     namespace {
+
+    class media_preview_entry final : public action_menu_entry {
+    public:
+        media_preview_entry(std::string name, std::shared_ptr<file_preview_context> context,
+            std::shared_ptr<auroreengine::texture> fallback, std::filesystem::path path,
+            openxmb::menu_preview::Kind kind, std::function<result(action)> activate)
+            : action_menu_entry(std::move(name),auroreengine::texture(context->loader.getDevice(),context->loader.getAllocator()),{},std::move(activate)),
+              context_(std::move(context)),fallback_(std::move(fallback)),request_(std::make_shared<openxmb::menu_preview::Request>()) {
+            request_->path=std::move(path);request_->kind=kind;
+        }
+        ~media_preview_entry() override {if(upload_.valid())upload_.wait();}
+        const auroreengine::texture& get_icon() const override {
+            using openxmb::menu_preview::State;
+            const auto state=request_->state.load(std::memory_order_acquire);
+            if(state==State::idle)context_->queue.enqueue(request_);
+            if(state==State::ready&&!candidate_&&!failed_) {
+                try {
+                    const auto& image=request_->image;
+                    candidate_=std::make_unique<auroreengine::texture>(context_->loader.getDevice(),context_->loader.getAllocator(),image.width,image.height);
+                    upload_=context_->loader.loadTexture(candidate_.get(),auroreengine::LoaderFunction{
+                        [request=request_](std::uint8_t* out,std::size_t size) {
+                            if(request->image.rgba.size()>size)throw std::runtime_error("Preview exceeds texture upload capacity");
+                            std::memcpy(out,request->image.rgba.data(),request->image.rgba.size());
+                        }});
+                } catch(const std::exception& error) {failed_=true;spdlog::debug("Preview upload failed: {}",error.what());}
+            }
+            if(upload_.valid()&&upload_.wait_for(std::chrono::seconds(0))==std::future_status::ready) {
+                try {upload_.get();published_=candidate_&&candidate_->loaded.load(std::memory_order_acquire);}
+                catch(const std::exception& error) {failed_=true;spdlog::debug("Preview upload failed: {}",error.what());}
+            }
+            return published_?*candidate_:*fallback_;
+        }
+    private:
+        std::shared_ptr<file_preview_context> context_;
+        std::shared_ptr<auroreengine::texture> fallback_;
+        std::shared_ptr<openxmb::menu_preview::Request> request_;
+        mutable std::unique_ptr<auroreengine::texture> candidate_;
+        mutable std::future<void> upload_;
+        mutable bool published_{},failed_{};
+    };
 
     std::string lower_extension(std::filesystem::path path)
     {
@@ -210,12 +268,14 @@ namespace menu {
             return config::CONFIG.asset_directory/"icons/theme"/(info.is_directory?"icon_video_album_default.png":"icon_video_default.png");
         if(profile==files_menu_profile::photo&&info.is_directory)
             return config::CONFIG.asset_directory/"icons/theme/icon_photo_album_default.png";
+        if(is_photo_file(info)&&!info.is_directory)
+            return config::CONFIG.asset_directory/"icons/theme/icon_photo_default.png";
 
         auto extension = lower_extension(file_path);
         if(info.content_type.starts_with("image/") ||
             extension == ".png" || extension == ".jpg" || extension == ".jpeg" ||
             extension == ".bmp" || extension == ".gif") {
-            return file_path;
+            return config::CONFIG.asset_directory/"icons/theme/icon_photo_default.png";
         }
 
         if(is_music_file(info)) {
@@ -442,6 +502,23 @@ namespace menu {
         filter = normal_filter_for(profile);
     }
 
+    files_menu::~files_menu() {stop_scan();clear_entries();}
+
+    void files_menu::clear_entries() {
+        if(!entries.empty())xmb->get_window()->waitIdle();
+        entries.clear();
+        previews.reset();
+    }
+
+    std::unique_ptr<menu_entry> files_menu::make_media_entry(const file_info& info,
+        const std::filesystem::path& source,std::function<result(action)> activate) {
+        if(!previews)previews=std::make_shared<file_preview_context>(loader);
+        auto fallback=previews->fallback(icon_for_file(source,info,profile));
+        const auto kind=is_photo_file(info)?openxmb::menu_preview::Kind::photo:
+            is_video_file(info)?openxmb::menu_preview::Kind::video:openxmb::menu_preview::Kind::music;
+        return std::make_unique<media_preview_entry>(info.display_name,previews,std::move(fallback),source,kind,std::move(activate));
+    }
+
     unsigned int files_menu::get_submenus_count() const {
         ensure_built();
         return entries.size();
@@ -453,16 +530,16 @@ namespace menu {
     }
 
     bool files_menu::music_root() const {
-        return profile == files_menu_profile::music && std::filesystem::absolute(path).lexically_normal() == std::filesystem::absolute(config::CONFIG.musicPath).lexically_normal();
+        return profile == files_menu_profile::music && std::filesystem::absolute(path).lexically_normal() == std::filesystem::absolute(config::CONFIG.music_path()).lexically_normal();
     }
     bool files_menu::playlist_directory() const {
-        return profile == files_menu_profile::music && std::filesystem::absolute(path).lexically_normal() == std::filesystem::absolute(openxmb::music::PlaylistStore(config::CONFIG.musicPath).directory()).lexically_normal();
+        return profile == files_menu_profile::music && std::filesystem::absolute(path).lexically_normal() == std::filesystem::absolute(openxmb::music::PlaylistStore(config::CONFIG.music_path()).directory()).lexically_normal();
     }
     void files_menu::add_music_library_entries() {
         if(profile != files_menu_profile::music) return;
         if(music_root() && config::CONFIG.preference("music.group","Folders") != "Playlists") {
             file_info info{}; info.name="Playlists";info.display_name="Playlists";info.is_directory=true;
-            const auto directory=openxmb::music::PlaylistStore(config::CONFIG.musicPath).directory();
+            const auto directory=openxmb::music::PlaylistStore(config::CONFIG.music_path()).directory();
             auto entry=std::make_unique<files_menu>("Playlists",auroreengine::texture(loader.getDevice(),loader.getAllocator()),xmb,directory,loader,profile);
             loader.loadTexture(&entry->get_icon(),config::CONFIG.asset_directory/"icons/theme/icon_playlist.png");
             entries.push_back(std::move(entry)); extra_data_entries.push_back({directory,info,{}});
@@ -485,7 +562,7 @@ namespace menu {
             std::vector<std::unique_ptr<menu_entry>> children;
             for(const auto& item:items) {
                 file_info info{};info.name=item.entry.path.string();info.display_name=item.entry.title;info.size=item.size;info.modification_time=item.modified;info.content_type="audio/";
-                auto entry=std::make_unique<action_menu_entry>(info.display_name,auroreengine::texture(loader.getDevice(),loader.getAllocator()),std::function<result()>{},[this,info,group_tracks](action value) {
+                auto entry=make_media_entry(info,item.entry.path,[this,info,group_tracks](action value) {
                     if(value==action::options) return music_actions(std::filesystem::path(info.name));
                     if(value!=action::ok) return result::unsupported;
                     const auto it=std::find_if(group_tracks.begin(),group_tracks.end(),[&](const auto& item){return item.path==std::filesystem::path(info.name);});
@@ -497,7 +574,6 @@ namespace menu {
                     else xmb->emplace_overlay<app::message_overlay>("Cannot Play Music",openxmb::music::service().snapshot().error);
                     return result::success;
                 });
-                loader.loadTexture(&entry->get_icon(),config::CONFIG.asset_directory/"icons/theme/icon_music_default.png");
                 children.push_back(std::move(entry));
             }
             auto group=std::make_unique<simple_menu>(label,auroreengine::texture(loader.getDevice(),loader.getAllocator()),std::move(children),std::to_string(items.size())+" songs");
@@ -539,18 +615,22 @@ namespace menu {
         needs_rebuild = false;
 
         // Show a placeholder while scanning
-        entries.clear();
+        clear_entries();
         extra_data_entries.clear();
         {
             auroreengine::texture icon_texture(loader.getDevice(), loader.getAllocator());
             entries.push_back(std::make_unique<action_menu_entry>(
                 std::string{"Loading..."}, std::move(icon_texture), [] { return result::success; }
             ));
+            if(!previews)previews=std::make_shared<file_preview_context>(loader);
+            const auto fallback=profile==files_menu_profile::photo?"icon_photo_default.png":
+                profile==files_menu_profile::video?"icon_video_default.png":"icon_music_default.png";
+            loader.loadTexture(const_cast<auroreengine::texture*>(&entries.back()->get_icon()),config::CONFIG.asset_directory/"icons/theme"/fallback).get();
         }
 
         // Launch background scan
         const auto grouping = music_root() ? config::CONFIG.preference("music.group", "Folders") : "Folders";
-        const auto source = music_root() && grouping == "Playlists" ? openxmb::music::PlaylistStore(config::CONFIG.musicPath).directory() : path;
+        const auto source = music_root() && grouping == "Playlists" ? openxmb::music::PlaylistStore(config::CONFIG.music_path()).directory() : path;
         scan_worker = std::thread([this, gen, p = source, grouping]() {
             std::vector<file_info> file_infos;
             std::vector<openxmb::music::LibraryTrack> music_tracks;
@@ -625,7 +705,7 @@ namespace menu {
             if (filter(info)) {
                 if(music_root() && config::CONFIG.preference("music.group", "Folders") == "Folders" && info.is_directory && info.name == "Playlists") continue;
                 auto item=info;
-                if(music_root() && config::CONFIG.preference("music.group", "Folders") == "Playlists") item.name=(openxmb::music::PlaylistStore(config::CONFIG.musicPath).directory()/info.name).string();
+                if(music_root() && config::CONFIG.preference("music.group", "Folders") == "Playlists") item.name=(openxmb::music::PlaylistStore(config::CONFIG.music_path()).directory()/info.name).string();
                 view.push_back(std::move(item));
             }
         }
@@ -645,7 +725,7 @@ namespace menu {
             return a.display_name < b.display_name;
         });
 
-        entries.clear();
+        clear_entries();
         extra_data_entries.clear();
 
         add_music_library_entries();
@@ -660,13 +740,15 @@ namespace menu {
             std::unique_ptr<menu_entry> entry;
             if(info.is_directory) {
                 entry = std::make_unique<files_menu>(info.display_name,std::move(icon_texture),xmb,file_path,loader,profile);
+            } else if(is_photo_file(info)||is_video_file(info)||(is_music_file(info)&&!openxmb::music::supported_playlist(file_path))) {
+                entry=make_media_entry(info,file_path,[this,info](action value){return activate_file(info,value);});
             } else {
                 entry = std::make_unique<action_menu_entry>(info.display_name,std::move(icon_texture),std::function<result()>{},
                     [this,info](action a) { return activate_file(info,a); });
             }
             auto* mutable_icon = const_cast<auroreengine::texture*>(&entry->get_icon());
 
-            if(!icon_path.empty()) {
+            if(!icon_path.empty()&&!dynamic_cast<media_preview_entry*>(entry.get())) {
                 try {
                     loader.loadTexture(mutable_icon, icon_path);
                 } catch (const std::exception& e) {
@@ -700,7 +782,7 @@ namespace menu {
             old_selected_item = extra_data_entries[selected_submenu].path;
         }
 
-        entries.clear();
+        clear_entries();
         extra_data_entries.clear();
 
         try {

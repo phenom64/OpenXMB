@@ -715,16 +715,16 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
         preferred_icon(asset_directory, "xmb_icon_001.png", "icon_category_settings.png"), loader, xmb, loader));
     menus.push_back(make_simple<menu::files_menu>("Photo"_(),
         preferred_icon(asset_directory, "xmb_icon_002.png", "icon_category_photo.png"), loader, xmb,
-        config::CONFIG.picturesPath, loader, menu::files_menu_profile::photo));
+        config::CONFIG.pictures_path(), loader, menu::files_menu_profile::photo));
     menus.push_back(make_simple<menu::files_menu>("Music"_(),
         preferred_icon(asset_directory, "xmb_icon_003.png", "icon_category_music.png"), loader, xmb,
-        config::CONFIG.musicPath, loader, menu::files_menu_profile::music));
+        config::CONFIG.music_path(), loader, menu::files_menu_profile::music));
     menus.push_back(make_simple<menu::files_menu>("Video"_(),
         preferred_icon(asset_directory, "xmb_icon_004.png", "icon_category_video.png"), loader, xmb,
-        config::CONFIG.videosPath, loader, menu::files_menu_profile::video));
+        config::CONFIG.videos_path(), loader, menu::files_menu_profile::video));
     {
         std::vector<std::unique_ptr<menu::menu_entry>> rows;
-        rows.push_back(make_simple<menu::files_menu>("Video Library",asset_directory/"icons/theme/icon_video.png",loader,xmb,config::CONFIG.videosPath,loader,menu::files_menu_profile::video));
+        rows.push_back(make_simple<menu::files_menu>("Video Library",asset_directory/"icons/theme/icon_video.png",loader,xmb,config::CONFIG.videos_path(),loader,menu::files_menu_profile::video));
         rows.push_back(panel_entry("Internet Browser","browser","theme/icon_browser.png"));
         menus.push_back(panel_menu("TV / Video Services",asset_directory/"icons/theme/icon_tv.png",std::move(rows)));
     }

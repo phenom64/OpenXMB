@@ -48,6 +48,8 @@ namespace app {
 
 export namespace menu {
 
+struct file_preview_context;
+
 enum class files_menu_profile {
     generic,
     photo,
@@ -74,7 +76,7 @@ class files_menu : public simple_menu {
     public:
         files_menu(std::string name, auroreengine::texture&& icon, app::shell* xmb, std::filesystem::path path, auroreengine::resource_loader& loader,
             files_menu_profile profile = files_menu_profile::generic);
-        ~files_menu() override { stop_scan(); }
+        ~files_menu() override;
 
         void on_open() override;
         void on_close() override {
@@ -83,7 +85,7 @@ class files_menu : public simple_menu {
             if(selected_submenu < extra_data_entries.size()) {
                 old_selected_item = extra_data_entries[selected_submenu].path;
             }
-            entries.clear();
+            clear_entries();
             extra_data_entries.clear();
             {
                 std::lock_guard<std::mutex> lk(cache_mutex);
@@ -132,6 +134,9 @@ class files_menu : public simple_menu {
         void reload();
         void resort();
         void rebuild_entries_from_cache();
+        void clear_entries();
+        std::unique_ptr<menu_entry> make_media_entry(const file_info& info,
+            const std::filesystem::path& source, std::function<result(action)> activate);
         void show_sort_filter_options();
         bool music_root() const;
         bool playlist_directory() const;
@@ -145,6 +150,7 @@ class files_menu : public simple_menu {
         std::filesystem::path path;
         auroreengine::resource_loader& loader;
         files_menu_profile profile = files_menu_profile::generic;
+        std::shared_ptr<file_preview_context> previews;
 
         struct extra_data {
             std::filesystem::path path;

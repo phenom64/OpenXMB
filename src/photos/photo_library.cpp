@@ -21,6 +21,12 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
+#if defined(_WIN32)
+#include <windows.h>
+#include <wincodec.h>
+#include <wrl/client.h>
+#endif
+
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -81,9 +87,66 @@ void validate_source(const std::filesystem::path& path) {
         throw std::runtime_error("Image file exceeds the 128 MiB decoding limit");
     }
 }
+#if defined(_WIN32)
+bool jpeg_signature(const std::filesystem::path& path) {
+    std::ifstream input(path, std::ios::binary);
+    std::array<unsigned char, 3> magic{};
+    input.read(reinterpret_cast<char*>(magic.data()), magic.size());
+    return input && magic == std::array<unsigned char, 3>{0xff, 0xd8, 0xff};
+}
+// SDL_image builds can omit JPEG entirely. WIC supplies the Windows JPEG codec
+// without depending on optional SDL_image features or the filename extension.
+Surface windows_jpeg(const std::filesystem::path& path) {
+    struct Apartment {
+        HRESULT status = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+        ~Apartment() { if(SUCCEEDED(status)) CoUninitialize(); }
+    } apartment;
+    auto checked = [](HRESULT status) {
+        if(FAILED(status)) {
+            std::ostringstream message;
+            message << "Cannot decode JPEG with Windows Imaging Component (0x"
+                    << std::hex << static_cast<unsigned long>(status) << ')';
+            throw std::runtime_error(message.str());
+        }
+    };
+    // A UI thread may already use a single-threaded COM apartment.
+    if(apartment.status != RPC_E_CHANGED_MODE) checked(apartment.status);
+    using Microsoft::WRL::ComPtr;
+    ComPtr<IWICImagingFactory> factory;
+    checked(CoCreateInstance(CLSID_WICImagingFactory1, nullptr, CLSCTX_INPROC_SERVER,
+                             IID_PPV_ARGS(factory.GetAddressOf())));
+    ComPtr<IWICBitmapDecoder> decoder;
+    checked(factory->CreateDecoderFromFilename(path.c_str(), nullptr, GENERIC_READ,
+                                               WICDecodeMetadataCacheOnDemand, &decoder));
+    ComPtr<IWICBitmapFrameDecode> frame;
+    checked(decoder->GetFrame(0, &frame));
+    UINT width{}, height{};
+    checked(frame->GetSize(&width, &height));
+    if(width == 0 || height == 0 || static_cast<std::uint64_t>(width)*height > maximum_pixels) {
+        throw std::runtime_error("Image exceeds the 32 megapixel decoding limit");
+    }
+    ComPtr<IWICFormatConverter> converter;
+    checked(factory->CreateFormatConverter(&converter));
+    checked(converter->Initialize(frame.Get(), GUID_WICPixelFormat32bppRGBA,
+                                  WICBitmapDitherTypeNone, nullptr, 0, WICBitmapPaletteTypeCustom));
+    Surface image{SDL_CreateRGBSurfaceWithFormat(0, static_cast<int>(width),
+                   static_cast<int>(height), 32, SDL_PIXELFORMAT_RGBA32), SDL_FreeSurface};
+    if(!image) throw std::runtime_error(SDL_GetError());
+    checked(converter->CopyPixels(nullptr, static_cast<UINT>(image->pitch),
+                                  static_cast<UINT>(image->pitch)*height,
+                                  static_cast<BYTE*>(image->pixels)));
+    return image;
+}
+#endif
 Surface surface(const std::filesystem::path& path) {
     validate_source(path);
-    Surface loaded{IMG_Load(path.string().c_str()), SDL_FreeSurface};
+    // SDL filenames are UTF-8; path.string() uses the Windows ANSI code page
+    // and can either lose characters or throw before the decoder is reached.
+    const auto filename = path.u8string();
+    Surface loaded{IMG_Load(reinterpret_cast<const char*>(filename.c_str())), SDL_FreeSurface};
+#if defined(_WIN32)
+    if(!loaded && jpeg_signature(path)) loaded = windows_jpeg(path);
+#endif
     if(!loaded) throw std::runtime_error(std::string("Cannot decode image: ") + IMG_GetError());
     if(loaded->w <= 0 || loaded->h <= 0 ||
        static_cast<std::uint64_t>(loaded->w) * loaded->h > maximum_pixels) {
