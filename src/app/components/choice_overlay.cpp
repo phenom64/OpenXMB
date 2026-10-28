@@ -31,6 +31,7 @@ module;
 
 module openxmb.app;
 import :choice_overlay;
+import :dialog_chrome;
 import :xmb_presentation;
 import openxmb.config;
 
@@ -126,10 +127,12 @@ void choice_overlay::render(auroreengine::gui_renderer& renderer, class shell* x
         glm::vec4 colour;
     };
 
-    // xmb-web's firmware-measured Theme/Colour/Background side panel is a
-    // right-side translucent lavender wash, not a recoloured copy of the active
-    // month.  Keep the XMB visible behind it and interpolate the measured
-    // multi-stop profile with small quads.
+    // The options panel is a neutral translucent white wash over the live
+    // theme (RPCS3 Users > Triangle and Theme Settings > Colour captures with
+    // the October brown background): a faint bright rim at the left edge, a
+    // peak near 16% of the width, fading out by ~1700 px. Alpha stops are the
+    // measured sRGB brightening relative to the background just outside the
+    // panel, converted for linear blending.
     const auto open_elapsed =
         std::chrono::duration<double>(std::chrono::steady_clock::now() - opened_time);
     const auto open_linear = std::clamp(
@@ -137,26 +140,28 @@ void choice_overlay::render(auroreengine::gui_renderer& renderer, class shell* x
     const auto open_alpha =
         static_cast<float>(open_linear * open_linear * (3.0 - 2.0 * open_linear));
     const float x_shift = (1.0F - open_alpha) * (12.0F / 1920.0F);
-    constexpr float panel_native_alpha_scale = 0.90F;
-    constexpr float panel_left = 1324.0F / 1920.0F;
-    constexpr float panel_right = 1697.0F / 1920.0F;
+    constexpr float panel_native_alpha_scale = 0.92F;
+    constexpr float panel_left = 1322.0F / 1920.0F;
+    constexpr float panel_right = 1700.0F / 1920.0F;
     constexpr std::array<gradient_stop, 8> stops{{
-        {0.000F, {178.0F / 255.0F, 170.0F / 255.0F, 194.0F / 255.0F, 0.00F}},
-        {0.043F, {178.0F / 255.0F, 170.0F / 255.0F, 194.0F / 255.0F, 0.55F}},
-        {0.142F, {151.0F / 255.0F, 141.0F / 255.0F, 174.0F / 255.0F, 0.88F}},
-        {0.300F, {160.0F / 255.0F, 150.0F / 255.0F, 182.0F / 255.0F, 0.80F}},
-        {0.470F, {174.0F / 255.0F, 165.0F / 255.0F, 191.0F / 255.0F, 0.65F}},
-        {0.651F, {195.0F / 255.0F, 189.0F / 255.0F, 210.0F / 255.0F, 0.45F}},
-        {0.820F, {220.0F / 255.0F, 217.0F / 255.0F, 229.0F / 255.0F, 0.22F}},
-        {1.000F, {245.0F / 255.0F, 244.0F / 255.0F, 247.0F / 255.0F, 0.00F}},
-    }}; 
+        {0.000F, {1.0F, 1.0F, 1.0F, 0.10F}},
+        {0.016F, {1.0F, 1.0F, 1.0F, 0.11F}},
+        {0.053F, {1.0F, 1.0F, 1.0F, 0.23F}},
+        {0.158F, {1.0F, 1.0F, 1.0F, 0.27F}},
+        {0.342F, {1.0F, 1.0F, 1.0F, 0.245F}},
+        {0.605F, {1.0F, 1.0F, 1.0F, 0.175F}},
+        {0.790F, {1.0F, 1.0F, 1.0F, 0.09F}},
+        {1.000F, {1.0F, 1.0F, 1.0F, 0.00F}},
+    }};
+    renderer.draw_rect({panel_left + x_shift, 0.0F}, {1.0F / 1920.0F, 1.0F},
+        {1.0F, 1.0F, 1.0F, app::dialog_chrome::light_alpha(0.12F) * open_alpha});
     for(std::size_t i = 0; i + 1 < stops.size(); ++i) {
         const float x0 = panel_left + x_shift + (panel_right - panel_left) * stops[i].position;
         const float x1 = panel_left + x_shift + (panel_right - panel_left) * stops[i + 1].position;
         auto c0 = stops[i].colour;
         auto c1 = stops[i + 1].colour;
-        c0.a *= open_alpha * panel_native_alpha_scale;
-        c1.a *= open_alpha * panel_native_alpha_scale;
+        c0.a = app::dialog_chrome::light_alpha(c0.a) * open_alpha * panel_native_alpha_scale;
+        c1.a = app::dialog_chrome::light_alpha(c1.a) * open_alpha * panel_native_alpha_scale;
         renderer.draw_quad(std::array{
             auroreengine::simple_renderer::vertex_data{{x0, 0.0f}, c0, {0.0f, 0.0f}},
             auroreengine::simple_renderer::vertex_data{{x0, 1.0f}, c0, {0.0f, 1.0f}},

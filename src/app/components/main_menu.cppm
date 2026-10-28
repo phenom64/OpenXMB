@@ -139,6 +139,11 @@ class main_menu : public action_receiver {
         time_point settings_route_changed;
         bool settings_returning = false;
         bool settings_choice_panel_open = false;
+        // Triangle options panel over the crossbar: dims other categories and
+        // lays a dark band behind the focused row while it is open.
+        bool options_panel_open = false;
+        time_point options_panel_changed{};
+        double options_panel_amount(time_point now);
 };
 
 }

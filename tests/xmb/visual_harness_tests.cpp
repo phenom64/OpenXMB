@@ -96,8 +96,8 @@ void test_runtime_harness_contract(const std::filesystem::path &root) {
 
   const auto choice_overlay =
       read_file(root / "src/app/components/choice_overlay.cpp");
-  require_contains(choice_overlay, "0.88F",
-                   "choice panel ports xmb-web's measured lavender core alpha");
+  require_contains(choice_overlay, "{0.158F, {1.0F, 1.0F, 1.0F, 0.27F}}",
+                   "choice panel keeps the measured neutral wash peak");
 }
 
 void test_tooling_present(const std::filesystem::path &root) {

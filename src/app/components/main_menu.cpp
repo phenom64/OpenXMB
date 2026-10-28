@@ -59,6 +59,7 @@ import openxmb.config;
 import :menu_base;
 import :menu_utils;
 import :choice_overlay;
+import :dialog_chrome;
 import :xmb_presentation;
 import :applications_menu;
 import :settings_menu;
@@ -1527,8 +1528,39 @@ void main_menu::select_submenu_item(int index) {
     menu->select_submenu(index);
 }
 
+
+double main_menu::options_panel_amount(time_point now) {
+    const bool open = xmb->has_choice_overlay() && !settings_category_active();
+    if(open != options_panel_open) {
+        options_panel_open = open;
+        options_panel_changed = now;
+    }
+    const auto p = progress(now, options_panel_changed, std::chrono::milliseconds(250));
+    return options_panel_open ? p : 1.0 - p;
+}
+
 void main_menu::render(auroreengine::gui_renderer& renderer) {
     auto now = std::chrono::steady_clock::now();
+    // Options panel state from the RPCS3 Users capture: a ~16% darker band
+    // across the focused row (soft left edge from x~400, up to the panel at
+    // x~1322) and other categories faded. One trial; timing is approximate.
+    if(const auto amount = static_cast<float>(options_panel_amount(now)); amount > 0.0F) {
+        const xmb_canvas canvas(renderer);
+        const auto band = [&](float x0, float x1, float a0, float a1) {
+            const auto fx = [&](float x) { return (canvas.ox + x * canvas.scale) / renderer.frame_size.width; };
+            const auto fy = [&](float y) { return (canvas.oy + y * canvas.scale) / renderer.frame_size.height; };
+            const float top = static_cast<float>(kItemFocusY) - 120.0F, bottom = static_cast<float>(kItemFocusY) + 120.0F;
+            renderer.draw_quad(std::array{
+                auroreengine::simple_renderer::vertex_data{{fx(x0), fy(top)}, {0, 0, 0, a0 * amount}, {0, 0}},
+                auroreengine::simple_renderer::vertex_data{{fx(x0), fy(bottom)}, {0, 0, 0, a0 * amount}, {0, 1}},
+                auroreengine::simple_renderer::vertex_data{{fx(x1), fy(top)}, {0, 0, 0, a1 * amount}, {1, 0}},
+                auroreengine::simple_renderer::vertex_data{{fx(x1), fy(bottom)}, {0, 0, 0, a1 * amount}, {1, 1}},
+            }, auroreengine::simple_renderer::params{});
+        };
+        const float shade = dialog_chrome::shade_alpha(0.16F);
+        band(400.0F, 455.0F, 0.0F, shade);
+        band(455.0F, 1322.0F, shade, shade);
+    }
 
     const auto submenu_progress = ease_out_cubic(
         progress(now, last_submenu_transition, transition_submenu_activate_duration));
@@ -1652,6 +1684,7 @@ void main_menu::render_crossbar(auroreengine::gui_renderer& renderer, time_point
             alpha *= 1.0 + (0.6 - 1.0) * chrome_transition;
         } else {
             alpha *= 1.0 - chrome_transition;
+            alpha *= 1.0 - 0.55 * options_panel_amount(now);
         }
 
         // The PSN sphere fills substantially more of its source canvas than

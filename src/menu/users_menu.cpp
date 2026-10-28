@@ -41,6 +41,7 @@ import :menu_base;
 import :menu_utils;
 import :message_overlay;
 import :choice_overlay;
+import :user_information;
 import sdl2;
 import openxmb.config;
 import openxmb.utils;
@@ -282,7 +283,7 @@ namespace menu {
 
         auroreengine::texture current_user_icon(loader.getDevice(), loader.getAllocator());
         auto current_user = std::make_unique<action_menu_entry>(
-            "*User"_(),
+            app::user_display_name("*User"_()),
             std::move(current_user_icon),
             std::function<result()>{},
             [this](action user_action) {
@@ -336,8 +337,10 @@ namespace menu {
             return result::success;
         } else if (action == action::options) {
             // Show user options
+            // The PS3 options panel for the signed-in user lists Information;
+            // the OpenXMB account actions follow it.
             std::vector<std::string> options = {
-                "View Information"_(),
+                "Information"_(),
                 "Switch User"_(),
                 "Change Password"_()
             };
@@ -345,8 +348,9 @@ namespace menu {
             xmb->emplace_overlay<app::choice_overlay>(
                 options, 0, [this, user](unsigned int index) {
                     switch (index) {
-                        case 0: // View Information
-                            return activate_user(user, action::ok);
+                        case 0: // Information: avatar and user name screen
+                            xmb->push_overlay(std::make_unique<app::user_information_overlay>("*User"_(), [this] { reload(); }));
+                            return result::success;
                         case 1: { // Switch User
 #if defined(__linux__)
                             if(command_available("dm-tool")) {
