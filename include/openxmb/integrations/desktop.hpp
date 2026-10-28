@@ -23,6 +23,35 @@ struct ProcessResult {
   explicit operator bool() const noexcept { return success; }
 };
 
+enum class ProcessStopMode { request_close, force_stop };
+enum class ProcessState { running, exited, unknown };
+struct ProcessObservation {
+  ProcessState state{ProcessState::unknown};
+  std::optional<int> exit_code;
+  std::string message;
+};
+struct OwnedProcessLaunch;
+// A capability for one process actually launched by OpenXMB. Copies share the
+// same native identity and cached exit observation; there is no PID adoption.
+class OwnedProcess {
+public:
+  struct State;
+  [[nodiscard]] std::int64_t id() const noexcept;
+  [[nodiscard]] ProcessObservation observe() const;
+  [[nodiscard]] Result stop(ProcessStopMode mode = ProcessStopMode::request_close) const;
+private:
+  explicit OwnedProcess(std::shared_ptr<State> state);
+  std::shared_ptr<State> state_;
+  friend OwnedProcessLaunch launch_owned_process(const std::vector<std::string>&, const std::filesystem::path&);
+};
+struct OwnedProcessLaunch {
+  std::shared_ptr<OwnedProcess> process;
+  std::string message;
+  explicit operator bool() const noexcept { return bool(process); }
+};
+[[nodiscard]] OwnedProcessLaunch launch_owned_process(const std::vector<std::string>& arguments,
+                                                       const std::filesystem::path& working_directory = {});
+
 // Arguments are passed directly to the program; no command shell is involved.
 [[nodiscard]] ProcessResult launch_process(const std::vector<std::string>& arguments,
                                            const std::filesystem::path& working_directory = {});

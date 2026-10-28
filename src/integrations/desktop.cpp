@@ -12,6 +12,7 @@
 #include <set>
 #include <system_error>
 #include <atomic>
+#include <thread>
 
 #if defined(_WIN32)
 #define NOMINMAX
@@ -94,116 +95,14 @@ std::wstring windows_quote(const std::wstring& value) {
 #endif
 Result wait_for_process(const ProcessResult& process) {
   if (!process) return {false, process.message};
-#ifdef _WIN32
-  const auto handle = OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, static_cast<DWORD>(process.process_id));
-  if (!handle) return {false, "Unable to inspect process"};
-  WaitForSingleObject(handle, INFINITE);
-  DWORD code{};
-  GetExitCodeProcess(handle, &code);
-  CloseHandle(handle);
-  return {code == 0, code == 0 ? "Completed" : "Program exited with status " + std::to_string(code)};
-#else
-  int status{};
-  pid_t waited{};
-  do { waited = waitpid(static_cast<pid_t>(process.process_id), &status, 0); } while (waited == -1 && errno == EINTR);
-  if (waited == -1) return {false, std::strerror(errno)};
-  return {WIFEXITED(status) && WEXITSTATUS(status) == 0,
-          WIFEXITED(status) ? "Program exited with status " + std::to_string(WEXITSTATUS(status)) : "Program was interrupted"};
-#endif
+  for (;;) {
+    if (const auto code = process_exit_status(process.process_id))
+      return {*code == 0, *code == 0 ? "Completed" : "Program exited with status " + std::to_string(*code)};
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
 }
 }
 
-ProcessResult launch_process(const std::vector<std::string>& arguments, const std::filesystem::path& working_directory) {
-  if (arguments.empty() || arguments.front().empty()) return {false, -1, "No program was selected"};
-  for (const auto& argument : arguments) {
-    if (argument.find('\0') != std::string::npos) return {false, -1, "An argument contains an invalid NUL character"};
-  }
-#ifdef _WIN32
-  std::wstring command;
-  for (const auto& argument : arguments) {
-    if (!command.empty()) command += L' ';
-    command += windows_quote(wide(argument));
-  }
-  STARTUPINFOW startup{};
-  startup.cb = sizeof(startup);
-  PROCESS_INFORMATION process{};
-  const auto cwd = working_directory.wstring();
-  if (!CreateProcessW(nullptr, command.data(), nullptr, nullptr, FALSE, CREATE_NEW_PROCESS_GROUP, nullptr, cwd.empty() ? nullptr : cwd.c_str(), &startup, &process))
-    return {false, -1, "Unable to launch program (Windows error " + std::to_string(GetLastError()) + ")"};
-  CloseHandle(process.hThread); CloseHandle(process.hProcess);
-  return {true, static_cast<std::int64_t>(process.dwProcessId), "Program started"};
-#else
-  int errors[2];
-  if (pipe(errors) != 0) return {false, -1, std::strerror(errno)};
-  fcntl(errors[1], F_SETFD, FD_CLOEXEC);
-  std::vector<char*> argv;
-  argv.reserve(arguments.size() + 1);
-  for (const auto& argument : arguments) argv.push_back(const_cast<char*>(argument.c_str()));
-  argv.push_back(nullptr);
-  const auto pid = fork();
-  if (pid < 0) { close(errors[0]); close(errors[1]); return {false, -1, std::strerror(errno)}; }
-  if (pid == 0) {
-    close(errors[0]);
-    setpgid(0, 0);
-    if (!working_directory.empty() && chdir(working_directory.c_str()) != 0) {
-      const int error = errno; static_cast<void>(write(errors[1], &error, sizeof(error))); _exit(127);
-    }
-    execvp(argv.front(), argv.data());
-    const int error = errno;
-    static_cast<void>(write(errors[1], &error, sizeof(error)));
-    _exit(127);
-  }
-  close(errors[1]);
-  int error{};
-  ssize_t bytes;
-  do { bytes = read(errors[0], &error, sizeof(error)); } while (bytes < 0 && errno == EINTR);
-  close(errors[0]);
-  if (bytes > 0) { int status{}; waitpid(pid, &status, 0); return {false, -1, std::strerror(error)}; }
-  return {true, static_cast<std::int64_t>(pid), "Program started"};
-#endif
-}
-
-Result stop_process(std::int64_t process_id) {
-  if (process_id <= 0) return {false, "There is no active session"};
-#ifdef _WIN32
-  const auto handle = OpenProcess(PROCESS_TERMINATE, FALSE, static_cast<DWORD>(process_id));
-  if (!handle) return {false, "The session has already ended"};
-  struct WindowSearch { DWORD pid; bool closed; } search{static_cast<DWORD>(process_id), false};
-  EnumWindows([](HWND window, LPARAM argument) -> BOOL {
-    auto& state = *reinterpret_cast<WindowSearch*>(argument);
-    DWORD pid{}; GetWindowThreadProcessId(window, &pid);
-    if (pid == state.pid && IsWindowVisible(window)) state.closed = PostMessageW(window, WM_CLOSE, 0, 0) != 0;
-    return TRUE;
-  }, reinterpret_cast<LPARAM>(&search));
-  const bool success = search.closed || TerminateProcess(handle, 0) != 0;
-  CloseHandle(handle);
-  return {success, success ? "Session closed" : "Unable to close session"};
-#else
-  const auto pid = static_cast<pid_t>(process_id);
-  const bool success = kill(-pid, SIGTERM) == 0 || kill(pid, SIGTERM) == 0;
-  if (success) { int status{}; static_cast<void>(waitpid(pid, &status, WNOHANG)); }
-  return {success, success ? "Session closed" : "The session has already ended"};
-#endif
-}
-std::optional<int> process_exit_status(std::int64_t process_id) {
-  if (process_id <= 0) return -1;
-#ifdef _WIN32
-  const auto handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, static_cast<DWORD>(process_id));
-  if (!handle) return -1;
-  DWORD status{};
-  const bool okay = GetExitCodeProcess(handle, &status) != 0;
-  CloseHandle(handle);
-  if (!okay) return -1;
-  if (status == STILL_ACTIVE) return std::nullopt;
-  return static_cast<int>(status);
-#else
-  int status{};
-  const auto waited = waitpid(static_cast<pid_t>(process_id), &status, WNOHANG);
-  if (waited == 0) return std::nullopt;
-  if (waited == -1) return errno == ECHILD ? std::optional<int>{0} : std::optional<int>{-1};
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-#endif
-}
 std::optional<std::filesystem::path> find_executable(std::string_view name) {
   const auto executable = [](const std::filesystem::path& path) {
     std::error_code error;
