@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>
+#include <tuple>
 
 using namespace openxmb::setup;
 namespace {
@@ -76,6 +77,14 @@ int main() {
         check(!requires_setup(true, {}), "Beta 3 profile migrates without setup or data reset");
         check(requires_setup(true, false), "reset marker re-enters setup on restart");
         check(!requires_setup(false, true), "completed setup is respected");
+        const auto choices=supported_languages();
+        const std::vector<Zone> utc_zone{{"Etc/UTC","UTC",0,false,true}};
+        for(const auto& [locale,language,region]:std::vector<std::tuple<std::string,std::string,std::string>>{
+            {"zh-HK","zh_TW","HK"},{"zh-MO","zh_TW","MO"},{"zh-Hant-TW","zh_TW","TW"},
+            {"zh-Hans-SG","zh_CN","SG"},{"en-GB","en","GB"},{"fr_FR.UTF-8","fr","FR"}}) {
+            const auto detected=detect_defaults(choices,utc_zone,locale);
+            check(detected.language==language && detected.region==region,"host locale uses shipped regional language and real region");
+        }
         check(valid({2024,2,29,23,59,59}) && !valid({2025,2,29}), "Gregorian leap-day validation");
         check(adjust_segment({2024,3,31,12,0},1,-1)==CivilTime{2024,2,29,12,0}, "month edit clamps day");
         check(adjust_segment({2024,2,29,12,0},2,1)==CivilTime{2025,2,28,12,0}, "year edit clamps leap day");

@@ -12,25 +12,6 @@
 #include <utility>
 
 namespace openxmb::localization::shell_locale {
-inline std::string normalize(std::string_view requested) {
-    if(requested.empty() || requested=="auto") return "auto";
-    auto tag=std::string(requested);
-    std::replace(tag.begin(),tag.end(),'-','_');
-    std::transform(tag.begin(),tag.end(),tag.begin(),[](unsigned char c) {
-        return c>='A' && c<='Z' ? static_cast<char>(c-'A'+'a') : static_cast<char>(c);
-    });
-    if(tag.starts_with("zh")) {
-        if(tag.find("hant")!=std::string::npos || tag.starts_with("zh_tw") || tag.starts_with("zh_hk") || tag.starts_with("zh_mo")) return "zh_TW";
-        return "zh_CN";
-    }
-    auto language=std::string(tag.substr(0,tag.find_first_of("_.:@")));
-    std::transform(language.begin(),language.end(),language.begin(),[](unsigned char c) {
-        return c>='A' && c<='Z' ? static_cast<char>(c-'A'+'a') : static_cast<char>(c);
-    });
-    for(const auto& [supported,label]:languages)
-        if(language==supported) return language;
-    return "en";
-}
 
 inline void apply(std::string_view requested, const std::filesystem::path& directory) {
     const auto language=normalize(requested);

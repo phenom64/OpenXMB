@@ -141,19 +141,23 @@ std::vector<Zone> time_zones() {
 #endif
     return result;
 }
-Draft detect_defaults(const std::vector<Language>& languages,const std::vector<Zone>& zones) {
+Draft detect_defaults(const std::vector<Language>& languages,const std::vector<Zone>& zones,std::string detected_locale) {
     if(languages.empty()||zones.empty())throw std::invalid_argument("Setup requires languages and time zones");
     Draft result;
-    auto locale=host_locale();
+    auto locale=detected_locale.empty()?host_locale():std::move(detected_locale);
     std::replace(locale.begin(),locale.end(),'-','_');
-    const auto region_start=locale.find('_');
-    if(region_start!=std::string::npos)result.region=locale.substr(region_start+1,2);
-    auto code=locale.substr(0,locale.find('.'));
-    auto language=std::find_if(languages.begin(),languages.end(),[&](const auto& item){return item.code==code;});
-    if(language==languages.end()) {
-        code=code.substr(0,code.find('_'));
-        language=std::find_if(languages.begin(),languages.end(),[&](const auto& item){return item.code==code;});
+    const auto suffix=locale.find_first_of(".@:");
+    const auto locale_tag=locale.substr(0,suffix);
+    const auto region_start=locale_tag.find_last_of('_');
+    if(region_start!=std::string::npos) {
+        auto region=locale_tag.substr(region_start+1);
+        if(region.size()==2||region.size()==3) {
+            std::transform(region.begin(),region.end(),region.begin(),[](unsigned char c){return static_cast<char>(std::toupper(c));});
+            result.region=std::move(region);
+        }
     }
+    const auto code=localization::shell_locale::normalize(locale);
+    auto language=std::find_if(languages.begin(),languages.end(),[&](const auto& item){return item.code==code;});
     if(language==languages.end())language=languages.begin();
     result.language_index=static_cast<std::size_t>(language-languages.begin());result.language=language->code;
     std::string zone_id;

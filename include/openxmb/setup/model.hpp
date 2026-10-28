@@ -36,7 +36,8 @@ struct Draft {
 [[nodiscard]] CivilTime adjust_segment(CivilTime value, int segment, int delta);
 [[nodiscard]] std::vector<Language> supported_languages();
 [[nodiscard]] std::vector<Zone> time_zones();
-[[nodiscard]] Draft detect_defaults(const std::vector<Language>& languages, const std::vector<Zone>& zones);
+[[nodiscard]] Draft detect_defaults(const std::vector<Language>& languages, const std::vector<Zone>& zones,
+                                    std::string detected_locale = {});
 [[nodiscard]] CivilTime local_time(const Zone& zone, Instant now, bool automatic_daylight);
 [[nodiscard]] std::optional<Instant> to_instant(const Zone& zone, CivilTime value, bool automatic_daylight);
 [[nodiscard]] std::string format_time(CivilTime value, bool seconds = false);
