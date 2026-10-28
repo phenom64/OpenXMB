@@ -47,6 +47,33 @@
         "OPENXMB_INITIAL_SETTINGS_SELECTION": "0",
         "OPENXMB_OPEN_INITIAL_SETTINGS_CHOICE": "1"
       }
+    },
+    "playlist-message": {
+      "description": "Music root, Create Playlist activated: name message settles (flow capture)",
+      "pattern": "playlist-message-{:05d}.jpg",
+      "frames": 150,
+      "env": {
+        "OPENXMB_INITIAL_CATEGORY": "music",
+        "OPENXMB_HARNESS_ACTIONS": "2.5:down;3.5:ok"
+      }
+    },
+    "playlist-keyboard": {
+      "description": "Playlist name message, then the name field opens the on-screen keyboard (flow capture)",
+      "pattern": "playlist-keyboard-{:05d}.jpg",
+      "frames": 210,
+      "env": {
+        "OPENXMB_INITIAL_CATEGORY": "music",
+        "OPENXMB_HARNESS_ACTIONS": "2.5:down;3.5:ok;5.0:ok"
+      }
+    },
+    "users-options": {
+      "description": "Users > Operating System Users > *User with the Triangle options panel open (flow capture)",
+      "pattern": "users-options-{:05d}.jpg",
+      "frames": 210,
+      "env": {
+        "OPENXMB_INITIAL_CATEGORY": "users",
+        "OPENXMB_HARNESS_ACTIONS": "2.0:down;2.4:down;2.8:down;3.2:ok;4.2:down;4.6:down;5.4:options"
+      }
     }
   }
 }

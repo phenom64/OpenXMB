@@ -1,7 +1,6 @@
 # Capture deterministic OpenXMB frames for xmb-web parity visual regression.
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("root", "settings", "theme", "theme-panel", "all")]
     [string]$Scene,
 
     [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path,
@@ -39,7 +38,8 @@ function Invoke-SceneCapture {
     param(
         [string]$SceneName,
         [hashtable]$SceneEnv,
-        [string]$Pattern
+        [string]$Pattern,
+        [int]$SceneFrames = 0
     )
 
     if (-not $OutputDir) {
@@ -49,7 +49,8 @@ function Invoke-SceneCapture {
     }
     $sceneDir = Join-Path $captureRoot $SceneName
     New-Item -ItemType Directory -Force -Path $sceneDir | Out-Null
-    Get-ChildItem -LiteralPath $sceneDir -Filter "*.png" -File |
+    $extension = [System.IO.Path]::GetExtension($Pattern)
+    Get-ChildItem -LiteralPath $sceneDir -Filter "*$extension" -File |
         Remove-Item -Force
 
     $configPath = Join-Path $sceneDir "config.json"
@@ -71,6 +72,7 @@ function Invoke-SceneCapture {
     Remove-Item Env:OPENXMB_OPEN_INITIAL_SETTINGS_CHOICE -ErrorAction SilentlyContinue
     Remove-Item Env:OPENXMB_HEADLESS_STARTUP -ErrorAction SilentlyContinue
     Remove-Item Env:OPENXMB_FIXED_BOOT_SECONDS -ErrorAction SilentlyContinue
+    Remove-Item Env:OPENXMB_HARNESS_ACTIONS -ErrorAction SilentlyContinue
 
     foreach ($key in $SceneEnv.Keys) {
         Set-Item -Path "Env:$key" -Value $SceneEnv[$key]
@@ -80,7 +82,7 @@ function Invoke-SceneCapture {
     $env:AUROREENGINE_HEADLESS = "1"
     $env:AUROREENGINE_HEADLESS_WIDTH = "$Width"
     $env:AUROREENGINE_HEADLESS_HEIGHT = "$Height"
-    $env:AUROREENGINE_HEADLESS_FRAMES = "$Frames"
+    $env:AUROREENGINE_HEADLESS_FRAMES = if ($SceneFrames -gt 0) { "$SceneFrames" } else { "$Frames" }
     $env:AUROREENGINE_HEADLESS_OUTPUT_DIR = $sceneDir
     $env:AUROREENGINE_HEADLESS_OUTPUT_PATTERN = $Pattern
     $env:XMB_ASSET_DIR = $shellDir
@@ -102,12 +104,12 @@ function Invoke-SceneCapture {
         throw "Capture failed for scene '$SceneName' with exit code $LASTEXITCODE"
     }
 
-    $pngs = Get-ChildItem -LiteralPath $sceneDir -Filter "*.png" | Sort-Object Name
+    $pngs = Get-ChildItem -LiteralPath $sceneDir -Filter "*$extension" | Sort-Object Name
     if ($pngs.Count -eq 0) {
         throw "No PNG output for scene '$SceneName'"
     }
     $last = $pngs[-1]
-    $canonical = Join-Path $sceneDir "$SceneName.png"
+    $canonical = Join-Path $sceneDir "$SceneName$extension"
     if ($last.FullName -ne $canonical) {
         Copy-Item -LiteralPath $last.FullName -Destination $canonical -Force
     }
@@ -131,7 +133,8 @@ foreach ($name in $sceneNames) {
     foreach ($prop in $scenePreset.env.PSObject.Properties) {
         $envMap[$prop.Name] = [string]$prop.Value
     }
-    $results[$name] = Invoke-SceneCapture -SceneName $name -SceneEnv $envMap -Pattern $scenePreset.pattern
+    $sceneFrames = if ($scenePreset.frames -and -not $PSBoundParameters.ContainsKey("Frames")) { [int]$scenePreset.frames } else { 0 }
+    $results[$name] = Invoke-SceneCapture -SceneName $name -SceneEnv $envMap -Pattern $scenePreset.pattern -SceneFrames $sceneFrames
 }
 
 return $results

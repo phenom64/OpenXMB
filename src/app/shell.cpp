@@ -32,6 +32,7 @@ module;
 #include <ranges>
 #include <optional>
 #include <span>
+#include <string>
 #include <string_view>
 #include <tuple>
 #include <utility>
@@ -186,6 +187,44 @@ namespace app
         [[nodiscard]] std::optional<double> fixed_boot_seconds_from_environment()
         {
             return fixed_seconds_from_environment("OPENXMB_FIXED_BOOT_SECONDS");
+        }
+
+        // Visual-harness input script: "seconds:step;seconds:step". A step is a
+        // shell action (left, right, up, down, ok, cancel, options, extra), a
+        // controller button (start, select, l1, r1) or a right-stick deflection
+        // "rs=x,y". Used only for repeatable before/after captures.
+        struct harness_step {
+            double seconds{};
+            std::string step;
+        };
+
+        [[nodiscard]] std::vector<harness_step> harness_steps_from_environment()
+        {
+            std::vector<harness_step> steps;
+            const char* raw = std::getenv("OPENXMB_HARNESS_ACTIONS");
+            if(raw == nullptr) {
+                return steps;
+            }
+            std::string_view text{raw};
+            while(!text.empty()) {
+                const auto end = text.find(';');
+                const auto entry = text.substr(0, end);
+                text = end == std::string_view::npos ? std::string_view{} : text.substr(end + 1);
+                const auto colon = entry.find(':');
+                if(colon == std::string_view::npos) {
+                    continue;
+                }
+                double seconds{};
+                const auto [stop, error] = fast_float::from_chars(entry.data(), entry.data() + colon, seconds,
+                    fast_float::chars_format::general);
+                if(error != std::errc{} || stop != entry.data() + colon || seconds < 0.0) {
+                    spdlog::warn("Ignoring invalid harness step '{}'", entry);
+                    continue;
+                }
+                steps.push_back({seconds, std::string(entry.substr(colon + 1))});
+            }
+            std::ranges::stable_sort(steps, {}, &harness_step::seconds);
+            return steps;
         }
     }
 
@@ -1958,6 +1997,36 @@ namespace app
             for(std::size_t i=0;i<4;++i)if(static_cast<int>(*repeated)==input_bindings::read(config::CONFIG.preferences,true,i))dispatch(event{static_cast<action>(i+1),events::controller_button_down{to_logical_button(static_cast<sdl::GameControllerButton>(*repeated))}});
         }
 
+        {
+            static const auto harness_steps = harness_steps_from_environment();
+            static std::size_t harness_next = 0;
+            const double harness_seconds = std::chrono::duration<double>(
+                std::chrono::steady_clock::now() - shader_time_zero).count();
+            while(harness_next < harness_steps.size() && harness_steps[harness_next].seconds <= harness_seconds) {
+                const std::string_view step = harness_steps[harness_next++].step;
+                constexpr std::array<std::pair<std::string_view, action>, 8> actions{{
+                    {"left", action::left}, {"right", action::right}, {"up", action::up}, {"down", action::down},
+                    {"ok", action::ok}, {"cancel", action::cancel}, {"options", action::options}, {"extra", action::extra}}};
+                constexpr std::array<std::pair<std::string_view, events::logical_controller_button>, 4> buttons{{
+                    {"start", events::logical_controller_button::start}, {"select", events::logical_controller_button::back},
+                    {"l1", events::logical_controller_button::leftshoulder}, {"r1", events::logical_controller_button::rightshoulder}}};
+                if(step.starts_with("rs=")) {
+                    const auto comma = step.find(',');
+                    float x{}, y{};
+                    if(comma != std::string_view::npos) {
+                        fast_float::from_chars(step.data() + 3, step.data() + comma, x);
+                        fast_float::from_chars(step.data() + comma + 1, step.data() + step.size(), y);
+                    }
+                    dispatch<events::joystick_axis>(action::none, events::logical_joystick_index::right, x, y);
+                } else if(const auto it = std::ranges::find(actions, step, &std::pair<std::string_view, action>::first); it != actions.end()) {
+                    dispatch<events::controller_button_down>(it->second, events::logical_controller_button::invalid);
+                } else if(const auto button = std::ranges::find(buttons, step, &std::pair<std::string_view, events::logical_controller_button>::first); button != buttons.end()) {
+                    dispatch<events::controller_button_down>(action::none, button->second);
+                } else {
+                    spdlog::warn("Ignoring unknown harness step '{}'", step);
+                }
+            }
+        }
         for(unsigned int i=0; i<overlays.size(); i++) {
             auto res = overlays[i]->tick(this);
             if(res & result::close) {
