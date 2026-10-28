@@ -1,0 +1,51 @@
+name: Recheck portable Linux archive
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Build run containing the release-linux archive to test again
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  portable:
+    name: Recheck portable Linux (${{ matrix.distro }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distro: ubuntu
+            image: ubuntu:24.04
+          - distro: fedora
+            image: fedora:latest
+          - distro: arch
+            image: archlinux:base
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: release-linux
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+          path: dist/portable-input
+      - name: Run the same portability checks without rebuilding the application
+        shell: bash
+        env:
+          DISTRO: ${{ matrix.distro }}
+          IMAGE: ${{ matrix.image }}
+        run: bash scripts/ci/run-linux-portable-container.sh
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: portable-linux-evidence-${{ matrix.distro }}
+          path: dist/portable-evidence-${{ matrix.distro }}/
+          if-no-files-found: warn

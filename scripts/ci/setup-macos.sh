@@ -4,7 +4,7 @@ if [ "${GITHUB_ACTIONS:-}" != 'true' ]; then
   echo 'This script resets dependencies on disposable GitHub-hosted runners only.' >&2
   exit 1
 fi
-export HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_ANALYTICS=1
+export HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_ANALYTICS=1 HOMEBREW_CURL_RETRIES=3
 # Keep both architectures on one bottle set, including Intel binaries that are
 # no longer provided by the current rolling Homebrew catalogue.
 core_snapshot=8d030826c130a1e71eb4db25cad2ac4ace581b74

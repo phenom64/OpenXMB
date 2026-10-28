@@ -8,6 +8,23 @@ fi
 distro=${1:?distro required}
 archive=${2:?archive required}
 output=${3:?mounted evidence directory required}
+# Keep a failed browser's own diagnostics in the job log, even if artifact
+# collection is interrupted. The profile is disposable and contains test data.
+finish() {
+  result=$?
+  trap - EXIT
+  if [ "$result" -ne 0 ] && [ -d "$output" ]; then
+    while IFS= read -r logfile; do
+      printf '\nBrowser diagnostics: %s\n' "$logfile"
+      cat "$logfile"
+    done < <(find "$output" -name application.log -type f)
+  fi
+  if [ -d "$output" ]; then
+    chmod -R a+rX "$output"
+  fi
+  exit "$result"
+}
+trap finish EXIT
 case "$distro" in
   ubuntu)
     export DEBIAN_FRONTEND=noninteractive
