@@ -45,12 +45,19 @@ export class message_overlay : public component, public action_receiver {
             std::function<void(unsigned int)> confirm_callback = [](unsigned int){},
             bool cancelable = true, std::function<void()> cancel_callback = [](){}
         );
+        // Turns the message into the PS3 name prompt: the title is the prompt,
+        // a focusable field opens the on-screen keyboard and OK confirms.
+        void set_text_field(std::string keyboard_title, std::string value, std::function<void(std::string)> accept);
         // Make message overlays opaque so underlying UI is hidden while active
         [[nodiscard]] bool is_opaque() const override { return true; }
         // Enable fade-in/out transitions so shell can animate background zoom/dim
         [[nodiscard]] bool do_fade_in() const override { return true; }
         [[nodiscard]] bool do_fade_out() const override { return true; }
+        [[nodiscard]] bool staged_entrance() const override { return true; }
+        [[nodiscard]] float fade_zoom() const override { return 1.0F; }
+        [[nodiscard]] std::chrono::milliseconds fade_duration() const override;
         void render(auroreengine::gui_renderer& renderer, class shell* xmb) override;
+        result tick(class shell* xmb) override;
         result on_action(action action) override;
     private:
         std::string title;
@@ -60,12 +67,19 @@ export class message_overlay : public component, public action_receiver {
         bool cancelable;
         std::function<void()> cancel_callback;
 
+        bool has_field = false;
+        std::string keyboard_title, field_value;
+        std::function<void(std::string)> field_accept;
+
+        // Focused button index; field_focused takes precedence when a field exists.
         unsigned int selected = 0;
+        bool field_focused = false;
+        bool pending = false;
+        std::chrono::steady_clock::time_point pressed_at{};
         std::size_t scroll_line = 0, line_count = 0, visible_lines = 1;
         float wrapped_pixels = -1;
         std::string wrapped_font;
         std::vector<std::string> title_lines, body_lines;
-        std::vector<std::vector<std::string>> choice_lines;
         using time_point = std::chrono::time_point<std::chrono::steady_clock>;
         time_point start_time { std::chrono::steady_clock::now() };
 };

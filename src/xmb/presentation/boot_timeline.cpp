@@ -35,27 +35,38 @@ constexpr std::array<std::array<double,2>,45> identity_right{{{0,0},{2.09,0},{2.
 
 // Integrate the velocity envelope, rather than multiplying time by a changing
 // speed: that would jump the ribbon's phase when the intro settles.
+// Measured on the firmware's boot (RPCS3): the wave already flows about twice
+// as fast as normal when it emerges, peaks as the identity arrives, and is
+// back to the regular speed by the warning.
 [[nodiscard]] double startup_wave_time(double elapsed) noexcept {
   const double time = std::max(0.0, elapsed - BootMilestones::wave_emerge_seconds);
-  constexpr double peak = 3.0;
+  constexpr double peak = 1.9, easing = 4.0;
   constexpr double settled = BootMilestones::warning_in_seconds -
                              BootMilestones::wave_emerge_seconds;
+  // Distance covered while easing between two speeds over `length` seconds.
   const auto segment = [](double duration, double length, double from, double to) {
     const double t = std::clamp(duration / length, 0.0, 1.0);
     return length * (from * t + (to - from) * (t * t * t - 0.5 * t * t * t * t));
   };
-  return segment(time, peak, 0.15, 1.8) +
-         segment(time - peak, settled - peak, 1.8, 1.0) +
+  return segment(time, peak, 2.0, 3.2) +
+         segment(time - peak, easing - peak, 3.2, 1.8) +
+         segment(time - easing, settled - easing, 1.8, 1.0) +
          std::max(0.0, time - settled);
 }
 
 [[nodiscard]] double gradient_reveal(double milliseconds,
                                      std::size_t column) noexcept {
+  // Display-space exposure measured on the firmware's boot (RPCS3), timed
+  // to the identity: black until it arrives, then the top leads, overshoots
+  // slightly and settles; the bottom follows.
   constexpr std::array table{
-      std::array{2500.0, 0.000, 0.000}, std::array{3100.0, 0.047, 0.080},
-      std::array{3700.0, 0.176, 0.205}, std::array{4700.0, 0.424, 0.438},
-      std::array{5700.0, 0.647, 0.643}, std::array{6700.0, 0.753, 0.750},
-      std::array{7700.0, 0.941, 0.938}, std::array{8500.0, 1.000, 1.000},
+      std::array{2200.0, 0.00, 0.00}, std::array{2400.0, 0.04, 0.00},
+      std::array{2800.0, 0.17, 0.10}, std::array{3200.0, 0.30, 0.21},
+      std::array{3600.0, 0.44, 0.32}, std::array{4000.0, 0.58, 0.43},
+      std::array{4400.0, 0.70, 0.52}, std::array{4800.0, 0.83, 0.62},
+      std::array{5200.0, 0.94, 0.72}, std::array{5600.0, 1.02, 0.78},
+      std::array{6000.0, 1.10, 0.86}, std::array{6400.0, 1.06, 0.91},
+      std::array{6800.0, 1.00, 0.98}, std::array{7200.0, 1.00, 1.00},
   };
   if (milliseconds <= table.front()[0]) {
     return 0.0;
@@ -90,9 +101,8 @@ BootSample sample_boot_timeline(double elapsed_seconds) noexcept {
   const auto milliseconds = time * 1000.0;
   sample.background_exposure_top = gradient_reveal(milliseconds, 1);
   sample.background_exposure_bottom = gradient_reveal(milliseconds, 2);
-  sample.background_sweep =
-      sample.background_active ? smooth(ramp(time, M::identity_in_seconds, 4.6))
-                               : 1.0;
+  sample.customise =
+      smooth(ramp(time, M::ui_in_seconds, M::customised_seconds));
 
   sample.identity_gradient={track(time,identity_left),track(time,identity_middle),track(time,identity_right)};
   sample.identity_opacity=*std::max_element(sample.identity_gradient.begin(),sample.identity_gradient.end());
@@ -125,7 +135,7 @@ BootSample sample_boot_timeline(double elapsed_seconds) noexcept {
 
 BootSample BootTimeline::sample(double elapsed_seconds) noexcept {
   if (skipped_) {
-    auto result = sample_boot_timeline(BootMilestones::complete_seconds);
+    auto result = sample_boot_timeline(BootMilestones::customised_seconds);
     result.elapsed_seconds = std::max(0.0, elapsed_seconds);
     result.skipped = true;
     return result;
@@ -151,7 +161,7 @@ bool BootTimeline::dismiss_warning(double elapsed_seconds) noexcept {
 
 BootSample BootTimeline::skip(double elapsed_seconds) noexcept {
   skipped_ = true;
-  auto result = sample_boot_timeline(BootMilestones::complete_seconds);
+  auto result = sample_boot_timeline(BootMilestones::customised_seconds);
   result.elapsed_seconds = std::max(0.0, elapsed_seconds);
   result.skipped = true;
   return result;

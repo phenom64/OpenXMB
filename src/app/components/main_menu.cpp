@@ -59,10 +59,12 @@ import openxmb.config;
 import :menu_base;
 import :menu_utils;
 import :choice_overlay;
+import :dialog_chrome;
 import :xmb_presentation;
 import :applications_menu;
 import :settings_menu;
 import :users_menu;
+import :user_information;
 import :files_menu;
 import :desktop_settings;
 import :message_overlay;
@@ -80,6 +82,7 @@ inline constexpr double logical_width = 1920.0;
 inline constexpr double logical_height = 1080.0;
 inline constexpr int settings_category_index = 1;
 inline constexpr float submenu_backdrop_blur_px = 9.0F;
+inline constexpr float options_backdrop_blur_px = 10.0F;
 inline constexpr float submenu_backdrop_dim_alpha = 0.0F;
 inline constexpr double settings_parent_col_x = 316.0;
 inline constexpr double settings_sibling_col_x = 455.0;
@@ -710,8 +713,11 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
         rows.push_back(panel_entry("Local Profiles", "users", "icon_category_users.png"));
         rows.push_back(panel_entry("System Tools", "system", "icon_action_poweroff.png"));
         rows.push_back(panel_entry("Custom Sections", "custom", "icon_files_folder.png"));
-        rows.push_back(make_simple<menu::users_menu>("Operating System Users", asset_directory/"icons/icon_category_users.png", loader, xmb, loader));
-        menus.push_back(panel_menu("Users", preferred_icon(asset_directory,"xmb_icon_000.png","icon_category_users.png"),std::move(rows)));
+        // The PS3 lists Turn Off System, Create New User and the users at the
+        // top of the category; the OpenXMB panels follow below them.
+        auto users = make_simple<menu::users_menu>("Users", preferred_icon(asset_directory,"xmb_icon_000.png","icon_category_users.png"), loader, xmb, loader);
+        users->append_rows(std::move(rows));
+        menus.push_back(std::move(users));
     }
     menus.push_back(make_simple<menu::settings_menu>("Settings"_(),
         preferred_icon(asset_directory, "xmb_icon_001.png", "icon_category_settings.png"), loader, xmb, loader));
@@ -727,7 +733,6 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
     {
         std::vector<std::unique_ptr<menu::menu_entry>> rows;
         rows.push_back(make_simple<menu::files_menu>("Video Library",asset_directory/"icons/theme/icon_video.png",loader,xmb,config::CONFIG.videos_path(),loader,menu::files_menu_profile::video));
-        rows.push_back(panel_entry("Internet Browser","browser","theme/icon_browser.png"));
         menus.push_back(panel_menu("TV / Video Services",asset_directory/"icons/theme/icon_tv.png",std::move(rows)));
     }
     {
@@ -740,7 +745,11 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
     }
     {
         std::vector<std::unique_ptr<menu::menu_entry>> rows;
-        rows.push_back(panel_entry("Internet Browser", "browser", "icon_category_network.png"));
+        // One Internet Browser, under Network, with the WWW mark rather than
+        // the Network globe (RPCS3 category inventory).
+        rows.push_back(make_simple<menu::action_menu_entry>("Internet Browser",
+            preferred_icon(asset_directory, "xmb_icon_040.png", "theme/icon_browser.png"), loader,
+            [xmb = this->xmb] { xmb->open_panel("browser"); return result::success; }));
         rows.push_back(panel_entry("System Tools", "system"));
         rows.push_back(panel_entry("OpenXMB Settings", "settings"));
         menus.push_back(panel_menu("Network",preferred_icon(asset_directory,"xmb_icon_006.png","icon_category_network.png"),std::move(rows)));
@@ -973,6 +982,11 @@ bool main_menu::settings_chrome_collapsed() const {
 }
 
 float main_menu::background_blur_px() const {
+    // The wave blurred (Gaussian sigma ~5 px at 1080p) the moment the Users
+    // options panel appeared, with no visible ramp.
+    if(xmb->has_choice_overlay() && !settings_category_active()) {
+        return options_backdrop_blur_px;
+    }
     if(in_submenu || settings_chrome_collapsed()) {
         return submenu_backdrop_blur_px;
     }
@@ -1527,8 +1541,39 @@ void main_menu::select_submenu_item(int index) {
     menu->select_submenu(index);
 }
 
+
+double main_menu::options_panel_amount(time_point now) {
+    const bool open = xmb->has_choice_overlay() && !settings_category_active();
+    if(open != options_panel_open) {
+        options_panel_open = open;
+        options_panel_changed = now;
+    }
+    const auto p = progress(now, options_panel_changed, std::chrono::milliseconds(250));
+    return options_panel_open ? p : 1.0 - p;
+}
+
 void main_menu::render(auroreengine::gui_renderer& renderer) {
     auto now = std::chrono::steady_clock::now();
+    // Options panel state from the RPCS3 Users capture: a ~16% darker band
+    // across the focused row (soft left edge from x~400, up to the panel at
+    // x~1322) and other categories faded. One trial; timing is approximate.
+    if(const auto amount = static_cast<float>(options_panel_amount(now)); amount > 0.0F) {
+        const xmb_canvas canvas(renderer);
+        const auto band = [&](float x0, float x1, float a0, float a1) {
+            const auto fx = [&](float x) { return (canvas.ox + x * canvas.scale) / renderer.frame_size.width; };
+            const auto fy = [&](float y) { return (canvas.oy + y * canvas.scale) / renderer.frame_size.height; };
+            const float top = static_cast<float>(kItemFocusY) - 120.0F, bottom = static_cast<float>(kItemFocusY) + 120.0F;
+            renderer.draw_quad(std::array{
+                auroreengine::simple_renderer::vertex_data{{fx(x0), fy(top)}, {0, 0, 0, a0 * amount}, {0, 0}},
+                auroreengine::simple_renderer::vertex_data{{fx(x0), fy(bottom)}, {0, 0, 0, a0 * amount}, {0, 1}},
+                auroreengine::simple_renderer::vertex_data{{fx(x1), fy(top)}, {0, 0, 0, a1 * amount}, {1, 0}},
+                auroreengine::simple_renderer::vertex_data{{fx(x1), fy(bottom)}, {0, 0, 0, a1 * amount}, {1, 1}},
+            }, auroreengine::simple_renderer::params{});
+        };
+        const float shade = dialog_chrome::shade_alpha(0.16F);
+        band(400.0F, 455.0F, 0.0F, shade);
+        band(455.0F, 1322.0F, shade, shade);
+    }
 
     const auto submenu_progress = ease_out_cubic(
         progress(now, last_submenu_transition, transition_submenu_activate_duration));
@@ -1539,6 +1584,7 @@ void main_menu::render(auroreengine::gui_renderer& renderer) {
 
     if(settings_catalog)for(const auto& [id,node]:settings_catalog->nodes)if(node.action_id.starts_with("desktop."))settings_value_labels[id]=desktop_settings::display_value(node.action_id.substr(8),xmb);
     render_crossbar(renderer, now);
+    if(!in_submenu_now)render_options_hint(renderer, now);
     if(settings_category_active()) {
         render_settings_scene(renderer, now);
     }
@@ -1612,6 +1658,34 @@ void main_menu::render_settings_scene(auroreengine::gui_renderer& renderer, time
     settings_scene_renderer.render(renderer,sampled.snapshot,settings_render_icons,options);
 }
 
+// Bottom-right "Triangle: Options" hint shown while the signed-in user is
+// focused (RPCS3 Users capture, 18 s): a neutral grey box with ~3 px corners,
+// right edge x~1814, y 954..995, a lighter top line and a soft shadow under
+// it; the glyph sits ~22 px in and the label ends ~19 px from the edge.
+void main_menu::render_options_hint(auroreengine::gui_renderer& renderer, time_point now) {
+    const auto* users = dynamic_cast<const menu::users_menu*>(menus[selected].get());
+    if(users == nullptr || !users->is_signed_in_user(users->get_selected_submenu()) || xmb->has_choice_overlay())
+        return;
+    const float alpha = 1.0F - static_cast<float>(options_panel_amount(now));
+    if(alpha <= 0.0F)
+        return;
+    const xmb_canvas c(renderer);
+    const std::string label = ": " + ::openxmb::localization::shell_locale::translate("Options");
+    constexpr float right = 1814.0F, top = 954.0F, height = 41.0F, icon = 20.0F, size = 23.0F;
+    const float text_width = renderer.text_width_pixels(label, size * c.scale) / c.scale;
+    const float width = 22.0F + icon + 4.0F + text_width + 19.0F, left = right - width;
+    const auto grey = [&](float v) { return glm::vec4(glm::vec3(dialog_chrome::linear(v / 255.0F)), alpha); };
+    const std::array<std::pair<float, glm::vec4>, 7> stops{{
+        {0.0F, grey(84)}, {1.0F / height, grey(84)}, {1.5F / height, grey(76)}, {0.2F, grey(69)},
+        {0.5F, grey(60)}, {0.85F, grey(66)}, {1.0F, grey(75)},
+    }};
+    c.glow(left, top + 2.0F, width, height, {0, 0, 0, dialog_chrome::shade_alpha(0.5F) * alpha}, 3.0F, 1.6F);
+    c.gradient_shape(left, top, width, height, stops, 3.0F);
+    if(const auto* texture = xmb->get_button_icon(action::options); texture != nullptr && texture->loaded)
+        c.image(*texture, left + 22.0F, top + (height - icon) * 0.5F, icon, icon, {1, 1, 1, alpha});
+    c.text(label, left + 22.0F + icon + 4.0F, top + 31.0F, size, {1, 1, 1, alpha});
+}
+
 void main_menu::render_crossbar(auroreengine::gui_renderer& renderer, time_point now) {
     const auto layout = make_contained_layout(renderer);
     const xmb_canvas canvas(renderer);
@@ -1637,6 +1711,10 @@ void main_menu::render_crossbar(auroreengine::gui_renderer& renderer, time_point
         chrome_transition=from+(to-from)*p;
     }
 
+    // Users options (one RPCS3 trial, ~0.2 s ease-out): the focused item grows
+    // ~1.24x about its icon centre, its label slides ~27 px right and dims to
+    // ~48% grey, other rows and categories dim and lose their labels.
+    const auto options = ease_out_cubic(options_panel_amount(now));
     for(std::size_t index = 0; index < menus.size(); ++index) {
         const auto active = static_cast<int>(index) == selected;
         const auto distance = std::abs(static_cast<int>(index) - selected);
@@ -1652,6 +1730,10 @@ void main_menu::render_crossbar(auroreengine::gui_renderer& renderer, time_point
             alpha *= 1.0 + (0.6 - 1.0) * chrome_transition;
         } else {
             alpha *= 1.0 - chrome_transition;
+            alpha *= 1.0 - 0.6 * options;
+            // The other categories also drew in slightly towards the active one.
+            center_x = kActiveCategoryX + (center_x - kActiveCategoryX) * (1.0 - 0.035 * options) - 6.0 * options;
+            extent *= 1.0 - 0.03 * options;
         }
 
         // The PSN sphere fills substantially more of its source canvas than
@@ -1666,7 +1748,7 @@ void main_menu::render_crossbar(auroreengine::gui_renderer& renderer, time_point
 
         if(active) {
             canvas.text(menus[index]->get_name(),center_x,kCategoryLabelY+18,24,
-                {1,1,1,static_cast<float>(0.95*(1.0-0.55*chrome_transition))},0,true);
+                {1,1,1,static_cast<float>(0.95*(1.0-0.55*chrome_transition)*(1.0-options))},0,true);
         }
     }
 
@@ -1678,6 +1760,8 @@ void main_menu::render_crossbar(auroreengine::gui_renderer& renderer, time_point
                                       double alpha_multiplier) {
         const auto eased = ease_out_cubic(transition);
         const auto count = static_cast<int>(menu.get_submenus_count());
+        const auto* users = dynamic_cast<const menu::users_menu*>(&menu);
+        const auto options_here = x_shift == 0.0 ? options : 0.0;
         for(int index = 0; index < count; ++index) {
             const auto old_y = item_slot_y(index, previous_item);
             const auto new_y = item_slot_y(index, selected_item);
@@ -1687,16 +1771,25 @@ void main_menu::render_crossbar(auroreengine::gui_renderer& renderer, time_point
             }
 
             const auto focused = index == selected_item;
-            const auto extent = focused ? kActiveItemIconExtent : kInactiveItemIconExtent;
-            const auto alpha = (focused ? kFocusAlpha : kInactiveItemAlpha) * alpha_multiplier;
+            const auto zoom = focused ? 1.0 + 0.24 * options_here : 1.0;
+            const auto extent = (focused ? kActiveItemIconExtent : kInactiveItemIconExtent) * zoom;
+            const auto alpha = (focused ? kFocusAlpha : kInactiveItemAlpha) * alpha_multiplier *
+                (focused ? 1.0 : 1.0 - 0.55 * options_here);
             auto& entry = menu.get_submenu(static_cast<unsigned int>(index));
             draw_icon(renderer, entry.get_icon(), entry.get_glass_icon(), layout,
                 kItemIconX + x_shift, center_y, extent, alpha);
+            if(users != nullptr && users->is_signed_in_user(static_cast<unsigned int>(index))) {
+                const auto k = static_cast<float>(extent / kActiveItemIconExtent);
+                draw_user_diamond(canvas, static_cast<float>(kItemIconX + x_shift) - 130.0F * k,
+                    static_cast<float>(center_y) - 10.5F * k, static_cast<float>(alpha), k);
+            }
 
-            const auto label_size = focused ? kActiveItemLabelSize : kInactiveItemLabelSize;
-            const auto text_value = focused ? 1.0f : 235.0f / 255.0f;
-            canvas.text(entry.get_name(),kItemLabelX+x_shift,center_y+(focused?3:11),label_size,
-                {text_value,text_value,text_value,static_cast<float>(alpha)},focused?xmb_canvas::pulse():0);
+            const auto label_size = (focused ? kActiveItemLabelSize : kInactiveItemLabelSize) * (focused ? 1.0 - 0.045 * options_here : 1.0);
+            const auto text_value = focused
+                ? static_cast<float>(1.0 - (1.0 - dialog_chrome::linear(0.48F)) * options_here) : 235.0f / 255.0f;
+            const auto label_alpha = alpha * (focused ? 1.0 : 1.0 - options_here);
+            canvas.text(entry.get_name(),kItemLabelX+x_shift+(focused?27.0*options_here:0.0),center_y+(focused?3:11),label_size,
+                {text_value,text_value,text_value,static_cast<float>(label_alpha)},focused?xmb_canvas::pulse()*static_cast<float>(1.0-options_here):0);
             if(focused&&!entry.get_description().empty()) canvas.text(entry.get_description(),kItemLabelX+x_shift,center_y+32,22,{1,1,1,static_cast<float>(alpha*0.82)});
         }
     };

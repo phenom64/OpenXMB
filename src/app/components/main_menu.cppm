@@ -48,6 +48,8 @@ class main_menu : public action_receiver {
         void preload(vk::Device device, vma::Allocator allocator, auroreengine::resource_loader& loader);
         void render(auroreengine::gui_renderer& renderer);
         [[nodiscard]] float background_blur_px() const;
+        // 0..1 presence of the Users-style options panel (hides the clock).
+        [[nodiscard]] float options_visibility() { return static_cast<float>(options_panel_amount(std::chrono::steady_clock::now())); }
         [[nodiscard]] float background_dim_alpha() const;
 
         result on_action(action action) override;
@@ -57,7 +59,8 @@ class main_menu : public action_receiver {
 
         class shell* xmb;
 
-        void render_crossbar(auroreengine::gui_renderer& renderer, time_point now);
+            void render_options_hint(auroreengine::gui_renderer& renderer, time_point now);
+            void render_crossbar(auroreengine::gui_renderer& renderer, time_point now);
         void render_submenu(auroreengine::gui_renderer& renderer, time_point now);
         struct parent_icon {const auroreengine::texture* icon;const auroreengine::texture* glass;double x,y,alpha;};
         struct media_scene_state {
@@ -139,6 +142,11 @@ class main_menu : public action_receiver {
         time_point settings_route_changed;
         bool settings_returning = false;
         bool settings_choice_panel_open = false;
+        // Triangle options panel over the crossbar: dims other categories and
+        // lays a dark band behind the focused row while it is open.
+        bool options_panel_open = false;
+        time_point options_panel_changed{};
+        double options_panel_amount(time_point now);
 };
 
 }

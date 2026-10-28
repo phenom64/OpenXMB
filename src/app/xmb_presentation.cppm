@@ -42,11 +42,53 @@ struct xmb_canvas {
         renderer.draw_rect({(ox+x*scale)/renderer.frame_size.width,(oy+y*scale)/renderer.frame_size.height},
             {w*scale/renderer.frame_size.width,h*scale/renderer.frame_size.height},color,parameters);
     }
+    // Antialiased rounded rectangle. With a falloff its alpha is full along
+    // the edge and decays inwards towards fill (a rim with an inner glow).
+    void shape(float x,float y,float w,float h,glm::vec4 color,float radius,float falloff=0,float fill=1) const {
+        auroreengine::simple_params parameters{};
+        parameters.radius_px=std::max(radius*scale,0.001f);parameters.edge_falloff_px=falloff*scale;parameters.edge_fill=fill;
+        parameters.size_px={w*scale,h*scale};
+        renderer.draw_rect({(ox+x*scale)/renderer.frame_size.width,(oy+y*scale)/renderer.frame_size.height},
+            {w*scale/renderer.frame_size.width,h*scale/renderer.frame_size.height},color,parameters);
+    }
+    // Soft outer glow (halo or shadow) around a rounded rectangle: alpha is
+    // inner*color.a inside it and decays by e every falloff units outside.
+    void glow(float x,float y,float w,float h,glm::vec4 color,float radius,float falloff,float inner=1) const {
+        const float spread=falloff*4.5f;
+        auroreengine::simple_params parameters{};
+        parameters.radius_px=std::max(radius*scale,0.001f);parameters.edge_falloff_px=-falloff*scale;parameters.edge_fill=inner;
+        parameters.size_px={(w+2*spread)*scale,(h+2*spread)*scale};parameters.inset_px=spread*scale;
+        renderer.draw_rect({(ox+(x-spread)*scale)/renderer.frame_size.width,(oy+(y-spread)*scale)/renderer.frame_size.height},
+            {(w+2*spread)*scale/renderer.frame_size.width,(h+2*spread)*scale/renderer.frame_size.height},color,parameters);
+    }
+    // One rounded shape filled with a vertical gradient through (offset, colour)
+    // stops, offsets running 0..1 from top to bottom.
+    void gradient_shape(float x,float y,float w,float h,const auto& stops,float radius) const {
+        using V=auroreengine::simple_renderer::vertex_data;
+        const float left=(ox+x*scale)/renderer.frame_size.width,right=(ox+(x+w)*scale)/renderer.frame_size.width;
+        const auto at=[&](float t){return (oy+(y+t*h)*scale)/renderer.frame_size.height;};
+        std::vector<V> vertices;
+        for(std::size_t i=1;i<std::size(stops);++i) {
+            const auto& [t0,c0]=stops[i-1];const auto& [t1,c1]=stops[i];
+            const V a{{left,at(t0)},c0,{0,t0}},b{{right,at(t0)},c0,{1,t0}},c{{left,at(t1)},c1,{0,t1}},d{{right,at(t1)},c1,{1,t1}};
+            vertices.insert(vertices.end(),{a,b,c,b,d,c});
+        }
+        auroreengine::simple_params parameters{};
+        parameters.radius_px=std::max(radius*scale,0.001f);parameters.size_px={w*scale,h*scale};
+        renderer.draw_generic(vertices,parameters);
+    }
     void gradient(float x,float y,float w,float h,glm::vec4 top,glm::vec4 bottom) const {
         using V=auroreengine::simple_renderer::vertex_data;
         const float left=(ox+x*scale)/renderer.frame_size.width,right=(ox+(x+w)*scale)/renderer.frame_size.width;
         const float upper=(oy+y*scale)/renderer.frame_size.height,lower=(oy+(y+h)*scale)/renderer.frame_size.height;
         const std::array<V,4> vertices{V{{left,upper},top,{0,0}},V{{right,upper},top,{1,0}},V{{left,lower},bottom,{0,1}},V{{right,lower},bottom,{1,1}}};
+        renderer.draw_quad(vertices);
+    }
+    void hgradient(float x,float y,float w,float h,glm::vec4 left_color,glm::vec4 right_color) const {
+        using V=auroreengine::simple_renderer::vertex_data;
+        const float left=(ox+x*scale)/renderer.frame_size.width,right=(ox+(x+w)*scale)/renderer.frame_size.width;
+        const float upper=(oy+y*scale)/renderer.frame_size.height,lower=(oy+(y+h)*scale)/renderer.frame_size.height;
+        const std::array<V,4> vertices{V{{left,upper},left_color,{0,0}},V{{right,upper},right_color,{1,0}},V{{left,lower},left_color,{0,1}},V{{right,lower},right_color,{1,1}}};
         renderer.draw_quad(vertices);
     }
     void image(const auroreengine::texture& t,float x,float y,float w,float h,glm::vec4 color=glm::vec4(1)) const {

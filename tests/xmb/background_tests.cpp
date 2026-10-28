@@ -41,7 +41,8 @@ int main() {
   require(near(night_day_blend(13.0F), 0.0F), "midday is day");
   require(near(night_day_blend(18.5F), 0.5F), "dusk midpoint");
   require(near(night_day_blend(2.0F), 1.0F), "overnight is night");
-  require(near(night_day_blend(5.75F), 0.5F), "dawn midpoint");
+  require(near(night_day_blend(4.75F), 0.5F), "dawn midpoint");
+  require(near(night_day_blend(5.25F), 0.0F), "reference hour is day");
 
   const auto june = resolve_background_gradient(5, 13.0F);
   require(near(june.top_rgb[0], 0.227573F), "June red anchor");
@@ -120,11 +121,12 @@ int main() {
           "Original particle renderer can consume the imported xmb-web cloud");
   require(particle_renderer.contains("make_instances"),
           "Original particle renderer precomputes deterministic cloud instances");
-  require(monthly_fragment.contains("1.05 - 0.26 * dip"),
-          "Original gradient keeps xmb-web's dark menu-band envelope");
+  require(monthly_fragment.contains("const float field =") &&
+              monthly_fragment.contains("1.007 + 0.139 * v"),
+          "Original gradient uses the value/chroma field fitted to the firmware captures");
   require(monthly_fragment.contains(
-              "top_multiplier = mix(0.30, 0.02, night)"),
-          "Original gradient keeps xmb-web's day/night top ramp");
+              "mix(1.0, mix(0.02, 1.0, pow(screen_y, 3.4)), night)"),
+          "Original gradient keeps the night top darkening");
   require(monthly_fragment.contains("xmb_web_composite"),
           "Original gradient bakes xmb-web's steady scene composite");
   require(monthly_fragment.contains("0.899181"),

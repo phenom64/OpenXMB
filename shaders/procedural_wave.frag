@@ -17,6 +17,7 @@ layout(push_constant) uniform Push {
 layout(location=0) in vec3 position;
 layout(location=1) in vec2 edge_sprite;
 layout(location=2) in float particle_alpha;
+layout(location=3) in vec4 particle_style;
 layout(location=0) out vec4 color;
 
 #include "flow_scene.glsl"
@@ -74,27 +75,64 @@ void main() {
             float alpha=particle_alpha*glow*flowScene().wash*0.32;
             color=vec4(vec3(0.91,0.94,1.0)*alpha,alpha);return;
         }
-        float distanceSquared=dot(edge_sprite,edge_sprite);
-        if(distanceSquared>1.0) discard;
-        float glow=(1.0-distanceSquared)*(1.0-distanceSquared);
+        float glow;
+        if(particle_style.a>1.5) {
+            // The visualiser's left-end bloom.
+            float d=length(edge_sprite);
+            float a=clamp(particle_alpha*exp(-d*d*3.2)*(1.0-smoothstep(0.75,1.0,d))*0.4*pc.resolution_time_gain.w,0.0,1.0);
+            color=vec4(particle_style.rgb*a,a);
+            return;
+        }
+        if(particle_style.a>0.0) {
+            // Out-of-focus disc: the further out of focus (particle_style.a),
+            // the wider its blurred rim, until the nearest are soft blurs.
+            float d=length(edge_sprite);
+            if(d>1.0) discard;
+            glow=1.0-smoothstep(mix(0.7,0.05,particle_style.a),1.0,d);
+        } else {
+            // Flat round flake in its own (tumbling) plane, so it projects
+            // to an ellipse; its quad is 1.8x its size. A soft glow appears
+            // only while it glints (position.x).
+            float u=length(edge_sprite)*1.8;
+            if(u>1.8) discard;
+            glow=(1.0-smoothstep(0.5,1.1,u))+position.x*0.3*exp(-u*u*0.9);
+        }
         float a=clamp(particle_alpha*wave.settings[9].x*glow*pc.resolution_time_gain.w,0.0,1.0);
-        color=vec4(pc.particle_tint.rgb*a,a);
+        color=vec4(pc.particle_tint.rgb*particle_style.rgb*a,a);
         return;
     }
-    // Undo the Vulkan Y flip when deriving the reference material's normals.
-    vec3 n=normalize(cross(dFdx(position),-dFdy(position)));
+    // The vertex stage supplies the smooth analytic normal; only its facing
+    // matters (the sheet is seen from both sides through its folds).
+    vec3 n=normalize(particle_style.xyz);n.z=abs(n.z);
     vec4 material=wave.settings[7];
-    float fresnel=material.w*pow(max(0.0,1.0-n.z),material.z);
-    float soft=wave.settings[8].y;
-    float edge=soft>0.0 ? 1.0-smoothstep(1.0-soft,1.0,abs(edge_sprite.x)) : 1.0;
-    float a=clamp((fresnel+wave.settings[8].x)*material.x*material.y*edge*pc.resolution_time_gain.w,0.0,1.0);
-    // A travelling highlight wraps only while fully beyond the visible ribbon.
-    float center=1.8-mod(pc.resolution_time_gain.z*0.12,3.6);
-    float distance=position.x-center;
-    float halo=exp(-distance*distance/0.22)*pc.effect.x;
-    float core=exp(-distance*distance/0.016)*pc.effect.x;
-    vec3 tint=mix(pc.tint.rgb,vec3(1.0,0.88,1.0),clamp(halo*0.7+core*0.6+pc.audio.w*0.2,0.0,1.0));
-    a=clamp(a*(1.0+halo*0.6+core*0.7)*(1.0+pc.effect.y*0.25+pc.audio.w*0.45),0.0,0.9);
-    if(pc.effect.w>0.5) a*=halo*0.22;
-    color=vec4(tint*(1.0+core*0.5),a);
+    // Every fold edge is where the surface turns exactly edge-on. Capping
+    // the edge-on term turns each fold into a bright plateau rather than a
+    // full-brightness one-pixel step (or, if faded out, a dark crease).
+    float fresnel=material.w*pow(1.0-max(n.z,0.2),material.z);
+    // The stream is nearest the viewer at the left, where it reads brighter.
+    float near=1.0+0.35*smoothstep(0.1,-1.0,position.x);
+    // edge_sprite.y is the position across the band (+-1 on the outline):
+    // the outermost edge is dimmer than the inner strands and fades over a
+    // few pixels into the background.
+    float across=abs(edge_sprite.y);
+    float outline=mix(1.0,0.6,smoothstep(0.7,1.0,across));
+    // Faint mottling runs along the flow (edge_sprite.x goes once around the
+    // loop, so whole periods keep the pattern seamless).
+    float loop=edge_sprite.x*3.14159265,warp=0.9*sin(1.7*position.x+0.05*wave.settings[8].z);
+    float fibres=0.86+0.09*sin(13.0*loop+warp)+0.05*sin(23.0*loop-1.3*warp+2.0);
+    float a=clamp((fresnel*outline*fibres+wave.settings[8].x+0.05*pc.effect.x)*near*smoothstep(1.0,0.9,across)*
+        material.x*material.y*pc.resolution_time_gain.w,0.0,1.0);
+    // Music visualiser (pc.effect.x): the wave runs from a pale, hot left end
+    // lit by the bloom (pc.flow.x) to the deep theme colour on the right.
+    float music=pc.effect.x;
+    float lit=exp(-pow((position.x+1.0)/0.42,2.0))*clamp(pc.flow.x,0.0,1.6);
+    vec3 gradient=mix(vec3(1.0,0.7,0.95),vec3(0.74,0.17,0.8),smoothstep(-0.9,0.5,position.x));
+    vec3 tint=mix(pc.tint.rgb,gradient,music);
+    // Dense strands read as pale and misty rather than saturated (in the
+    // visualiser only towards the lit end).
+    tint=mix(tint,mix(vec3(0.86,0.9,1.0),vec3(1.0,0.76,0.96),music),
+        mix(0.5,0.6*(1.0-smoothstep(-0.6,0.4,position.x)),music)*smoothstep(0.08,0.45,a));
+    tint=mix(tint,vec3(1.0,0.9,0.98),clamp(music*lit*0.5,0.0,1.0));
+    a=clamp(a*(1.0-0.4*music)*(1.0+music*(lit*0.8+pc.effect.y*0.15)),0.0,0.9);
+    color=vec4(tint,a);
 }

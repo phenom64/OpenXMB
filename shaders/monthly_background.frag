@@ -8,6 +8,8 @@ layout(push_constant) uniform MonthlyBackgroundParameters {
     vec4 bottom_and_reserved;
     vec4 boot;
     vec4 modes;
+    vec4 startup_top;
+    vec4 startup_bottom;
 } background;
 
 vec3 srgb_to_linear(vec3 color)
@@ -26,81 +28,74 @@ vec3 xmb_web_composite(vec3 scene)
     return vec3(1.0) - exp(-max(scene, vec3(0.0)) * (exposure / white_level));
 }
 
-void write_background(vec3 rgb) {
+vec3 music_background(vec3 rgb) {
     const vec2 music_direction=vec2(-0.06975647,0.99756405);
     float u=clamp((dot(in_uv,music_direction)-music_direction.x)/
                   ((music_direction.y-music_direction.x)*0.62),0.0,1.0);
     float gradient=1.0-pow(1.0-u,2.0);
     vec3 music=mix(vec3(106.0,45.0,118.0)/255.0,vec3(2.0,0.0,4.0)/255.0,gradient);
-    out_color=vec4(mix(rgb,music,background.modes.x),1.0);
+    return mix(rgb,music,background.modes.x);
 }
-void main()
+
+// The Original background for a palette, in display values.
+vec3 original_background(vec3 top, vec3 bottom, float night_blend)
 {
     const float screen_y = clamp(in_uv.y, 0.0, 1.0);
-    if(background.bottom_and_reserved.a>0.0) {
-        const vec2 manual_direction=vec2(-0.20791169,0.9781476);
-        float u=(dot(in_uv,manual_direction)-manual_direction.x)/
-                (manual_direction.y-manual_direction.x);
-        float t=smoothstep(0.0,background.bottom_and_reserved.a,u);
-        vec3 rgb=mix(background.top_and_night.rgb,background.bottom_and_reserved.rgb,t);
-        write_background(rgb);return;
-    }
     const float bottom_mix = smoothstep(0.70, 1.0, screen_y);
-    vec3 color = mix(background.top_and_night.rgb,
-                     background.bottom_and_reserved.rgb,
-                     bottom_mix);
+    vec3 color = mix(top, bottom, bottom_mix);
 
     // Match xmb-web's active month-base Original branch: the palette carries the
     // hue and this shader supplies the firmware-like value/chroma structure.
     float luma = dot(color, vec3(0.299, 0.587, 0.114));
     color = max(vec3(luma) + (color - vec3(luma)) * 1.25, vec3(0.0));
 
-    float dip = exp(-pow((screen_y - 0.68) / 0.14, 2.0));
-    float value_envelope = 1.05 - 0.26 * dip;
-    value_envelope *= 1.0 + 0.05 * smoothstep(0.30, 0.0, screen_y);
-    value_envelope *= 1.0 + 0.06 * smoothstep(0.85, 1.0, screen_y);
-    color *= value_envelope;
-
+    // Value and chroma field fitted to the firmware's Original background
+    // (RPCS3 captures, October, recorded 05:14-05:35): brightest top-left,
+    // darkest low on the left, a warm lift towards the bottom right, and
+    // slightly more chroma lower down. Only that time of day is measured.
+    const float u = clamp(in_uv.x, 0.0, 1.0), v = screen_y;
+    const float field =
+        0.7780 + 0.6431 * v - 2.5036 * v * v + 1.5062 * v * v * v
+        - 1.0887 * u + 0.5040 * u * v + 1.2681 * u * v * v
+        + 1.0982 * u * u - 1.0241 * u * u * v - 0.2568 * u * u * u;
     luma = dot(color, vec3(0.299, 0.587, 0.114));
-    color = vec3(luma) + (color - vec3(luma)) * (1.0 + 0.22 * dip);
+    color = vec3(luma) + (color - vec3(luma)) * (1.007 + 0.139 * v);
+    color = max(color, vec3(0.0)) * max(field, 0.0);
 
-    float dx = in_uv.x - 0.52;
-    color *= 1.0 - 0.30 * dx * dx * (dx < 0.0 ? 1.6 : 1.0);
+    // Night is not in the reference; keep the earlier darkening model.
+    const float night = clamp(night_blend, 0.0, 1.0);
+    color *= mix(1.0, mix(0.02, 1.0, pow(screen_y, 3.4)), night);
 
-    dx = in_uv.x - 0.5;
-    const float bottom_edge = clamp(screen_y * abs(dx) * 2.0, 0.0, 1.0);
-    const float bottom_side = mix(0.847, 0.925, smoothstep(-0.5, 0.5, dx));
-    color *= mix(1.0, bottom_side, bottom_edge);
+    // The composite's result is written as display (8-bit canvas) values.
+    return clamp(xmb_web_composite(color), 0.0, 1.0);
+}
 
-    const float top_corner = clamp(
-        pow(1.0 - screen_y, 1.5) * (abs(dx) * 2.0), 0.0, 1.0);
-    const float top_side = mix(0.88, 1.0, smoothstep(0.0, 0.5, dx));
-    color *= 1.0 - 0.40 * top_corner * top_side;
-
-    const float night = clamp(background.top_and_night.a, 0.0, 1.0);
-    const float exponent = mix(1.15, 3.4, night);
-    const float vertical = pow(screen_y, exponent);
-    const float top_multiplier = mix(0.30, 0.02, night);
-    color *= mix(top_multiplier, 1.0, vertical);
-
-    color *= 1.05;
-    const float input_luma = dot(color, vec3(0.299, 0.587, 0.114));
-    const float output_luma = input_luma / (1.0 + input_luma * 0.30);
-    if (input_luma > 0.0001) {
-        color *= output_luma / input_luma;
+void main()
+{
+    vec3 user;
+    if(background.bottom_and_reserved.a>0.0) {
+        const vec2 manual_direction=vec2(-0.20791169,0.9781476);
+        float u=(dot(in_uv,manual_direction)-manual_direction.x)/
+                (manual_direction.y-manual_direction.x);
+        float t=smoothstep(0.0,background.bottom_and_reserved.a,u);
+        user=mix(background.top_and_night.rgb,background.bottom_and_reserved.rgb,t);
+    } else {
+        user=original_background(background.top_and_night.rgb,
+                                 background.bottom_and_reserved.rgb,
+                                 background.top_and_night.a);
     }
-
-    if (background.boot.w > 0.5) {
-        const float fade =
-            clamp(mix(background.boot.x, background.boot.y, screen_y), 0.0, 1.0);
-        const float sweep_band = 0.55;
-        const float front = background.boot.z * (1.0 + sweep_band) - sweep_band;
-        float sweep_mask = clamp((front - in_uv.x) / sweep_band + 1.0, 0.0, 1.0);
-        sweep_mask = mix(0.35, 1.0, sweep_mask);
-        color *= fade * sweep_mask;
+    // Startup shows the month's standard colour at full daylight and hands
+    // over to the user's colour and time of day (boot.z) as the menu reveals.
+    vec3 rgb = user;
+    if(background.boot.z < 1.0) {
+        vec3 standard = original_background(background.startup_top.rgb,
+                                            background.startup_bottom.rgb, 0.0);
+        rgb = mix(standard, user, clamp(background.boot.z, 0.0, 1.0));
     }
-
-    // xmb-web's fitted constants target numeric 8-bit canvas values. The
-    // Vulkan target is sRGB, so feed it linear light to avoid encoding twice.
-    write_background(clamp(xmb_web_composite(color),0.0,1.0));
+    if(background.boot.w > 0.5) {
+        // Exposure measured from the firmware boot, in display values; the
+        // top leads and briefly overshoots.
+        rgb *= clamp(mix(background.boot.x, background.boot.y, clamp(in_uv.y, 0.0, 1.0)), 0.0, 1.2);
+    }
+    out_color = vec4(music_background(clamp(rgb, 0.0, 1.0)), 1.0);
 }

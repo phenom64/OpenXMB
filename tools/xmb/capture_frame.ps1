@@ -1,7 +1,6 @@
 # Capture deterministic OpenXMB frames for xmb-web parity visual regression.
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("root", "settings", "theme", "theme-panel", "all")]
     [string]$Scene,
 
     [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path,
@@ -10,6 +9,17 @@ param(
     [int]$Width = 0,
     [int]$Height = 0,
     [int]$Frames = 0,
+    # Overrides the pinned clock, e.g. to match the month (theme colour) of a reference capture.
+    [long]$FixedUnixSeconds = 0,
+    # Overrides the pinned wave animation time (seconds); below -1 lets the
+    # wave run live so a sequence shows its motion.
+    [double]$WaveSeconds = -1,
+    # Renders with a custom theme colour (e.g. "#2b4d9e") instead of the scene's.
+    [string]$ThemeColour = "",
+    # MSAA sample count (0 keeps the scene default).
+    [int]$SampleCount = 0,
+    # Shows the startup sequence pinned at this many seconds into the boot.
+    [double]$BootSeconds = -1,
     [switch]$BackgroundOnly
 )
 
@@ -39,7 +49,8 @@ function Invoke-SceneCapture {
     param(
         [string]$SceneName,
         [hashtable]$SceneEnv,
-        [string]$Pattern
+        [string]$Pattern,
+        [int]$SceneFrames = 0
     )
 
     if (-not $OutputDir) {
@@ -49,7 +60,8 @@ function Invoke-SceneCapture {
     }
     $sceneDir = Join-Path $captureRoot $SceneName
     New-Item -ItemType Directory -Force -Path $sceneDir | Out-Null
-    Get-ChildItem -LiteralPath $sceneDir -Filter "*.png" -File |
+    $extension = [System.IO.Path]::GetExtension($Pattern)
+    Get-ChildItem -LiteralPath $sceneDir -Filter "*$extension" -File |
         Remove-Item -Force
 
     $configPath = Join-Path $sceneDir "config.json"
@@ -57,7 +69,8 @@ function Invoke-SceneCapture {
     $cfg = Get-Content -Raw -LiteralPath $configPath | ConvertFrom-Json
     $cfg.shell.'background-type' = $defaults.background_type
     $cfg.shell.'theme-colour-mode' = $defaults.theme_colour_mode
-    $cfg.render.'sample-count' = [int]$defaults.sample_count
+    if ($ThemeColour) { $cfg.shell.'theme-colour-mode' = "custom"; $cfg.shell.'theme-custom-colour' = $ThemeColour }
+    $cfg.render.'sample-count' = if ($SampleCount -gt 0) { $SampleCount } else { [int]$defaults.sample_count }
     $cfg.render.vsync = $false
     $cfg.render.'max-fps' = [int]$defaults.max_fps
     $cfg.render.'show-fps' = $false
@@ -71,16 +84,21 @@ function Invoke-SceneCapture {
     Remove-Item Env:OPENXMB_OPEN_INITIAL_SETTINGS_CHOICE -ErrorAction SilentlyContinue
     Remove-Item Env:OPENXMB_HEADLESS_STARTUP -ErrorAction SilentlyContinue
     Remove-Item Env:OPENXMB_FIXED_BOOT_SECONDS -ErrorAction SilentlyContinue
+    Remove-Item Env:OPENXMB_HARNESS_ACTIONS -ErrorAction SilentlyContinue
 
     foreach ($key in $SceneEnv.Keys) {
         Set-Item -Path "Env:$key" -Value $SceneEnv[$key]
+    }
+    if ($BootSeconds -ge 0) {
+        $env:OPENXMB_HEADLESS_STARTUP = "1"
+        $env:OPENXMB_FIXED_BOOT_SECONDS = "$BootSeconds"
     }
 
     $env:SPDLOG_LEVEL = "warn"
     $env:AUROREENGINE_HEADLESS = "1"
     $env:AUROREENGINE_HEADLESS_WIDTH = "$Width"
     $env:AUROREENGINE_HEADLESS_HEIGHT = "$Height"
-    $env:AUROREENGINE_HEADLESS_FRAMES = "$Frames"
+    $env:AUROREENGINE_HEADLESS_FRAMES = if ($SceneFrames -gt 0) { "$SceneFrames" } else { "$Frames" }
     $env:AUROREENGINE_HEADLESS_OUTPUT_DIR = $sceneDir
     $env:AUROREENGINE_HEADLESS_OUTPUT_PATTERN = $Pattern
     $env:XMB_ASSET_DIR = $shellDir
@@ -88,8 +106,9 @@ function Invoke-SceneCapture {
     $env:SDL_AUDIODRIVER = "dummy"
     $env:OPENXMB_CONFIG = $configPath
     $env:OPENXMB_CONFIG_READ_ONLY = "1"
-    $env:OPENXMB_FIXED_UNIX_SECONDS = "$([long]$defaults.fixed_unix_seconds)"
-    $env:OPENXMB_FIXED_WAVE_SECONDS = "$([double]$defaults.fixed_wave_seconds)"
+    $env:OPENXMB_FIXED_UNIX_SECONDS = if ($FixedUnixSeconds -gt 0) { "$FixedUnixSeconds" } else { "$([long]$defaults.fixed_unix_seconds)" }
+    if ($WaveSeconds -lt -1) { Remove-Item Env:OPENXMB_FIXED_WAVE_SECONDS -ErrorAction SilentlyContinue }
+    else { $env:OPENXMB_FIXED_WAVE_SECONDS = if ($WaveSeconds -ge 0) { "$WaveSeconds" } else { "$([double]$defaults.fixed_wave_seconds)" } }
 
     $args = @("--width", "$Width", "--height", "$Height", "--no-fullscreen")
     if ($BackgroundOnly) {
@@ -102,12 +121,12 @@ function Invoke-SceneCapture {
         throw "Capture failed for scene '$SceneName' with exit code $LASTEXITCODE"
     }
 
-    $pngs = Get-ChildItem -LiteralPath $sceneDir -Filter "*.png" | Sort-Object Name
+    $pngs = Get-ChildItem -LiteralPath $sceneDir -Filter "*$extension" | Sort-Object Name
     if ($pngs.Count -eq 0) {
         throw "No PNG output for scene '$SceneName'"
     }
     $last = $pngs[-1]
-    $canonical = Join-Path $sceneDir "$SceneName.png"
+    $canonical = Join-Path $sceneDir "$SceneName$extension"
     if ($last.FullName -ne $canonical) {
         Copy-Item -LiteralPath $last.FullName -Destination $canonical -Force
     }
@@ -131,7 +150,8 @@ foreach ($name in $sceneNames) {
     foreach ($prop in $scenePreset.env.PSObject.Properties) {
         $envMap[$prop.Name] = [string]$prop.Value
     }
-    $results[$name] = Invoke-SceneCapture -SceneName $name -SceneEnv $envMap -Pattern $scenePreset.pattern
+    $sceneFrames = if ($scenePreset.frames -and -not $PSBoundParameters.ContainsKey("Frames")) { [int]$scenePreset.frames } else { 0 }
+    $results[$name] = Invoke-SceneCapture -SceneName $name -SceneEnv $envMap -Pattern $scenePreset.pattern -SceneFrames $sceneFrames
 }
 
 return $results

@@ -107,8 +107,10 @@ float night_day_blend(float local_hour) noexcept {
   if (hour > 20.5F || hour < 4.5F) {
     return 1.0F;
   }
-  if (hour >= 4.5F && hour <= 7.0F) {
-    return 1.0F - (hour - 4.5F) / 2.5F;
+  // Reference captures from 05:14 onwards show no night dimming, so dawn
+  // must be complete by then; when it starts is unmeasured.
+  if (hour >= 4.5F && hour <= 5.0F) {
+    return 1.0F - (hour - 4.5F) / 0.5F;
   }
   return 0.0F;
 }

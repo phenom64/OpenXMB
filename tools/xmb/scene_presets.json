@@ -22,12 +22,12 @@
       }
     },
     "settings": {
-      "description": "Settings category, System Settings focused (catalog index 5)",
+      "description": "Settings category, System Settings focused (catalog index 4 in the PS3 root order)",
       "pattern": "settings-{:05d}.png",
       "env": {
         "OPENXMB_INITIAL_CATEGORY": "settings",
         "OPENXMB_INITIAL_SETTINGS_MENU": "category.settings",
-        "OPENXMB_INITIAL_SETTINGS_SELECTION": "5"
+        "OPENXMB_INITIAL_SETTINGS_SELECTION": "4"
       }
     },
     "theme": {
@@ -46,6 +46,93 @@
         "OPENXMB_INITIAL_SETTINGS_MENU": "category.settings.theme.settings",
         "OPENXMB_INITIAL_SETTINGS_SELECTION": "0",
         "OPENXMB_OPEN_INITIAL_SETTINGS_CHOICE": "1"
+      }
+    },
+    "playlist-message": {
+      "description": "Music root, Create Playlist activated: name message settles (flow capture)",
+      "pattern": "playlist-message-{:05d}.png",
+      "frames": 150,
+      "env": {
+        "OPENXMB_INITIAL_CATEGORY": "music",
+        "OPENXMB_HARNESS_ACTIONS": "2.5:down;3.5:ok"
+      }
+    },
+    "playlist-keyboard": {
+      "description": "Playlist name message, then the name field opens the on-screen keyboard (flow capture)",
+      "pattern": "playlist-keyboard-{:05d}.png",
+      "frames": 210,
+      "env": {
+        "OPENXMB_INITIAL_CATEGORY": "music",
+        "OPENXMB_HARNESS_ACTIONS": "2.5:down;3.5:ok;5.0:ok"
+      }
+    },
+    "playlist-keyboard-accept": {
+      "description": "Playlist keyboard accepted with START: returns to the name message with the field kept (flow capture)",
+      "pattern": "playlist-keyboard-accept-{:05d}.png",
+      "frames": 240,
+      "env": {
+        "OPENXMB_INITIAL_CATEGORY": "music",
+        "OPENXMB_HARNESS_ACTIONS": "2.5:down;3.5:ok;5.0:ok;6.6:start"
+      }
+    },
+    "playlist-cancel": {
+      "description": "Playlist keyboard cancelled, then the message backed out to the submenu (flow capture)",
+      "pattern": "playlist-cancel-{:05d}.png",
+      "frames": 270,
+      "env": {
+        "OPENXMB_INITIAL_CATEGORY": "music",
+        "OPENXMB_HARNESS_ACTIONS": "2.5:down;3.5:ok;5.0:ok;6.6:cancel;7.6:cancel"
+      }
+    },
+    "users-options": {
+      "description": "Users > *User with the Triangle options panel open (flow capture)",
+      "pattern": "users-options-{:05d}.png",
+      "frames": 150,
+      "env": {
+        "OPENXMB_INITIAL_CATEGORY": "users",
+        "OPENXMB_HARNESS_ACTIONS": "2.4:options"
+      }
+    },
+    "users-information": {
+      "description": "Users > *User > Triangle > Information screen with avatar focus (flow capture)",
+      "pattern": "users-information-{:05d}.png",
+      "frames": 170,
+      "env": {
+        "OPENXMB_INITIAL_CATEGORY": "users",
+        "OPENXMB_HARNESS_ACTIONS": "2.4:options;3.4:ok"
+      }
+    },
+    "users-name-keyboard": {
+      "description": "Information screen, user name field, keyboard, then right-stick repositioning (flow capture)",
+      "pattern": "users-name-keyboard-{:05d}.png",
+      "frames": 250,
+      "env": {
+        "OPENXMB_INITIAL_CATEGORY": "users",
+        "OPENXMB_HARNESS_ACTIONS": "2.4:options;3.4:ok;4.4:down;5.0:ok;6.4:rs=0,-1;6.65:rs=0,0"
+      }
+    },
+    "settings-keyboard": {
+      "description": "System Settings > System Name text entry over the crossbar (Internet Search context analogue)",
+      "pattern": "settings-keyboard-{:05d}.png",
+      "frames": 150,
+      "env": {
+        "OPENXMB_INITIAL_SETTINGS_MENU": "category.settings.desktop.System",
+        "OPENXMB_INITIAL_SETTINGS_SELECTION": "0",
+        "OPENXMB_OPEN_INITIAL_SETTINGS_CHOICE": "1"
+      }
+    },
+    "network": {
+      "description": "Network category: Internet Browser with the WWW icon",
+      "pattern": "network-{:05d}.png",
+      "env": {
+        "OPENXMB_INITIAL_CATEGORY": "network"
+      }
+    },
+    "tv-services": {
+      "description": "TV / Video Services category (duplicate browser removed)",
+      "pattern": "tv-services-{:05d}.png",
+      "env": {
+        "OPENXMB_INITIAL_CATEGORY": "tv"
       }
     }
   }

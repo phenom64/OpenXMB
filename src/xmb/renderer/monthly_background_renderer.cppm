@@ -24,7 +24,8 @@ public:
                vk::PipelineCache pipeline_cache = {});
   void render(vk::CommandBuffer command_buffer, vk::RenderPass render_pass,
               const BackgroundGradient &gradient,
-              std::array<float, 4> boot = {1.0F, 1.0F, 1.0F, 0.0F}) const;
+              std::array<float, 4> boot = {1.0F, 1.0F, 1.0F, 0.0F},
+              const BackgroundGradient *startup = nullptr) const;
 
   [[nodiscard]] bool pipelines_ready() const noexcept {
     return pipelines_ready_;
@@ -35,6 +36,8 @@ public:
     std::array<float, 4> bottom_and_reserved{};
     std::array<float, 4> boot{};
     std::array<float, 4> modes{};
+    std::array<float, 4> startup_top{};
+    std::array<float, 4> startup_bottom{};
   };
 
 private:
@@ -51,7 +54,7 @@ namespace openxmb::xmb {
 namespace {
 
 static_assert(sizeof(MonthlyBackgroundRenderer::PushConstants) ==
-              sizeof(float) * 16);
+              sizeof(float) * 24);
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wc23-extensions"
@@ -132,7 +135,8 @@ void MonthlyBackgroundRenderer::preload(
 
 void MonthlyBackgroundRenderer::render(
     vk::CommandBuffer command_buffer, vk::RenderPass render_pass,
-    const BackgroundGradient &gradient, std::array<float, 4> boot) const {
+    const BackgroundGradient &gradient, std::array<float, 4> boot,
+    const BackgroundGradient *startup) const {
   if (!pipelines_ready_) {
     throw std::logic_error(
         "OpenXMB monthly background draw requested before pipeline preload");
@@ -152,7 +156,7 @@ void MonthlyBackgroundRenderer::render(
   command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics,
                               pipeline->second.get());
 
-  const PushConstants constants{
+  PushConstants constants{
       .top_and_night = {gradient.top_rgb[0], gradient.top_rgb[1],
                         gradient.top_rgb[2], gradient.night_day_blend},
       .bottom_and_reserved = {gradient.bottom_rgb[0], gradient.bottom_rgb[1],
@@ -160,6 +164,9 @@ void MonthlyBackgroundRenderer::render(
       .boot = boot,
       .modes = {gradient.music_mix,0,0,0},
   };
+  const auto &standard = startup ? *startup : gradient;
+  constants.startup_top = {standard.top_rgb[0], standard.top_rgb[1], standard.top_rgb[2], 0.0F};
+  constants.startup_bottom = {standard.bottom_rgb[0], standard.bottom_rgb[1], standard.bottom_rgb[2], 0.0F};
   command_buffer.pushConstants(pipeline_layout_.get(),
                                vk::ShaderStageFlagBits::eFragment, 0,
                                sizeof(constants), &constants);

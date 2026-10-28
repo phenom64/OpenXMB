@@ -19,6 +19,7 @@
 module;
 
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -53,6 +54,10 @@ class users_menu : public simple_menu {
         users_menu(std::string name, auroreengine::texture&& icon, app::shell* xmb, auroreengine::resource_loader& loader);
         ~users_menu() override = default;
         
+        // Extra OpenXMB rows listed below the PS3 user rows; reloads keep them.
+        void append_rows(std::vector<std::unique_ptr<menu_entry>> rows);
+        // The signed-in user's row carries the diamond marker.
+        [[nodiscard]] bool is_signed_in_user(unsigned int index) const { return core_rows > 0 && index == core_rows - 1; }
         result activate(action action) override;
         void get_button_actions(std::vector<std::pair<action, std::string>>& v) override;
     private:
@@ -63,6 +68,7 @@ class users_menu : public simple_menu {
         app::shell* xmb;
         auroreengine::resource_loader& loader;
         std::vector<user_info> users;
+        std::size_t core_rows = 0;
 };
 
 }

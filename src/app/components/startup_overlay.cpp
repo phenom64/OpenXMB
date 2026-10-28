@@ -43,11 +43,6 @@ import :startup_overlay;
 namespace app {
 
 namespace {
-float smooth01(float value) {
-  value = std::clamp(value, 0.0f, 1.0f);
-  return value * value * (3.0f - 2.0f * value);
-}
-
 std::vector<std::string> wrap_warning_body(
     auroreengine::gui_renderer& renderer,
     std::string_view body,
@@ -175,15 +170,8 @@ result startup_overlay::on_event(const event& input) {
 void startup_overlay::render(auroreengine::gui_renderer& renderer, app::shell* xmb) {
   const auto sample = xmb->startup_sample();
   if(sample.complete) return;
-  const auto elapsed = sample.elapsed_seconds;
-
-  const auto settle_start = openxmb::xmb::BootMilestones::warning_out_seconds;
-  const auto settle_end = openxmb::xmb::BootMilestones::ui_in_seconds;
-  const auto settle = smooth01(static_cast<float>(
-      (elapsed - settle_start) / (settle_end - settle_start)));
-  renderer.draw_rect(
-      glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 1.0f),
-      glm::vec4(0.005f, 0.0f, 0.012f, 0.88f * (1.0f - settle)));
+  // The firmware's boot background is not veiled: during the identity and
+  // warning it already has its steady brightness (measured on RPCS3).
 
   const auto identity=openxmb::xmb::kStartupIdentity;
   float pixels=34.0F*renderer.frame_size.height/1080.0F;

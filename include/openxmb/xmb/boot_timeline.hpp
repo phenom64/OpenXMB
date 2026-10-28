@@ -15,6 +15,9 @@ struct BootMilestones {
   static constexpr double warning_out_seconds = 12.53;
   static constexpr double ui_in_seconds = 15.9;
   static constexpr double complete_seconds = 16.9;
+  // The background and wave hand over from the month's standard look to the
+  // user's colour and time-of-day settings while the menu reveals.
+  static constexpr double customised_seconds = 18.5;
 };
 
 enum class BootEffect : std::uint8_t {
@@ -32,8 +35,10 @@ struct BootSample {
   double wave_geometry_progress{};
   double background_exposure_top{1.0};
   double background_exposure_bottom{1.0};
-  double background_sweep{1.0};
   bool background_active{};
+  // 0 shows the month's standard colour at full daylight, 1 the user's
+  // colour and time-of-day brightness.
+  double customise{1.0};
 
   // Identity layer. The host draws kStartupIdentity using these values.
   double identity_opacity{};

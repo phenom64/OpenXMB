@@ -50,6 +50,9 @@ export class choice_overlay : public component, public action_receiver {
         );
         // Optional colour swatches to display next to each choice (same length as choices or empty)
         void set_colour_swatches(const std::vector<glm::vec3>& cols) { swatches = cols; }
+        // Baseline of the first option row in 1080p design units: 518 matches
+        // Settings > Colour; the Users options list sat lower, at 559.
+        void set_first_baseline(float y) { first_baseline = y; }
         void set_top_action(std::string label, float y = 390.0F / 1080.0F) {
             top_action = std::move(label);
             top_action_y = y;
@@ -87,6 +90,7 @@ export class choice_overlay : public component, public action_receiver {
         std::vector<glm::vec3> swatches;
         std::string top_action;
         float top_action_y = 390.0F / 1080.0F;
+        float first_baseline = 518.0F;
 };
 
 }
