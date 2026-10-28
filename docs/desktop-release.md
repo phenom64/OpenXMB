@@ -99,13 +99,44 @@ additive and depth-tested pixels, upload counters, and draining a pending upload
 from a phase callback. Its generated scene submits 8196 triangles in three mesh
 draws. Enable it with `-DAUROREENGINE_BUILD_RENDER_TESTS=ON` and build that target.
 
+## Publishing a validated release
+
+The master push workflow builds and validates the Windows portable ZIP, Ubuntu
+DEB, portable Linux archive and universal macOS DMG; it does not create a tag or release. Compilation
+uses the runner's detected CPU count unless `CMAKE_BUILD_PARALLEL_LEVEL` is
+explicitly set. Native regression tests remain serialized.
+
+After an authorized push, select a successful **Build, test and release** push
+run whose head is the exact master commit intended for release. Obtain explicit
+approval for that full SHA before dispatching **Publish validated release**:
+
+```powershell
+gh run list --workflow release.yml --branch master --limit 20
+gh run view <RUN_ID>
+gh workflow run publish-validated-release.yml --ref master -f run_id=<RUN_ID> -f approved_sha=<FULL_APPROVED_SHA>
+```
+
+The publication workflow requires the successful push run, its required platform
+jobs, its own checkout and current master to match the approved full SHA. It
+verifies the four checksums, reserves the tag for that commit, finds an existing
+draft if necessary, uploads the verified assets and publishes only after the
+draft contains exactly those assets. If master advances, validate and approve the
+new master commit before publication. Dispatching publication is an external write.
+
+The portable Linux archive bundles application libraries and helpers while using
+the host's glibc and graphics driver. Its baseline is glibc 2.39, matching the
+Ubuntu 24.04 build host. Ubuntu, Fedora and Arch jobs test the same extracted
+archive, including Vulkan rendering and the sandboxed browser. These are runner
+checks; they do not establish compatibility with every distribution or physical
+GPU. See [portable packaging details](linux-portable-packet.md).
+
 ## Compatibility boundaries
 
 Dynamic P3T support covers the implemented RAF/model/VSMX scene subset and reports
 unsupported features in Theme Settings. Universal firmware theme compatibility is
 not claimed. Hardware-only libretro cores, bitmap video subtitles, protected disc
-playback, native Wayland browser input, Windows/macOS runtime behavior and actual
-GPU decoding require their respective implementations or platform/device tests.
+playback and native Wayland browser input require further implementation. Windows
+and macOS runtime behavior and hardware video decoding need platform/device tests.
 On Linux/X11, optional WebKitGTK 4.1 and GTK3 development packages build the
 `openxmb-web` child surface. The Vulkan shell draws the browser header and footer,
 and WebKit runs actual pages in sandboxed processes inside the central viewport.

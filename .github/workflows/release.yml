@@ -18,22 +18,16 @@ jobs:
   gate:
     name: Release gate
     runs-on: ubuntu-24.04
-    permissions:
-      contents: write
-      pull-requests: read
     outputs:
       version: ${{ steps.gate.outputs.version }}
-      publish: ${{ steps.gate.outputs.publish }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: Test publication conditions
         run: python3 -m unittest discover -s tests/packaging -v
-      - name: Resolve release eligibility
+      - name: Validate release version
         id: gate
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: python3 scripts/ci/release.py gate
 
   linux:
@@ -60,6 +54,9 @@ jobs:
       - name: Native settings smoke tests
         if: ${{ !cancelled() && steps.build.outputs.installed == 'true' }}
         run: python tests/desktop/native_settings_smoke.py --app build/release/XMS.bin --output dist/settings-smoke
+      - name: Live MSAA native validation round trip
+        if: ${{ !cancelled() && steps.build.outputs.installed == 'true' }}
+        run: python tests/desktop/native_msaa_smoke.py --app build/release/XMS.bin --output dist/msaa-smoke
       - name: Native browser smoke tests
         if: ${{ !cancelled() && steps.build.outputs.installed == 'true' }}
         env:
@@ -73,6 +70,20 @@ jobs:
         if: ${{ !cancelled() && steps.build.outputs.installed == 'true' }}
         id: package
         run: python scripts/packaging/package.py linux
+      - name: Build portable Linux archive with bundled libraries
+        if: ${{ !cancelled() && steps.build.outputs.installed == 'true' }}
+        run: python scripts/packaging/linux_portable.py --stage dist/stage --output dist/packages --version "$(cat VERSION)"
+      - name: Verify the relocated portable browser with its sandbox and HTTPS
+        if: ${{ !cancelled() && steps.build.outputs.installed == 'true' }}
+        env:
+          WEBKIT_DISABLE_COMPOSITING_MODE: '1'
+        run: |
+          mkdir -p 'dist/portable browser ü'
+          tar -xzf dist/packages/*-linux-x86_64.tar.gz -C 'dist/portable browser ü'
+          portable=$(find 'dist/portable browser ü' -mindepth 1 -maxdepth 1 -type d -print -quit)
+          "$portable/print-apparmor-profile" | sudo tee /etc/apparmor.d/openxmb-portable-ci >/dev/null
+          sudo apparmor_parser -r /etc/apparmor.d/openxmb-portable-ci
+          python tests/integrations/web_view_smoke.py --helper "$portable/bin/openxmb-web" --output dist/portable-browser-smoke --https-check
       - name: Test the installed browser with its packaged AppArmor profile
         if: ${{ !cancelled() && steps.package.outcome == 'success' }}
         env:
@@ -96,6 +107,7 @@ jobs:
           name: release-linux
           path: |
             dist/packages/*.deb
+            dist/packages/*-linux-x86_64.tar.gz
             dist/packages/*.sha256
           if-no-files-found: error
       - uses: actions/upload-artifact@v7.0.2
@@ -314,10 +326,53 @@ jobs:
           name: dmg-design
           path: dist/packages/dmg-background.png
 
+  linux_portable:
+    name: Portable Linux (${{ matrix.distro }})
+    needs: linux
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distro: ubuntu
+            image: ubuntu:24.04
+          - distro: fedora
+            image: fedora:latest
+          - distro: arch
+            image: archlinux:base
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: release-linux
+          path: dist/portable-input
+      - name: Verify the portable archive in the target distribution
+        env:
+          DISTRO: ${{ matrix.distro }}
+          IMAGE: ${{ matrix.image }}
+        run: |
+          archive=$(find dist/portable-input -name '*-linux-x86_64.tar.gz' -print -quit)
+          test -n "$archive"
+          mkdir -p "dist/portable-evidence-$DISTRO"
+          docker run --rm --security-opt seccomp=unconfined --security-opt apparmor=unconfined \
+            -e OPENXMB_PORTABLE_CI=1 -v "$PWD:/src:ro" \
+            -v "$PWD/dist/portable-evidence-$DISTRO:/evidence" "$IMAGE" \
+            bash /src/scripts/ci/check-linux-portable.sh "$DISTRO" "/src/$archive" /evidence \
+            2>&1 | tee "dist/portable-evidence-$DISTRO/container.log"
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: portable-linux-evidence-${{ matrix.distro }}
+          path: dist/portable-evidence-${{ matrix.distro }}/
+          if-no-files-found: warn
+
   readiness:
     name: Release readiness
     if: always()
-    needs: [gate, linux, windows, macos, universal]
+    needs: [gate, linux, linux_portable, windows, macos, universal]
     runs-on: ubuntu-24.04
     steps:
       - name: Require every build, test and package job
@@ -331,25 +386,3 @@ jobs:
           if failed:
               raise SystemExit('Release requirements failed: ' + str(failed))
           PY
-
-  publish:
-    name: Publish approved master release
-    needs: [gate, readiness]
-    if: needs.gate.outputs.publish == 'true' && needs.readiness.result == 'success'
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: write
-      pull-requests: read
-    steps:
-      - uses: actions/checkout@v7.0.1
-        with:
-          persist-credentials: false
-      - uses: actions/download-artifact@v8.0.2
-        with:
-          pattern: release-*
-          path: dist/release
-          merge-multiple: true
-      - name: Verify checksums, stage all assets, then publish
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: python3 scripts/ci/release.py publish --artifacts dist/release

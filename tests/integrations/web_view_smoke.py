@@ -6,6 +6,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import secrets
 import subprocess
 import sys
 import tempfile
@@ -14,10 +15,56 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 
+def sandbox_evidence(helper_pid):
+    """Find this helper's WebKit child and require its own mount namespace and seccomp."""
+    if os.geteuid() == 0:
+        raise RuntimeError('Sandbox verification must run as a non-root user')
+    if os.environ.get('WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS'):
+        raise RuntimeError('WebKit sandbox disable flag is set')
+    proc = Path('/proc')
+    helper_namespace = os.readlink(proc / str(helper_pid) / 'ns/mnt')
+    deadline = time.monotonic() + 30
+    while time.monotonic() < deadline:
+        processes = {}
+        for entry in proc.iterdir():
+            if not entry.name.isdecimal():
+                continue
+            try:
+                status = (entry / 'status').read_text()
+                fields = dict(line.split(':', 1) for line in status.splitlines() if ':' in line)
+                processes[int(entry.name)] = (int(fields['PPid']), fields,
+                                               (entry / 'cmdline').read_bytes())
+            except (OSError, KeyError, ValueError):
+                continue
+        for pid, (_, fields, cmdline) in processes.items():
+            if b'WebKitWebProcess' not in cmdline:
+                continue
+            ancestor = pid
+            visited = set()
+            while ancestor in processes and ancestor not in visited and ancestor != helper_pid:
+                visited.add(ancestor)
+                ancestor = processes[ancestor][0]
+            if ancestor != helper_pid:
+                continue
+            try:
+                mount_namespace = os.readlink(proc / str(pid) / 'ns/mnt')
+            except OSError:
+                continue
+            if mount_namespace != helper_namespace and fields.get('Seccomp', '').strip() == '2':
+                return {'helper_pid': helper_pid, 'web_process_pid': pid,
+                        'helper_mount_namespace': helper_namespace,
+                        'web_mount_namespace': mount_namespace, 'seccomp': 2}
+        time.sleep(0.1)
+    raise RuntimeError('No descendant WebKitWebProcess with a separate mount namespace and seccomp was observed')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--helper', required=True, type=Path)
     parser.add_argument('--output', type=Path)
+    parser.add_argument('--https-check', action='store_true', help='Require a live HTTPS page and the TLS backend')
+    parser.add_argument('--require-sandbox', action='store_true', help='Require a non-root sandboxed WebKit process')
+    parser.add_argument('--persistence-check', action='store_true', help='Verify localStorage after restarting the helper')
     args = parser.parse_args()
     if not os.environ.get('DISPLAY'):
         os.execvp('xvfb-run', ['xvfb-run', '-a', '-s', '-screen 0 1920x1080x24', sys.executable, __file__, *sys.argv[1:]])
@@ -40,13 +87,22 @@ def main():
     x.XSetInputFocus(display, parent, 2, 0)
     x.XSync(display, 0)
 
+    storage_token = secrets.token_hex(16)
+
     class Page(BaseHTTPRequestHandler):
         def log_message(self, *_): pass
         def do_GET(self):
-            title = 'First page' if self.path.startswith('/first') else 'Second page'
-            body = (f'<!doctype html><meta charset="utf-8"><title>{title}</title>'
-                    '<body style="background:#2ac78f"><input autofocus oninput="document.title=\'Typed:\'+this.value">'
-                    '<a href="/second">Next page</a>').encode()
+            if self.path.startswith('/storage-write'):
+                body = (f'<script>localStorage.setItem("openxmb-smoke", "{storage_token}");'
+                        'document.title="Storage saved";</script>').encode()
+            elif self.path.startswith('/storage-read'):
+                body = (f'<script>document.title=localStorage.getItem("openxmb-smoke")==="{storage_token}"'
+                        '?"Storage restored":"Storage missing";</script>').encode()
+            else:
+                title = 'First page' if self.path.startswith('/first') else 'Second page'
+                body = (f'<!doctype html><meta charset="utf-8"><title>{title}</title>'
+                        '<body style="background:#2ac78f"><input autofocus oninput="document.title=\'Typed:\'+this.value">'
+                        '<a href="/second">Next page</a>').encode()
             self.send_response(200)
             self.send_header('Content-Type', 'text/html; charset=utf-8')
             self.send_header('Content-Length', str(len(body)))
@@ -94,6 +150,10 @@ def main():
 
         try:
             wait(lambda p: p['title'] == 'First page' and not p['loading'], 'real HTML loaded')
+            if args.require_sandbox:
+                evidence = sandbox_evidence(process.pid)
+                (output / 'sandbox.json').write_text(json.dumps(evidence, indent=2) + '\n')
+                checks.append('non-root WebKit mount namespace and seccomp')
             child = native.locate(process.pid)
             if not child or geometry(child) != (414, 76, 1094, 928):
                 raise RuntimeError('Native web surface does not fit the XMB viewport')
@@ -120,11 +180,37 @@ def main():
             while time.monotonic() < deadline and geometry(child) != (207, 38, 547, 464): time.sleep(0.05)
             if geometry(child) != (207, 38, 547, 464): raise RuntimeError('Web surface did not resize with its parent')
             checks.append('resized child viewport')
+            if args.https_check:
+                command('navigate', 'https://example.com/')
+                wait(lambda p: p['title'] == 'Example Domain' and not p['loading'] and p['uri'].startswith('https://example.com'),
+                     'sandboxed HTTPS navigation and TLS backend')
+            if args.persistence_check:
+                command('navigate', origin + '/storage-write')
+                wait(lambda p: p['title'] == 'Storage saved' and not p['loading'], 'localStorage written by live DOM')
+                # Allow WebKit's storage process to flush before its parent is destroyed.
+                time.sleep(2)
             x.XDestroyWindow(display, parent)
             x.XSync(display, 0)
             parent = 0
             if process.wait(timeout=5): raise RuntimeError('Web surface did not close cleanly with its parent')
             checks.append('parent close lifecycle')
+            if args.persistence_check:
+                state.unlink(missing_ok=True)
+                (output / 'page-command.json').unlink(missing_ok=True)
+                parent = x.XCreateSimpleWindow(display, native.root, 0, 0, 1920, 1080, 0, 0, 0)
+                x.XMapWindow(display, parent)
+                x.XSync(display, 0)
+                process = subprocess.Popen([str(args.helper.resolve()), origin + '/storage-read', str(parent),
+                                            str(output / 'profile'), str(state)], stdout=log, stderr=subprocess.STDOUT)
+                wait(lambda p: p['title'] == 'Storage restored' and not p['loading'],
+                     'localStorage survived helper restart')
+                if args.require_sandbox:
+                    evidence = sandbox_evidence(process.pid)
+                    (output / 'sandbox-restart.json').write_text(json.dumps(evidence, indent=2) + '\n')
+                x.XDestroyWindow(display, parent)
+                x.XSync(display, 0)
+                parent = 0
+                if process.wait(timeout=5): raise RuntimeError('Restarted web surface did not close cleanly')
             (output / 'report.json').write_text(json.dumps({'status': 'passed', 'checks': checks}, indent=2))
             print('PASS native web view: ' + ', '.join(checks))
         finally:

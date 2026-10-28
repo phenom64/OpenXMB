@@ -83,7 +83,7 @@ def main():
         config += ['-DCMAKE_LINKER_TYPE=LLD']
     run(*config)
     compilation = subprocess.run(['cmake', '--build', str(build), '--parallel',
-                                  os.environ.get('CMAKE_BUILD_PARALLEL_LEVEL', '2'),
+                                  os.environ.get('CMAKE_BUILD_PARALLEL_LEVEL', str(os.cpu_count() or 1)),
                                   '--', '-k', '0'], cwd=ROOT)
     # Collect independent compilation/test failures in one run. Installing the
     # actual product is still required before enabling packaging diagnostics.

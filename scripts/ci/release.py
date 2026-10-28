@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish Beta 2 only from the successful master merge of the RSX-26 PR."""
+"""Publish an explicitly approved and validated master release."""
 import argparse
 import hashlib
 import json
@@ -12,17 +12,6 @@ import urllib.error
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[2]
-
-
-def eligible(event, ref, sha, repository, pull_requests):
-    if event != 'push' or ref != 'refs/heads/master':
-        return False
-    return any(pr.get('number') == 8 and pr.get('merged_at') and
-               pr.get('merge_commit_sha') == sha and
-               pr.get('base', {}).get('ref') == 'master' and
-               pr.get('head', {}).get('ref') == 'RSX-26' and
-               (pr.get('head', {}).get('repo') or {}).get('full_name') == repository
-               for pr in pull_requests)
 
 
 def api(path, missing_ok=False):
@@ -39,52 +28,38 @@ def api(path, missing_ok=False):
         raise
 
 
-def context():
-    repository, sha = os.environ['GITHUB_REPOSITORY'], os.environ['GITHUB_SHA']
-    prs = []
-    if os.environ['GITHUB_EVENT_NAME'] == 'push' and os.environ['GITHUB_REF'] == 'refs/heads/master':
-        pr = api(f'repos/{repository}/pulls/8', missing_ok=True)
-        if pr:
-            prs.append(pr)
-            merge = pr.get('merge_commit_sha')
-            if (merge and merge != sha and eligible('push', 'refs/heads/master', merge, repository, [pr])):
-                comparison = api(f'repos/{repository}/compare/{merge}...{sha}')
-                if comparison.get('status') == 'ahead':
-                    existing = find_release(repository, 'v0.2.0-beta.2')
-                    if not existing or (existing.get('draft') and existing.get('target_commitish') == sha):
-                        # Follow-up fixes retain the owner's approved release intent.
-                        prs = [dict(pr, merge_commit_sha=sha)]
-    return repository, sha, eligible(os.environ['GITHUB_EVENT_NAME'], os.environ['GITHUB_REF'], sha, repository, prs)
-
-
-def validated_run_context(run_id):
+def validated_run_context(run_id, approved_sha):
     if os.environ['GITHUB_EVENT_NAME'] != 'workflow_dispatch' or os.environ['GITHUB_REF'] != 'refs/heads/master':
         raise RuntimeError('Release recovery must run manually from master')
     if not str(run_id).isdecimal():
         raise RuntimeError('A numeric validated workflow run ID is required')
+    if not re.fullmatch(r'[0-9a-f]{40}', approved_sha or ''):
+        raise RuntimeError('The approved master SHA must be a full lowercase commit SHA')
+    if os.environ['GITHUB_SHA'] != approved_sha:
+        raise RuntimeError('The publication workflow must run at the approved SHA')
     repository = os.environ['GITHUB_REPOSITORY']
     run = api(f'repos/{repository}/actions/runs/{run_id}')
     if (run['status'] != 'completed' or run['conclusion'] != 'success' or
             run['head_branch'] != 'master' or run['event'] != 'push' or run['path'] != '.github/workflows/release.yml'):
         raise RuntimeError('Recovery requires a successful master release build')
+    if run['head_sha'] != approved_sha:
+        raise RuntimeError('The validated build does not match the approved SHA')
     required = {'Release gate', 'Release readiness', 'Ubuntu x86-64 DEB',
-                'Windows x86-64 portable ZIP', 'macOS x86_64', 'macOS arm64', 'Universal macOS DMG'}
+                'Windows x86-64 portable ZIP', 'macOS x86_64', 'macOS arm64', 'Universal macOS DMG',
+                'Portable Linux (ubuntu)', 'Portable Linux (fedora)', 'Portable Linux (arch)'}
     jobs = api(f'repos/{repository}/actions/runs/{run_id}/jobs?per_page=100')['jobs']
     passed = {job['name'] for job in jobs if job['conclusion'] == 'success'}
     if not required <= passed:
         raise RuntimeError('Recovery build is missing successful required checks: ' + str(required - passed))
-    pr = api(f'repos/{repository}/pulls/8')
-    merge, sha = pr.get('merge_commit_sha'), run['head_sha']
-    if not merge or not eligible('push', 'refs/heads/master', merge, repository, [pr]):
-        raise RuntimeError('The release PR has not been approved and merged')
-    if sha != merge and api(f'repos/{repository}/compare/{merge}...{sha}')['status'] != 'ahead':
-        raise RuntimeError('The validated build does not contain the approved release merge')
-    return repository, sha, True
+    if api(f'repos/{repository}/branches/master')['commit']['sha'] != approved_sha:
+        raise RuntimeError('Master no longer points to the approved SHA')
+    return repository, approved_sha, True
 
 
 def verify_assets(directory, version):
     names = [f'openxmb_{version.replace("-beta.", "~beta.")}_amd64.deb',
-             f'OpenXMB-{version}-windows-x86_64.zip', f'OpenXMB-{version}-macos-universal.dmg']
+             f'OpenXMB-{version}-windows-x86_64.zip', f'OpenXMB-{version}-macos-universal.dmg',
+             f'OpenXMB-{version}-linux-x86_64.tar.gz']
     lines, assets = [], []
     for name in names:
         path = directory / name
@@ -127,25 +102,20 @@ def find_release(repository, tag):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['gate', 'publish', 'recover'])
+    parser.add_argument('command', choices=['gate', 'recover'])
     parser.add_argument('--run-id')
+    parser.add_argument('--approved-sha')
     parser.add_argument('--artifacts', type=Path, default=Path('dist/release'))
     args = parser.parse_args()
     version = (ROOT / 'VERSION').read_text().strip()
-    if version != '0.2.0-beta.2' or not re.fullmatch(r'\d+\.\d+\.\d+-beta\.\d+', version):
-        raise RuntimeError('This release gate is reserved for OpenXMB 0.2.0 Beta 2')
-    repository, sha, publish = validated_run_context(args.run_id) if args.command == 'recover' else context()
+    if not re.fullmatch(r'\d+\.\d+\.\d+-beta\.\d+', version):
+        raise RuntimeError('Expected a beta release version')
     if args.command == 'gate':
-        if publish:
-            # Reserve the approved commit while it is the master tip. Publication
-            # still waits for all builds, packaged-app checks and readiness.
-            reserve_tag(repository, sha, 'v' + version)
         with Path(os.environ['GITHUB_OUTPUT']).open('a') as handle:
-            handle.write(f'version={version}\npublish={str(publish).lower()}\n')
-        print('Publication eligible: ' + str(publish))
+            handle.write(f'version={version}\n')
+        print('Build validation does not publish a release')
         return
-    if not publish:
-        raise RuntimeError('Publishing requires the master merge of RSX-26 PR #8')
+    repository, sha, _ = validated_run_context(args.run_id, args.approved_sha)
     assets = verify_assets(args.artifacts, version)
     tag = 'v' + version
     notes = ROOT / 'docs/releases' / (tag + '.md')
@@ -155,12 +125,14 @@ def main():
     if release and not release['draft']:
         print('The verified master release has already been published; nothing changed.')
         return
+    # Check the tag even for existing drafts so recovery cannot upload to a
+    # tag that was moved or created for another commit.
+    reserve_tag(repository, sha, tag)
     if not release:
         # Reserve the explicit tag first. Release creation must not implicitly
         # create a tag against an older commit using the integration token.
-        reserve_tag(repository, sha, tag)
         subprocess.run(['gh', 'release', 'create', tag, '--repo', repository,
-                        '--target', sha, '--verify-tag', '--draft', '--prerelease', '--title', 'OpenXMB 0.2.0 Beta 2',
+                        '--target', sha, '--verify-tag', '--draft', '--prerelease', '--title', 'OpenXMB ' + version,
                         '--notes-file', str(notes), *map(str, assets)], check=True)
     else:
         subprocess.run(['gh', 'release', 'upload', tag, '--repo', repository, '--clobber', *map(str, assets)], check=True)

@@ -41,4 +41,4 @@ Expand-Archive $gettextZip -DestinationPath $gettext -Force
 $gettextBin = (Get-ChildItem $gettext -Filter msgfmt.exe -Recurse | Select-Object -First 1).Directory.FullName
 if (!$gettextBin -or !(Test-Path "$gettextBin/msgmerge.exe")) { throw 'Gettext catalog tools missing' }
 $gettextBin | Out-File $env:GITHUB_PATH -Append -Encoding utf8
-@("VCPKG_ROOT=$vcpkg", "VCPKG_INSTALLED_DIR=$installed", "OPENXMB_POPPLER_BIN=$popplerBin", 'CMAKE_BUILD_PARALLEL_LEVEL=2', 'SDL_AUDIODRIVER=dummy') | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+@("VCPKG_ROOT=$vcpkg", "VCPKG_INSTALLED_DIR=$installed", "OPENXMB_POPPLER_BIN=$popplerBin", 'SDL_AUDIODRIVER=dummy') | Out-File $env:GITHUB_ENV -Append -Encoding utf8

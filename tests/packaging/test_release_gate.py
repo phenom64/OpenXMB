@@ -11,70 +11,15 @@ release = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(release)
 
 
-class ReleaseGateTests(unittest.TestCase):
-    def setUp(self):
-        self.pr = {'number': 8, 'merged_at': '2026-10-27T12:00:00Z', 'merge_commit_sha': 'merge-sha',
-                   'base': {'ref': 'master'}, 'head': {'ref': 'RSX-26', 'repo': {'full_name': 'phenom64/OpenXMB'}}}
-
-    def check_gate(self, event='push', ref='refs/heads/master', sha='merge-sha'):
-        return release.eligible(event, ref, sha, 'phenom64/OpenXMB', [self.pr])
-
-    def test_merged_release_pr(self):
-        self.assertTrue(self.check_gate())
-
-    def test_branch_push_cannot_publish(self):
-        self.assertFalse(self.check_gate(ref='refs/heads/RSX-26'))
-
-    def test_pull_request_cannot_publish(self):
-        self.assertFalse(self.check_gate(event='pull_request'))
-
-    def test_dispatch_cannot_publish(self):
-        self.assertFalse(self.check_gate(event='workflow_dispatch'))
-
-    def test_unmerged_pr_cannot_publish(self):
-        self.pr['merged_at'] = None
-        self.assertFalse(self.check_gate())
-
-    def test_unrelated_commit_cannot_publish(self):
-        self.assertFalse(self.check_gate(sha='other-sha'))
-
-    def test_different_pr_cannot_publish(self):
-        self.pr['number'] = 9
-        self.assertFalse(self.check_gate())
-
-    def test_fork_cannot_publish(self):
-        self.pr['head']['repo']['full_name'] = 'someone/OpenXMB'
-        self.assertFalse(self.check_gate())
-
-    def test_master_context_checks_the_approved_pr_directly(self):
-        environment = {'GITHUB_REPOSITORY': 'phenom64/OpenXMB', 'GITHUB_SHA': 'merge-sha',
-                       'GITHUB_EVENT_NAME': 'push', 'GITHUB_REF': 'refs/heads/master'}
-        with patch.dict(release.os.environ, environment), patch.object(release, 'api', return_value=self.pr) as api:
-            self.assertEqual(release.context(), ('phenom64/OpenXMB', 'merge-sha', True))
-            api.assert_called_once_with('repos/phenom64/OpenXMB/pulls/8', missing_ok=True)
-
-    def test_pr_context_does_not_query_publication_state(self):
-        environment = {'GITHUB_REPOSITORY': 'phenom64/OpenXMB', 'GITHUB_SHA': 'test-merge-sha',
-                       'GITHUB_EVENT_NAME': 'pull_request', 'GITHUB_REF': 'refs/pull/8/merge'}
-        with patch.dict(release.os.environ, environment), patch.object(release, 'api') as api:
-            self.assertFalse(release.context()[2])
-            api.assert_not_called()
-
-    def test_missing_release_pr_cannot_publish(self):
-        environment = {'GITHUB_REPOSITORY': 'someone/OpenXMB', 'GITHUB_SHA': 'fork-sha',
-                       'GITHUB_EVENT_NAME': 'push', 'GITHUB_REF': 'refs/heads/master'}
-        with patch.dict(release.os.environ, environment), patch.object(release, 'api', return_value=None):
-            self.assertFalse(release.context()[2])
-
-
 class ReleaseArtifactTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.directory = Path(self.temporary.name)
-        self.names = ['openxmb_0.2.0~beta.2_amd64.deb',
-                      'OpenXMB-0.2.0-beta.2-windows-x86_64.zip',
-                      'OpenXMB-0.2.0-beta.2-macos-universal.dmg']
+        self.names = ['openxmb_0.3.0~beta.3_amd64.deb',
+                      'OpenXMB-0.3.0-beta.3-windows-x86_64.zip',
+                      'OpenXMB-0.3.0-beta.3-macos-universal.dmg',
+                      'OpenXMB-0.3.0-beta.3-linux-x86_64.tar.gz']
         for name in self.names:
             contents = (name + '\n').encode() * 100
             (self.directory / name).write_bytes(contents)
@@ -82,13 +27,13 @@ class ReleaseArtifactTests(unittest.TestCase):
                 hashlib.sha256(contents).hexdigest() + '  ' + name + '\n')
 
     def verify(self):
-        return release.verify_assets(self.directory, '0.2.0-beta.2')
+        return release.verify_assets(self.directory, '0.3.0-beta.3')
 
     def test_complete_artifacts_produce_release_checksums(self):
         paths = self.verify()
         self.assertEqual({path.name for path in paths},
                          {*(name.replace('~', '.') for name in self.names), 'SHA256SUMS'})
-        self.assertEqual(len((self.directory / 'SHA256SUMS').read_text().splitlines()), 3)
+        self.assertEqual(len((self.directory / 'SHA256SUMS').read_text().splitlines()), 4)
 
     def test_published_filenames_match_manifest_and_preserve_package_bytes(self):
         paths = self.verify()
@@ -105,6 +50,11 @@ class ReleaseArtifactTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'Missing release artifact'):
             self.verify()
 
+    def test_missing_portable_linux_blocks_release(self):
+        (self.directory / self.names[3]).unlink()
+        with self.assertRaisesRegex(RuntimeError, 'Missing release artifact'):
+            self.verify()
+
     def test_changed_package_blocks_release(self):
         with (self.directory / self.names[2]).open('ab') as handle:
             handle.write(b'changed')
@@ -118,75 +68,27 @@ class ReleaseArtifactTests(unittest.TestCase):
 
 
 class ReleaseRecoveryTests(unittest.TestCase):
-    def test_validated_master_descendant_retains_approved_release_intent(self):
-        pr={'number':8,'merged_at':'approved','merge_commit_sha':'approved-sha','base':{'ref':'master'},'head':{'ref':'RSX-26','repo':{'full_name':'phenom64/OpenXMB'}}}
-        environment={'GITHUB_REPOSITORY':'phenom64/OpenXMB','GITHUB_SHA':'fix-sha','GITHUB_EVENT_NAME':'push','GITHUB_REF':'refs/heads/master'}
-        with patch.dict(release.os.environ,environment), patch.object(release,'api',side_effect=[pr,{'status':'ahead'},None,[]]):
-            self.assertTrue(release.context()[2])
-
-    def test_draft_on_another_validated_commit_does_not_move_the_tag(self):
-        pr={'number':8,'merged_at':'approved','merge_commit_sha':'approved-sha','base':{'ref':'master'},'head':{'ref':'RSX-26','repo':{'full_name':'phenom64/OpenXMB'}}}
-        environment={'GITHUB_REPOSITORY':'phenom64/OpenXMB','GITHUB_SHA':'fix-sha','GITHUB_EVENT_NAME':'push','GITHUB_REF':'refs/heads/master'}
-        draft={'draft':True,'tag_name':'v0.2.0-beta.2','target_commitish':'validated-sha'}
-        with patch.dict(release.os.environ,environment), patch.object(release,'api',side_effect=[pr,{'status':'ahead'},None,[draft]]):
-            self.assertFalse(release.context()[2])
-
-    def test_diverged_master_cannot_publish(self):
-        pr={'number':8,'merged_at':'approved','merge_commit_sha':'approved-sha','base':{'ref':'master'},'head':{'ref':'RSX-26','repo':{'full_name':'phenom64/OpenXMB'}}}
-        environment={'GITHUB_REPOSITORY':'phenom64/OpenXMB','GITHUB_SHA':'other-sha','GITHUB_EVENT_NAME':'push','GITHUB_REF':'refs/heads/master'}
-        with patch.dict(release.os.environ,environment), patch.object(release,'api',side_effect=[pr,{'status':'diverged'}]):
-            self.assertFalse(release.context()[2])
-
-    def test_published_release_is_not_republished_by_followup(self):
-        pr={'number':8,'merged_at':'approved','merge_commit_sha':'approved-sha','base':{'ref':'master'},'head':{'ref':'RSX-26','repo':{'full_name':'phenom64/OpenXMB'}}}
-        environment={'GITHUB_REPOSITORY':'phenom64/OpenXMB','GITHUB_SHA':'fix-sha','GITHUB_EVENT_NAME':'push','GITHUB_REF':'refs/heads/master'}
-        with patch.dict(release.os.environ,environment), patch.object(release,'api',side_effect=[pr,{'status':'ahead'},{'draft':False}]):
-            self.assertFalse(release.context()[2])
-
     def test_existing_correct_tag_is_preserved(self):
         with patch.object(release,'api',return_value={'object':{'sha':'approved-sha'}}), patch.object(release.subprocess,'run') as run:
-            release.reserve_tag('phenom64/OpenXMB','approved-sha','v0.2.0-beta.2')
+            release.reserve_tag('phenom64/OpenXMB','approved-sha','v0.3.0-beta.3')
             run.assert_not_called()
 
     def test_conflicting_tag_is_never_moved(self):
         with patch.object(release,'api',return_value={'object':{'sha':'other-sha'}}), patch.object(release.subprocess,'run') as run:
-            with self.assertRaises(RuntimeError):release.reserve_tag('phenom64/OpenXMB','approved-sha','v0.2.0-beta.2')
+            with self.assertRaises(RuntimeError):release.reserve_tag('phenom64/OpenXMB','approved-sha','v0.3.0-beta.3')
             run.assert_not_called()
 
     def test_missing_tag_is_reserved_explicitly(self):
         with patch.object(release,'api',return_value=None), patch.object(release.subprocess,'run') as run:
-            release.reserve_tag('phenom64/OpenXMB','approved-sha','v0.2.0-beta.2')
+            release.reserve_tag('phenom64/OpenXMB','approved-sha','v0.3.0-beta.3')
             self.assertIn('sha=approved-sha',run.call_args.args[0])
-
-
-class ValidatedRunRecoveryTests(unittest.TestCase):
-    def invoke(self, failed=False, event='workflow_dispatch', status='ahead'):
-        environment={'GITHUB_REPOSITORY':'phenom64/OpenXMB','GITHUB_SHA':'workflow-sha','GITHUB_EVENT_NAME':event,'GITHUB_REF':'refs/heads/master'}
-        run={'status':'completed','conclusion':'success','head_branch':'master','event':'push','path':'.github/workflows/release.yml','head_sha':'validated-sha'}
-        names=['Release gate','Release readiness','Ubuntu x86-64 DEB','Windows x86-64 portable ZIP','macOS x86_64','macOS arm64','Universal macOS DMG']
-        jobs={'jobs':[{'name':name,'conclusion':'failure' if failed and name=='Release readiness' else 'success'} for name in names]}
-        pr={'number':8,'merged_at':'approved','merge_commit_sha':'approved-sha','base':{'ref':'master'},'head':{'ref':'RSX-26','repo':{'full_name':'phenom64/OpenXMB'}}}
-        with patch.dict(release.os.environ,environment), patch.object(release,'api',side_effect=[run,jobs,pr,{'status':status}]):
-            return release.validated_run_context('123')
-
-    def test_fully_validated_master_build_can_be_recovered(self):
-        self.assertEqual(self.invoke(),('phenom64/OpenXMB','validated-sha',True))
-
-    def test_failed_required_check_blocks_recovery(self):
-        with self.assertRaises(RuntimeError):self.invoke(failed=True)
-
-    def test_pull_request_cannot_publish_through_recovery(self):
-        with self.assertRaises(RuntimeError):self.invoke(event='pull_request')
-
-    def test_unrelated_source_cannot_publish(self):
-        with self.assertRaises(RuntimeError):self.invoke(status='diverged')
 
 
 class DraftLookupTests(unittest.TestCase):
     def test_draft_is_found_when_tag_endpoint_omits_it(self):
-        draft={'id':123,'draft':True,'tag_name':'v0.2.0-beta.2'}
+        draft={'id':123,'draft':True,'tag_name':'v0.3.0-beta.3'}
         with patch.object(release,'api',side_effect=[None,[draft]]):
-            self.assertEqual(release.find_release('phenom64/OpenXMB','v0.2.0-beta.2'),draft)
+            self.assertEqual(release.find_release('phenom64/OpenXMB','v0.3.0-beta.3'),draft)
 
 
 if __name__ == '__main__':

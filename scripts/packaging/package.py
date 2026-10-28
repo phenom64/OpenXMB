@@ -65,7 +65,7 @@ def linux(stage, destination):
     command = ['dpkg-shlibdeps', '-O', *['-e' + str(p) for p in executables]]
     result = subprocess.check_output(command, cwd=metadata, text=True).strip()
     dependencies = result.removeprefix('shlibs:Depends=').split(', ')
-    dependencies += ['libvulkan1', 'ffmpeg', 'poppler-utils', 'xdg-utils', 'ca-certificates', 'apparmor']
+    dependencies += ['libvulkan1', 'ffmpeg', 'poppler-utils', 'xdg-utils', 'ca-certificates', 'apparmor', 'fonts-noto-core', 'fonts-noto-cjk']
     profile = package / 'etc/apparmor.d/openxmb-web'
     profile.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(ROOT / 'scripts/packaging/openxmb-web.apparmor', profile)
@@ -182,7 +182,7 @@ def mac_thin(stage, destination, arch):
             'CFBundleExecutable': 'OpenXMB', 'CFBundleName': 'OpenXMB',
             'CFBundleDisplayName': 'OpenXMB', 'CFBundleIdentifier': 'com.syndromatic.openxmb',
             'CFBundlePackageType': 'APPL', 'CFBundleShortVersionString': VERSION.split('-')[0],
-            'CFBundleVersion': '20002', 'OpenXMBReleaseVersion': VERSION,
+            'CFBundleVersion': '30003', 'OpenXMBReleaseVersion': VERSION,
             'CFBundleIconFile': 'OpenXMB.icns', 'LSMinimumSystemVersion': '15.0',
             'LSApplicationCategoryType': 'public.app-category.utilities',
             'NSHighResolutionCapable': True, 'NSPrincipalClass': 'NSApplication',

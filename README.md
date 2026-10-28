@@ -37,6 +37,9 @@ The rendering backend is powered by [**AuroreEngine**](https://github.com/phenom
 
 ## Getting Started
 
+For Beta 3 downloads, supported platforms and limitations, see the
+[release notes](docs/releases/v0.3.0-beta.3.md).
+
 ### Prerequisites
 
 Before you begin, ensure you have the following tools and libraries installed (versions are minimums unless stated):
@@ -84,7 +87,7 @@ For editor/debug work, use `cmake --preset dev && cmake --build --preset dev`.
 
 1.  **Install Dependencies (via Homebrew):**
     ```bash
-    brew install cmake ninja pkg-config llvm@20 ffmpeg sdl2 sdl2_image sdl2_mixer \
+    brew install cmake ninja pkg-config llvm@20 ffmpeg libxmp sdl2 sdl2_image sdl2_mixer \
         gettext fmt freetype harfbuzz glm libarchive zlib vulkan-loader glslang molten-vk poppler
     ```
 
@@ -115,7 +118,7 @@ For editor/debug work, use `cmake --preset dev && cmake --build --preset dev`.
         clang-19 clang-tools-19 g++-14 libvulkan-dev vulkan-utility-libraries-dev glslang-tools spirv-tools \
         libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev \
         libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev \
-        libglm-dev libfreetype-dev libharfbuzz-dev gettext libfmt-dev libarchive-dev zlib1g-dev \
+        libglm-dev libfreetype-dev libharfbuzz-dev libxmp-dev gettext libfmt-dev libarchive-dev zlib1g-dev \
         libx11-dev libxtst-dev poppler-utils
     ```
 
@@ -225,7 +228,7 @@ The Unix launcher sets `XMB_ASSET_DIR` and `XMB_LOCALE_DIR` when they are not al
 | M1: Shell and configuration | ✅ Implemented | Platform installation and runtime validation. |
 | M2: Menus, fonts and icons | ✅ Implemented | Continue visual and platform refinements. |
 | M3: Music and visualizer | ✅ Implemented | Expand audio management and validate sustained playback. |
-| M4: Video player | 🏗️ Partially implemented | Add hardware decoding and bitmap subtitles. |
+| M4: Video player | 🏗️ Partially implemented | Validate hardware decoding on devices and add bitmap subtitles. |
 | M5: Emulation | 🏗️ Partially implemented | Extend software libretro support to hardware-context cores. |
 | M6: Browser | 🏗️ Partially implemented | Expand platform support and validate native Wayland input. |
 | M7: Disc media | 🏗️ Partially implemented | Expand optical-device and format coverage. |

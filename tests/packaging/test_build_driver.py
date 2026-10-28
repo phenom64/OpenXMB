@@ -38,9 +38,15 @@ class BuildDriverTests(unittest.TestCase):
              patch.object(build, 'run', side_effect=command), \
              patch.object(build.subprocess, 'run', side_effect=[
                  subprocess.CompletedProcess(['cmake', '--build'], build_status),
-                 subprocess.CompletedProcess(['ctest'], test_status)]), \
+                 subprocess.CompletedProcess(['ctest'], test_status)]) as process, \
              patch.object(build.subprocess, 'check_output', return_value='tested-sha\n'):
             build.main()
+            return process.call_args_list[0].args[0]
+
+    def test_build_uses_current_runner_cpu_count(self):
+        with patch.object(build.os, 'cpu_count', return_value=4):
+            command = self.invoke()
+        self.assertEqual(command[command.index('--parallel') + 1], '4')
 
     def test_successful_build_exposes_installed_stage(self):
         self.invoke()

@@ -1,6 +1,6 @@
 {
   "name": "openxmb",
-  "version-string": "0.2.0-beta.2",
+  "version-string": "0.3.0-beta.3",
   "dependencies": [
     {
       "name": "sdl2",

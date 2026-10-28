@@ -69,7 +69,7 @@ bool font_covers(const std::filesystem::path& path,std::u8string_view text) {
 std::filesystem::path select_font(const std::filesystem::path& configured,const std::filesystem::path& assets,std::string_view requested) {
     const auto language=effective_language(requested);const auto required=sample(language);
     if(font_covers(configured,required))return configured;
-    std::vector<std::filesystem::path> candidates{assets/"fonts/NotoSans-Regular.ttf",assets/"Play-Regular.ttf"};
+    std::vector<std::filesystem::path> candidates{assets/"fonts/NotoSansDevanagari-Regular.ttf",assets/"fonts/NotoSansCJK-Regular.ttc",assets/"fonts/NotoSans-Regular.ttf",assets/"Play-Regular.ttf"};
 #ifdef _WIN32
     const auto windows=environment("WINDIR");const auto dir=std::filesystem::path(windows.empty()?"C:/Windows":windows)/"Fonts";
     if(language=="hi")candidates.insert(candidates.begin(),dir/"Nirmala.ttc");
