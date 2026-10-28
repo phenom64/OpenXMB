@@ -2,71 +2,35 @@ diff --git a/src/components/font_renderer.cppm b/src/components/font_renderer.cp
 index ed0bd6d..bffb780 100644
 --- a/src/components/font_renderer.cppm
 +++ b/src/components/font_renderer.cppm
-@@ -178,10 +178,11 @@ export class font_renderer {
- 
-             hb_buffer_clear_contents(hbBuffer.get());
-             // Basic defaults; can be extended for Bidi/scripts later
+@@ -181,3 +181,3 @@ export class font_renderer {
 -            hb_buffer_set_direction(hbBuffer.get(), HB_DIRECTION_LTR);
 -            hb_buffer_set_script(hbBuffer.get(), HB_SCRIPT_COMMON);
 -            hb_buffer_set_language(hbBuffer.get(), hb_language_from_string("en", -1));
 +            hb_buffer_set_direction(hbBuffer.get(), HB_DIRECTION_INVALID);
 +            hb_buffer_set_script(hbBuffer.get(), HB_SCRIPT_INVALID);
 +            hb_buffer_set_language(hbBuffer.get(), HB_LANGUAGE_INVALID);
-             hb_buffer_add_utf8(hbBuffer.get(), text.data(), text.size(), 0, text.size());
+@@ -184,0 +185 @@ export class font_renderer {
 +            hb_buffer_guess_segment_properties(hbBuffer.get());
-             shape_character_addressable(hbFont.get(), hbBuffer.get());
- 
-             unsigned int gn = 0;
-@@ -238,6 +239,9 @@ export class font_renderer {
-         }
- #endif
- 
+@@ -240,0 +242,3 @@ export class font_renderer {
 +        // Supply known UI strings before preload; their shaped glyphs share the single CPU atlas upload.
 +        void set_preload_texts(std::vector<std::string> texts) { preloadTexts = std::move(texts); }
 +
-         std::shared_future<void> preload(resource_loader* loader,
-             const std::vector<vk::RenderPass>& renderPasses, vk::SampleCountFlagBits sampleCount,
-             vk::PipelineCache pipelineCache = {},
-@@ -286,7 +290,8 @@ export class font_renderer {
-                 vk::ImageUsageFlagBits::eSampled, vk::Format::eR8G8B8A8Unorm);
-             std::string fontCapture = fontName; // capture by value for loader thread
-             int fontPx = fontSize;
+@@ -289 +293,2 @@ export class font_renderer {
 -            textureReady = loader->loadTexture(fontTexture.get(), [this, width, height, fontCapture, fontPx](uint8_t* p, size_t size){
 +            auto textsCapture = preloadTexts;
 +            textureReady = loader->loadTexture(fontTexture.get(), [this, width, height, fontCapture, fontPx, textsCapture = std::move(textsCapture)](uint8_t* p, size_t size){
-                 const size_t need = static_cast<size_t>(width) * static_cast<size_t>(height) * 4;
-                 if(need > size) throw std::runtime_error("Font atlas staging too small");
-                 std::fill(p, p+need, 0x00);
-@@ -301,9 +306,8 @@ export class font_renderer {
-                 packX = 0; packY = 0; packShelfH = 0;
-                 hbGlyphs.clear();
- 
+@@ -304,3 +309,2 @@ export class font_renderer {
 -                auto insert_cp = [&](uint32_t cp){
 -                    FT_UInt gid = FT_Get_Char_Index(face.get(), cp);
 -                    if(gid == 0) return; // missing
 +                auto insert_gid = [&](FT_UInt gid){
 +                    if(gid == 0 || hbGlyphs.contains(gid)) return;
-                     if(FT_Load_Glyph(face.get(), gid, FT_LOAD_DEFAULT) != 0) return;
-                     if(FT_Render_Glyph(face.get()->glyph, FT_RENDER_MODE_NORMAL) != 0) return;
-                     FT_GlyphSlot slot = face.get()->glyph;
-@@ -315,7 +319,7 @@ export class font_renderer {
-                         return;
-                     }
-                     if(packX + w > atlasWidth) { packX = 0; packY += packShelfH; packShelfH = 0; }
+@@ -318 +322 @@ export class font_renderer {
 -                    if(packY + h > atlasHeight) return; // out of space
 +                    if(packY + h > atlasHeight) throw std::runtime_error("Font atlas cannot fit the requested UI glyphs");
-                     const auto baked=bake_glyph(bmp);
-                     for(int yy=0; yy<h; ++yy)
-                         std::memcpy(p+((packY+yy)*width+packX)*4,baked.data()+yy*w*4,w*4);
-@@ -323,10 +327,27 @@ export class font_renderer {
-                     packX += w + 1; packShelfH = std::max(packShelfH, h + 1);
-                 };
- 
+@@ -325,0 +330 @@ export class font_renderer {
 +                auto insert_cp = [&](uint32_t cp) { insert_gid(FT_Get_Char_Index(face.get(), cp)); };
-                 // Basic ASCII
-                 for(uint32_t cp = 32; cp <= 126; ++cp) insert_cp(cp);
-                 // Latin-1 supplement
-                 for(uint32_t cp = 160; cp <= 255; ++cp) insert_cp(cp);
+@@ -329,0 +335,16 @@ export class font_renderer {
 +                // Include extended Latin, plus the exact glyph IDs required by script shaping.
 +                for(uint32_t cp = 256; cp <= 511; ++cp) insert_cp(cp);
 +                std::unique_ptr<hb_font_t, HbFontDeleter> font(hb_ft_font_create(face.get(), nullptr));
@@ -83,29 +47,14 @@ index ed0bd6d..bffb780 100644
 +                    const auto* glyphs = hb_buffer_get_glyph_infos(buffer.get(), &count);
 +                    for(unsigned int i = 0; i < count; ++i) insert_gid(glyphs[i].codepoint);
 +                }
-             });
- #else
-             unsigned int columns = std::ceil(std::sqrt(static_cast<double>(endChar - startChar + 1)));
-@@ -842,6 +863,7 @@ export class font_renderer {
-         vk::Device device;
-         vma::Allocator allocator;
-         std::string fontName;
+@@ -844,0 +866 @@ export class font_renderer {
 +        std::vector<std::string> preloadTexts;
-         int fontSize;
- 
-         bool compat_mode{};
-@@ -866,10 +888,11 @@ export class font_renderer {
-             ++shapeMisses;
-             if(text.size()>static_cast<std::size_t>(std::numeric_limits<int>::max())) throw std::length_error("Text exceeds the shaping limit");
-             hb_buffer_clear_contents(hbBuffer.get());
+@@ -869,3 +891,3 @@ export class font_renderer {
 -            hb_buffer_set_direction(hbBuffer.get(),HB_DIRECTION_LTR);
 -            hb_buffer_set_script(hbBuffer.get(),HB_SCRIPT_COMMON);
 -            hb_buffer_set_language(hbBuffer.get(),hb_language_from_string("en",-1));
 +            hb_buffer_set_direction(hbBuffer.get(), HB_DIRECTION_INVALID);
 +            hb_buffer_set_script(hbBuffer.get(), HB_SCRIPT_INVALID);
 +            hb_buffer_set_language(hbBuffer.get(), HB_LANGUAGE_INVALID);
-             hb_buffer_add_utf8(hbBuffer.get(),text.data(),static_cast<int>(text.size()),0,static_cast<int>(text.size()));
+@@ -872,0 +895 @@ export class font_renderer {
 +            hb_buffer_guess_segment_properties(hbBuffer.get());
-             shape_character_addressable(hbFont.get(),hbBuffer.get());
-             unsigned int count{};
-             auto* infos=hb_buffer_get_glyph_infos(hbBuffer.get(),&count);

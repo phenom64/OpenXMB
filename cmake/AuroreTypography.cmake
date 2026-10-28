@@ -7,11 +7,11 @@ function(openxmb_configure_aurore_typography source)
     return()
   endif()
   find_package(Git REQUIRED)
-  execute_process(COMMAND "${GIT_EXECUTABLE}" apply --check "${OPENXMB_AURORE_TYPOGRAPHY_PATCH}"
+  execute_process(COMMAND "${GIT_EXECUTABLE}" apply --unidiff-zero --check "${OPENXMB_AURORE_TYPOGRAPHY_PATCH}"
     WORKING_DIRECTORY "${source}" RESULT_VARIABLE check ERROR_VARIABLE diagnostic)
   if(NOT check EQUAL 0)
     message(FATAL_ERROR "AuroreEngine typography patch no longer applies: ${diagnostic}")
   endif()
-  execute_process(COMMAND "${GIT_EXECUTABLE}" apply "${OPENXMB_AURORE_TYPOGRAPHY_PATCH}"
+  execute_process(COMMAND "${GIT_EXECUTABLE}" apply --unidiff-zero "${OPENXMB_AURORE_TYPOGRAPHY_PATCH}"
     WORKING_DIRECTORY "${source}" COMMAND_ERROR_IS_FATAL ANY)
 endfunction()
