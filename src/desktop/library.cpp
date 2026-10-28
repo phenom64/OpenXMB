@@ -30,6 +30,7 @@
 #include <map>
 #include <set>
 #include <stdexcept>
+#include <string_view>
 #include <thread>
 
 #ifdef OPENXMB_HAVE_CURL
@@ -52,6 +53,36 @@ namespace openxmb::desktop {
 namespace {
 namespace fs = std::filesystem;
 using json = nlohmann::json;
+std::string path_text(const fs::path &path) {
+  const auto value = path.u8string();
+  return {value.begin(), value.end()};
+}
+fs::path text_path(const std::string &value) { return fs::path(std::u8string(value.begin(), value.end())); }
+std::optional<fs::path> environment_path(const char *name) {
+#ifdef _WIN32
+  const std::wstring key(name, name + std::strlen(name));
+  if (const auto *value = _wgetenv(key.c_str()); value && *value) return fs::path(value);
+#else
+  if (const auto *value = std::getenv(name); value && *value) return text_path(value);
+#endif
+  return {};
+}
+std::string path_identity(const fs::path &path) {
+  std::error_code error;
+  auto normalized = fs::weakly_canonical(path, error);
+  if (error) normalized = fs::absolute(path).lexically_normal();
+#ifdef _WIN32
+  // Windows path identity is case-insensitive; keep non-ASCII code points
+  // intact instead of applying a byte-wise case conversion to UTF-8.
+  auto native = normalized.native();
+  std::wstring folded(native.size(), L'\0');
+  if (!native.empty() && LCMapStringEx(LOCALE_NAME_INVARIANT, LCMAP_LOWERCASE, native.data(), static_cast<int>(native.size()),
+      folded.data(), static_cast<int>(folded.size()), nullptr, nullptr, 0)) native = std::move(folded);
+  return path_text(fs::path(native));
+#else
+  return path_text(normalized);
+#endif
+}
 std::atomic<std::uint64_t> serial{};
 std::uint64_t now() {
   return static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
@@ -147,19 +178,19 @@ void erase(const fs::path &root, const char *key, const std::string &id) {
 }
 json game_json(const Game &g) {
   return {{"id", g.id}, {"title", g.title}, {"description", g.description}, {"genre", g.genre}, {"developer", g.developer}, {"category", g.category},
-    {"executable", g.executable.string()}, {"arguments", g.arguments}, {"working_directory", g.working_directory.string()}, {"icon", g.icon.string()},
-    {"background", g.background.string()}, {"preview", g.preview.string()}, {"music", g.music.string()}, {"year", g.year}, {"favorite", g.favorite},
-    {"play_count", g.play_count}, {"last_played", g.last_played}, {"platform", g.platform}, {"title_id", g.title_id}, {"game_directory", g.game_directory.string()}};
+    {"executable", path_text(g.executable)}, {"arguments", g.arguments}, {"working_directory", path_text(g.working_directory)}, {"icon", path_text(g.icon)},
+    {"background", path_text(g.background)}, {"preview", path_text(g.preview)}, {"music", path_text(g.music)}, {"year", g.year}, {"favorite", g.favorite},
+    {"play_count", g.play_count}, {"last_played", g.last_played}, {"platform", g.platform}, {"title_id", g.title_id}, {"game_directory", path_text(g.game_directory)}};
 }
 Game game(const json &value) {
   Game g;
   g.id = value.value("id", ""); g.title = value.value("title", ""); g.description = value.value("description", "");
   g.genre = value.value("genre", ""); g.developer = value.value("developer", ""); g.category = value.value("category", "");
-  g.executable = value.value("executable", ""); g.arguments = value.value("arguments", std::vector<std::string>{});
-  g.working_directory = value.value("working_directory", ""); g.icon = value.value("icon", ""); g.background = value.value("background", "");
-  g.preview = value.value("preview", ""); g.music = value.value("music", ""); g.year = value.value("year", 0); g.favorite = value.value("favorite", false);
+  g.executable = text_path(value.value("executable", "")); g.arguments = value.value("arguments", std::vector<std::string>{});
+  g.working_directory = text_path(value.value("working_directory", "")); g.icon = text_path(value.value("icon", "")); g.background = text_path(value.value("background", ""));
+  g.preview = text_path(value.value("preview", "")); g.music = text_path(value.value("music", "")); g.year = value.value("year", 0); g.favorite = value.value("favorite", false);
   g.play_count = value.value("play_count", std::uint64_t{}); g.last_played = value.value("last_played", std::uint64_t{});
-  g.platform = value.value("platform", ""); g.title_id = value.value("title_id", ""); g.game_directory = value.value("game_directory", "");
+  g.platform = value.value("platform", ""); g.title_id = value.value("title_id", ""); g.game_directory = text_path(value.value("game_directory", ""));
   return g;
 }
 std::string lower(std::string value) {
@@ -196,6 +227,182 @@ Game desktop_file(const fs::path &path) {
   result.executable = arguments.front(); arguments.erase(arguments.begin()); result.arguments = std::move(arguments);
   result.description = fields["Comment"]; result.working_directory = fields["Path"];
   if (fs::path(fields["Icon"]).is_absolute()) result.icon = fields["Icon"];
+  return result;
+}
+std::vector<fs::path> rpcs3_data_directories() {
+  std::vector<fs::path> candidates;
+  // RPCS3_DATA_DIR is OpenXMB's explicit data-root override. The remaining
+  // locations follow RPCS3's fs::get_config_dir(), plus its Flatpak sandbox.
+  if (const auto value = environment_path("RPCS3_DATA_DIR")) candidates.emplace_back(*value);
+  const auto executable = rpcs3_executable();
+  if (executable) candidates.emplace_back(executable->parent_path() / "portable");
+#ifdef _WIN32
+  if (const auto value = environment_path("RPCS3_CONFIG_DIR")) candidates.emplace_back(*value);
+  if (executable) candidates.emplace_back(executable->parent_path());
+  // Retain detection of older user installations without migrating any files.
+  if (const auto value = environment_path("APPDATA")) candidates.emplace_back(*value / "rpcs3");
+#elif defined(__APPLE__)
+  if (const auto value = environment_path("HOME")) candidates.emplace_back(*value / "Library/Application Support/rpcs3");
+#else
+  if (const auto value = environment_path("XDG_CONFIG_HOME")) candidates.emplace_back(*value / "rpcs3");
+  else if (const auto value = environment_path("HOME")) candidates.emplace_back(*value / ".config/rpcs3");
+  if (const auto value = environment_path("HOME")) candidates.emplace_back(*value / ".var/app/net.rpcs3.RPCS3/config/rpcs3");
+#endif
+  std::set<std::string> seen;
+  std::vector<fs::path> result;
+  for (const auto &candidate : candidates) {
+    std::error_code error;
+    if (fs::is_directory(candidate, error) && seen.insert(path_identity(candidate)).second)
+      result.push_back(fs::weakly_canonical(candidate));
+  }
+  return result;
+}
+std::string bounded_text(const fs::path &file, std::size_t limit) {
+  if (!fs::is_regular_file(file) || fs::file_size(file) > limit) throw std::runtime_error("RPCS3 metadata is missing or too large");
+  std::ifstream input(file, std::ios::binary);
+  std::string result(limit + 1, '\0');
+  input.read(result.data(), static_cast<std::streamsize>(result.size()));
+  const auto size = static_cast<std::size_t>(input.gcount());
+  if (input.bad() || size > limit) throw std::runtime_error("Cannot read bounded RPCS3 metadata");
+  result.resize(size);
+  return result;
+}
+void append_utf8(std::string &text, std::uint32_t codepoint) {
+  if (codepoint > 0x10ffff || (codepoint >= 0xd800 && codepoint <= 0xdfff)) throw std::runtime_error("Invalid YAML Unicode escape");
+  if (codepoint < 0x80) text += static_cast<char>(codepoint);
+  else if (codepoint < 0x800) { text += static_cast<char>(0xc0 | (codepoint >> 6)); text += static_cast<char>(0x80 | (codepoint & 63)); }
+  else if (codepoint < 0x10000) { text += static_cast<char>(0xe0 | (codepoint >> 12)); text += static_cast<char>(0x80 | ((codepoint >> 6) & 63)); text += static_cast<char>(0x80 | (codepoint & 63)); }
+  else { text += static_cast<char>(0xf0 | (codepoint >> 18)); text += static_cast<char>(0x80 | ((codepoint >> 12) & 63)); text += static_cast<char>(0x80 | ((codepoint >> 6) & 63)); text += static_cast<char>(0x80 | (codepoint & 63)); }
+}
+void valid_yaml_text(std::string_view text) {
+  for (std::size_t at = 0; at < text.size();) {
+    const auto lead = static_cast<unsigned char>(text[at++]);
+    if (lead < 0x20 || lead == 0x7f) throw std::runtime_error("Control characters are unsupported in RPCS3 paths");
+    if (lead < 0x80) continue;
+    const unsigned length = lead >= 0xc2 && lead <= 0xdf ? 2 : lead >= 0xe0 && lead <= 0xef ? 3 : lead >= 0xf0 && lead <= 0xf4 ? 4 : 0;
+    if (!length || text.size() - at < length - 1) throw std::runtime_error("Invalid YAML UTF-8");
+    std::uint32_t codepoint = lead & (0x7f >> length);
+    for (unsigned i = 1; i < length; ++i) {
+      const auto next = static_cast<unsigned char>(text[at++]);
+      if ((next & 0xc0) != 0x80) throw std::runtime_error("Invalid YAML UTF-8");
+      codepoint = (codepoint << 6) | (next & 63);
+    }
+    if ((length == 2 && codepoint < 0x80) || (length == 3 && codepoint < 0x800) || (length == 4 && codepoint < 0x10000) ||
+        codepoint > 0x10ffff || (codepoint >= 0xd800 && codepoint <= 0xdfff)) throw std::runtime_error("Invalid YAML UTF-8 codepoint");
+  }
+}
+bool yaml_space(char c) { return c == ' ' || c == '\t'; }
+void yaml_spaces(std::string_view line, std::size_t &at) { while (at < line.size() && yaml_space(line[at])) ++at; }
+std::string yaml_scalar(std::string_view line, std::size_t &at, bool key) {
+  if (at == line.size()) throw std::runtime_error("Missing RPCS3 registry scalar");
+  std::string result;
+  const auto quote = line[at] == '\'' || line[at] == '"' ? line[at++] : '\0';
+  if (quote) {
+    bool closed = false;
+    while (at < line.size()) {
+      char c = line[at++];
+      if (c == quote) {
+        if (quote == '\'' && at < line.size() && line[at] == '\'') { result += '\''; ++at; continue; }
+        closed = true; break;
+      }
+      if (quote != '"' || c != '\\') { result += c; continue; }
+      if (at == line.size()) throw std::runtime_error("Truncated YAML escape");
+      c = line[at++];
+      switch (c) {
+      case '"': case '\\': case '/': result += c; break;
+      case ' ': result += ' '; break;
+      case '0': result += '\0'; break; case 'a': result += '\a'; break;
+      case 'b': result += '\b'; break; case 't': result += '\t'; break;
+      case 'n': result += '\n'; break; case 'v': result += '\v'; break;
+      case 'f': result += '\f'; break; case 'r': result += '\r'; break;
+      case 'e': result += '\x1b'; break;
+      case 'N': append_utf8(result, 0x85); break; case '_': append_utf8(result, 0xa0); break;
+      case 'L': append_utf8(result, 0x2028); break; case 'P': append_utf8(result, 0x2029); break;
+      case 'x': case 'u': case 'U': {
+        const unsigned digits = c == 'x' ? 2 : c == 'u' ? 4 : 8;
+        if (line.size() - at < digits) throw std::runtime_error("Truncated YAML Unicode escape");
+        std::uint32_t codepoint = 0;
+        for (unsigned i = 0; i < digits; ++i) {
+          const auto hex = line[at++];
+          const int value = hex >= '0' && hex <= '9' ? hex - '0' : hex >= 'a' && hex <= 'f' ? hex - 'a' + 10 : hex >= 'A' && hex <= 'F' ? hex - 'A' + 10 : -1;
+          if (value < 0) throw std::runtime_error("Invalid YAML Unicode escape");
+          codepoint = (codepoint << 4) | static_cast<unsigned>(value);
+        }
+        append_utf8(result, codepoint); break;
+      }
+      default: throw std::runtime_error("Unsupported YAML escape");
+      }
+    }
+    if (!closed) throw std::runtime_error("Unterminated YAML scalar");
+  } else {
+    const auto first = line[at];
+    if (std::string_view("!&*{}[],#|>\"'%@`").find(first) != std::string_view::npos ||
+        ((first == '-' || first == '?' || first == ':') && (at + 1 == line.size() || yaml_space(line[at + 1]))))
+      throw std::runtime_error("Unsupported RPCS3 registry YAML construct");
+    const auto start = at;
+    while (at < line.size()) {
+      if (line[at] == ':' && (at + 1 == line.size() || yaml_space(line[at + 1]))) {
+        if (key) break;
+        throw std::runtime_error("Nested YAML mappings are unsupported");
+      }
+      if (line[at] == '#' && at > start && yaml_space(line[at - 1])) break;
+      ++at;
+    }
+    auto end = at;
+    while (end > start && yaml_space(line[end - 1])) --end;
+    result = line.substr(start, end - start);
+  }
+  if (result.empty() || result.size() > 32768) throw std::runtime_error("Invalid RPCS3 registry scalar length");
+  valid_yaml_text(result);
+  return result;
+}
+std::vector<fs::path> read_rpcs3_registry(const fs::path &file) {
+  // RPCS3's yaml-cpp emitter writes a block map<string,string>. Deliberately
+  // reject collections, aliases, tags, complex keys and multiline scalars;
+  // never reinterpret an arbitrary YAML document as a list of game paths.
+  const auto bytes = bounded_text(file, 4 * 1024 * 1024);
+  std::string_view input(bytes);
+  if (input.starts_with("\xef\xbb\xbf")) input.remove_prefix(3);
+  std::vector<fs::path> paths;
+  std::set<std::string> keys;
+  while (!input.empty()) {
+    const auto newline = input.find('\n');
+    auto line = input.substr(0, newline);
+    input = newline == std::string_view::npos ? std::string_view{} : input.substr(newline + 1);
+    if (line.ends_with('\r')) line.remove_suffix(1);
+    if (line.size() > 131072) throw std::runtime_error("RPCS3 registry line is too long");
+    std::size_t at = 0; yaml_spaces(line, at);
+    if (at == line.size() || line[at] == '#') continue;
+    if (at != 0) throw std::runtime_error("Indented RPCS3 registry mappings are unsupported");
+    if (line == "{}" && keys.empty() && input.empty()) return {};
+    const auto key = yaml_scalar(line, at, true);
+    yaml_spaces(line, at);
+    if (at == line.size() || line[at++] != ':' || (at < line.size() && !yaml_space(line[at]))) throw std::runtime_error("Invalid RPCS3 registry mapping");
+    yaml_spaces(line, at);
+    const auto value = yaml_scalar(line, at, false);
+    yaml_spaces(line, at);
+    if (at < line.size() && line[at] != '#') throw std::runtime_error("Unexpected RPCS3 registry trailing content");
+    if (keys.size() >= 10000 || !keys.insert(key).second) throw std::runtime_error("Too many or duplicate RPCS3 registry keys");
+    const auto path = text_path(value);
+    if (path.is_absolute()) paths.push_back(path);
+  }
+  return paths;
+}
+std::vector<fs::path> rpcs3_registered_paths() {
+  std::vector<fs::path> result;
+  for (const auto &directory : rpcs3_data_directories()) {
+    std::vector<fs::path> registries;
+#ifdef _WIN32
+    registries.push_back(directory / "config/games.yml");
+#endif
+    registries.push_back(directory / "games.yml");
+    for (const auto &registry : registries) {
+      try {
+        const auto paths = read_rpcs3_registry(registry);
+        result.insert(result.end(), paths.begin(), paths.end());
+      } catch (const std::exception &) { /* An unreadable registry cannot hide other installations. */ }
+    }
+  }
   return result;
 }
 } // namespace
@@ -285,8 +492,8 @@ std::optional<fs::path> rpcs3_executable() {
     return ::access(path.c_str(), X_OK) == 0;
 #endif
   };
-  if (const auto *configured = std::getenv("RPCS3_EXECUTABLE"); configured && *configured && usable(configured)) return fs::absolute(configured);
-  const auto *search = std::getenv("PATH");
+  if (const auto configured = environment_path("RPCS3_EXECUTABLE"); configured && usable(*configured)) return fs::absolute(*configured);
+  const auto search = environment_path("PATH");
   if (!search) return {};
 #ifdef _WIN32
   constexpr char separator = ';';
@@ -295,11 +502,11 @@ std::optional<fs::path> rpcs3_executable() {
   constexpr char separator = ':';
   constexpr const char *names[]{"rpcs3", "rpcs3.AppImage"};
 #endif
-  std::string value(search);
+  const auto value = path_text(*search);
   for (std::size_t start = 0; start <= value.size();) {
     const auto end = value.find(separator, start);
     const auto part = value.substr(start, end == std::string::npos ? end : end - start);
-    if (!part.empty()) for (const auto *name : names) if (const auto path = fs::path(part) / name; usable(path)) return fs::absolute(path);
+    if (!part.empty()) for (const auto *name : names) if (const auto path = text_path(part) / name; usable(path)) return fs::absolute(path);
     if (end == std::string::npos) break;
     start = end + 1;
   }
@@ -307,15 +514,10 @@ std::optional<fs::path> rpcs3_executable() {
 }
 std::vector<fs::path> rpcs3_game_roots() {
   std::vector<fs::path> candidates;
-  if (const auto *configured = std::getenv("RPCS3_DATA_DIR"); configured && *configured) candidates.emplace_back(fs::path(configured) / "dev_hdd0/game");
-  if (const auto *configured = std::getenv("XDG_CONFIG_HOME"); configured && *configured) candidates.emplace_back(fs::path(configured) / "rpcs3/dev_hdd0/game");
-  if (const auto *home = std::getenv("HOME"); home && *home) {
-    candidates.emplace_back(fs::path(home) / ".config/rpcs3/dev_hdd0/game");
-    candidates.emplace_back(fs::path(home) / "Library/Application Support/rpcs3/dev_hdd0/game");
-    candidates.emplace_back(fs::path(home) / ".var/app/net.rpcs3.RPCS3/config/rpcs3/dev_hdd0/game");
+  for (const auto &directory : rpcs3_data_directories()) {
+    candidates.emplace_back(directory / "dev_hdd0/game");
+    candidates.emplace_back(directory / "games");
   }
-  if (const auto *appdata = std::getenv("APPDATA"); appdata && *appdata) candidates.emplace_back(fs::path(appdata) / "rpcs3/dev_hdd0/game");
-  if (const auto executable = rpcs3_executable()) candidates.emplace_back(executable->parent_path() / "dev_hdd0/game");
   std::vector<fs::path> result;
   for (const auto &candidate : candidates) {
     std::error_code error;
@@ -328,19 +530,23 @@ std::vector<fs::path> rpcs3_game_roots() {
 Game import_rpcs3_game(const fs::path &directory) {
   auto folder = fs::absolute(directory).lexically_normal();
   if (folder.filename() == "PARAM.SFO") folder = folder.parent_path();
+  else if (folder.filename() == "EBOOT.BIN" && folder.parent_path().filename() == "USRDIR") folder = folder.parent_path().parent_path();
   if (!fs::is_regular_file(folder / "PARAM.SFO") && fs::is_regular_file(folder / "PS3_GAME/PARAM.SFO")) folder /= "PS3_GAME";
+  folder = fs::weakly_canonical(folder);
   const auto metadata = read_param_sfo(folder / "PARAM.SFO");
   const auto value = [&](const char *key) { const auto found = metadata.find(key); return found == metadata.end() ? std::string{} : found->second; };
+  const auto boot = folder / "USRDIR/EBOOT.BIN";
+  if ((value("CATEGORY") != "DG" && value("CATEGORY") != "HG") || !fs::is_regular_file(boot))
+    throw std::runtime_error("RPCS3 import requires a bootable DG disc or HG HDD title with USRDIR/EBOOT.BIN");
   Game game;
   game.platform = "PlayStation 3 (RPCS3)";
-  game.title = value("TITLE").empty() ? directory.filename().string() : value("TITLE");
+  game.title = value("TITLE").empty() ? path_text(folder.filename()) : value("TITLE");
   game.title_id = value("TITLE_ID");
   game.game_directory = folder;
   game.description = game.platform + "  " + game.title_id + (value("APP_VER").empty() ? "" : "  v" + value("APP_VER"));
   game.category = "PlayStation 3";
   game.executable = rpcs3_executable().value_or(fs::path("rpcs3"));
-  const auto boot = folder / "USRDIR/EBOOT.BIN";
-  game.arguments = {"--no-gui", fs::is_regular_file(boot) ? boot.string() : folder.string()};
+  game.arguments = {"--no-gui", path_text(boot)};
   game.working_directory = folder;
   for (const auto &[name, target] : std::initializer_list<std::pair<const char *, fs::path *>>{{"ICON0.PNG", &game.icon}, {"PIC1.PNG", &game.background}, {"ICON1.PAM", &game.preview}, {"SND0.AT3", &game.music}})
     if (fs::is_regular_file(folder / name)) *target = folder / name;
@@ -349,7 +555,7 @@ Game import_rpcs3_game(const fs::path &directory) {
 }
 void launch_game(const Game &game) {
   if (game.executable.empty()) throw std::runtime_error("Set this game's executable before launching");
-  std::vector<std::string> arguments{game.executable.string()};
+  std::vector<std::string> arguments{path_text(game.executable)};
   arguments.insert(arguments.end(), game.arguments.begin(), game.arguments.end());
   for (const auto &argument : arguments) if (argument.find('\0') != std::string::npos) throw std::runtime_error("Launch arguments contain NUL");
 #ifdef _WIN32
@@ -461,26 +667,75 @@ void Library::mark_played(const std::string &id) {
 }
 std::vector<fs::path> Library::game_roots() const {
   std::vector<fs::path> result;
-  for (const auto &path : library(root_).value("game_roots", std::vector<std::string>{})) result.emplace_back(path);
+  for (const auto &path : library(root_).value("game_roots", std::vector<std::string>{})) result.emplace_back(text_path(path));
   return result;
 }
 void Library::add_game_root(const fs::path &path) {
   if (!fs::is_directory(path)) throw std::runtime_error("Game root must be an existing directory");
   auto state = library(root_); auto roots = state.value("game_roots", std::vector<std::string>{});
-  const auto value = fs::weakly_canonical(path).string();
+  const auto value = path_text(fs::weakly_canonical(path));
   if (std::ranges::find(roots, value) == roots.end()) roots.push_back(value);
   state["game_roots"] = roots; save_library(root_, state);
 }
 void Library::remove_game_root(const fs::path &path) {
   auto state = library(root_); auto roots = state.value("game_roots", std::vector<std::string>{});
-  const auto value = fs::weakly_canonical(path).string(); std::erase(roots, value); state["game_roots"] = roots; save_library(root_, state);
+  const auto value = path_text(fs::weakly_canonical(path)); std::erase(roots, value); state["game_roots"] = roots; save_library(root_, state);
 }
 std::size_t Library::scan_games() {
   auto existing = games();
-  std::set<std::string> paths;
-  for (const auto &g : existing) paths.insert(g.executable.string() + '\n' + format_arguments(g.arguments));
+  const auto native = [](const Game &game) { return game.platform == "PlayStation 3 (RPCS3)" && !game.game_directory.empty(); };
+  const auto identity = [&](const Game &game) {
+    // The installed emulator executable and launch options can change. A
+    // canonical native metadata directory remains the same library title.
+    return native(game) ? "rpcs3\n" + path_identity(game.game_directory) : path_text(game.executable) + '\n' + format_arguments(game.arguments);
+  };
+  std::map<std::string, std::size_t> paths;
+  for (std::size_t i = 0; i < existing.size(); ++i) paths.emplace(identity(existing[i]), i);
   std::size_t count = 0, examined = 0;
-  for (const auto &root : game_roots()) {
+  const auto accept = [&](Game found, bool manifest = false) {
+    if (found.title.empty() || found.executable.empty()) return;
+    const auto key = identity(found);
+    if (const auto match = paths.find(key); match != paths.end()) {
+      if (!native(found) && !manifest) return;
+      const auto &saved = existing[match->second];
+      found.id = saved.id; found.play_count = saved.play_count;
+      found.last_played = saved.last_played; found.favorite = saved.favorite;
+      if (native(found)) {
+        const auto preserve = [&](fs::path Game::*member, std::initializer_list<const char *> filenames) {
+          const auto &selected = saved.*member;
+          if (selected.empty()) return;
+          const auto chosen = path_identity(selected);
+          // Native role paths identify prior automatic choices even when the
+          // asset was removed. Any other saved path is a user-selected asset.
+          if (std::ranges::none_of(filenames, [&](const auto *name) { return chosen == path_identity(saved.game_directory / name); })) found.*member = selected;
+        };
+        preserve(&Game::icon, {"ICON0.PNG"}); preserve(&Game::background, {"PIC1.PNG", "PIC0.PNG"});
+        preserve(&Game::preview, {"ICON1.PAM"}); preserve(&Game::music, {"SND0.AT3"});
+      }
+      existing[match->second] = save_game(std::move(found));
+      return;
+    }
+    found.id.clear();
+    auto saved = save_game(std::move(found));
+    paths.emplace(key, existing.size()); existing.push_back(std::move(saved)); ++count;
+  };
+  for (const auto &path : rpcs3_registered_paths()) {
+    if (++examined > 10000) throw std::runtime_error("Game scan exceeded 10000 entries; choose narrower roots");
+    Game found;
+    try { found = import_rpcs3_game(path); } catch (const std::exception &) { continue; }
+    accept(std::move(found));
+  }
+  auto roots = game_roots();
+  const auto detected = rpcs3_game_roots(); roots.insert(roots.end(), detected.begin(), detected.end());
+  std::set<std::string> visited;
+  for (const auto &root : roots) {
+    if (!visited.insert(path_identity(root)).second) continue;
+    if (fs::is_regular_file(root / "PARAM.SFO") || fs::is_regular_file(root / "PS3_GAME/PARAM.SFO")) {
+      Game found;
+      try { found = import_rpcs3_game(root); } catch (const std::exception &) { continue; }
+      accept(std::move(found));
+      continue;
+    }
     std::error_code error;
     for (fs::recursive_directory_iterator it(root, fs::directory_options::skip_permission_denied, error), end; !error && it != end; it.increment(error)) {
       if (++examined > 10000) throw std::runtime_error("Game scan exceeded 10000 entries; choose narrower roots");
@@ -490,8 +745,8 @@ std::size_t Library::scan_games() {
       const auto path = it->path();
       try {
         if (it->is_directory() && (fs::is_regular_file(path / "PARAM.SFO") || fs::is_regular_file(path / "PS3_GAME/PARAM.SFO"))) {
-          found = import_rpcs3_game(path);
           it.disable_recursion_pending();
+          found = import_rpcs3_game(path);
         } else if (path.filename() == "PARAM.SFO") found = import_rpcs3_game(path.parent_path());
         else if (path.filename() == "openxmb-game.json" || path.filename().string().ends_with(".openxmb-game.json")) {
           found = game(read(path));
@@ -502,18 +757,7 @@ std::size_t Library::scan_games() {
         else if (executable_file(*it)) { found.title = path.stem().string(); found.executable = path; found.working_directory = path.parent_path(); }
         else continue;
       } catch (const std::exception &) { continue; }
-      if (found.title.empty() || found.executable.empty()) continue;
-      const auto identity = found.executable.string() + '\n' + format_arguments(found.arguments);
-      if (paths.insert(identity).second) { found.id.clear(); save_game(std::move(found)); ++count; }
-      else if (path.filename() == "openxmb-game.json" || path.filename().string().ends_with(".openxmb-game.json")) {
-        // A manifest carries richer metadata than the executable discovered in
-        // the same directory. Retain play history and favorites when refreshing.
-        for (const auto &saved : games()) if (saved.executable.string() + '\n' + format_arguments(saved.arguments) == identity) {
-          found.id = saved.id; found.play_count = saved.play_count;
-          found.last_played = saved.last_played; found.favorite = saved.favorite;
-          save_game(std::move(found)); break;
-        }
-      }
+      accept(std::move(found), path.filename() == "openxmb-game.json" || path.filename().string().ends_with(".openxmb-game.json"));
     }
   }
   return count;
