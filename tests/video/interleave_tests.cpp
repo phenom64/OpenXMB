@@ -12,6 +12,54 @@ extern "C" {
 #include <stdexcept>
 #include <thread>
 #include <vector>
+#include "audio_pause_hooks.hpp"
+
+void verify_pause_quiescence(openxmb::video::session& player) {
+    namespace hooks=openxmb::video::pause_test;
+    const auto wait=[](auto predicate) {
+        const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(5);
+        while(!predicate()) {
+            if(std::chrono::steady_clock::now()>=deadline) {
+                hooks::released.store(true);
+                throw std::runtime_error("audio callback scheduling barrier timed out");
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+    };
+    // A callback can pass its initial paused check just before pause begins.
+    hooks::arm(hooks::point::before_lock);
+    player.pause(false);
+    wait([] { return hooks::entered.load(); });
+    player.pause(true);
+    const auto played=player.played_audio_frames();
+    const auto completed=hooks::completed.load();
+    hooks::released.store(true);
+    wait([&] { return hooks::completed.load()>completed; });
+    if(player.played_audio_frames()!=played)
+        throw std::runtime_error("callback admitted before pause consumed PCM after pause returned");
+
+    // Pause must also wait for a callback already consuming under the lock.
+    hooks::arm(hooks::point::inside_lock);
+    player.pause(false);
+    wait([] { return hooks::entered.load(); });
+    hooks::pause_attempted.store(false);
+    hooks::pause_contended.store(false);
+    hooks::probe_pause_lock.store(true);
+    std::atomic<bool> returned{false};
+    std::thread control([&] { player.pause(true);returned.store(true); });
+    try { wait([] { return hooks::pause_attempted.load(std::memory_order_acquire); }); }
+    catch(...) { hooks::released.store(true);control.join();throw; }
+    const bool contended=hooks::pause_contended.load();
+    const bool returned_early=returned.load();
+    hooks::released.store(true);
+    control.join();
+    if(!contended) throw std::runtime_error("pause did not observe the held callback lock");
+    if(returned_early) throw std::runtime_error("pause returned with a consuming callback still in flight");
+    const auto stopped=player.played_audio_frames();
+    std::this_thread::sleep_for(std::chrono::milliseconds(25));
+    if(player.played_audio_frames()!=stopped)
+        throw std::runtime_error("paused callback clock did not remain frozen");
+}
 
 void require(int result, const char *what) {
     if (result < 0)
@@ -132,7 +180,7 @@ int main(int argc, char **argv) {
             }
             if (player.position() < 2.0 || player.played_audio_frames() < 48000 || last_pts < 1.9 || frames < 15)
                 throw std::runtime_error("audio/video stalled behind full future-video queue");
-            player.pause(true);
+            verify_pause_quiescence(player);
             const double position = player.position();
             const auto audio = player.played_audio_frames();
             for (int i = 0; i < 30; ++i) {

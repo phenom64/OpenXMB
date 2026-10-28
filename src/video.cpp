@@ -12,6 +12,9 @@
 #include <sstream>
 #include <stdexcept>
 #include <utility>
+#ifdef OPENXMB_VIDEO_PAUSE_TESTS
+#include "../tests/video/audio_pause_hooks.hpp"
+#endif
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
@@ -100,7 +103,22 @@ public:
     }
 
     void pause(bool pause) {
-        paused.store(pause);
+        {
+            // Finish any admitted shared-mixer callback before returning a
+            // paused transport to its caller. Standalone SDL devices also
+            // use this gate before their device-level pause completes.
+            std::unique_lock lock(mutex,std::defer_lock);
+#ifdef OPENXMB_VIDEO_PAUSE_TESTS
+            if(pause && pause_test::probe_pause_lock.exchange(false)) {
+                const bool acquired=lock.try_lock();
+                pause_test::pause_contended.store(!acquired);
+                pause_test::pause_attempted.store(true,std::memory_order_release);
+                if(!acquired) lock.lock();
+            } else
+#endif
+            lock.lock();
+            paused.store(pause);
+        }
         if(device) SDL_PauseAudioDevice(device, pause);
     }
 
@@ -135,9 +153,20 @@ private:
     std::size_t samples_queued = 0;
 
     void consume(void* bytes, int byte_count, bool additive) {
+#ifdef OPENXMB_VIDEO_PAUSE_TESTS
+        pause_test::callback_scope callback_scope;
+#endif
         if(!additive) std::memset(bytes, 0, byte_count);
         if(paused.load()) return;
+#ifdef OPENXMB_VIDEO_PAUSE_TESTS
+        pause_test::arrive(pause_test::point::before_lock);
+#endif
         std::lock_guard lock(mutex);
+        // pause() may have acquired the lock after our optimistic check.
+        if(paused.load()) return;
+#ifdef OPENXMB_VIDEO_PAUSE_TESTS
+        pause_test::arrive(pause_test::point::inside_lock);
+#endif
         const std::size_t sample_bytes = spec.format == AUDIO_F32SYS ? sizeof(float) : sizeof(std::int16_t);
         std::size_t wanted = static_cast<std::size_t>(byte_count) / sample_bytes;
         std::size_t copied = 0;
@@ -736,6 +765,7 @@ bool session::seek(double seconds) { return std::isfinite(seconds) && impl->seek
 void session::pause(bool paused) {
     if(impl->status == state::failed) return;
     if(impl->status == state::ended && !paused) impl->seek_to(0);
+    if(paused) impl->audio.pause(true);
     auto now = position();
     if(!paused && impl->resume_seek) {
         impl->seek_to(now);
@@ -743,7 +773,7 @@ void session::pause(bool paused) {
     }
     impl->set_clock(now);
     impl->status = paused ? state::paused : state::playing;
-    impl->audio.pause(paused || impl->speed != 1.0);
+    if(!paused) impl->audio.pause(impl->speed != 1.0);
 }
 
 void session::step(int direction) {
