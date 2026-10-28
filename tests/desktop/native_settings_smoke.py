@@ -32,7 +32,7 @@ def main():
     config = json.loads((ROOT / 'config.json').read_text())
     config.setdefault('preferences', {}).update({'startup.intro': 'Off', 'startup.warning': 'Off'})
     config['render'].update({'sample-count': 1, 'max-fps': 30, 'vsync': False, 'show-fps': False, 'show-mem': False, 'icon-glass-refraction': True})
-    config['shell'].update({'background-type': 'original', 'theme-colour-mode': 'custom', 'theme-custom-colour': '#d7122d', 'font-path': 'default', 'language': 'en'})
+    config['shell'].update({'background-type': 'original', 'theme-colour-mode': 'custom', 'theme-custom-colour': '#d7122d', 'theme-day-night-mode': 'day', 'font-path': 'default', 'language': 'en'})
     m.json_write(profile / 'config.json', config)
     pack = profile / 'data/OpenXMB/themes/themes/native-fixture'
     pack.mkdir(parents=True)
@@ -87,10 +87,11 @@ def main():
         if brightness(night_image) >= brightness(day_image) * 0.8:
             raise m.SmokeFailure('Night mode did not visibly darken the background')
         checks.append('native Night choice persisted real day/night mode')
-    langenv = {'OPENXMB_INITIAL_CATEGORY': 'settings', 'OPENXMB_INITIAL_SETTINGS_MENU': 'category.settings.system.settings', 'OPENXMB_INITIAL_SETTINGS_SELECTION': '0'}
-    catalog = json.loads((ROOT / 'assets/xmb/catalog/en.json').read_text())
-    nodes = {n['id']: n for n in catalog['nodes']}
-    langenv['OPENXMB_INITIAL_SETTINGS_SELECTION'] = str(nodes['category.settings.system.settings']['children'].index('category.settings.system.settings.system.language'))
+    # Desktop catalogue installation replaces the legacy System menu. Language
+    # is its second row (after System Name), as defined by desktop_settings::entries.
+    langenv = {'OPENXMB_INITIAL_CATEGORY': 'settings',
+               'OPENXMB_INITIAL_SETTINGS_MENU': 'category.settings.desktop.System',
+               'OPENXMB_INITIAL_SETTINGS_SELECTION': '1'}
     with m.Session(r, 'language-settings', [], reuse=profile, environment_patch=langenv) as s:
         s.wait(lambda im: m.foreground(im, (0.34, 0.43, 0.75, 0.55)) > 0.005, 'language-setting', delay=2)
         s.key('enter')
