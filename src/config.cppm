@@ -153,11 +153,11 @@ export namespace config
             std::filesystem::path   picturesPath;
             std::filesystem::path   musicPath;
             std::filesystem::path   videosPath;
-            // Command-line library root; never serialised into profile settings.
+            // Command-line home/library root; never serialised into profile settings.
             std::filesystem::path   forcedMediaDirectory;
-            const std::filesystem::path& pictures_path() const {return forcedMediaDirectory.empty()?picturesPath:forcedMediaDirectory;}
-            const std::filesystem::path& music_path() const {return forcedMediaDirectory.empty()?musicPath:forcedMediaDirectory;}
-            const std::filesystem::path& videos_path() const {return forcedMediaDirectory.empty()?videosPath:forcedMediaDirectory;}
+            const std::filesystem::path& pictures_path() const {return media_path(0,picturesPath);}
+            const std::filesystem::path& music_path() const {return media_path(1,musicPath);}
+            const std::filesystem::path& videos_path() const {return media_path(2,videosPath);}
 
             std::unordered_set<std::string> excludedApplications;
             bool hideLogin1Options = false;
@@ -243,6 +243,9 @@ export namespace config
 
             void excludeApplication(const std::string& application, bool exclude = true);
         private:
+            const std::filesystem::path& media_path(std::size_t category,const std::filesystem::path& configured) const;
+            mutable std::filesystem::path resolvedMediaDirectory;
+            mutable std::array<std::filesystem::path,3> resolvedMediaPaths;
             std::multimap<std::string, std::function<void(const std::string&)>> callbacks;
             void notifyCallbacks(const std::string& key, const std::string& value = {});
             std::filesystem::path config_path_for_read() const;

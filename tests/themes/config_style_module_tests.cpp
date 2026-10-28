@@ -41,6 +41,28 @@ int main() {
     require(migrated.at("_meta").at("config_version")==5,"legacy migration is persisted while loading");
     require(b.textScale==1&&b.wavesEnabled&&b.particlesEnabled&&b.waveParameters.empty(),"legacy profile does not inherit previous style/effects");
     require(b.textColor.r==1&&b.textColor.g==1&&b.textColor.b==1&&b.iconColor.r==1&&b.iconColor.g==1&&b.iconColor.b==1,"legacy profile uses neutral color defaults");
+    const auto demo=root/"demo home";
+    for(const auto* name:{"Music","Pictures","Videos"})fs::create_directories(demo/name);
+    b.forcedMediaDirectory=demo;
+    require(b.music_path()==demo/"Music","forced home routes Music to its own contents");
+    require(b.pictures_path()==demo/"Pictures","forced home routes Pictures to its own contents");
+    require(b.videos_path()==demo/"Videos","forced home routes Videos to its own contents");
+    const auto aliases=root/"alternate home";
+    for(const auto* name:{"music","Photos","Movies"})fs::create_directories(aliases/name);
+    b.forcedMediaDirectory=aliases;
+    require(b.music_path()==aliases/"music","lowercase media names work on case-sensitive systems");
+    require(b.pictures_path()==aliases/"Photos","Photos alias supported");
+    require(b.videos_path()==aliases/"Movies","macOS Movies alias supported");
+    const auto partial=root/"partial home";fs::create_directories(partial/"Music");b.forcedMediaDirectory=partial;
+    require(b.pictures_path()==partial/"Pictures"&&b.videos_path()==partial/"Videos","missing categories never show sibling folders or host libraries");
+    const auto flat=root/"flat library";fs::create_directories(flat/"Album");b.forcedMediaDirectory=flat;
+    require(b.music_path()==flat&&b.pictures_path()==flat&&b.videos_path()==flat,"direct flat media directory still supported");
+    b.forcedMediaDirectory=demo;b.save_config();
+    const auto saved=json::parse(std::ifstream(b.profileConfigPath));
+    require(saved.at("shell").at("music-path")!=demo.string()&&saved.at("shell").at("music-path")!=(demo/"Music").string(),"runtime media override never saved as library preference");
+    b.reset_to_defaults();require(b.music_path()==demo/"Music","forced home survives settings reset");
+    b.forcedMediaDirectory.clear();
+    require(b.music_path()==b.musicPath&&b.pictures_path()==b.picturesPath&&b.videos_path()==b.videosPath,"normal configured folders restored without override");
     fs::remove_all(root);std::cout<<"Config styles: "<<checks<<" checks passed\n";return 0;
   } catch(const std::exception& error){fs::remove_all(root);std::cerr<<error.what()<<'\n';return 1;}
 }

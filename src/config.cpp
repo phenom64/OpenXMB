@@ -56,6 +56,45 @@ namespace
     constexpr double min_controller_cursor_speed = 0.10;
     constexpr double max_controller_cursor_speed = 4.0;
 
+    std::array<std::filesystem::path,3> resolve_media_paths(const std::filesystem::path& root)
+    {
+        // Inspect the supplied directory, never the host's home or XDG settings.
+        // Match ASCII folder names independently of filesystem case sensitivity.
+        std::vector<std::filesystem::path> directories;
+        std::error_code error;
+        for(std::filesystem::directory_iterator it(root,std::filesystem::directory_options::skip_permission_denied,error),end;
+            !error&&it!=end;it.increment(error)) {
+            std::error_code status_error;
+            if(it->is_directory(status_error)&&!status_error)directories.push_back(it->path());
+        }
+        std::sort(directories.begin(),directories.end());
+        const auto folded=[](std::u8string name) {
+            for(auto& c:name)if(c>=u8'A'&&c<=u8'Z')c+=u8'a'-u8'A';
+            return name;
+        };
+        constexpr std::array<std::array<std::u8string_view,2>,3> names{{
+            {u8"Pictures",u8"Photos"},{u8"Music",u8""},{u8"Videos",u8"Movies"}
+        }};
+        std::array<std::filesystem::path,3> paths;
+        bool home=false;
+        for(std::size_t category=0;category<names.size();++category) {
+            for(const bool exact:{true,false}) {
+                for(const auto name:names[category]) {
+                    if(name.empty())continue;
+                    const auto found=std::find_if(directories.begin(),directories.end(),[&](const auto& directory) {
+                        const auto actual=directory.filename().u8string();
+                        return exact?actual==name:folded(actual)==folded(std::u8string(name));
+                    });
+                    if(found!=directories.end()){paths[category]=*found;home=true;break;}
+                }
+                if(!paths[category].empty())break;
+            }
+        }
+        for(std::size_t category=0;category<paths.size();++category)
+            if(paths[category].empty())paths[category]=home?root/std::filesystem::path(names[category][0]):root;
+        return paths;
+    }
+
     bool replace_config_file(const std::filesystem::path& temporary,
                              const std::filesystem::path& destination,
                              std::error_code& error) noexcept
@@ -1355,6 +1394,19 @@ std::string config::shell_snapshot() const {
         {"theme-waves-enabled", wavesEnabled}, {"theme-particles-enabled", particlesEnabled},
         {"wave-parameters", waveParameters}
     }.dump();
+}
+
+const std::filesystem::path& config::media_path(std::size_t category,const std::filesystem::path& configured) const {
+    if(forcedMediaDirectory.empty()) {
+        resolvedMediaDirectory.clear();
+        return configured;
+    }
+    if(resolvedMediaDirectory!=forcedMediaDirectory) {
+        auto paths=resolve_media_paths(forcedMediaDirectory);
+        resolvedMediaPaths=std::move(paths);
+        resolvedMediaDirectory=forcedMediaDirectory;
+    }
+    return resolvedMediaPaths.at(category);
 }
 
 void config::reset_to_defaults() {

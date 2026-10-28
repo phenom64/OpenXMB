@@ -200,7 +200,7 @@ int main(int argc, char *argv[]) try {
 
     program.add_argument("--open-media").default_value(std::string{}).help("Open a media file in its native viewer after startup");
     program.add_argument("--force-dir").default_value(std::string{}).metavar("DIRECTORY")
-        .help("Use this directory for Photo, Music and Video libraries for this run only");
+        .help("Use media folders inside this home directory (Music, Pictures/Photos, Videos/Movies), or a flat library, for this run only");
     program.add_argument("--open-panel").default_value(std::string{}).help("Open themes, browser, emulation, discs or system");
     try {
         startup_trace("parsing arguments");
