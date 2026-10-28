@@ -23,6 +23,7 @@
 
 module;
 
+#include <chrono>
 #include <span>
 #include <string_view>
 #include <utility>
@@ -180,6 +181,14 @@ export class component {
     virtual bool show_status_bar() const { return false; }
         [[nodiscard]] virtual bool do_fade_in() const { return false; }
         [[nodiscard]] virtual bool do_fade_out() const { return false; }
+        // Shell cross-fade length and how far the crossbar recedes beneath it.
+        [[nodiscard]] virtual std::chrono::milliseconds fade_duration() const { return std::chrono::milliseconds(400); }
+        [[nodiscard]] virtual float fade_zoom() const { return 0.85F; }
+        // True when the component animates its own entrance; the shell then
+        // only fades the crossbar out instead of also fading the component in.
+        [[nodiscard]] virtual bool staged_entrance() const { return false; }
+        // 0..1: how far a non-opaque overlay pushes the live crossbar back.
+        [[nodiscard]] virtual float menu_recede() const { return 0.0F; }
         [[nodiscard]] virtual bool enable_cursor() const { return false; }
     protected:
         void render_controller_buttons(app::shell* xmb, auroreengine::gui_renderer& renderer, float x, float y, std::span<const std::pair<::action, std::string_view>> buttons) const;

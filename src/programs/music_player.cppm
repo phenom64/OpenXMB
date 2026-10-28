@@ -47,14 +47,19 @@ using namespace app;
 using namespace mfk::i18n::literals;
 namespace music = openxmb::music;
 
+// PS3 order: a name message with a pre-filled field and an OK button comes
+// first; the keyboard opens only when the field is selected. Back leaves
+// without creating anything.
 export void create_music_playlist(shell* xmb, std::vector<music::QueueEntry> tracks = {}, std::function<void()> changed = {}) {
-  xmb->emplace_overlay<text_entry_overlay>("New Playlist", "", [xmb, tracks=std::move(tracks), changed=std::move(changed)](std::string name) {
+  auto prompt = std::make_unique<message_overlay>("Enter a name for the playlist.", "");
+  prompt->set_text_field("Playlist", "Playlist"_(), [xmb, tracks=std::move(tracks), changed=std::move(changed)](std::string name) {
     try {
       const auto path = music::PlaylistStore(config::CONFIG.music_path()).create(name, tracks);
       if(changed) changed();
       xmb->emplace_overlay<message_overlay>("Playlist Created", path.stem().string() + "\n" + std::to_string(tracks.size()) + " tracks");
     } catch(const std::exception& error) { xmb->emplace_overlay<message_overlay>("Cannot Create Playlist", error.what()); }
   });
+  xmb->push_overlay(std::move(prompt));
 }
 
 export void add_to_music_playlist(shell* xmb, std::vector<music::QueueEntry> tracks) {

@@ -1541,7 +1541,14 @@ namespace app
         // Consider fade-out of a message overlay (stored as old_overlay) as part of the transition too
         bool fading_out_message = (!has_overlay && overlay_transition && old_overlay && (dynamic_cast<app::message_overlay*>(old_overlay.get()) != nullptr));
         // If a message overlay is appearing/disappearing, still render menu during transition
-        const bool shell_fade_transition = overlay_transition && top_uses_shell_fade;
+        // The crossbar cross-fade belongs to the first message over the menu
+        // only. A message stacked on another opaque screen (Information ->
+        // icon chooser, name prompt -> result) must not reveal the crossbar,
+        // and the screen left behind when the top one closes stays as it is.
+        const bool opaque_below_top = has_overlay &&
+            std::any_of(overlays.begin(), overlays.end() - 1, [](const auto& overlay) { return overlay->is_opaque(); });
+        const bool shell_fade_transition = overlay_transition && top_uses_shell_fade &&
+            overlay_fade_direction == transition_direction::in && !opaque_below_top;
         bool allow_menu = render_menu || ((top_is_message || fading_out_message) && shell_fade_transition);
         if(allow_menu){
             const float startup_reveal = static_cast<float>(startup_sample().ui_reveal);
@@ -1552,13 +1559,26 @@ namespace app
                 renderer.push_color(glm::vec4(s, s, s, s));
             }
             // Quick zoom via gui_renderer helper so viewport/scissor are applied per draw
-            const bool pushed_zoom = (top_is_message || fading_out_message);
+            const bool pushed_zoom = (top_is_message || fading_out_message) && overlay_fade_zoom < 0.999F;
             if(pushed_zoom) {
-                float scale = static_cast<float>(glm::mix(1.0, 0.85, dir_progress));
+                float scale = static_cast<float>(glm::mix(1.0, static_cast<double>(overlay_fade_zoom), dir_progress));
                 renderer.push_zoom(scale);
+            }
+            // A keyboard opened over the crossbar (Internet Search) makes the
+            // menu recede and fade while the wave and clock stay unchanged.
+            // Captured once: icons ~10% smaller about the screen centre and
+            // roughly a third as opaque.
+            const float recede = render_menu && has_overlay ? overlays.back()->menu_recede() : 0.0F;
+            if(recede > 0.0F) {
+                renderer.push_color(glm::vec4(1.0F - 0.65F * recede));
+                if(!pushed_zoom) renderer.push_zoom(1.0F - 0.1F * recede);
             }
             // Render the entire XMB UI (menu + time + news) within the zoom scope
             menu.render(renderer);
+            if(recede > 0.0F) {
+                if(!pushed_zoom) renderer.pop_zoom();
+                renderer.pop_color();
+            }
 
             const auto text_color = renderer.text_color;
             renderer.text_color = glm::vec4(1.0F);
@@ -1587,7 +1607,8 @@ namespace app
         bool enable_cursor = false;
         for(unsigned int i=overlay_begin; i < overlays.size(); i++) {
             renderer.text_scale = static_cast<float>(config::CONFIG.textScale) * overlays[i]->typography_scale();
-            if(i == overlays.size()-1 && shell_fade_transition) {
+            if(i == overlays.size()-1 && shell_fade_transition &&
+               !(overlay_fade_direction == transition_direction::in && overlays[i]->staged_entrance())) {
                 renderer.push_color(glm::mix(glm::vec4(0.0), glm::vec4(1.0), dir_progress));
                 overlays[i]->render(renderer, this);
                 renderer.pop_color();

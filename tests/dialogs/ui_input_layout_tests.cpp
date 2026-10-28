@@ -34,6 +34,24 @@ int main() {
     editor.value.clear();editor.event(input::Command::none,225);editor.event(input::Command::none,229);
     editor.event(input::Command::none,{},225);editor.event(input::Command::none,4);
     check(editor.value=="A","releasing one Shift does not clear the other held Shift");
+
+    // PS3 keyboard layout: four character rows, then function and control rows.
+    input::TextEntry osk("ab");
+    check(osk.character(1,0)=="q" && osk.character(2,9)=="'" && osk.character(3,9)=="?","character rows follow the PS3 layout");
+    osk.move_caret(-1);osk.insert("X");
+    check(osk.value=="aXb","insertion happens at the caret, not only at the end");
+    osk.erase();check(osk.value=="ab","backspace removes the codepoint before the caret");
+    osk.move_caret(1);osk.append('c');check(osk.value=="abc","caret returns to the end");
+    osk.row=4;osk.col=4;check(osk.focused().key==input::TextEntry::Key::backspace,"Backspace spans two columns");
+    osk.event(input::Command::right);check(osk.col==6 && osk.focused().key==input::TextEntry::Key::space,"right skips across a wide key");
+    osk.event(input::Command::left);check(osk.focused().key==input::TextEntry::Key::backspace,"left returns to the wide key");
+    osk.row=5;osk.col=11;check(osk.focused().key==input::TextEntry::Key::paste,"control row reaches copy and paste");
+    osk.event(input::Command::up);check(osk.row==4 && osk.col==9,"moving up from a wide row clamps the column");
+    osk.row=5;osk.col=8;check(osk.event(input::Command::ok)==input::Outcome::accept,"Enter key accepts");
+    osk.row=4;osk.col=0;osk.event(input::Command::ok);check(osk.page==1 && osk.character(2,1)=="@","@#: opens the symbol page");
+    osk.event(input::Command::ok);check(osk.page==0,"@#: toggles back to letters");
+    osk.row=4;osk.col=3;osk.event(input::Command::ok);check(osk.character(1,0)=="Q" && osk.character(0,1)=="@","a/A switches case, including the number row");
+    osk.value="\xE6\x9B\xB2";osk.tail=0;osk.move_caret(-1);check(osk.caret()==0,"caret moves by whole UTF-8 codepoints");
     int confirms=0,raw_previous=0;
     check(input::dispatch(FakeAction::ok,true,[&](auto){++confirms;return 7;},[&]{++raw_previous;return 8;})==7 && confirms==1 && raw_previous==0,"mapped Confirm wins over LB previous-photo shortcut");
     check(input::dispatch(FakeAction::none,true,[&](auto){return 7;},[&]{++raw_previous;return 8;})==8 && raw_previous==1,"unbound shoulder retains previous-photo shortcut");

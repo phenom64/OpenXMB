@@ -146,6 +146,37 @@ namespace app
                 }
             }
 
+            // Message-screen hints use fixed slots rather than packed labels: in
+            // the 1920x1080 captures the Cross glyph sat at x~735 and the Circle
+            // glyph at x~1165 whatever the label ("Edit", "Enter"), at y~906.
+            void render_message_footer(gui_renderer& renderer, std::ranges::range auto buttons, float alpha) {
+                const float fw=static_cast<float>(renderer.frame_size.width),fh=static_cast<float>(renderer.frame_size.height);
+                const float scale=std::min(fw/1920.0F,fh/1080.0F),ox=(fw-1920.0F*scale)*0.5F,oy=(fh-1080.0F*scale)*0.5F;
+                const float icon=22*scale,font=22*scale*static_cast<float>(config::CONFIG.textScale),key_font=15*scale;
+                std::size_t count=0;for(const auto& [a,text]:buttons)if(a!=action::none)++count;
+                constexpr std::array<float,2> pair_slots{735.0F,1165.0F};
+                const auto metrics=renderer.text_line_metrics_pixels(font),key_metrics=renderer.text_line_metrics_pixels(key_font);
+                const float centre_y=oy+906*scale;
+                std::size_t slot=0;
+                for(const auto& [a,text]:buttons) {
+                    if(a==action::none)continue;
+                    const float cx=ox+(count==2?pair_slots[slot]:count==1?900.0F:620.0F+slot*300.0F)*scale;
+                    ++slot;
+                    const auto i=std::to_underlying(a);
+                    float label_x=cx+icon*0.5F+19*scale;
+                    if(!button_labels[i].empty()) {
+                        const float width=std::max(icon,renderer.text_width_pixels(button_labels[i],key_font)+12*scale);
+                        renderer.draw_rect({(cx-icon*0.5F)/fw,(centre_y-icon*0.5F)/fh},{width/fw,icon/fh},{1,1,1,0.75F*alpha});
+                        renderer.draw_rect({(cx-icon*0.5F+scale)/fw,(centre_y-icon*0.5F+scale)/fh},{(width-2*scale)/fw,(icon-2*scale)/fh},{0.08F,0.08F,0.08F,alpha});
+                        renderer.draw_text_pixels(button_labels[i],cx-icon*0.5F+width*0.5F,centre_y+(key_metrics.x-key_metrics.y)*0.5F,key_font,{1,1,1,alpha},0.7F,0,true);
+                        label_x=cx-icon*0.5F+width+19*scale;
+                    } else if(auto* texture=buttonTextures[i].get()) {
+                        renderer.draw_image(*texture,(cx-icon*0.5F)/fw,(centre_y-icon*0.5F)/fh,icon/fh,icon/fh,{1,1,1,alpha});
+                    }
+                    renderer.draw_text_pixels(::openxmb::localization::shell_locale::translate(text),label_x,centre_y+(metrics.x-metrics.y)*0.5F,font,{1,1,1,alpha},0.7F,0,false);
+                }
+            }
+
             auroreengine::window* get_window() const { return this->win; }
 
             void set_ingame_mode(bool ingame_mode) { this->ingame_mode = ingame_mode; }
@@ -181,6 +212,8 @@ namespace app
             app::component* push_overlay(std::unique_ptr<app::component>&& component) {
                 auto ptr = component.get();
                 overlays.emplace_back(std::move(component));
+                overlay_transition_duration = ptr->fade_duration();
+                overlay_fade_zoom = ptr->fade_zoom();
 
                 if(ptr->do_fade_in()) {
                     overlay_fade_direction = transition_direction::in;
@@ -203,6 +236,8 @@ namespace app
                 auto p = std::make_unique<T>(std::forward<Args>(args)...);
                 auto ptr = p.get();
                 overlays.emplace_back(std::move(p));
+                overlay_transition_duration = ptr->fade_duration();
+                overlay_fade_zoom = ptr->fade_zoom();
 
                 if(ptr->do_fade_in()) {
                     overlay_fade_direction = transition_direction::in;
@@ -221,6 +256,8 @@ namespace app
             }
             void remove_overlay(unsigned int index) {
                 if(index >= overlays.size()) return;
+                overlay_transition_duration = overlays[index]->fade_duration();
+                overlay_fade_zoom = overlays[index]->fade_zoom();
                 if(index == overlays.size()-1 && overlays[index]->do_fade_out()) {
                     overlay_fade_direction = transition_direction::out;
                     overlay_fade_time = std::chrono::steady_clock::now();
@@ -384,7 +421,8 @@ namespace app
             // transition duration constants
             constexpr static auto blur_background_transition_duration = std::chrono::milliseconds(500);
             // Slightly longer fade, PS3-like but still snappy
-            constexpr static auto overlay_transition_duration = std::chrono::milliseconds(400);
+            std::chrono::milliseconds overlay_transition_duration{400};
+            float overlay_fade_zoom = 0.85F;
 
             // Monotonic start time for shader time uniforms (avoid epoch-based float precision loss)
             time_point shader_time_zero { std::chrono::steady_clock::now() };

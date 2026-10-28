@@ -690,6 +690,7 @@ target_link_libraries(XMS PRIVATE OpenXMB::MusicCore OpenXMB::Integrations OpenX
 target_sources(XMS PRIVATE src/programs/library_manager.cpp)
 target_sources(XMS PUBLIC FILE_SET CXX_MODULES FILES
   src/app/xmb_presentation.cppm
+  src/app/components/dialog_chrome.cppm
   src/programs/music_player.cppm
   src/programs/integration_center.cppm
   src/programs/library_manager.cppm
