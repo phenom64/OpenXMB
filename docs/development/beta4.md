@@ -84,6 +84,8 @@ On Windows, run `tools/run-beta4-preview.ps1` after building. It uses a separate
 profile and media directory under `build/beta4-preview-profile`; the XMB reset
 action affects that preview profile. Normal user configuration and libraries
 are not used by this launcher. Setup completion persists between preview runs.
+Pass `-FirstTimeSetup` to replay setup without deleting the preview profile or
+its library. Reset preserves the host's launch-at-login preference.
 
 Native integration smoke:
 

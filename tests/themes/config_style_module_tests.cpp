@@ -70,7 +70,9 @@ int main() {
     const auto completed=json::parse(std::ifstream(fresh.profileConfigPath));
     require(completed.at("preferences").at("setup.completed")=="true","completed marker is serialized");
     restarted.load();require(!restarted.initialSetupRequired,"completion marker survives restart");
+    fresh.autostart=true;
     fresh.reset_to_defaults();
+    require(fresh.autostart,"profile reset preserves the host launch-at-login preference");
     const auto reset=json::parse(std::ifstream(fresh.profileConfigPath));
     require(fresh.initialSetupRequired&&reset.at("preferences").at("setup.completed")=="false","reset writes an incomplete setup marker");
     restarted.load();require(restarted.initialSetupRequired,"reset uses the same setup entry condition after restart");

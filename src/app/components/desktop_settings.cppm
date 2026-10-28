@@ -238,7 +238,7 @@ export void activate(shell* shell,const openxmb::xmb::CatalogNode& node) {
     if(key=="about") {shell->open_panel("about");return;}
     if(key=="licenses") {shell->open_panel("licenses");return;}
     if(key=="browser.clear") {shell->emplace_overlay<message_overlay>("Clear Browsing Data?","Remove browser cookies, site storage and cached pages?",std::vector<std::string>{"No","Yes"},[](unsigned i){if(i) {config::CONFIG.preferences["browser.clear_site_data"]=std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());config::CONFIG.save_config();}});return;}
-    if(key=="reset") {shell->emplace_overlay<message_overlay>("Restore Default Settings?","Restore this profile's preferences? Your media files will be preserved.",std::vector<std::string>{"No","Yes"},[shell](unsigned i){if(i) {apply(shell,"autostart","Off");shell->reset_settings();}});return;}
+    if(key=="reset") {shell->emplace_overlay<message_overlay>("Restore Default Settings?","Restore this profile's preferences? Your media files will be preserved.",std::vector<std::string>{"No","Yes"},[shell](unsigned i){if(i) shell->reset_settings();});return;}
     if(key=="music.rescan") {shell->reload_menu();return;}
     if(key=="games.rescan") {openxmb::desktop::Library library;const auto count=library.scan_games();show_error(shell,"Added "+std::to_string(count)+" games to the library.");return;}
     if(key=="games.emulation") {shell->open_panel("emulation");return;}

@@ -1,4 +1,5 @@
 param(
+    [switch]$FirstTimeSetup,
     [string]$BuildDir = "",
     [string]$ProfileDir = ""
 )
@@ -37,6 +38,7 @@ foreach ($name in @($values.Keys) + $cleared) {
 try {
     foreach ($name in $cleared) { [Environment]::SetEnvironmentVariable($name, $null, "Process") }
     foreach ($name in $values.Keys) { [Environment]::SetEnvironmentVariable($name, $values[$name], "Process") }
+    if ($FirstTimeSetup) { [Environment]::SetEnvironmentVariable("OPENXMB_FORCE_SETUP", "1", "Process") }
     Write-Host "OpenXMB Beta 4 preview: $repoRoot"
     Write-Host "Isolated profile: $ProfileDir"
     & $binary --no-fullscreen --width 1280 --height 720 --force-dir $media

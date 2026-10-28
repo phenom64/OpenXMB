@@ -29,7 +29,7 @@ def main():
         data = root / 'data'
         env = os.environ.copy()
         for key in list(env):
-            if key.startswith(('OPENXMB_SETUP_', 'OPENXMB_HARNESS_', 'OPENXMB_FIXED_', 'AUROREENGINE_HEADLESS_')):
+            if key.startswith(('OPENXMB_SETUP_', 'OPENXMB_HARNESS_', 'OPENXMB_FIXED_', 'OPENXMB_INITIAL_', 'AUROREENGINE_HEADLESS_')):
                 env.pop(key)
         env.pop('OPENXMB_CONFIG_READ_ONLY', None)
         env.update({
@@ -49,6 +49,13 @@ def main():
             current['OPENXMB_FORCE_SETUP'] = '1' if force else '0'
             if name == 'missing-profile-switch':
                 current['AUROREENGINE_HEADLESS_FRAMES'] = '16'
+            if name == 'reset-button':
+                current.update({
+                    'OPENXMB_INITIAL_CATEGORY': 'settings',
+                    'OPENXMB_INITIAL_SETTINGS_MENU': 'category.settings.desktop.System',
+                    'OPENXMB_INITIAL_SETTINGS_SELECTION': '10',
+                    'AUROREENGINE_HEADLESS_FRAMES': '24',
+                })
             if read_only:
                 current['OPENXMB_CONFIG_READ_ONLY'] = '1'
             if args.output:
@@ -73,7 +80,19 @@ def main():
         before = profile.read_bytes()
         run('read-only-completion', finish, force=True, read_only=True)
         assert profile.read_bytes() == before, 'Read-only setup changed the profile'
-        run('reset', '0:reset')
+        host_autostart = None
+        if os.name == 'nt':
+            import winreg
+            def autostart_value():
+                try:
+                    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Microsoft\Windows\CurrentVersion\Run') as key:
+                        return winreg.QueryValueEx(key, 'OpenXMB')
+                except FileNotFoundError:
+                    return None
+            host_autostart = autostart_value()
+        run('reset-button', '0:ok;0:right;0:ok')
+        if os.name == 'nt':
+            assert autostart_value() == host_autostart, 'Reset changed host launch-at-login configuration'
         reset = json.loads(profile.read_text(encoding='utf-8'))
         assert reset['preferences']['setup.completed'] == 'false', 'Reset did not clear setup completion'
         run('post-reset-completion', finish, force=True)

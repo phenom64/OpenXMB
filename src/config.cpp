@@ -1430,10 +1430,12 @@ void config::reset_to_defaults() {
     auto retained_callbacks = std::move(callbacks);
     const auto retained_profile = profileConfigPath;
     const auto retained_media_directory = forcedMediaDirectory;
+    const auto retained_autostart = autostart;
     *this = config{};
     callbacks = std::move(retained_callbacks);
     profileConfigPath = retained_profile;
     forcedMediaDirectory = retained_media_directory;
+    autostart = retained_autostart;
     set_default_user_dirs(*this);
     setFontPath("default");
     setLanguage("auto");
