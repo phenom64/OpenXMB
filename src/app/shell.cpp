@@ -1582,7 +1582,10 @@ namespace app
 
             const auto text_color = renderer.text_color;
             renderer.text_color = glm::vec4(1.0F);
-            renderer.push_color(glm::vec4(config::CONFIG.clockColor, 1.0F));
+            // The clock box disappeared while an options or choice panel was
+            // open (Users > Triangle and Settings > Colour captures).
+            const float clock_alpha = has_choice_overlay() ? 0.0F : 1.0F - menu.options_visibility();
+            renderer.push_color(glm::vec4(config::CONFIG.clockColor, clock_alpha));
             if(!status_bar_render.render_local(
                    renderer, openxmb::xmb::wall_clock_now())) {
                 static bool status_bar_time_warning_logged = false;

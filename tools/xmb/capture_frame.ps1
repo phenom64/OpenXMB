@@ -9,6 +9,8 @@ param(
     [int]$Width = 0,
     [int]$Height = 0,
     [int]$Frames = 0,
+    # Overrides the pinned clock, e.g. to match the month (theme colour) of a reference capture.
+    [long]$FixedUnixSeconds = 0,
     [switch]$BackgroundOnly
 )
 
@@ -90,7 +92,7 @@ function Invoke-SceneCapture {
     $env:SDL_AUDIODRIVER = "dummy"
     $env:OPENXMB_CONFIG = $configPath
     $env:OPENXMB_CONFIG_READ_ONLY = "1"
-    $env:OPENXMB_FIXED_UNIX_SECONDS = "$([long]$defaults.fixed_unix_seconds)"
+    $env:OPENXMB_FIXED_UNIX_SECONDS = if ($FixedUnixSeconds -gt 0) { "$FixedUnixSeconds" } else { "$([long]$defaults.fixed_unix_seconds)" }
     $env:OPENXMB_FIXED_WAVE_SECONDS = "$([double]$defaults.fixed_wave_seconds)"
 
     $args = @("--width", "$Width", "--height", "$Height", "--no-fullscreen")

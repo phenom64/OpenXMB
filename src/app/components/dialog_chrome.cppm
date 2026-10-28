@@ -22,6 +22,7 @@ module;
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <span>
 #include <string_view>
 
 export module openxmb.app:dialog_chrome;
@@ -75,11 +76,15 @@ struct widget_state {
     return value * value * (3.0F - 2.0F * value);
 }
 
-// Focus frames brighten and relax slowly. The captured avatar frame visibly
-// varied between samples; the period was not measured, so this reuses the
-// crossbar label pulse rhythm instead of inventing a new one.
+// Every focused message widget breathes on one linear triangle wave: the
+// avatar frame, name field and value box all peaked every ~1.167 s (70
+// frames at 60 fps) across five cycles of the RPCS3 captures.
+inline constexpr float focus_breath_period = 7.0F / 6.0F;
+
 [[nodiscard]] inline float focus_breath() {
-    return std::clamp((xmb_canvas::pulse() - 0.7F) / 0.55F, 0.0F, 1.0F);
+    const float t = std::chrono::duration<float>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    const float phase = std::fmod(t, focus_breath_period) / focus_breath_period;
+    return 1.0F - std::abs(2.0F * phase - 1.0F);
 }
 
 [[nodiscard]] inline float press_amount(std::chrono::steady_clock::time_point pressed_at) {
@@ -126,33 +131,30 @@ inline void divider_frame(const xmb_canvas& c, float alpha) {
     c.rect(0, divider_bottom_y, 1920, 1, light(0.70F, alpha));
 }
 
-// Translucent box used for text fields, value boxes and the avatar frame
-// (sRGB alphas): a two-pixel rim with a softer outer row, a faint fill and
-// soft sheens along the inside top and bottom edges.
-inline void glass_box(const xmb_canvas& c, float x, float y, float w, float h,
-                      float rim, float fill, float sheen, float alpha) {
-    const glm::vec4 clear{1, 1, 1, 0};
-    const auto outer = light(rim * 0.65F, alpha), inner = light(rim, alpha);
-    c.rect(x, y, w, 1, outer);
-    c.rect(x, y + h - 1, w, 1, outer);
-    c.rect(x, y + 1, 1, h - 2, outer);
-    c.rect(x + w - 1, y + 1, 1, h - 2, outer);
-    c.rect(x + 1, y + 1, w - 2, 1, inner);
-    c.rect(x + 1, y + h - 2, w - 2, 1, inner);
-    c.rect(x + 1, y + 2, 1, h - 4, inner);
-    c.rect(x + w - 2, y + 2, 1, h - 4, inner);
-    c.rect(x + 2, y + 2, w - 4, h - 4, light(fill, alpha));
-    c.gradient(x + 2, y + 2, w - 4, h * 0.3F, light(sheen, alpha), clear);
-    c.gradient(x + 2, y + h * 0.78F, w - 4, h * 0.22F - 2, clear, light(sheen * 1.4F, alpha));
+// Rim with an inner glow: sRGB white alpha `rim` along the edge, decaying
+// exponentially (falloff in px) to `fill` inside, scaled by level. Every
+// captured message widget rounds its corners by ~3 px.
+inline void edge_glow(const xmb_canvas& c, float x, float y, float w, float h, float rim, float fill,
+                      float falloff, float level, float alpha, float radius = 3.0F) {
+    if(level <= 0.0F || alpha <= 0.0F) return;
+    const float edge = light_alpha(rim * level);
+    c.shape(x, y, w, h, {1, 1, 1, edge * alpha}, radius, falloff, light_alpha(fill * level) / std::max(edge, 0.0001F));
 }
 
-// The focused name field's rim breathed between ~0.13 and ~0.42 sRGB alpha
-// over successive captured frames; the unfocused look was not captured.
+// Focused avatar frame. At the breath peak the rim reads 0.73 and the glow
+// falls to a 0.15 wash about nine pixels in; it breathes all the way out to
+// nothing and is not drawn at all while something else has focus.
+inline void avatar_frame(const xmb_canvas& c, float x, float y, float size, float level, float alpha) {
+    edge_glow(c, x, y, size, size, 0.73F, 0.15F, 2.6F, level, alpha, 3.5F);
+}
+
+// Text field: the same structure, shallower (rim 0.50 to a 0.13 interior).
+// Focused, it breathed between ~20% and 100% of this; the unfocused field was
+// not captured and is assumed to rest at the trough.
 inline void text_box(const xmb_canvas& c, float x, float y, float w, float h, widget_state s) {
-    const float focus = std::clamp(s.focus, 0.0F, 1.0F) * (1.0F - 0.75F * s.pressed);
-    const float breath = focus * focus_breath();
-    glass_box(c, x, y, w, h, 0.10F + 0.03F * focus + 0.29F * breath, 0.015F + 0.05F * breath,
-        0.03F + 0.05F * breath, s.alpha);
+    const float focus = std::clamp(s.focus, 0.0F, 1.0F);
+    const float level = (0.2F + 0.8F * focus * focus_breath()) * (1.0F - 0.75F * s.pressed);
+    edge_glow(c, x, y, w, h, 0.50F, 0.13F, 2.1F, level, s.alpha);
 }
 
 inline void text_field(const xmb_canvas& c, auroreengine::gui_renderer& r, float x, float y, float w, float h,
@@ -173,30 +175,54 @@ inline void text_field(const xmb_canvas& c, auroreengine::gui_renderer& r, float
     return std::max(button_min_width, r.text_width_pixels(label, pixels) / c.scale + 2.0F * button_padding);
 }
 
-// Push button, following the vertical sRGB alpha profile of the unfocused
-// playlist OK button: bright top edge, a glossy band easing into a flat
-// middle, a brightening lower part and a bright bottom edge. The focused and
-// pressed treatments were not captured; they are inferred from the focused
-// text field (a brighter, slowly breathing body and glow) and a dimmed press.
+// Glossy push-button body, after the vertical sRGB alpha profile of the
+// playlist OK button (44 px tall; other heights scale it): bright top edge,
+// a glossy band easing into a flat middle, a brightening lower part and a
+// bright bottom edge. The sides brighten ~0.15 over their first few pixels,
+// a faint dark line rims the outside, and the corners round by ~3 px.
+inline void button_body(const xmb_canvas& c, float x, float y, float w, float h,
+                        float level, float lift, float alpha) {
+    const auto body = [&](float v) { return light((v + lift) * level, alpha); };
+    const float k = 1.0F / h;
+    c.shape(x - 1, y - 1, w + 2, h + 2, {0, 0, 0, shade_alpha(0.06F) * alpha}, 4.0F, 0.6F, 0.0F);
+    const std::array<std::pair<float, glm::vec4>, 8> stops{{
+        {0.0F, body(0.62F)}, {k, body(0.50F)}, {8.0F / 44.0F, body(0.50F)}, {13.0F / 44.0F, body(0.33F)},
+        {31.0F / 44.0F, body(0.37F)}, {39.0F / 44.0F, body(0.44F)}, {1.0F - k, body(0.62F)}, {1.0F, body(0.66F)}}};
+    c.gradient_shape(x, y, w, h, stops, 3.0F);
+    const glm::vec4 clear{1, 1, 1, 0};
+    const auto side = light(0.16F * level, alpha);
+    c.hgradient(x + 1, y + 3, 5, h - 6, side, clear);
+    c.hgradient(x + w - 6, y + 3, 5, h - 6, clear, side);
+}
+
+// Value box (the user name under the avatar). Unfocused: a faint 2 px rim
+// over a slightly darkened interior with a darker line just inside the rim.
+// Focused: the push-button gloss, breathing between ~50% and 100% of it.
+inline void value_box(const xmb_canvas& c, float x, float y, float w, float h, widget_state s) {
+    const float focus = std::clamp(s.focus, 0.0F, 1.0F);
+    if(focus > 0.0F) {
+        const float level = (0.5F + 0.5F * focus_breath()) * (1.0F - 0.6F * s.pressed);
+        button_body(c, x, y, w, h, level, 0.0F, s.alpha * focus);
+    }
+    const float rest = s.alpha * (1.0F - focus);
+    if(rest <= 0.0F) return;
+    c.shape(x + 2, y + 2, w - 4, h - 4, {0, 0, 0, shade_alpha(0.22F) * rest}, 2.0F, 1.0F, 0.45F);
+    edge_glow(c, x, y, w, h, 0.08F, 0.0F, 1.2F, 1.0F, rest);
+}
+
+// Push button. Unfocused it is the measured OK button. The focused and
+// pressed treatments were not captured; focus is inferred from the breathing
+// value box (a brighter body and soft glow on the shared breath), a press dims.
 inline void push_button(const xmb_canvas& c, auroreengine::gui_renderer& r, float x, float y, float w,
                         std::string_view label, widget_state s) {
     const float a = s.alpha;
     const float press = std::clamp(s.pressed, 0.0F, 1.0F);
     const float focus = std::clamp(s.focus, 0.0F, 1.0F);
-    const float lift = focus * (0.06F + 0.06F * focus_breath()) * (1.0F - press);
-    const float gloss = 1.0F - 0.35F * press;
-    const auto body = [&](float v) { return light((v + lift) * gloss, a); };
-    if(focus > 0.0F) {
-        c.rect(x - 4, y - 4, w + 8, button_height + 8, light(lift * 0.9F, a), 7);
-        c.rect(x - 2, y - 2, w + 4, button_height + 4, light(lift * 1.6F, a), 5);
-    }
-    c.rect(x + 2, y, w - 4, 1, body(0.62F));
-    c.gradient(x, y + 1, w, 7, body(0.50F), body(0.50F));
-    c.gradient(x, y + 8, w, 5, body(0.50F), body(0.33F));
-    c.gradient(x, y + 13, w, 18, body(0.33F), body(0.37F));
-    c.gradient(x, y + 31, w, 8, body(0.37F), body(0.43F));
-    c.gradient(x, y + 39, w, 4, body(0.45F), body(0.62F));
-    c.rect(x + 2, y + 43, w - 4, 1, body(0.66F));
+    const float breath = focus_breath();
+    const float lift = focus * (0.04F + 0.08F * breath) * (1.0F - press);
+    if(focus > 0.0F)
+        c.glow(x, y, w, button_height, light(0.30F * focus * (0.4F + 0.6F * breath) * (1.0F - press), a), 3.0F, 2.5F, 0.0F);
+    button_body(c, x, y, w, button_height, 1.0F - 0.35F * press, lift, a);
     const float pixels = button_text_size * c.scale * config::CONFIG.textScale;
     const auto metrics = r.text_line_metrics_pixels(pixels) / c.scale;
     const float baseline = y + button_height * 0.5F + (metrics.x - metrics.y) * 0.5F;

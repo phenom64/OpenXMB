@@ -100,15 +100,34 @@ private:
 };
 
 // Diamond marking the signed-in user, beside the avatar (as in the crossbar).
-inline void draw_user_diamond(const xmb_canvas& c, float cx, float cy, float alpha) {
+inline void draw_user_diamond(const xmb_canvas& c, float cx, float cy, float alpha, float scale = 1.0F) {
+    // Signed-in marker from the captures: a ~26 px diamond with a bright
+    // (~0.83) rim over a darker (~0.58) centre and a soft halo about 8 px wide.
     auto& r = c.renderer;
     const auto n = [&](float x, float y) {
         return glm::vec2{(c.ox + x * c.scale) / r.frame_size.width, (c.oy + y * c.scale) / r.frame_size.height};
     };
-    const glm::vec4 light{0.78F, 0.76F, 0.72F, alpha}, dark{0.52F, 0.50F, 0.47F, alpha};
     using V = auroreengine::simple_renderer::vertex_data;
-    r.draw_generic(std::array{V{n(cx, cy - 12), light, {0, 0}}, V{n(cx + 12, cy), light, {1, 0}}, V{n(cx - 12, cy), light, {0, 1}}});
-    r.draw_generic(std::array{V{n(cx - 12, cy), dark, {0, 0}}, V{n(cx + 12, cy), dark, {1, 0}}, V{n(cx, cy + 12), dark, {0, 1}}});
+    // A diamond is a square turned 45 degrees, so the engine's rounded-square
+    // shape (with its edge glows) draws it with antialiased edges. spread is
+    // room left outside the shape for an outer glow, in pixels.
+    const auto diamond = [&](float half, glm::vec4 colour, float radius, float falloff, float fill, float spread = 0.0F) {
+        half *= scale; radius *= scale; falloff *= scale; spread *= scale;
+        const float outer = half + spread * std::sqrt(2.0F);
+        auroreengine::simple_params p{};
+        const float side = outer * std::sqrt(2.0F) * c.scale;
+        p.size_px = {side, side};
+        p.inset_px = spread * c.scale;
+        p.radius_px = std::max(radius * c.scale, 0.001F);
+        p.edge_falloff_px = falloff * c.scale;
+        p.edge_fill = fill;
+        const V top{n(cx, cy - outer), colour, {0, 0}}, right{n(cx + outer, cy), colour, {1, 0}};
+        const V left{n(cx - outer, cy), colour, {0, 1}}, bottom{n(cx, cy + outer), colour, {1, 1}};
+        r.draw_generic(std::array{top, right, left, right, bottom, left}, p);
+    };
+    diamond(13.0F, dialog_chrome::light(0.30F, alpha), 1.0F, -2.4F, 0.0F, 11.0F);
+    diamond(13.0F, dialog_chrome::linear(glm::vec4{0.58F, 0.58F, 0.57F, alpha}), 1.0F, 0.0F, 1.0F);
+    diamond(13.0F, dialog_chrome::light(0.62F, alpha), 1.0F, 1.6F, 0.0F);
 }
 
 class user_icon_chooser final : public message_overlay {
@@ -165,8 +184,8 @@ public:
         const float a = dialog_chrome::smooth01(age / 0.18F);
         dialog_chrome::divider_frame(c, dialog_chrome::smooth01((age - 0.08F) / 0.13F));
         const float press = dialog_chrome::press_amount(pressed_at_);
-        const float breath = on_button_ ? 0.0F : dialog_chrome::focus_breath();
-        dialog_chrome::glass_box(c, 521, 401, 208, 208, 0.26F + 0.14F * breath, 0.03F, 0.08F + 0.06F * breath, a);
+        if(!on_button_)
+            dialog_chrome::avatar_frame(c, 521, 401, 208, dialog_chrome::focus_breath() * (1.0F - 0.75F * press), a);
         icon_.draw(c, 568, 448, 113, user_icon_tints[current_], a);
         for(std::size_t i = current_ + 1, slot = 0; i < user_icon_tints.size(); ++i, ++slot)
             icon_.draw(c, 600, 656 + 80.0F * static_cast<float>(slot), 49, user_icon_tints[i], a);
@@ -235,10 +254,8 @@ public:
         dialog_chrome::divider_frame(c, dialog_chrome::smooth01((age - 0.12F) / 0.13F));
         const float press = dialog_chrome::press_amount(pressed_at_);
         draw_user_diamond(c, 693.5F, 351.5F, a);
-        if(!name_focused_) {
-            const float breath = dialog_chrome::focus_breath() * (1.0F - 0.75F * press);
-            dialog_chrome::glass_box(c, 720, 248, 207, 207, 0.22F + 0.14F * breath, 0.03F, 0.08F + 0.06F * breath, a);
-        }
+        if(!name_focused_)
+            dialog_chrome::avatar_frame(c, 720, 248, 207, dialog_chrome::focus_breath() * (1.0F - 0.75F * press), a);
         icon_.draw(c, 768, 296, 112, user_icon_tints[user_icon_index()], a);
         const auto name = user_display_name(fallback_);
         const float pixels = 24 * c.scale * config::CONFIG.textScale;
@@ -246,7 +263,7 @@ public:
         c.text("User", 755, 516, 24, {1, 1, 1, a});
         const float caption = r.text_width_pixels(::openxmb::localization::shell_locale::translate("User"), pixels) / c.scale;
         const float box_x = 755 + caption + 33;
-        dialog_chrome::text_box(c, box_x, 492, value_width, 31, {.focus = name_focused_ ? 1.0F : 0.0F,
+        dialog_chrome::value_box(c, box_x, 492, value_width, 31, {.focus = name_focused_ ? 1.0F : 0.0F,
             .pressed = name_focused_ ? press : 0.0F, .alpha = a});
         c.text(name, box_x + 6, 516, 24, {1, 1, 1, a});
         xmb->render_message_footer(r, std::array{std::pair{action::ok, "Edit"}, std::pair{action::cancel, "Back"}},

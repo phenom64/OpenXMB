@@ -191,6 +191,11 @@ int main(int argc, char *argv[]) try {
         .metavar("HEIGHT")
         .scan<'i', int>()
         .default_value(800);
+    program.add_argument("--display")
+        .help("Display (monitor) index to open on, starting at 0")
+        .metavar("INDEX")
+        .scan<'i', int>()
+        .default_value(0);
     program.add_argument("--no-fullscreen").flag()
         .help("Do not start in fullscreen mode");
     program.add_argument("--background-only").flag()
@@ -266,6 +271,10 @@ int main(int argc, char *argv[]) try {
     window_config.width = program.get<int>("--width");
     window_config.height = program.get<int>("--height");
     window_config.fullscreen = !program.get<bool>("--no-fullscreen");
+    window_config.display_index = static_cast<unsigned int>(program.get<int>("--display") < 0 ? 0 : program.get<int>("--display"));
+    if(!window_config.fullscreen) {
+        window_config.x = window_config.y = SDL_WINDOWPOS_CENTERED_DISPLAY(window_config.display_index);
+    }
 
     auroreengine::window window{window_config};
     window.init();

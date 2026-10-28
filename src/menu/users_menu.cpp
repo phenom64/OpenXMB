@@ -19,6 +19,8 @@
 module;
 
 #include <algorithm>
+#include <cmath>
+#include <cstring>
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
@@ -28,6 +30,8 @@ module;
 #include <string>
 #include <string_view>
 #include <vector>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 #if !defined(_WIN32)
 #include <pwd.h>
 #include <grp.h>
@@ -46,6 +50,7 @@ import sdl2;
 import openxmb.config;
 import openxmb.utils;
 import auroreengine;
+import glm;
 import spdlog;
 import i18n;
 
@@ -123,6 +128,39 @@ namespace menu {
             spdlog::debug("Failed to load user menu icon {}: {}", path.string(), e.what());
             return false;
         }
+    }
+
+    // The PS3 shows the signed-in user as the bare face tile. The compatibility
+    // artwork is the Create New User icon (face plus "+"), so cut the face out
+    // and centre it on a square canvas sized so the focused 180 px item slot
+    // shows the 112 px face measured in the captures.
+    bool load_user_face_icon(auroreengine::resource_loader& loader, action_menu_entry& entry, const std::filesystem::path& path)
+    {
+        constexpr int face_x = 84, face_y = 207, face_w = 204, face_h = 203, canvas = 328;
+        std::unique_ptr<SDL_Surface, decltype(&SDL_FreeSurface)> source{IMG_Load(path.string().c_str()), SDL_FreeSurface};
+        if(!source) return false;
+        std::unique_ptr<SDL_Surface, decltype(&SDL_FreeSurface)> rgba{
+            SDL_ConvertSurfaceFormat(source.get(), SDL_PIXELFORMAT_RGBA32, 0), SDL_FreeSurface};
+        if(!rgba || rgba->w < face_x + face_w || rgba->h < face_y + face_h || SDL_LockSurface(rgba.get()) != 0) return false;
+        std::vector<std::uint8_t> pixels(static_cast<std::size_t>(canvas) * canvas * 4, 0);
+        // The face sits ~10 px above the item slot centre (19 canvas pixels).
+        const int left = (canvas - face_w) / 2, top = (canvas - face_h) / 2 - 19;
+        for(int y = 0; y < face_h; ++y)
+            std::memcpy(pixels.data() + (static_cast<std::size_t>(top + y) * canvas + left) * 4,
+                static_cast<const std::uint8_t*>(rgba->pixels) + static_cast<std::size_t>(face_y + y) * rgba->pitch + face_x * 4,
+                static_cast<std::size_t>(face_w) * 4);
+        SDL_UnlockSurface(rgba.get());
+        // Apply the chosen icon colour; multiplying gamma-encoded values by an
+        // sRGB tint equals the linear-space tint the Information screen uses.
+        const auto tint = app::user_icon_tints[app::user_icon_index()];
+        for(std::size_t i = 0; i < pixels.size(); i += 4)
+            for(int channel = 0; channel < 3; ++channel)
+                pixels[i + channel] = static_cast<std::uint8_t>(std::lround(pixels[i + channel] * tint[channel]));
+        entry.get_icon().create_image(canvas, canvas);
+        loader.loadTexture(&entry.get_icon(), [pixels = std::move(pixels)](std::uint8_t* destination, std::size_t size) {
+            std::memcpy(destination, pixels.data(), std::min(size, pixels.size()));
+        });
+        return true;
     }
 
     std::unique_ptr<action_menu_entry> make_user_action_entry(
@@ -248,6 +286,9 @@ namespace menu {
             selected_name = std::string(entries[selected_submenu]->get_name());
         }
 
+        auto extra = std::vector<std::unique_ptr<menu_entry>>(
+            std::make_move_iterator(entries.begin() + static_cast<std::ptrdiff_t>(std::min(core_rows, entries.size()))),
+            std::make_move_iterator(entries.end()));
         entries.clear();
         users = scan_users();
 
@@ -302,13 +343,16 @@ namespace menu {
         );
         const auto compatibility_user_icon = config::CONFIG.asset_directory /
             "compat/xmb-ui-compat/icons/xmb_icon_041.png";
-        if(!load_icon_if_present(loader, *current_user, compatibility_user_icon)) {
+        if(!load_user_face_icon(loader, *current_user, compatibility_user_icon)) {
             load_icon_if_present(loader, *current_user,
                 config::CONFIG.asset_directory / "icons/icon_category_users.png");
         }
         entries.push_back(std::move(current_user));
+        core_rows = entries.size();
+        for(auto& row : extra) entries.push_back(std::move(row));
 
-        selected_submenu = 0;
+        // The PS3 focuses the signed-in user when Users opens.
+        selected_submenu = static_cast<unsigned int>(core_rows - 1);
         if(!selected_name.empty()) {
             if(auto it = std::ranges::find_if(entries, [&selected_name](const std::unique_ptr<menu_entry>& entry) {
                 return std::string_view{entry->get_name()} == selected_name;
@@ -345,7 +389,7 @@ namespace menu {
                 "Change Password"_()
             };
             
-            xmb->emplace_overlay<app::choice_overlay>(
+            auto* panel = xmb->emplace_overlay<app::choice_overlay>(
                 options, 0, [this, user](unsigned int index) {
                     switch (index) {
                         case 0: // Information: avatar and user name screen
@@ -407,9 +451,14 @@ namespace menu {
                     }
                 }
             );
+            panel->set_first_baseline(559.0F);
             return result::success;
         }
         return result::unsupported;
+    }
+
+    void users_menu::append_rows(std::vector<std::unique_ptr<menu_entry>> rows) {
+        for(auto& row : rows) entries.push_back(std::move(row));
     }
 
     result users_menu::activate(action action) {

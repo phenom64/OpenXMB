@@ -20,11 +20,13 @@ module;
 
 #include "dialog_text_layout.hpp"
 #include "../../localization/shell_locale.hpp"
+#include "openxmb/xmb/background.hpp"
 #include <algorithm>
 #include <array>
 #include <chrono>
 #include <functional>
 #include <cmath>
+#include <ctime>
 #include <string>
 #include <utility>
 #include <vector>
@@ -127,12 +129,14 @@ void choice_overlay::render(auroreengine::gui_renderer& renderer, class shell* x
         glm::vec4 colour;
     };
 
-    // The options panel is a neutral translucent white wash over the live
-    // theme (RPCS3 Users > Triangle and Theme Settings > Colour captures with
-    // the October brown background): a faint bright rim at the left edge, a
-    // peak near 16% of the width, fading out by ~1700 px. Alpha stops are the
+    // The options panel is a translucent wash of light over the live theme
+    // (RPCS3 Users > Triangle and Theme Settings > Colour captures with the
+    // October brown background): a faint bright rim at the left edge, a peak
+    // near 16% of the width, fading out by ~1700 px. Alpha stops are the
     // measured sRGB brightening relative to the background just outside the
-    // panel, converted for linear blending.
+    // panel, converted for linear blending. The firmware lifts every channel
+    // by about the same sRGB amount, so the band keeps the theme's hue; in
+    // linear blending that needs light tinted towards the theme colour.
     const auto open_elapsed =
         std::chrono::duration<double>(std::chrono::steady_clock::now() - opened_time);
     const auto open_linear = std::clamp(
@@ -143,6 +147,24 @@ void choice_overlay::render(auroreengine::gui_renderer& renderer, class shell* x
     constexpr float panel_native_alpha_scale = 0.92F;
     constexpr float panel_left = 1322.0F / 1920.0F;
     constexpr float panel_right = 1700.0F / 1920.0F;
+    const glm::vec3 tint = [] {
+        std::array<float, 3> theme{};
+        if(config::CONFIG.themeOriginalColour) {
+            const auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+            std::tm local{};
+#if defined(_WIN32)
+            localtime_s(&local, &now);
+#else
+            localtime_r(&now, &local);
+#endif
+            theme = openxmb::xmb::resolve_background_gradient(local.tm_mon, 12.0F).top_rgb;
+        } else {
+            const auto custom = config::CONFIG.themeCustomColour;
+            theme = {custom.r, custom.g, custom.b};
+        }
+        const float peak = std::max({theme[0], theme[1], theme[2], 0.001F});
+        return glm::vec3{theme[0], theme[1], theme[2]} / peak;
+    }();
     constexpr std::array<gradient_stop, 8> stops{{
         {0.000F, {1.0F, 1.0F, 1.0F, 0.10F}},
         {0.016F, {1.0F, 1.0F, 1.0F, 0.11F}},
@@ -154,12 +176,12 @@ void choice_overlay::render(auroreengine::gui_renderer& renderer, class shell* x
         {1.000F, {1.0F, 1.0F, 1.0F, 0.00F}},
     }};
     renderer.draw_rect({panel_left + x_shift, 0.0F}, {1.0F / 1920.0F, 1.0F},
-        {1.0F, 1.0F, 1.0F, app::dialog_chrome::light_alpha(0.12F) * open_alpha});
+        glm::vec4(tint, app::dialog_chrome::light_alpha(0.18F) * open_alpha));
     for(std::size_t i = 0; i + 1 < stops.size(); ++i) {
         const float x0 = panel_left + x_shift + (panel_right - panel_left) * stops[i].position;
         const float x1 = panel_left + x_shift + (panel_right - panel_left) * stops[i + 1].position;
-        auto c0 = stops[i].colour;
-        auto c1 = stops[i + 1].colour;
+        auto c0 = glm::vec4(tint, stops[i].colour.a);
+        auto c1 = glm::vec4(tint, stops[i + 1].colour.a);
         c0.a = app::dialog_chrome::light_alpha(c0.a) * open_alpha * panel_native_alpha_scale;
         c1.a = app::dialog_chrome::light_alpha(c1.a) * open_alpha * panel_native_alpha_scale;
         renderer.draw_quad(std::array{
@@ -196,7 +218,7 @@ void choice_overlay::render(auroreengine::gui_renderer& renderer, class shell* x
         }
     }
     const float x=1340+(1-open_alpha)*12;
-    float top=518-metrics.x;
+    float top=first_baseline-metrics.x;
     if(!top_action.empty()) {
         auto labels=dialog_text::wrap(top_action,available_width*canvas.scale,[&](auto v){return renderer.text_width_pixels(v,pixels);});
         if(labels.size()>2){labels.resize(2);labels.back()=dialog_text::ellipsize(labels.back()+"…",available_width*canvas.scale,[&](auto v){return renderer.text_width_pixels(v,pixels);});}

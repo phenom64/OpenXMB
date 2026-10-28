@@ -85,30 +85,30 @@
       }
     },
     "users-options": {
-      "description": "Users > Operating System Users > *User with the Triangle options panel open (flow capture)",
+      "description": "Users > *User with the Triangle options panel open (flow capture)",
       "pattern": "users-options-{:05d}.png",
-      "frames": 210,
+      "frames": 150,
       "env": {
         "OPENXMB_INITIAL_CATEGORY": "users",
-        "OPENXMB_HARNESS_ACTIONS": "2.0:down;2.4:down;2.8:down;3.2:ok;4.2:down;4.6:down;5.4:options"
+        "OPENXMB_HARNESS_ACTIONS": "2.4:options"
       }
     },
     "users-information": {
       "description": "Users > *User > Triangle > Information screen with avatar focus (flow capture)",
       "pattern": "users-information-{:05d}.png",
-      "frames": 240,
+      "frames": 170,
       "env": {
         "OPENXMB_INITIAL_CATEGORY": "users",
-        "OPENXMB_HARNESS_ACTIONS": "2.0:down;2.4:down;2.8:down;3.2:ok;4.2:down;4.6:down;5.4:options;6.4:ok"
+        "OPENXMB_HARNESS_ACTIONS": "2.4:options;3.4:ok"
       }
     },
     "users-name-keyboard": {
       "description": "Information screen, user name field, keyboard, then right-stick repositioning (flow capture)",
       "pattern": "users-name-keyboard-{:05d}.png",
-      "frames": 330,
+      "frames": 250,
       "env": {
         "OPENXMB_INITIAL_CATEGORY": "users",
-        "OPENXMB_HARNESS_ACTIONS": "2.0:down;2.4:down;2.8:down;3.2:ok;4.2:down;4.6:down;5.4:options;6.4:ok;7.4:down;8.0:ok;9.4:rs=0,-1;9.65:rs=0,0"
+        "OPENXMB_HARNESS_ACTIONS": "2.4:options;3.4:ok;4.4:down;5.0:ok;6.4:rs=0,-1;6.65:rs=0,0"
       }
     },
     "settings-keyboard": {

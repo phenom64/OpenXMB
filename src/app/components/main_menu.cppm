@@ -48,6 +48,8 @@ class main_menu : public action_receiver {
         void preload(vk::Device device, vma::Allocator allocator, auroreengine::resource_loader& loader);
         void render(auroreengine::gui_renderer& renderer);
         [[nodiscard]] float background_blur_px() const;
+        // 0..1 presence of the Users-style options panel (hides the clock).
+        [[nodiscard]] float options_visibility() { return static_cast<float>(options_panel_amount(std::chrono::steady_clock::now())); }
         [[nodiscard]] float background_dim_alpha() const;
 
         result on_action(action action) override;
@@ -57,7 +59,8 @@ class main_menu : public action_receiver {
 
         class shell* xmb;
 
-        void render_crossbar(auroreengine::gui_renderer& renderer, time_point now);
+            void render_options_hint(auroreengine::gui_renderer& renderer, time_point now);
+            void render_crossbar(auroreengine::gui_renderer& renderer, time_point now);
         void render_submenu(auroreengine::gui_renderer& renderer, time_point now);
         struct parent_icon {const auroreengine::texture* icon;const auroreengine::texture* glass;double x,y,alpha;};
         struct media_scene_state {
