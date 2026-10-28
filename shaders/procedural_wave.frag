@@ -17,6 +17,7 @@ layout(push_constant) uniform Push {
 layout(location=0) in vec3 position;
 layout(location=1) in vec2 edge_sprite;
 layout(location=2) in float particle_alpha;
+layout(location=3) in vec4 particle_style;
 layout(location=0) out vec4 color;
 
 #include "flow_scene.glsl"
@@ -76,9 +77,10 @@ void main() {
         }
         float distanceSquared=dot(edge_sprite,edge_sprite);
         if(distanceSquared>1.0) discard;
-        float glow=(1.0-distanceSquared)*(1.0-distanceSquared);
+        float glow=mix((1.0-distanceSquared)*(1.0-distanceSquared),
+            1.0-smoothstep(0.55,1.0,sqrt(distanceSquared)),particle_style.a);
         float a=clamp(particle_alpha*wave.settings[9].x*glow*pc.resolution_time_gain.w,0.0,1.0);
-        color=vec4(pc.particle_tint.rgb*a,a);
+        color=vec4(pc.particle_tint.rgb*particle_style.rgb*a,a);
         return;
     }
     // Undo the Vulkan Y flip when deriving the reference material's normals.

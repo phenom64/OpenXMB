@@ -19,6 +19,8 @@ layout(push_constant) uniform Push {
 layout(location=0) out vec3 position;
 layout(location=1) out vec2 edge_sprite;
 layout(location=2) out float particle_alpha;
+// Particle colour multiplier (rgb) and out-of-focus disc weight (a).
+layout(location=3) out vec4 particle_style;
 
 const int ROWS=64;
 const int POINTS=28;
@@ -64,6 +66,7 @@ float seed(uint n) {
 
 void main() {
     particle_alpha=0.0;
+    particle_style=vec4(1,1,1,0);
     if(pc.mode_motion.x>2.5) {
         vec2 uv=vec2((gl_VertexIndex<<1)&2,gl_VertexIndex&2);
         gl_Position=vec4(uv*2.0-1.0,0,1);position=vec3(uv,0);edge_sprite=uv;return;
@@ -129,9 +132,31 @@ void main() {
     const vec2 corners[6]=vec2[6](vec2(-1,-1),vec2(1,-1),vec2(-1,1),vec2(-1,1),vec2(1,-1),vec2(1,1));
     vec2 c=corners[gl_VertexIndex];
     float pixels=max(0.0,r.z*wave.settings[9].z+wave.settings[9].y);
+    // Population variation seen in the RPCS3 wave captures (a visual
+    // approximation, not the firmware shader): most motes are dim, small and
+    // slightly elongated; a few are bright warm or pink glints; a few are
+    // large, faint, flat out-of-focus discs.
+    float h1=seed(id*7u+4001u),h2=seed(id*7u+4002u),h3=seed(id*7u+4003u),h4=seed(id*7u+4004u);
+    particle_alpha*=mix(0.5,1.0,pow(h1,1.6));
+    vec2 shape=vec2(1.0);
+    if(h2<0.045) {
+        particle_alpha*=2.4+h3;
+        pixels*=1.25;
+        particle_style.rgb=h4<0.25 ? vec3(1.0,0.97,0.92) : h4<0.5 ? vec3(1.0,0.78,0.86) :
+            h4<0.75 ? vec3(1.0,0.88,0.60) : vec3(1.0,0.72,0.45);
+    } else if(h2>0.94) {
+        particle_style.a=1.0;
+        particle_alpha*=0.5;
+        pixels=(10.0+10.0*h3)*pc.resolution_time_gain.y/1080.0;
+    } else {
+        float stretch=1.0+0.6*h3;
+        shape=vec2(stretch,1.0/pow(stretch,0.25));
+    }
+    float angle=h4*6.2831853+time*0.05*(h1-0.5);
+    vec2 corner=mat2(cos(angle),sin(angle),-sin(angle),cos(angle))*(c*shape);
     // A native quad replaces gl_PointSize, so large-point feature support is
-    // unnecessary and the shader has exactly the same circular falloff.
-    gl_Position=vec4(vec2(x,-y)+c*pixels/pc.resolution_time_gain.xy,0,1);
+    // unnecessary; the fragment falloff stays in the quad's own coordinates.
+    gl_Position=vec4(vec2(x,-y)+corner*pixels/pc.resolution_time_gain.xy,0,1);
     position=vec3(0);
     edge_sprite=c;
 }
