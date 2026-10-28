@@ -25,8 +25,20 @@ mkdir -p "$core_repository"
 /usr/bin/git -C "$core_repository" fetch --depth 1 https://github.com/Homebrew/homebrew-core.git "$core_snapshot"
 /usr/bin/git -C "$core_repository" checkout --force --detach FETCH_HEAD
 export HOMEBREW_NO_INSTALL_FROM_API=1
-brew install --force-bottle llvm@20 cmake ninja pkg-config gettext ffmpeg fmt freetype harfbuzz \
-  glm glslang libarchive libxmp zlib molten-vk sdl2 sdl2_image sdl2_mixer vulkan-loader poppler
+# curl's ordinary retry policy does not cover every connection reset. A retry
+# of this idempotent install retains downloaded bottles and installed formulae.
+for attempt in 1 2 3; do
+  if brew install --force-bottle llvm@20 cmake ninja pkg-config gettext ffmpeg fmt freetype harfbuzz \
+    glm glslang libarchive libxmp zlib molten-vk sdl2 sdl2_image sdl2_mixer vulkan-loader poppler; then
+    break
+  fi
+  if [ "$attempt" -eq 3 ]; then
+    echo 'Homebrew dependency installation failed after three attempts.' >&2
+    exit 1
+  fi
+  echo "Retrying Homebrew dependency installation after attempt $attempt." >&2
+  sleep "$((attempt * 5))"
+done
 {
   echo "$(brew --prefix llvm@20)/bin"
   echo "$(brew --prefix gettext)/bin"

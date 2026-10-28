@@ -12,7 +12,11 @@ if sudo aa-enabled --quiet; then
   sudo apparmor_parser -r "$RUNNER_TEMP/openxmb-portable-container.profile"
   apparmor_profile=openxmb-portable-ci-container
 fi
-docker run --rm --security-opt seccomp=unconfined --security-opt "apparmor=$apparmor_profile" \
+# Docker's masked /proc submounts prevent a nested unprivileged sandbox from
+# mounting its own procfs. Unmask only this disposable test container; WebKit's
+# separate mount namespace and seccomp filter remain mandatory in the smoke test.
+docker run --rm --security-opt seccomp=unconfined --security-opt systempaths=unconfined \
+  --security-opt "apparmor=$apparmor_profile" \
   -e OPENXMB_PORTABLE_CI=1 -v "$PWD:/src:ro" \
   -v "$PWD/dist/portable-evidence-$DISTRO:/evidence" "$IMAGE" \
   bash /src/scripts/ci/check-linux-portable.sh "$DISTRO" "/src/$archive" /evidence \

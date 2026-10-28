@@ -53,6 +53,9 @@ test -d "$output"
 chmod 777 "$output"
 work=$(mktemp -d '/tmp/openxmb portable user ü.XXXXXX')
 chown 65534:65534 "$work"
+# Fail at the actual prerequisite rather than reporting a later WebKit trap.
+setpriv --reuid 65534 --regid 65534 --clear-groups \
+  bwrap --unshare-user --unshare-pid --ro-bind / / --proc /proc -- /bin/true
 setpriv --reuid 65534 --regid 65534 --clear-groups env \
   HOME="$work" TMPDIR="$work" XDG_RUNTIME_DIR="$work" PYTHONDONTWRITEBYTECODE=1 \
   dbus-run-session -- python3 - "$archive" "$output" <<'PY'
