@@ -55,40 +55,22 @@ void main()
     float luma = dot(color, vec3(0.299, 0.587, 0.114));
     color = max(vec3(luma) + (color - vec3(luma)) * 1.25, vec3(0.0));
 
-    float dip = exp(-pow((screen_y - 0.68) / 0.14, 2.0));
-    float value_envelope = 1.05 - 0.26 * dip;
-    value_envelope *= 1.0 + 0.05 * smoothstep(0.30, 0.0, screen_y);
-    value_envelope *= 1.0 + 0.06 * smoothstep(0.85, 1.0, screen_y);
-    color *= value_envelope;
-
+    // Value and chroma field fitted to the firmware's Original background
+    // (RPCS3 captures, October, recorded 05:14-05:35): brightest top-left,
+    // darkest low on the left, a warm lift towards the bottom right, and
+    // slightly more chroma lower down. Only that time of day is measured.
+    const float u = clamp(in_uv.x, 0.0, 1.0), v = screen_y;
+    const float field =
+        0.7780 + 0.6431 * v - 2.5036 * v * v + 1.5062 * v * v * v
+        - 1.0887 * u + 0.5040 * u * v + 1.2681 * u * v * v
+        + 1.0982 * u * u - 1.0241 * u * u * v - 0.2568 * u * u * u;
     luma = dot(color, vec3(0.299, 0.587, 0.114));
-    color = vec3(luma) + (color - vec3(luma)) * (1.0 + 0.22 * dip);
+    color = vec3(luma) + (color - vec3(luma)) * (1.007 + 0.139 * v);
+    color = max(color, vec3(0.0)) * max(field, 0.0);
 
-    float dx = in_uv.x - 0.52;
-    color *= 1.0 - 0.30 * dx * dx * (dx < 0.0 ? 1.6 : 1.0);
-
-    dx = in_uv.x - 0.5;
-    const float bottom_edge = clamp(screen_y * abs(dx) * 2.0, 0.0, 1.0);
-    const float bottom_side = mix(0.847, 0.925, smoothstep(-0.5, 0.5, dx));
-    color *= mix(1.0, bottom_side, bottom_edge);
-
-    const float top_corner = clamp(
-        pow(1.0 - screen_y, 1.5) * (abs(dx) * 2.0), 0.0, 1.0);
-    const float top_side = mix(0.88, 1.0, smoothstep(0.0, 0.5, dx));
-    color *= 1.0 - 0.40 * top_corner * top_side;
-
+    // Night is not in the reference; keep the earlier darkening model.
     const float night = clamp(background.top_and_night.a, 0.0, 1.0);
-    const float exponent = mix(1.15, 3.4, night);
-    const float vertical = pow(screen_y, exponent);
-    const float top_multiplier = mix(0.30, 0.02, night);
-    color *= mix(top_multiplier, 1.0, vertical);
-
-    color *= 1.05;
-    const float input_luma = dot(color, vec3(0.299, 0.587, 0.114));
-    const float output_luma = input_luma / (1.0 + input_luma * 0.30);
-    if (input_luma > 0.0001) {
-        color *= output_luma / input_luma;
-    }
+    color *= mix(1.0, mix(0.02, 1.0, pow(screen_y, 3.4)), night);
 
     if (background.boot.w > 0.5) {
         const float fade =
@@ -100,7 +82,6 @@ void main()
         color *= fade * sweep_mask;
     }
 
-    // xmb-web's fitted constants target numeric 8-bit canvas values. The
-    // Vulkan target is sRGB, so feed it linear light to avoid encoding twice.
+    // The composite's result is written as display (8-bit canvas) values.
     write_background(clamp(xmb_web_composite(color),0.0,1.0));
 }
