@@ -23,6 +23,11 @@ if(OPENXMB_BUILD_NATIVE_TESTS)
   set_target_properties(openxmb_music_playback_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
   add_test(NAME openxmb_music_playback_tests COMMAND openxmb_music_playback_tests)
   set_tests_properties(openxmb_music_playback_tests PROPERTIES ENVIRONMENT "SDL_AUDIODRIVER=dummy" TIMEOUT 20)
+  if(APPLE)
+    # Hosted macOS timers and dummy-device teardown are much slower than local
+    # audio. Keep the sample/position assertions; allow the complete test to run.
+    set_tests_properties(openxmb_music_playback_tests PROPERTIES TIMEOUT 90)
+  endif()
 
   find_program(OPENXMB_MUSIC_FFMPEG_EXECUTABLE ffmpeg)
   find_package(Python3 QUIET COMPONENTS Interpreter)
@@ -32,6 +37,9 @@ if(OPENXMB_BUILD_NATIVE_TESTS)
         --ffmpeg "${OPENXMB_MUSIC_FFMPEG_EXECUTABLE}"
         --player "$<TARGET_FILE:openxmb_music_playback_tests>")
     set_tests_properties(openxmb_music_format_tests PROPERTIES ENVIRONMENT "SDL_AUDIODRIVER=dummy" TIMEOUT 40)
+    if(APPLE)
+      set_tests_properties(openxmb_music_format_tests PROPERTIES TIMEOUT 120)
+    endif()
   endif()
 endif()
 

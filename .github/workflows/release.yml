@@ -350,6 +350,7 @@ jobs:
           name: release-linux
           path: dist/portable-input
       - name: Verify the portable archive in the target distribution
+        shell: bash
         env:
           DISTRO: ${{ matrix.distro }}
           IMAGE: ${{ matrix.image }}
