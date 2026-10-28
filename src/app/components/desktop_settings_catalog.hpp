@@ -1,7 +1,10 @@
 #pragma once
 #include "openxmb/xmb/catalog.hpp"
 #include "../../localization/language_options.hpp"
+#include <algorithm>
+#include <array>
 #include <initializer_list>
+#include <string_view>
 #include <functional>
 #include <string>
 #include <vector>
@@ -140,6 +143,18 @@ inline void populate(openxmb::xmb::Catalog& catalog,
         }
         catalog.nodes.at(group).children.push_back(node.id);catalog.nodes.emplace(node.id,std::move(node));
     }
+    // Root order observed on the PS3 (RPCS3 category inventory): System Update,
+    // Game, Video, Music, [Chat], System, Theme, Date and Time, Power Save,
+    // Accessory, [Printer], Display, Sound. Bracketed rows have no OpenXMB
+    // equivalent; OpenXMB-only groups keep their order after the PS3 rows.
+    constexpr std::array<std::string_view,11> ps3_order{
+        "category.settings.system.update","category.settings.desktop.Game","category.settings.desktop.Video",
+        "category.settings.desktop.Music","category.settings.desktop.System","category.settings.theme.settings",
+        "category.settings.desktop.Date and Time","category.settings.desktop.Power Save",
+        "category.settings.desktop.Accessory","category.settings.desktop.Display","category.settings.desktop.Sound"};
+    std::ranges::stable_sort(root.children,{},[&](const std::string& id) {
+        return static_cast<std::size_t>(std::ranges::find(ps3_order,id)-ps3_order.begin());
+    });
     catalog.strings["category.settings.system.settings.description"]="Adjust settings for the OpenXMB system.";
     // Replace the legacy console language selector with actual shipped locales.
     for(auto& [id,node]:catalog.nodes) if(node.action_id=="simulate.system.language") {

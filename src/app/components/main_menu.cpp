@@ -728,7 +728,6 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
     {
         std::vector<std::unique_ptr<menu::menu_entry>> rows;
         rows.push_back(make_simple<menu::files_menu>("Video Library",asset_directory/"icons/theme/icon_video.png",loader,xmb,config::CONFIG.videos_path(),loader,menu::files_menu_profile::video));
-        rows.push_back(panel_entry("Internet Browser","browser","theme/icon_browser.png"));
         menus.push_back(panel_menu("TV / Video Services",asset_directory/"icons/theme/icon_tv.png",std::move(rows)));
     }
     {
@@ -741,7 +740,11 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
     }
     {
         std::vector<std::unique_ptr<menu::menu_entry>> rows;
-        rows.push_back(panel_entry("Internet Browser", "browser", "icon_category_network.png"));
+        // One Internet Browser, under Network, with the WWW mark rather than
+        // the Network globe (RPCS3 category inventory).
+        rows.push_back(make_simple<menu::action_menu_entry>("Internet Browser",
+            preferred_icon(asset_directory, "xmb_icon_040.png", "theme/icon_browser.png"), loader,
+            [xmb = this->xmb] { xmb->open_panel("browser"); return result::success; }));
         rows.push_back(panel_entry("System Tools", "system"));
         rows.push_back(panel_entry("OpenXMB Settings", "settings"));
         menus.push_back(panel_menu("Network",preferred_icon(asset_directory,"xmb_icon_006.png","icon_category_network.png"),std::move(rows)));
