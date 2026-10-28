@@ -127,8 +127,9 @@ inline constexpr float focus_breath_period = 7.0F / 6.0F;
 }
 
 inline void divider_frame(const xmb_canvas& c, float alpha) {
-    c.rect(0, divider_top_y, 1920, 1, light(0.70F, alpha));
-    c.rect(0, divider_bottom_y, 1920, 1, light(0.70F, alpha));
+    const float hairline=std::max(1.0F,1.0F/c.scale);
+    c.rect(0, divider_top_y, 1920, hairline, light(0.70F, alpha));
+    c.rect(0, divider_bottom_y, 1920, hairline, light(0.70F, alpha));
 }
 
 // Rim with an inner glow: sRGB white alpha `rim` along the edge, decaying

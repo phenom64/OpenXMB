@@ -134,6 +134,123 @@
       "env": {
         "OPENXMB_INITIAL_CATEGORY": "tv"
       }
+    },
+    "setup-brand": {
+      "description": "Initial Setup brand against the PS3 setup reference",
+      "pattern": "setup-brand-{:05d}.png",
+      "frames": 4,
+      "env": {
+        "OPENXMB_SETUP_PAGE": "brand",
+        "OPENXMB_FIXED_SETUP_SECONDS": "1.2"
+      }
+    },
+    "setup-company": {
+      "description": "Initial Setup company against the PS3 setup reference",
+      "pattern": "setup-company-{:05d}.png",
+      "frames": 4,
+      "env": {
+        "OPENXMB_SETUP_PAGE": "company",
+        "OPENXMB_FIXED_SETUP_SECONDS": "1.2"
+      }
+    },
+    "setup-language": {
+      "description": "Initial Setup language against the PS3 setup reference",
+      "pattern": "setup-language-{:05d}.png",
+      "frames": 4,
+      "env": {
+        "OPENXMB_SETUP_PAGE": "language",
+        "OPENXMB_FIXED_SETUP_SECONDS": "1.2"
+      }
+    },
+    "setup-time-zone": {
+      "description": "Initial Setup time-zone against the PS3 setup reference",
+      "pattern": "setup-time-zone-{:05d}.png",
+      "frames": 4,
+      "env": {
+        "OPENXMB_SETUP_PAGE": "time-zone",
+        "OPENXMB_FIXED_SETUP_SECONDS": "1.2"
+      }
+    },
+    "setup-date-time": {
+      "description": "Initial Setup date-time against the PS3 setup reference",
+      "pattern": "setup-date-time-{:05d}.png",
+      "frames": 4,
+      "env": {
+        "OPENXMB_SETUP_PAGE": "date-time",
+        "OPENXMB_FIXED_SETUP_SECONDS": "1.2"
+      }
+    },
+    "setup-name": {
+      "description": "Initial Setup name against the PS3 setup reference",
+      "pattern": "setup-name-{:05d}.png",
+      "frames": 4,
+      "env": {
+        "OPENXMB_SETUP_PAGE": "name",
+        "OPENXMB_FIXED_SETUP_SECONDS": "1.2"
+      }
+    },
+    "setup-summary": {
+      "description": "Initial Setup summary against the PS3 setup reference",
+      "pattern": "setup-summary-{:05d}.png",
+      "frames": 4,
+      "env": {
+        "OPENXMB_SETUP_PAGE": "summary",
+        "OPENXMB_FIXED_SETUP_SECONDS": "1.2"
+      }
+    },
+    "setup-confirmation": {
+      "description": "Initial Setup confirmation against the PS3 setup reference",
+      "pattern": "setup-confirmation-{:05d}.png",
+      "frames": 4,
+      "env": {
+        "OPENXMB_SETUP_PAGE": "confirmation",
+        "OPENXMB_FIXED_SETUP_SECONDS": "1.2"
+      }
+    },
+    "setup-date-edit": {
+      "description": "Initial Setup active date segment",
+      "pattern": "setup-date-edit-{:05d}.png",
+      "frames": 4,
+      "env": {
+        "OPENXMB_SETUP_PAGE": "date-time",
+        "OPENXMB_SETUP_EDIT": "1"
+      }
+    },
+    "setup-time-zone-de": {
+      "description": "Initial Setup live language change to de",
+      "pattern": "setup-time-zone-de-{:05d}.png",
+      "frames": 20,
+      "env": {
+        "OPENXMB_SETUP_PAGE": "language",
+        "OPENXMB_HARNESS_ACTIONS": "0:down;0:right"
+      }
+    },
+    "setup-time-zone-fr": {
+      "description": "Initial Setup live language change to fr",
+      "pattern": "setup-time-zone-fr-{:05d}.png",
+      "frames": 20,
+      "env": {
+        "OPENXMB_SETUP_PAGE": "language",
+        "OPENXMB_HARNESS_ACTIONS": "0:down;0:down;0:right"
+      }
+    },
+    "setup-time-zone-hi": {
+      "description": "Initial Setup live language change to hi",
+      "pattern": "setup-time-zone-hi-{:05d}.png",
+      "frames": 20,
+      "env": {
+        "OPENXMB_SETUP_PAGE": "language",
+        "OPENXMB_HARNESS_ACTIONS": "0:down;0:down;0:down;0:right"
+      }
+    },
+    "setup-time-zone-ja": {
+      "description": "Initial Setup live language change to ja",
+      "pattern": "setup-time-zone-ja-{:05d}.png",
+      "frames": 20,
+      "env": {
+        "OPENXMB_SETUP_PAGE": "language",
+        "OPENXMB_HARNESS_ACTIONS": "0:down;0:down;0:down;0:down;0:down;0:down;0:down;0:right"
+      }
     }
   }
 }

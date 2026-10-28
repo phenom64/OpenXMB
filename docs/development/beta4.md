@@ -80,6 +80,22 @@ followed by **Syndromatic Limited Britannia**.
 
 ## Validation boundaries
 
+On Windows, run `tools/run-beta4-preview.ps1` after building. It uses a separate
+profile and media directory under `build/beta4-preview-profile`; the XMB reset
+action affects that preview profile. Normal user configuration and libraries
+are not used by this launcher. Setup completion persists between preview runs.
+
+Native integration smoke:
+
+```powershell
+python tests/setup/native_setup_smoke.py --app build/native-c/XMS.bin.exe
+```
+
+The initial setup model and configuration tests are registered with CTest as
+`openxmb_setup_tests` and `openxmb_config_style_tests`. Capture presets include
+setup pages and live French/Hindi/Japanese language changes. Captures use their
+own profile and data roots.
+
 Use isolated temporary profiles for migration, reset, capture and runtime tests.
 Model tests cover Gregorian dates, segmented editing, GMT minute offsets,
 seasonal rules, nonexistent/repeated local times, confirmation and cancellation.
@@ -91,3 +107,20 @@ Future integration acceptance needs actual installed games/emulators, original
 in-game XMB references, provider credentials supplied through supported settings,
 and Windows/Linux/macOS runtime testing. Synthetic metadata fixtures do not prove
 actual game boot, genuine unlock decoding, overlay compatibility or focus recovery.
+
+## First discovery increment
+
+Existing library scans now include RPCS3's registered `games.yml` paths and
+native data roots without first adding those roots manually. This increment is
+consumed by the existing **Scan game folders / Scan configured folders** actions;
+background startup discovery and direct crossbar game entries remain later work.
+Bootable `DG`/`HG` titles require `USRDIR/EBOOT.BIN`; patches/data do not become
+games. Canonical native-folder identity deduplicates path aliases and survives
+an emulator path change. Refresh retains history, favourites and custom artwork.
+
+The registry reader supports the upstream scalar-map format with plain, single
+or double quoted paths and Unicode escapes. Limits are 4 MiB, 10,000 keys and
+32,768 bytes per scalar. Unsupported YAML fails closed for that registry; other
+registries and native roots can still be scanned. Candidate installations are
+combined, including old Windows registry locations. Custom VFS mounts still
+need manual roots; archives and relative registry entries are not imported.

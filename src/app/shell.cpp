@@ -59,6 +59,8 @@ module;
 #include "../localization/font_selection.hpp"
 #include "openxmb/integrations/desktop.hpp"
 #include "openxmb/themes/library.hpp"
+#include "openxmb/setup/model.hpp"
+#include "openxmb/xmb/status_bar.hpp"
 #include <map>
 
 module openxmb.app;
@@ -85,6 +87,7 @@ import :integration_center;
 import :library_manager;
 import :about;
 import :desktop_settings;
+import :initial_setup;
 
 using namespace mfk::i18n::literals;
 
@@ -101,6 +104,25 @@ namespace app
     };
 
     namespace {
+        std::optional<openxmb::setup::CivilTime> shell_civil_time() {
+            auto now=openxmb::xmb::wall_clock_now();
+            const auto zone_id=config::CONFIG.preference("system.timezone");
+            if(!zone_id.empty()) {
+                if(!config::CONFIG.enabled("system.clock.automatic"))
+                    now+=std::chrono::seconds{static_cast<std::int64_t>(std::clamp(config::CONFIG.number("system.clock.offset-seconds",0),-6311433600.0,6311433600.0))};
+                const openxmb::setup::Zone zone{zone_id,{},static_cast<int>(std::clamp(config::CONFIG.number("system.timezone.standard-minutes",0),-720.0,840.0)),true,true};
+                return openxmb::setup::local_time(zone,now,config::CONFIG.enabled("system.timezone.daylight"));
+            }
+            const auto raw=std::chrono::system_clock::to_time_t(now);
+            std::tm local{};
+#if defined(_WIN32)
+            if(localtime_s(&local,&raw)!=0)return {};
+#else
+            if(localtime_r(&raw,&local)==nullptr)return {};
+#endif
+            return openxmb::setup::CivilTime{local.tm_year+1900,local.tm_mon+1,local.tm_mday,local.tm_hour,local.tm_min,local.tm_sec};
+        }
+
         inline constexpr float xmb_web_native_steady_wave_fill_alpha = 0.078F;
 
         bool truthy_environment_flag(const char* name) noexcept
@@ -261,8 +283,9 @@ namespace app
     void shell::preload()
     {
         phase::preload();
-
-        font_render = std::make_unique<font_renderer>(openxmb::localization::select_font(config::CONFIG.fontPath,config::CONFIG.asset_directory,config::CONFIG.language).string(), 32, device, allocator, win->swapchainExtent, win->gpuFeatures);
+        setup_font_active=(!win->config.headless&&config::CONFIG.initialSetupRequired)||
+            std::getenv("OPENXMB_SETUP_PAGE")||truthy_environment_flag("OPENXMB_FORCE_SETUP");
+        font_render = std::make_unique<font_renderer>(openxmb::localization::select_font(active_font_path(),config::CONFIG.asset_directory,config::CONFIG.language).string(), 32, device, allocator, win->swapchainExtent, win->gpuFeatures);
         image_render = std::make_unique<image_renderer>(device, win->swapchainExtent, win->gpuFeatures);
         image_render->setAllocator(allocator);
         simple_render = std::make_unique<simple_renderer>(device, allocator, win->swapchainExtent, win->gpuFeatures);
@@ -516,7 +539,10 @@ namespace app
         // Push startup splash overlay (plays jingle, fades text). Headless
         // runs keep their settled-scene default unless visual verification
         // explicitly opts into the real boot overlay.
-        if(!win->config.headless || force_headless_startup_overlay()) {
+        if((!win->config.headless && config::CONFIG.initialSetupRequired) ||
+           std::getenv("OPENXMB_SETUP_PAGE") || truthy_environment_flag("OPENXMB_FORCE_SETUP")) {
+            begin_initial_setup();
+        } else if(!win->config.headless || force_headless_startup_overlay()) {
             shader_time_zero = std::chrono::steady_clock::now();
             startup_timeline.reset();
             emplace_overlay<app::startup_overlay>();
@@ -792,21 +818,15 @@ namespace app
             const auto wall_now = openxmb::xmb::wall_clock_now();
             auto themeColour = utils::xmb_resolve_theme_colour(wall_now);
             glm::vec3 baseThemeColour = themeColour.base_colour;
-            const auto wall_time = std::chrono::system_clock::to_time_t(wall_now);
-            std::tm local_time{};
-#if defined(_WIN32)
-            localtime_s(&local_time, &wall_time);
-#else
-            localtime_r(&wall_time, &local_time);
-#endif
-            const auto local_hour = static_cast<float>(local_time.tm_hour) +
-                static_cast<float>(local_time.tm_min) / 60.0F +
-                static_cast<float>(local_time.tm_sec) / 3600.0F;
+            const auto local_time = shell_civil_time().value_or(openxmb::setup::CivilTime{});
+            const auto local_hour = static_cast<float>(local_time.hour) +
+                static_cast<float>(local_time.minute) / 60.0F +
+                static_cast<float>(local_time.second) / 3600.0F;
             const auto day_night_hour =
                 utils::xmb_effective_day_night_hour(local_hour);
             const auto original_gradient =
                 openxmb::xmb::resolve_background_gradient(
-                    local_time.tm_mon, day_night_hour);
+                    local_time.month-1, day_night_hour);
             const auto manual_gradient =
                 openxmb::xmb::resolve_manual_background_gradient(
                     {themeColour.base_colour.r, themeColour.base_colour.g,
@@ -820,7 +840,7 @@ namespace app
             // reveals (boot.customise), rather than cutting to them.
             const auto boot = startup_sample();
             const auto startup_gradient =
-                openxmb::xmb::resolve_background_gradient(local_time.tm_mon, 12.0F);
+                openxmb::xmb::resolve_background_gradient(local_time.month-1, 12.0F);
             const float customise = static_cast<float>(boot.customise);
             // xmb-web's Original background lets the calendar-driven gradient
             // carry the hue.  The captured ribbon and dust/glints stay close to
@@ -1621,8 +1641,7 @@ namespace app
             // open (Users > Triangle and Settings > Colour captures).
             const float clock_alpha = has_choice_overlay() ? 0.0F : 1.0F - menu.options_visibility();
             renderer.push_color(glm::vec4(config::CONFIG.clockColor, clock_alpha));
-            if(!status_bar_render.render_local(
-                   renderer, openxmb::xmb::wall_clock_now())) {
+            if(!render_status_clock(renderer)) {
                 static bool status_bar_time_warning_logged = false;
                 if(!status_bar_time_warning_logged) {
                     spdlog::warn(
@@ -1659,7 +1678,7 @@ namespace app
             const auto overlay_text_scale = renderer.text_scale;
             renderer.text_scale = static_cast<float>(config::CONFIG.textScale);
             renderer.push_color(glm::vec4(config::CONFIG.clockColor,1.0F));
-            static_cast<void>(status_bar_render.render_local(renderer,openxmb::xmb::wall_clock_now()));
+            static_cast<void>(render_status_clock(renderer));
             renderer.pop_color();
             renderer.text_scale = overlay_text_scale;
         }
@@ -1806,6 +1825,42 @@ namespace app
         theme->active.reset();theme->frame={};theme->textures.clear();theme->library.reset();
         config::CONFIG.reset_to_defaults();
         refresh_desktop_preferences();reload_background();reload_fonts();reload_menu();reload_button_icons();reload_theme_sounds();
+        setup_requested = true;
+    }
+
+    bool shell::render_status_clock(gui_renderer& renderer) {
+        const auto local=shell_civil_time();
+        if(!local)return false;
+        status_bar_render.render(renderer,{local->day,local->month,local->hour,local->minute,local->second});
+        return true;
+    }
+
+    void shell::begin_initial_setup() {
+        if(!setup_font_active) {setup_font_active=true;reload_fonts();}
+        auto* setup=emplace_overlay<app::initial_setup_overlay>([this](const openxmb::setup::Draft& draft,const openxmb::setup::Zone& zone) {
+            const auto previous_preferences=config::CONFIG.preferences;
+            const auto previous_language=config::CONFIG.language;
+            const auto previous_required=config::CONFIG.initialSetupRequired;
+            auto& preferences=config::CONFIG.preferences;
+            preferences["user.name"]=draft.user_name;
+            preferences["system.region"]=draft.region;
+            preferences["system.timezone"]=zone.id;
+            preferences["system.timezone.cities"]=zone.cities;
+            preferences["system.timezone.standard-minutes"]=std::to_string(zone.standard_minutes);
+            preferences["system.timezone.daylight"]=draft.automatic_daylight?"On":"Off";
+            preferences["system.clock.automatic"]=draft.automatic_time?"On":"Off";
+            preferences["system.clock.offset-seconds"]=std::to_string(draft.clock_offset.count());
+            config::CONFIG.setLanguage(draft.language);
+            config::CONFIG.initialSetupRequired=false;
+            if(!config::CONFIG.save_config_checked()) {
+                config::CONFIG.preferences=previous_preferences;
+                config::CONFIG.setLanguage(previous_language);
+                config::CONFIG.initialSetupRequired=previous_required;
+                throw std::runtime_error("Could not save OpenXMB settings. Check that the profile folder is writable, then try again.");
+            }
+            setup_handoff_pending=true;
+        });
+        setup->preload(*loader,this);
     }
 
     void shell::switch_profile(const std::filesystem::path& path) {
@@ -1817,6 +1872,7 @@ namespace app
         if(auto saved = theme_library()->active()) apply_theme(*saved);
         else { reload_background(); reload_fonts(); reload_menu(); }
         reload_button_icons();reload_theme_sounds();
+        setup_requested=config::CONFIG.initialSetupRequired;
     }
 
     void shell::apply_theme(const openxmb::themes::AppliedTheme& theme) {
@@ -1921,12 +1977,18 @@ namespace app
     }
     void shell::reload_fonts() {
         win->waitIdle();
-        const auto rendered=openxmb::localization::select_font(config::CONFIG.fontPath,config::CONFIG.asset_directory,config::CONFIG.language);
+        const auto rendered=openxmb::localization::select_font(active_font_path(),config::CONFIG.asset_directory,config::CONFIG.language);
         auto replacement = std::make_unique<font_renderer>(rendered.string(), 32, device, allocator, win->swapchainExtent, win->gpuFeatures);
         replacement->set_preload_texts(openxmb::localization::font_catalog_texts(config::CONFIG.locale_directory,config::CONFIG.language));
         replacement->preload(loader, {shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get(), nullptr, 0x20, 0x1ff).get();
         replacement->prepare(win->swapchainImageCount);
         font_render = std::move(replacement);
+    }
+
+    std::filesystem::path shell::active_font_path() const {
+        const auto setup_font=config::CONFIG.asset_directory/"fonts/NotoSans-Regular.ttf";
+        if(setup_font_active&&std::filesystem::is_regular_file(setup_font))return setup_font;
+        return config::CONFIG.fontPath;
     }
 
     void shell::reload_background() {
@@ -2069,7 +2131,12 @@ namespace app
                 constexpr std::array<std::pair<std::string_view, events::logical_controller_button>, 4> buttons{{
                     {"start", events::logical_controller_button::start}, {"select", events::logical_controller_button::back},
                     {"l1", events::logical_controller_button::leftshoulder}, {"r1", events::logical_controller_button::rightshoulder}}};
-                if(step.starts_with("rs=")) {
+                if(step.starts_with("profile=")) {
+                    switch_profile(std::filesystem::u8path(step.substr(8)));
+                    break;
+                } else if(step=="reset") {
+                    reset_settings();
+                } else if(step.starts_with("rs=")) {
                     const auto comma = step.find(',');
                     float x{}, y{};
                     if(comma != std::string_view::npos) {
@@ -2093,6 +2160,14 @@ namespace app
                 i--;
             }
             handle(res);
+        }
+        if(std::exchange(setup_requested,false)) begin_initial_setup();
+        if(std::exchange(setup_handoff_pending,false)) {
+            setup_font_active=false;
+            reload_language();
+            shader_time_zero=std::chrono::steady_clock::now();
+            startup_timeline.reset();
+            emplace_overlay<app::startup_overlay>();
         }
         poll_mouse();
         tick_cursor();

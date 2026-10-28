@@ -288,6 +288,12 @@ namespace app
             }
             const std::optional<clipboard>& get_clipboard() const { return clipboard; }
         private:
+            void begin_initial_setup();
+            bool render_status_clock(gui_renderer& renderer);
+            std::filesystem::path active_font_path() const;
+            bool setup_font_active = false;
+            bool setup_requested = false;
+            bool setup_handoff_pending = false;
             friend class blur_layer;
 
             // Monotonic timing for input and fades

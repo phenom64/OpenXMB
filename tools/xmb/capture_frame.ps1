@@ -85,6 +85,9 @@ function Invoke-SceneCapture {
     Remove-Item Env:OPENXMB_HEADLESS_STARTUP -ErrorAction SilentlyContinue
     Remove-Item Env:OPENXMB_FIXED_BOOT_SECONDS -ErrorAction SilentlyContinue
     Remove-Item Env:OPENXMB_HARNESS_ACTIONS -ErrorAction SilentlyContinue
+    Remove-Item Env:OPENXMB_SETUP_PAGE -ErrorAction SilentlyContinue
+    Remove-Item Env:OPENXMB_SETUP_EDIT -ErrorAction SilentlyContinue
+    Remove-Item Env:OPENXMB_FIXED_SETUP_SECONDS -ErrorAction SilentlyContinue
 
     foreach ($key in $SceneEnv.Keys) {
         Set-Item -Path "Env:$key" -Value $SceneEnv[$key]
@@ -105,6 +108,7 @@ function Invoke-SceneCapture {
     $env:XMB_LOCALE_DIR = $localeDir
     $env:SDL_AUDIODRIVER = "dummy"
     $env:OPENXMB_CONFIG = $configPath
+    $env:OPENXMB_DATA_DIR = Join-Path $sceneDir "data"
     $env:OPENXMB_CONFIG_READ_ONLY = "1"
     $env:OPENXMB_FIXED_UNIX_SECONDS = if ($FixedUnixSeconds -gt 0) { "$FixedUnixSeconds" } else { "$([long]$defaults.fixed_unix_seconds)" }
     if ($WaveSeconds -lt -1) { Remove-Item Env:OPENXMB_FIXED_WAVE_SECONDS -ErrorAction SilentlyContinue }

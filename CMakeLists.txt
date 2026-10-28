@@ -604,6 +604,10 @@ set(XMS_SHADERS
 
 add_executable(XMS ${XMS_SOURCES})
 target_sources(XMS PRIVATE src/localization/font_selection.cpp)
+target_sources(XMS PRIVATE src/setup/model.cpp)
+target_sources(XMS PUBLIC FILE_SET CXX_MODULES BASE_DIRS src FILES
+  src/app/components/setup_controls.cppm
+  src/app/components/initial_setup.cppm)
 if(TARGET openxmb_compat_assets)
   add_dependencies(XMS openxmb_compat_assets)
 endif()
@@ -763,6 +767,13 @@ if(OPENXMB_BUILD_NATIVE_TESTS)
     COMMAND "${CMAKE_COMMAND}"
       -DOPENXMB_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
       -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckSourceInvariants.cmake)
+
+  add_executable(openxmb_setup_tests tests/setup/model_tests.cpp src/setup/model.cpp)
+  target_include_directories(openxmb_setup_tests PRIVATE include)
+  set_target_properties(openxmb_setup_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  target_compile_definitions(openxmb_setup_tests PRIVATE _CRT_SECURE_NO_WARNINGS)
+  openxmb_configure_native_test(openxmb_setup_tests)
+  add_test(NAME openxmb_setup_tests COMMAND openxmb_setup_tests)
 
   add_executable(openxmb_layout_timeline_tests
     tests/xmb/layout_timeline_tests.cpp
