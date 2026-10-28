@@ -174,6 +174,7 @@ export namespace config
             std::map<std::string, std::filesystem::path> themeSounds;
             std::map<std::string, std::string> preferences;
             std::filesystem::path profileConfigPath;
+            bool initialSetupRequired = true;
             std::string preference(std::string_view key, std::string fallback={}) const {
                 const auto it=preferences.find(std::string(key));return it==preferences.end()?fallback:it->second;
             }
@@ -195,6 +196,7 @@ export namespace config
             void load();
             void reload();
             void save_config();
+            [[nodiscard]] bool save_config_checked();
             void addCallback(const std::string& key, std::function<void(const std::string&)> callback);
 
             void setSampleCount(vk::SampleCountFlagBits count);
@@ -252,7 +254,7 @@ export namespace config
             std::filesystem::path config_path_for_write() const;
             void resetThemeColourStrings();
             void load_from_json();
-            void save_to_json();
+            bool save_to_json();
     };
     inline class config CONFIG;
 }

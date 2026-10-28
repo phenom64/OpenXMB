@@ -493,6 +493,10 @@ void config::save_config() {
     save_to_json();
 }
 
+bool config::save_config_checked() {
+    return save_to_json();
+}
+
 std::filesystem::path config::config_path_for_read() const {
     if(!profileConfigPath.empty()) return profileConfigPath;
     if(auto path = env_path("OPENXMB_CONFIG"); !path.empty()) {
@@ -518,6 +522,7 @@ std::filesystem::path config::config_path_for_write() const {
 }
 
 void config::load_from_json() {
+    initialSetupRequired = true;
     set_default_user_dirs(*this);
     resetThemeColourStrings();
     setFontPath("default");
@@ -675,6 +680,14 @@ void config::load_from_json() {
             for(const auto& [key, value] : config["preferences"].items())
                 if(value.is_string()) preferences[key] = value.get<std::string>();
 
+        if(const auto completed=preferences.find("setup.completed");completed!=preferences.end()) {
+            initialSetupRequired = completed->second != "true";
+        } else {
+            std::error_code error;
+            // Existing user profiles predate setup. Bundled defaults are not a profile.
+            initialSetupRequired = !std::filesystem::equivalent(config_path,config_path_for_write(),error);
+        }
+
         // Load controller settings
         if (config.contains("controller")) {
             auto& controller = config["controller"];
@@ -752,7 +765,8 @@ void config::load_from_json() {
     }
 }
 
-void config::save_to_json() {
+bool config::save_to_json() {
+    if(env_flag("OPENXMB_CONFIG_READ_ONLY")) return false;
     std::filesystem::path config_path = config_path_for_write();
     
     try {
@@ -773,6 +787,7 @@ void config::save_to_json() {
         };
         
         config["preferences"] = preferences;
+        config["preferences"]["setup.completed"] = initialSetupRequired ? "false" : "true";
         // Shell settings
         config["shell"]["background-color"] = colour_to_hex(backgroundColor);
         
@@ -844,7 +859,7 @@ void config::save_to_json() {
                 spdlog::error("Failed to write temporary config file: {}", temp_path.string());
                 std::error_code remove_error;
                 std::filesystem::remove(temp_path, remove_error);
-                return;
+                return false;
             }
             config_file.close();
 
@@ -855,6 +870,7 @@ void config::save_to_json() {
                 std::filesystem::remove(temp_path, remove_error);
             } else {
                 spdlog::info("Configuration saved successfully");
+                return true;
             }
         } else {
             spdlog::error("Failed to open temporary config file for writing: {}", temp_path.string());
@@ -863,6 +879,7 @@ void config::save_to_json() {
     } catch (const std::exception& e) {
         spdlog::error("Error saving configuration: {}", e.what());
     }
+    return false;
 }
 
 void config::addCallback(const std::string& key, std::function<void(const std::string&)> callback) {
