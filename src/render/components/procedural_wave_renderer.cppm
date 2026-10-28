@@ -30,6 +30,7 @@ module;
 
 #include "openxmb/xmb/procedural_wave.hpp"
 #include "../music_response.hpp"
+#include "../flow_scene.hpp"
 
 export module openxmb.render:procedural_wave_renderer;
 
@@ -173,8 +174,7 @@ public:
     void set_music_signal(std::span<const float> spectrum,bool playing,std::uint64_t generation) {
         const auto now=std::chrono::steady_clock::now();
         const auto dt=std::chrono::duration<double>(now-response_updated_).count();response_updated_=now;
-        response_.advance(spectrum,playing,dt);visual_seconds_+=std::clamp(dt,0.0,0.1)*response_.speed;
-        if(generation!=audio_generation_) {audio_generation_=generation;flow_epoch_=visual_seconds_;flow_initialized_=true;}
+        response_.advance(spectrum,playing,dt);flow_clock_.advance(dt,response_.speed,generation);
     }
     bool flow_mode{};
     float music_vertical{-0.02F};
@@ -209,10 +209,14 @@ public:
         command.setViewport(0,viewport); command.setScissor(0,scissor);
         command.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,pipelineLayout_.get(),0,frame.set,{});
         Push push{glm::vec4(tint,1),glm::vec4(extent_.width,extent_.height,seconds+100.0F,std::max(0.0F,brightness)),
-                  glm::vec4(glm::mix(particle_color,glm::vec3(1.0F,238.0F/255,252.0F/255),blend),1),glm::vec4(flow_mode?2.0F:0.0F,motion.x,motion.y,waves_enabled?1.0F:0.0F),glm::vec4(blend,response_.energy,flow_mode?1.0F:0.0F,0),glm::vec4(response_.bass,response_.mid,response_.treble,response_.beat)};
-        if(flow_mode&&!flow_initialized_){flow_epoch_=visual_seconds_;flow_initialized_=true;}
-        flow_previous_=flow_mode;
-        if(flow_mode)push.resolution_time_gain.z=100.0F+(visualizer_time>=0?visualizer_time:static_cast<float>(visual_seconds_-flow_epoch_));
+                  glm::vec4(glm::mix(particle_color,glm::vec3(1.0F,238.0F/255,252.0F/255),blend),1),glm::vec4(flow_mode?2.0F:0.0F,motion.x,motion.y,waves_enabled?1.0F:0.0F),glm::vec4(blend,response_.energy,flow_mode?1.0F:0.0F,0),glm::vec4(response_.bass,response_.mid,response_.treble,response_.beat),{}};
+        if(flow_mode) {
+            const auto travel=visualizer_time>=0?visualizer_time:flow_clock_.motion;
+            const auto scene=visualizer_time>=0?visualizer_time:flow_clock_.scene;
+            const auto camera=openxmb::render_detail::flow_camera(travel);
+            push.flow=glm::vec4(travel,scene,camera.x,camera.z);
+            push.resolution_time_gain.z=100.0F+static_cast<float>(travel);
+        }
         constexpr auto stages=vk::ShaderStageFlagBits::eVertex|vk::ShaderStageFlagBits::eFragment;
         if(waves_enabled) {
             command.bindPipeline(vk::PipelineBindPoint::eGraphics,waveIt->second.get());
@@ -240,7 +244,8 @@ public:
     }
 
 private:
-    struct Push { glm::vec4 tint,resolution_time_gain,particle_tint,mode_motion,effect,audio; };
+    struct Push { glm::vec4 tint,resolution_time_gain,particle_tint,mode_motion,effect,audio,flow; };
+    static_assert(sizeof(Push)==112);
     struct Frame { vma::UniqueBuffer buffer; vma::UniqueAllocation allocation; vk::DescriptorSet set; };
     vk::Device device_;
     vma::Allocator allocator_;
@@ -254,10 +259,10 @@ private:
     vma::UniqueAllocation indexAllocation_;
     std::uint32_t indexCount_{};
     vma::UniqueBuffer flowIndexBuffer_;vma::UniqueAllocation flowIndexAllocation_;
-    std::uint32_t flowIndexCount_{};bool flow_previous_{};
+    std::uint32_t flowIndexCount_{};
     openxmb::render_detail::MusicResponse response_;
     std::chrono::steady_clock::time_point response_updated_=std::chrono::steady_clock::now();
-    double visual_seconds_{},flow_epoch_{};std::uint64_t audio_generation_{};bool flow_initialized_{};
+    openxmb::render_detail::FlowClock flow_clock_;
     bool music_target_{};
     float music_blend_{};
     std::chrono::steady_clock::time_point music_updated_=std::chrono::steady_clock::now();

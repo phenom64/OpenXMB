@@ -1,4 +1,5 @@
 #version 450
+#extension GL_GOOGLE_include_directive : require
 layout(std430,set=0,binding=0) readonly buffer WaveData {
     vec4 settings[16];
     float control[];
@@ -10,78 +11,67 @@ layout(push_constant) uniform Push {
     vec4 mode_motion;
     vec4 effect;
     vec4 audio;
+    vec4 flow;
 } pc;
 layout(location=0) in vec3 position;
 layout(location=1) in vec2 edge_sprite;
 layout(location=2) in float particle_alpha;
 layout(location=0) out vec4 color;
 
-float flowWindow(float t,float start,float end,float fade) {return smoothstep(start,start+fade,t)*(1.0-smoothstep(end-fade,end,t));}
-float flowHash(vec2 p) {return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
-float flowNoise(vec2 p) {vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(flowHash(i),flowHash(i+vec2(1,0)),f.x),mix(flowHash(i+vec2(0,1)),flowHash(i+vec2(1,1)),f.x),f.y);}
-float flowFbm(vec2 p) {float value=0.0,gain=0.5;for(int i=0;i<4;++i){value+=gain*flowNoise(p);p=mat2(1.6,1.2,-1.2,1.6)*p;gain*=0.5;}return value;}
-vec4 flowWeights(float seconds) {float t=mod(seconds,128.0);return vec4(flowWindow(t,15.0,65.0,12.0),flowWindow(t,59.0,91.0,10.0),flowWindow(t,79.0,109.0,10.0),flowWindow(t,101.0,117.0,6.0));}
-float flowBaseHeight(vec2 world,float seconds) {
-    vec4 w=flowWeights(seconds);
-    float bend=world.x*0.85+sin(world.y*0.28-seconds*0.11)*0.9+sin(world.x*0.21+world.y*0.19)*0.45;
-    float ridge=sin(bend*11.0-world.y*0.41)*0.072+sin(bend*22.0-world.y*0.72)*0.013;
-    ridge+=sin(world.x*0.35+world.y*0.12-seconds*0.05)*0.18;
-    float hills=(flowFbm(world*0.22)-0.32)*1.65+ridge*0.22;
-    float ocean=sin(world.y*0.6+seconds*0.22)*0.09+sin(world.x*0.65+world.y*0.35)*0.055;
-    float mountains=pow(flowFbm(world*0.17),1.6)*2.2-0.3;
-    float h=mix(ridge,hills,w.x);h=mix(h,ocean,w.y);h=mix(h,mountains,w.z);h=mix(h,ocean*0.25,w.w);
-    const float depth=max(0.0,world.y-seconds*0.22-3.0);
-    h+=(1.0-max(w.x,w.z))*sin(world.x*0.28+world.y*0.12-seconds*0.11)*depth*0.045;
-    return h;
-}
-float flowHeight(vec2 world,float seconds) {
-    return flowBaseHeight(world,seconds)*(1.0+pc.audio.x*0.28+pc.audio.w*0.18)+sin(world.x*2.8+world.y*1.1-seconds*0.8)*pc.audio.y*0.025;
-}
-vec3 flowSky(float seconds,float screenY) {
-    float t=mod(seconds,128.0);vec4 w=flowWeights(seconds);
-    float day=flowWindow(t,25.0,63.0,13.0),green=flowWindow(t,39.0,64.0,10.0);
-    vec3 sky=mix(vec3(0),mix(vec3(0.55,0.67,0.68),vec3(0.05,0.35,0.40),green),day);
-    sky=mix(sky,vec3(0.0,0.07,0.22),w.y*0.92);
-    sky=mix(sky,vec3(0.52,0.56,0.61),w.z*0.9);
-    sky=mix(sky,vec3(0.055,0.32,0.34),w.w);
-    return sky*mix(0.58,1.0,clamp(screenY,0.0,1.0));
-}
+#include "flow_scene.glsl"
 
 void main() {
     if(pc.mode_motion.x>2.5) {
-        float seconds=pc.resolution_time_gain.z-100.0;
-        color=vec4(flowSky(seconds,edge_sprite.y),1);return;
+        FlowScene s=flowScene();
+        color=vec4(mix(flowSky(edge_sprite),flowVeil(edge_sprite),max(s.close,s.mist))*
+            (1.0+pc.effect.y*0.15+pc.audio.w*0.22),1);return;
     }
     if(pc.mode_motion.x>1.5) {
-        float seconds=pc.resolution_time_gain.z-100.0,phase=mod(seconds,128.0);vec4 w=flowWeights(seconds);
-        const float e=0.025;vec2 world=vec2(position.x,edge_sprite.y);
-        float dx=(flowHeight(world+vec2(e,0),seconds)-flowHeight(world-vec2(e,0),seconds))/(2.0*e);
-        float dz=(flowHeight(world+vec2(0,e),seconds)-flowHeight(world-vec2(0,e),seconds))/(2.0*e);
-        vec3 n=normalize(vec3(-dx,1.0,-dz));
-        float stripePhase=edge_sprite.x*11.0-edge_sprite.y*0.41;
-        float crest=pow(0.5+0.5*sin(stripePhase),12.0)/(1.0+fwidth(stripePhase)*1.5);
-        float broad=pow(0.5+0.5*sin(stripePhase-0.16),4.0);
-        float gold=flowWindow(phase,13.0,48.0,12.0),green=flowWindow(phase,38.0,65.0,10.0),neon=flowWindow(phase,115.0,128.0,5.0);
-        vec3 tint=mix(vec3(0.06,0.50,0.63),vec3(0.72,0.66,0.38),gold);
-        tint=mix(tint,vec3(0.24,0.38,0.035),green);tint=mix(tint,vec3(0.02,0.23,0.73),w.y);tint=mix(tint,vec3(0.67,0.71,0.82),w.z);tint=mix(tint,vec3(0.13,0.70,0.36),neon);
-        float detail=flowFbm(vec2(position.x,edge_sprite.y)*6.0);
-        float lit=max(dot(n,normalize(vec3(-0.3,0.9,-0.25))),0.0);
-        float terrain=max(w.x,w.z);
-        float strands=edge_sprite.x*48.0+edge_sprite.y*0.12+flowNoise(vec2(position.x,edge_sprite.y)*0.25)*4.0;
-        float filament=pow(0.5+0.5*sin(strands),10.0)/(1.0+fwidth(strands)*2.0);
-        vec3 rgb=tint*(0.04+broad*0.22+crest*1.25);
-        vec3 land=tint*(0.16+lit*0.72)*(0.7+detail*0.5)+vec3(0.45)*pow(lit,12.0)+mix(tint,vec3(0.8),0.55)*filament*(0.10+0.25*lit);
-        rgb=mix(rgb,land,terrain);rgb=mix(rgb,tint*(0.05+lit*0.4)+vec3(0.12,0.35,0.9)*crest,w.y);
-        float fog=1.0-exp(-position.z*mix(0.085,0.14,w.w));
-        rgb=mix(rgb,flowSky(seconds,0.54),clamp(fog+w.w*0.65,0.0,1.0));
-        color=vec4(rgb*(1.0+pc.effect.y*0.25+pc.audio.w*0.40),1);return;
+        FlowScene s=flowScene();
+        vec3 world=vec3(position.x,position.y,edge_sprite.y);
+        vec3 normal=normalize(cross(dFdx(world),dFdy(world)));
+        if(normal.y<0.0)normal=-normal;
+        vec3 eye=vec3(pc.flow.z,flowCameraHeight(pc.flow.x),pc.flow.w);
+        vec3 view=normalize(eye-world);
+        vec3 light=normalize(vec3(-0.4,0.64,-0.55));
+        float diffuse=max(dot(normal,light),0.0);
+        float rim=pow(1.0-clamp(abs(dot(normal,view)),0.0,1.0),3.5);
+        float spec=pow(max(dot(reflect(-light,normal),view),0.0),18.0);
+        float uneven=0.42+0.58*flowNoise(vec2(world.x,world.z)*0.18);
+        vec3 tint=mix(vec3(0.24,0.32,0.25),vec3(0.10,0.27,0.025),s.green);
+        tint=mix(tint,vec3(0.30,0.29,0.19),s.gold);
+        tint=mix(tint,vec3(0.005,0.042,0.055),s.corridor);
+        vec3 crest=mix(vec3(0.69,0.73,0.62),vec3(0.10,0.68,0.83),s.corridor);
+        vec3 rgb=tint*(0.15+diffuse*0.68)+crest*(rim*0.55+spec*0.75+pow(spec,0.32)*0.13)*uneven;
+        float fibrePhase=edge_sprite.x*31.0+flowNoise(vec2(world.x,world.z)*0.26)*5.0;
+        float fibres=pow(0.5+0.5*sin(fibrePhase),10.0)/(1.0+fwidth(fibrePhase)*2.0);
+        rgb+=crest*fibres*uneven*(0.005+rim*0.04);
+        float broadFold=sin(world.z*0.54+sin(edge_sprite.x*0.44)*1.25+flowNoise(vec2(world.x,world.z)*0.15)*1.8);
+        float leading=pow(clamp(0.5+0.5*broadFold,0.0,1.0),7.0)*uneven;
+        rgb+=crest*leading*(0.12+0.7*s.corridor);
+        float greenLight=pow(0.5+0.5*sin(world.z*0.54+edge_sprite.x*0.12+1.4),13.0)*
+            smoothstep(0.8,2.5,abs(world.x-pc.flow.z))*exp(-position.z*0.24);
+        rgb+=vec3(0.08,0.66,0.16)*greenLight*s.corridor*0.7;
+        vec3 closeBase=mix(vec3(0.002,0.006,0.10),vec3(0.25,0.08,0.50),s.motif);
+        vec3 closeLight=mix(vec3(0.005,0.15,0.95),vec3(0.59,0.34,0.91),s.motif);
+        vec3 close=closeBase*(0.5+diffuse*0.5)+closeLight*(rim*1.1+pow(spec,0.4)*0.55);
+        rgb=mix(rgb,close,s.close);
+        vec3 mist=vec3(0.25,0.16,0.43)*(0.65+diffuse*0.30)+
+            mix(vec3(0.79,0.61,0.88),vec3(0.80,0.43,0.86),s.motif)*(rim*0.54+pow(spec,0.36)*0.48);
+        rgb=mix(rgb,mist,s.mist);
+        vec2 screen=gl_FragCoord.xy/pc.resolution_time_gain.xy;
+        float fog=1.0-exp(-position.z*mix(mix(0.075,0.025,s.corridor),0.15,s.mist));
+        fog=max(fog,s.wash);
+        rgb=mix(rgb,flowSky(screen),clamp(fog,0.0,1.0));
+        rgb=mix(rgb,flowVeil(screen),max(s.close,s.mist));
+        color=vec4(rgb*(1.0+pc.effect.y*0.15+pc.audio.w*0.22),1);return;
     }
     if (pc.mode_motion.x>0.5) {
         float distanceSquared=dot(edge_sprite,edge_sprite);
         if(distanceSquared>1.0) discard;
         float glow=(1.0-distanceSquared)*(1.0-distanceSquared);
         float a=clamp(particle_alpha*wave.settings[9].x*glow*pc.resolution_time_gain.w,0.0,1.0);
-        if(pc.effect.z>0.5) {float t=mod(pc.resolution_time_gain.z-100.0,128.0);a*=max(flowWindow(t,101.0,117.0,6.0),flowWindow(t,115.0,128.0,5.0)*0.25);}
+        if(pc.effect.z>0.5) a*=flowScene().wash;
         color=vec4(pc.particle_tint.rgb*a,a);
         return;
     }

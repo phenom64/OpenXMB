@@ -988,6 +988,10 @@ endif()
 foreach(shader ${XMS_SHADERS})
   auroreengine_add_shader(XMS ${shader})
 endforeach()
+foreach(stage IN ITEMS vert frag)
+  add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/shaders/procedural_wave.${stage}.spv"
+    APPEND DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/shaders/flow_scene.glsl")
+endforeach()
 target_include_directories(XMS PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/shaders)
 
 # Wire the interface/FX debug option to a preprocessor define usable in code
@@ -1442,7 +1446,7 @@ if(OPENXMB_BUILD_NATIVE_TESTS AND ENABLE_VIDEO_PLAYER)
 endif()
 
 if(OPENXMB_BUILD_NATIVE_TESTS)
-  foreach(music_polish IN ITEMS media_motion music_response)
+  foreach(music_polish IN ITEMS media_motion music_response flow_scene)
     add_executable(openxmb_${music_polish}_tests tests/xmb/${music_polish}_tests.cpp)
     set_target_properties(openxmb_${music_polish}_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
     add_test(NAME openxmb_${music_polish}_tests COMMAND openxmb_${music_polish}_tests)
