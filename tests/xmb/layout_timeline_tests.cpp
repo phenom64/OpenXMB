@@ -82,27 +82,35 @@ void test_boot_timeline() {
     return (sample_boot_timeline(time + step).wave_boot_time_seconds -
             sample_boot_timeline(time - step).wave_boot_time_seconds) / (2 * step);
   };
-  require(wave_speed(0.81) < 0.2, "startup wave begins slowly");
-  require(wave_speed(3.8) > 1.7, "startup wave accelerates before settling");
+  require(wave_speed(0.81) > 1.9 && wave_speed(0.81) < 2.1,
+          "startup wave emerges already flowing at about twice the regular speed");
+  require(wave_speed(2.7) > 3.1, "startup wave peaks as the identity arrives");
+  require(wave_speed(3.8) > 1.7, "startup wave eases before settling");
   require_near(wave_speed(8.0), 1.0, 1e-8,
                "startup wave settles to the regular speed");
-  for (const double boundary : {0.8, 3.8, 7.665, 16.9}) {
+  for (const double boundary : {0.8, 2.7, 4.8, 7.665, 16.9}) {
     const auto before = sample_boot_timeline(boundary - 0.00001);
     const auto after = sample_boot_timeline(boundary + 0.00001);
     require(after.wave_boot_time_seconds >= before.wave_boot_time_seconds &&
-                after.wave_boot_time_seconds - before.wave_boot_time_seconds < 0.00004,
+                after.wave_boot_time_seconds - before.wave_boot_time_seconds < 0.0001,
             "wave phase stays continuous across startup milestones");
   }
-  require_near(sample_boot_timeline(2.5).background_exposure_top, 0.0, 1e-12,
-               "boot gradient reveal starts black");
-  require(sample_boot_timeline(3.1).background_exposure_bottom >
-              sample_boot_timeline(3.1).background_exposure_top,
-          "boot gradient bottom leads top like xmb-web");
-  require_near(sample_boot_timeline(8.5).background_exposure_top, 1.0, 1e-12,
-               "boot gradient reaches steady top exposure");
-  require(sample_boot_timeline(3.5).background_sweep > 0.0 &&
-              sample_boot_timeline(3.5).background_sweep < 1.0,
-          "boot gradient uses xmb-web left-to-right sweep");
+  require_near(sample_boot_timeline(2.2).background_exposure_top, 0.0, 1e-12,
+               "boot background stays black until the identity arrives");
+  require(sample_boot_timeline(3.6).background_exposure_top >
+              sample_boot_timeline(3.6).background_exposure_bottom,
+          "boot background top leads the bottom like the firmware");
+  require(sample_boot_timeline(6.0).background_exposure_top > 1.0,
+          "boot background top briefly overshoots");
+  require_near(sample_boot_timeline(7.2).background_exposure_top, 1.0, 1e-12,
+               "boot background reaches steady exposure");
+  require_near(sample_boot_timeline(7.2).customise, 0.0, 1e-12,
+               "boot shows the month's standard colour");
+  require(sample_boot_timeline(17.0).customise > 0.0 &&
+              sample_boot_timeline(17.0).customise < 1.0,
+          "user colour blends in while the menu reveals");
+  require_near(sample_boot_timeline(18.5).customise, 1.0, 1e-12,
+               "user colour and time of day fully applied after the reveal");
 
   require_near(sample_boot_timeline(1.92).identity_opacity, 0.0, 1e-12,
                "identity starts at 1.92s");
@@ -155,6 +163,7 @@ void test_boot_timeline() {
   require_near(skipped.identity_opacity, 0.0, 1e-12, "skip hides identity");
   require_near(skipped.warning_opacity, 0.0, 1e-12, "skip hides warning");
   require_near(skipped.ui_reveal, 1.0, 1e-12, "skip reveals UI");
+  require_near(skipped.customise, 1.0, 1e-12, "skip lands on the user's colour");
 
   BootTimeline warning;
   require(!warning.dismiss_warning(3.0), "confirm cannot skip the identity intro");

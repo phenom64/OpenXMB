@@ -27,9 +27,11 @@ const float SHEET_RADIUS=0.11,SHEET_B2=0.75,SHEET_B3=0.45,SHEET_DEPTH=0.15,PLEAT
 // wavelength) whose phase drifts rightward, so the screen always shows a
 // single smooth S rather than several bumps; its amplitude breathes slowly.
 // posY and tilt keep their meaning as offsets (music mode animates them).
+// The music visualiser swings ~1.3x wider, and the swell of the music
+// (pc.effect.w, a slow loudness envelope) widens it further.
 float waveCentre(float x) {
     float t=wave.settings[8].z;
-    float amplitude=0.2+0.06*sin(0.37*t+1.0)+0.035*sin(0.83*t);
+    float amplitude=(0.2+0.06*sin(0.37*t+1.0)+0.035*sin(0.83*t))*(1.0+pc.effect.x*(0.3+0.4*pc.effect.w));
     float phase=-0.26*t-0.09*sin(0.19*t+2.0);
     float y=wave.settings[6].x+0.148+(wave.settings[6].y*0.22+0.045*sin(0.23*t+2.0))*x+amplitude*sin(1.66*x+phase);
     return y+(pc.audio.x*0.012+pc.audio.w*0.028)*sin(x*3.0+t*0.8);
@@ -44,7 +46,7 @@ float waveCentre(float x) {
 // the radius, plus the radius itself.
 vec3 sheetSection(float x,float v) {
     float t=wave.settings[8].z;
-    float radius=SHEET_RADIUS*mix(1.06,0.86,x*0.5+0.5)*(1.0+0.18*sin(1.3*x-0.11*t+0.6));
+    float radius=SHEET_RADIUS*mix(1.06,0.86,x*0.5+0.5)*(1.0+0.18*sin(1.3*x-0.11*t+0.6))*(1.0+0.18*pc.effect.x*pc.effect.w);
     float b2=SHEET_B2*(0.6+0.4*sin(1.2*x+0.16*t+1.1));
     float b3=SHEET_B3*sin(1.6*x-0.23*t+2.3);
     float p2=0.9*x+0.07*t,p3=-1.4*x+0.12*t;
@@ -114,10 +116,6 @@ void main() {
         const float e=1.0/127.0,f=1.0/float(MESH_ROWS);
         vec3 du=sheetPosition(a+vec2(e,0))-sheetPosition(a-vec2(e,0));
         vec3 dv=sheetPosition(a+vec2(0,f))-sheetPosition(a-vec2(0,f));
-        if(pc.effect.w>0.5) {
-            float center=waveCentre(a.x);position.y=center+(position.y-center)*1.65;
-            du.y*=1.65;dv.y*=1.65;
-        }
         particle_style=vec4(normalize(cross(du,dv)),0);
         // Position across the band: -1 and 1 on the outline.
         vec2 extent=sheetExtent(a.x);
@@ -129,6 +127,20 @@ void main() {
         return;
     }
     uint id=uint(gl_InstanceIndex);
+    const vec2 corners[6]=vec2[6](vec2(-1,-1),vec2(1,-1),vec2(-1,1),vec2(-1,1),vec2(1,-1),vec2(1,1));
+    if(pc.effect.z<0.5&&id>=uint(wave.settings[10].z)) {
+        // The music visualiser's light at the left end of the wave: a broad
+        // soft bloom (pc.flow.x is its flare level).
+        vec2 c=corners[gl_VertexIndex];
+        float scale=pc.resolution_time_gain.y/1080.0;
+        vec2 size=vec2(330.0,190.0)*scale*(0.85+0.25*pc.flow.x);
+        vec2 center=vec2(-1.0,waveCentre(-0.96));
+        gl_Position=vec4(center.x,-center.y,0,1)+vec4(c*size*2.0/pc.resolution_time_gain.xy,0,0);
+        edge_sprite=c;position=vec3(0);
+        particle_style=vec4(1.0,0.9,0.97,2.0);
+        particle_alpha=pc.effect.x*clamp(pc.flow.x,0.0,1.6);
+        return;
+    }
     vec3 r=vec3(seed(id*3u+1337u),seed(id*3u+1338u),pow(seed(id*3u+1339u),8.0)+0.1);
     if(pc.effect.z>0.5) {
         float age=fract(seed(id+219u)+pc.flow.x*0.045);
@@ -136,7 +148,6 @@ void main() {
         vec2 center=vec2((r.x-0.5)*4.0,(r.y-0.5)*3.0)/depth;
         center+=vec2(0.07*sin(pc.flow.x*0.032),0.08);
         center=flowScreen(center*0.5+0.5)*2.0-1.0;
-        const vec2 corners[6]=vec2[6](vec2(-1,-1),vec2(1,-1),vec2(-1,1),vec2(-1,1),vec2(1,-1),vec2(1,1));
         vec2 c=corners[gl_VertexIndex];
         float angle=pc.camera_motion.z+0.12*sin(pc.flow.x*0.06+r.x*6.0);
         vec2 corner=mat2(cos(angle),-sin(angle),sin(angle),cos(angle))*(c*vec2(1.0,0.64));
@@ -158,7 +169,6 @@ void main() {
     // Flakes fill much of the screen's height, densest around the wave.
     float center=pc.mode_motion.w>0.5 ? waveCentre(x) : 0.0;
     y=center+y*wave.settings[10].y*(h8>0.55 ? 2.4 : 1.0)+wave.settings[10].x+motion.y;
-    const vec2 corners[6]=vec2[6](vec2(-1,-1),vec2(1,-1),vec2(-1,1),vec2(-1,1),vec2(1,-1),vec2(1,1));
     vec2 c=corners[gl_VertexIndex];
     // Particle population measured from PS3 captures (lossless RPCS3 frames
     // and a 1080p recording): small flat discs tumbling in 3D, so they show
@@ -180,6 +190,9 @@ void main() {
     // Measured: the median flake is only ~15 levels above the background,
     // while rare glints reach ~115.
     particle_alpha=mix(0.045,0.15,h1)*(0.45+0.55*sqrt(facing))*(1.0+6.0*glint);
+    // The visualiser keeps only a sparse dust; the rest fade out with the
+    // glide rather than popping.
+    particle_alpha*=clamp((1.0-0.78*pc.effect.x-seed(id*7u+4009u))*12.0,0.0,1.0);
     vec3 iridescent=h4<0.3 ? vec3(1.0) : h4<0.5 ? vec3(1.0,0.74,0.86) : h4<0.7 ? vec3(1.0,0.86,0.58) :
         h4<0.85 ? vec3(0.86,0.80,1.0) : vec3(0.80,0.95,1.0);
     particle_style.rgb=mix(vec3(1.0,0.97,0.92),iridescent,clamp(glint*0.5,0.0,1.0));
@@ -197,7 +210,8 @@ void main() {
         y=(pc.mode_motion.w>0.5 ? waveCentre(x) : 0.0)+wave.settings[10].x+(h6-0.5)*mix(0.1,0.32,nearness)-life*0.06+motion.y;
         particle_style.a=h7>0.4 ? smoothstep(0.15,0.7,nearness) : 0.0;
         particle_style.rgb=mix(vec3(1.0,0.95,0.88),iridescent,0.6);
-        particle_alpha=mix(particle_alpha*1.6,0.06+0.2*h4*h4,particle_style.a)*sin(life*3.14159265);
+        particle_alpha=mix(particle_alpha*1.6,0.06+0.2*h4*h4,particle_style.a)*sin(life*3.14159265)*
+            clamp((1.0-0.78*pc.effect.x-seed(id*7u+4009u))*12.0,0.0,1.0);
         half_edge*=mix(1.0,1.5,nearness);
         if(particle_style.a>0.0) {
             // Flat disc, 12-30 px across.

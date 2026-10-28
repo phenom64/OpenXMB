@@ -8,6 +8,8 @@ layout(push_constant) uniform MonthlyBackgroundParameters {
     vec4 bottom_and_reserved;
     vec4 boot;
     vec4 modes;
+    vec4 startup_top;
+    vec4 startup_bottom;
 } background;
 
 vec3 srgb_to_linear(vec3 color)
@@ -26,29 +28,21 @@ vec3 xmb_web_composite(vec3 scene)
     return vec3(1.0) - exp(-max(scene, vec3(0.0)) * (exposure / white_level));
 }
 
-void write_background(vec3 rgb) {
+vec3 music_background(vec3 rgb) {
     const vec2 music_direction=vec2(-0.06975647,0.99756405);
     float u=clamp((dot(in_uv,music_direction)-music_direction.x)/
                   ((music_direction.y-music_direction.x)*0.62),0.0,1.0);
     float gradient=1.0-pow(1.0-u,2.0);
     vec3 music=mix(vec3(106.0,45.0,118.0)/255.0,vec3(2.0,0.0,4.0)/255.0,gradient);
-    out_color=vec4(mix(rgb,music,background.modes.x),1.0);
+    return mix(rgb,music,background.modes.x);
 }
-void main()
+
+// The Original background for a palette, in display values.
+vec3 original_background(vec3 top, vec3 bottom, float night_blend)
 {
     const float screen_y = clamp(in_uv.y, 0.0, 1.0);
-    if(background.bottom_and_reserved.a>0.0) {
-        const vec2 manual_direction=vec2(-0.20791169,0.9781476);
-        float u=(dot(in_uv,manual_direction)-manual_direction.x)/
-                (manual_direction.y-manual_direction.x);
-        float t=smoothstep(0.0,background.bottom_and_reserved.a,u);
-        vec3 rgb=mix(background.top_and_night.rgb,background.bottom_and_reserved.rgb,t);
-        write_background(rgb);return;
-    }
     const float bottom_mix = smoothstep(0.70, 1.0, screen_y);
-    vec3 color = mix(background.top_and_night.rgb,
-                     background.bottom_and_reserved.rgb,
-                     bottom_mix);
+    vec3 color = mix(top, bottom, bottom_mix);
 
     // Match xmb-web's active month-base Original branch: the palette carries the
     // hue and this shader supplies the firmware-like value/chroma structure.
@@ -69,19 +63,39 @@ void main()
     color = max(color, vec3(0.0)) * max(field, 0.0);
 
     // Night is not in the reference; keep the earlier darkening model.
-    const float night = clamp(background.top_and_night.a, 0.0, 1.0);
+    const float night = clamp(night_blend, 0.0, 1.0);
     color *= mix(1.0, mix(0.02, 1.0, pow(screen_y, 3.4)), night);
 
-    if (background.boot.w > 0.5) {
-        const float fade =
-            clamp(mix(background.boot.x, background.boot.y, screen_y), 0.0, 1.0);
-        const float sweep_band = 0.55;
-        const float front = background.boot.z * (1.0 + sweep_band) - sweep_band;
-        float sweep_mask = clamp((front - in_uv.x) / sweep_band + 1.0, 0.0, 1.0);
-        sweep_mask = mix(0.35, 1.0, sweep_mask);
-        color *= fade * sweep_mask;
-    }
-
     // The composite's result is written as display (8-bit canvas) values.
-    write_background(clamp(xmb_web_composite(color),0.0,1.0));
+    return clamp(xmb_web_composite(color), 0.0, 1.0);
+}
+
+void main()
+{
+    vec3 user;
+    if(background.bottom_and_reserved.a>0.0) {
+        const vec2 manual_direction=vec2(-0.20791169,0.9781476);
+        float u=(dot(in_uv,manual_direction)-manual_direction.x)/
+                (manual_direction.y-manual_direction.x);
+        float t=smoothstep(0.0,background.bottom_and_reserved.a,u);
+        user=mix(background.top_and_night.rgb,background.bottom_and_reserved.rgb,t);
+    } else {
+        user=original_background(background.top_and_night.rgb,
+                                 background.bottom_and_reserved.rgb,
+                                 background.top_and_night.a);
+    }
+    // Startup shows the month's standard colour at full daylight and hands
+    // over to the user's colour and time of day (boot.z) as the menu reveals.
+    vec3 rgb = user;
+    if(background.boot.z < 1.0) {
+        vec3 standard = original_background(background.startup_top.rgb,
+                                            background.startup_bottom.rgb, 0.0);
+        rgb = mix(standard, user, clamp(background.boot.z, 0.0, 1.0));
+    }
+    if(background.boot.w > 0.5) {
+        // Exposure measured from the firmware boot, in display values; the
+        // top leads and briefly overshoots.
+        rgb *= clamp(mix(background.boot.x, background.boot.y, clamp(in_uv.y, 0.0, 1.0)), 0.0, 1.2);
+    }
+    out_color = vec4(music_background(clamp(rgb, 0.0, 1.0)), 1.0);
 }

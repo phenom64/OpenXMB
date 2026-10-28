@@ -162,13 +162,14 @@ public:
 
     void set_music_mode(bool enabled) noexcept {
         const auto now=std::chrono::steady_clock::now();
-        const float elapsed=std::clamp(std::chrono::duration<float>(now-music_updated_).count(),0.0F,0.85F);
+        const float elapsed=std::clamp(std::chrono::duration<float>(now-music_updated_).count(),0.0F,kMusicGlideSeconds);
         music_updated_=now;
         if(enabled!=music_target_) {music_target_=enabled;return;}
         const float target=music_target_?1.0F:0.0F;
-        music_blend_+=std::clamp(target-music_blend_,-elapsed/0.85F,elapsed/0.85F);
+        music_blend_+=std::clamp(target-music_blend_,-elapsed/kMusicGlideSeconds,elapsed/kMusicGlideSeconds);
     }
-    float music_mix() const noexcept {return music_blend_*music_blend_*(3.0F-2.0F*music_blend_);}
+    // Quintic ease: the wave starts and settles its glide without a jolt.
+    float music_mix() const noexcept {return music_blend_*music_blend_*music_blend_*(music_blend_*(music_blend_*6.0F-15.0F)+10.0F);}
     bool waves_enabled{true};
     bool particles_enabled{true};
     glm::vec3 particle_color{1.0F};
@@ -177,6 +178,10 @@ public:
         const auto now=std::chrono::steady_clock::now();
         const auto dt=std::chrono::duration<double>(now-response_updated_).count();response_updated_=now;
         response_.advance(spectrum,playing,dt);
+        // The S wave swells with the music's loudness over a few beats rather
+        // than jumping on each one.
+        const float swell_rate=response_.energy>swell_?0.35F:1.4F;
+        swell_+=(response_.energy-swell_)*(1.0F-std::exp(-static_cast<float>(std::clamp(dt,0.0,0.1))/swell_rate));
         flow_tempo_.advance(dt,response_.beat,response_.energy,playing,generation);
         flow_clock_.advance(dt,flow_tempo_.speed,generation);
     }
@@ -190,20 +195,18 @@ public:
         const auto waveIt=wavePipelines_.find(renderPass),particleIt=particlePipelines_.find(renderPass),flowIt=flowPipelines_.find(renderPass);
         if(waveIt==wavePipelines_.end() || particleIt==particlePipelines_.end() || flowIt==flowPipelines_.end()) return;
         auto& frame=frames_[static_cast<std::size_t>(frameIndex)%frames_.size()];
-        const float blend=music_blend_*music_blend_*(3.0F-2.0F*music_blend_);
+        const float blend=music_mix();
         auto settings=waveSettings_;auto particles=particleSettings_;
         const auto toward=[blend](float value,float music){return value+(music-value)*blend;};
-        settings.posY=toward(settings.posY,music_vertical);settings.tilt=toward(settings.tilt,0.12F);
-        settings.thickness=toward(settings.thickness,2.8F);settings.rowSpread=toward(settings.rowSpread,1.3F);
-        settings.fill=toward(settings.fill,0.6F);settings.edgeSoft=toward(settings.edgeSoft,0.8F);
-        settings.bandAmplitude=toward(settings.bandAmplitude,0.07F);settings.bandFrequency=toward(settings.bandFrequency,1.0F);
-        settings.opacity=toward(settings.opacity,0.4F);settings.brightness=toward(settings.brightness,0.85F);
-        particles.count=static_cast<std::uint32_t>(toward(static_cast<float>(particles.count),260));
-        particles.posY=toward(particles.posY,0.4F);particles.spreadY=toward(particles.spreadY,1.5F);
-        particles.sizeBase=toward(particles.sizeBase,2.4F);particles.sizeVar=toward(particles.sizeVar,2.0F);particles.opacity=toward(particles.opacity,0.8F);
-        settings.bandAmplitude*=1.0F+response_.bass*0.65F+response_.beat*0.35F;
-        settings.rowSpread*=1.0F+response_.bass*0.12F;
+        // The one wave glides to the visualiser's height; the shaders grow its
+        // swing, recolour it and thin the dust with the same blend.
+        settings.posY=toward(settings.posY,music_vertical);
+        particles.spreadY=toward(particles.spreadY,0.8F);
         seconds+=static_cast<float>(response_.extra_seconds);
+        // The visualiser's light at the left end idles with a slow shimmer and
+        // flares on beats.
+        const float flare=0.55F+0.2F*std::sin(seconds*0.23F)+0.12F*std::sin(seconds*0.61F+1.0F)+
+            response_.beat*0.9F+swell_*0.35F;
         sampler_.update(static_cast<double>(seconds)+36.0,settings,particles);
         const auto& data=sampler_.frame();
         allocator_.copyMemoryToAllocation(&data,frame.allocation.get(),0,sizeof(data));
@@ -213,7 +216,9 @@ public:
         command.setViewport(0,viewport); command.setScissor(0,scissor);
         command.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,pipelineLayout_.get(),0,frame.set,{});
         Push push{glm::vec4(tint,1),glm::vec4(extent_.width,extent_.height,seconds+100.0F,std::max(0.0F,brightness)),
-                  glm::vec4(glm::mix(particle_color,glm::vec3(1.0F,238.0F/255,252.0F/255),blend),1),glm::vec4(flow_mode?2.0F:0.0F,motion.x,motion.y,waves_enabled?1.0F:0.0F),glm::vec4(blend,response_.energy,flow_mode?1.0F:0.0F,0),glm::vec4(response_.bass,response_.mid,response_.treble,response_.beat),{}, {}};
+                  glm::vec4(glm::mix(particle_color,glm::vec3(1.0F,238.0F/255,252.0F/255),blend),1),glm::vec4(flow_mode?2.0F:0.0F,motion.x,motion.y,waves_enabled?1.0F:0.0F),glm::vec4(blend,response_.energy,flow_mode?1.0F:0.0F,swell_),glm::vec4(response_.bass,response_.mid,response_.treble,response_.beat),
+                  // Outside Flow, the flow slot carries the visualiser's flare.
+                  glm::vec4(flare,0,0,0), {}};
         if(flow_mode) {
             const auto travel=visualizer_time>=0?visualizer_time:flow_clock_.motion;
             const auto scene=visualizer_time>=0?visualizer_time:flow_clock_.scene;
@@ -232,11 +237,6 @@ public:
                 command.bindPipeline(vk::PipelineBindPoint::eGraphics,flowIt->second.get());
             }
             command.bindIndexBuffer(flow_mode?flowIndexBuffer_.get():indexBuffer_.get(),0,flow_mode?vk::IndexType::eUint32:vk::IndexType::eUint16);
-            if(blend>0.001F&&!flow_mode) {
-                push.effect.w=1;command.pushConstants(pipelineLayout_.get(),stages,0,sizeof(push),&push);
-                command.drawIndexed(indexCount_,1,0,0,0);
-                push.effect.w=0;command.pushConstants(pipelineLayout_.get(),stages,0,sizeof(push),&push);
-            }
             command.drawIndexed(flow_mode?flowIndexCount_:indexCount_,1,0,0,0);
         }
         if((flow_mode||particles_enabled) && particleSettings_.count>0) {
@@ -244,7 +244,9 @@ public:
             if(flow_mode)push.mode_motion.w=0;
             command.bindPipeline(vk::PipelineBindPoint::eGraphics,particleIt->second.get());
             command.pushConstants(pipelineLayout_.get(),stages,0,sizeof(push),&push);
-            command.draw(6,flow_mode?std::min(particles.count,96u):std::min(particles.count,4096u),0,0);
+            // In music mode one extra instance draws the left-end glow.
+            const auto glow=!flow_mode&&blend>0.001F?1u:0u;
+            command.draw(6,flow_mode?std::min(particles.count,96u):std::min(particles.count,4096u)+glow,0,0);
         }
     }
 
@@ -269,8 +271,9 @@ private:
     std::chrono::steady_clock::time_point response_updated_=std::chrono::steady_clock::now();
     openxmb::render_detail::FlowClock flow_clock_;
     openxmb::render_detail::FlowTempo flow_tempo_;
+    static constexpr float kMusicGlideSeconds=1.3F;
     bool music_target_{};
-    float music_blend_{};
+    float music_blend_{},swell_{};
     std::chrono::steady_clock::time_point music_updated_=std::chrono::steady_clock::now();
     openxmb::xmb::ProceduralWaveSettings waveSettings_;
     openxmb::xmb::ProceduralParticleSettings particleSettings_;

@@ -184,6 +184,14 @@ namespace app
             return fixed_seconds_from_environment("OPENXMB_FIXED_WAVE_SECONDS");
         }
 
+        // Visual-harness preview: this many seconds after launch the background
+        // behaves as if the music visualiser had opened, so the transition and
+        // the visualiser can be captured without a track or a menu path.
+        [[nodiscard]] std::optional<double> preview_music_seconds_from_environment()
+        {
+            return fixed_seconds_from_environment("OPENXMB_PREVIEW_MUSIC_SECONDS");
+        }
+
         [[nodiscard]] std::optional<double> fixed_boot_seconds_from_environment()
         {
             return fixed_seconds_from_environment("OPENXMB_FIXED_BOOT_SECONDS");
@@ -807,29 +815,58 @@ namespace app
             auto background_gradient = config::CONFIG.themeOriginalColour
                 ? original_gradient
                 : manual_gradient;
+            // Startup shows the month's standard colour at full daylight and
+            // hands over to the user's colour and time of day as the menu
+            // reveals (boot.customise), rather than cutting to them.
+            const auto boot = startup_sample();
+            const auto startup_gradient =
+                openxmb::xmb::resolve_background_gradient(local_time.tm_mon, 12.0F);
+            const float customise = static_cast<float>(boot.customise);
             // xmb-web's Original background lets the calendar-driven gradient
             // carry the hue.  The captured ribbon and dust/glints stay close to
             // neutral silver/white so they read over every month instead of
             // forcing the older OpenXMB theme colour (which made the scene feel
             // stuck on June/cyan).
-            const bool music_scene=std::any_of(overlays.begin(),overlays.end(),[](const auto& overlay){return overlay->music_background();});
-            const bool reactive_scene=std::any_of(overlays.begin(),overlays.end(),[](const auto& overlay){return overlay->music_reactive();});
+            const double launch_seconds=std::chrono::duration<double>(std::chrono::steady_clock::now()-shader_time_zero).count();
+            const auto preview_music=preview_music_seconds_from_environment();
+            const bool preview_scene=preview_music&&launch_seconds>=*preview_music;
+            const bool music_scene=preview_scene||std::any_of(overlays.begin(),overlays.end(),[](const auto& overlay){return overlay->music_background();});
+            const bool reactive_scene=preview_scene||std::any_of(overlays.begin(),overlays.end(),[](const auto& overlay){return overlay->music_reactive();});
             const bool flow_scene=reactive_scene&&config::CONFIG.preference("music.visualizer","Wave")=="Flow";
             procedural_wave_render->flow_mode=flow_scene;
             procedural_wave_render->visualizer_time=flow_scene?static_cast<float>(config::CONFIG.enabled("power.reduced.motion",false)?36.0:fixed_wave_seconds_from_environment().value_or(-1.0)):-1.0F;
             // Preserve the departing scene's endpoint until its mix reaches
             // zero; switching endpoints on close made the ribbon jump first.
-            if(music_scene)procedural_wave_render->music_vertical=reactive_scene?-0.02F:0.26F;
+            if(music_scene)procedural_wave_render->music_vertical=reactive_scene?0.065F:0.34F;
             const auto& music_snapshot=openxmb::music::service().snapshot();
-            const bool reactive_audio=reactive_scene&&music_snapshot.status==openxmb::music::Status::playing&&!config::CONFIG.enabled("power.reduced.motion",false);
-            procedural_wave_render->set_music_signal(music_snapshot.spectrum,reactive_audio,music_snapshot.generation);
+            bool reactive_audio=reactive_scene&&music_snapshot.status==openxmb::music::Status::playing&&!config::CONFIG.enabled("power.reduced.motion",false);
+            auto spectrum=music_snapshot.spectrum;
+            // OPENXMB_PREVIEW_MUSIC_BEAT feeds the preview a synthetic 120 BPM
+            // track (kick, drifting mids and hats) for repeatable captures.
+            if(preview_scene&&std::getenv("OPENXMB_PREVIEW_MUSIC_BEAT")) {
+                const auto beat=std::fmod(launch_seconds*2.0,1.0);
+                const auto kick=static_cast<float>(std::exp(-beat*7.0)*(0.6+0.4*std::sin(launch_seconds*0.4)));
+                for(std::size_t i=0;i<spectrum.size();++i)
+                    spectrum[i]=i<8?0.06F+0.24F*kick:i<16?static_cast<float>(0.12+0.06*std::sin(launch_seconds*1.3+i)):static_cast<float>(0.06+0.04*std::sin(launch_seconds*7.0+i));
+                reactive_audio=true;
+            }
+            procedural_wave_render->set_music_signal(spectrum,reactive_audio,music_snapshot.generation);
             procedural_wave_render->set_music_mode(music_scene);
             const float music_mix=procedural_wave_render->music_mix();background_gradient.music_mix=music_mix;
             if(flow_scene) {background_gradient.top_rgb={0,0,0};background_gradient.bottom_rgb={0,0,0};background_gradient.music_mix=0;}
-            glm::vec3 effect_color{background_gradient.bottom_rgb[0],background_gradient.bottom_rgb[1],background_gradient.bottom_rgb[2]};
+            glm::vec3 effect_color=glm::mix(
+                glm::vec3(startup_gradient.bottom_rgb[0],startup_gradient.bottom_rgb[1],startup_gradient.bottom_rgb[2]),
+                glm::vec3(background_gradient.bottom_rgb[0],background_gradient.bottom_rgb[1],background_gradient.bottom_rgb[2]),customise);
             effect_color=glm::mix(glm::min(effect_color*1.6F,glm::vec3(1.0F)),glm::vec3(1.0F),0.35F);
+            // The boot wave emerges neutral silver on black and takes on the
+            // theme tint as the background exposes.
+            if(boot.background_active)
+                effect_color=glm::mix(glm::vec3(0.82F),effect_color,std::clamp(static_cast<float>(boot.background_exposure_top),0.0F,1.0F));
             const glm::vec3 original_effect_tint=glm::mix(effect_color,glm::vec3(192.0F/255,108.0F/255,200.0F/255),music_mix);
-            const float original_effect_brightness = 1.0F;
+            // On the still-black screen the boot wave is about half as bright
+            // as once the background exposes (RPCS3 boot).
+            const float original_effect_brightness = static_cast<float>(boot.wave_gain)*
+                (boot.background_active?0.45F+0.55F*std::clamp(static_cast<float>(boot.background_exposure_top),0.0F,1.0F):1.0F);
             const bool can_render_monthly_background =
                 (music_scene||music_mix>0.001F||config::CONFIG.backgroundType ==
                     config::config::background_type::original) &&
@@ -857,8 +894,6 @@ namespace app
             commandBuffer.setViewport(0, viewport);
             commandBuffer.setScissor(0, scissor);
 
-            const auto boot = startup_sample();
-
             if(!ingame_mode) {
                 if(music_scene||music_mix>0.001F||config::CONFIG.backgroundType == config::config::background_type::original) {
                     if(can_render_monthly_background) {
@@ -866,12 +901,12 @@ namespace app
                             const std::array boot_background{
                                 static_cast<float>(boot.background_exposure_top),
                                 static_cast<float>(boot.background_exposure_bottom),
-                                static_cast<float>(boot.background_sweep),
+                                customise,
                                 boot.background_active ? 1.0F : 0.0F,
                             };
                             monthly_background_render->render(
                                 commandBuffer, backgroundRenderPass.get(),
-                                background_gradient, boot_background);
+                                background_gradient, boot_background, &startup_gradient);
                         } catch(const std::exception& error) {
                             monthly_background_failed = true;
                             spdlog::error(
@@ -2069,9 +2104,9 @@ namespace app
         }
         const double elapsed = std::chrono::duration<double>(
             std::chrono::steady_clock::now() - shader_time_zero).count();
-        if(!config::CONFIG.enabled("startup.intro")) return elapsed+(config::CONFIG.enabled("startup.warning")?openxmb::xmb::BootMilestones::warning_in_seconds:openxmb::xmb::BootMilestones::complete_seconds);
+        if(!config::CONFIG.enabled("startup.intro")) return elapsed+(config::CONFIG.enabled("startup.warning")?openxmb::xmb::BootMilestones::warning_in_seconds:openxmb::xmb::BootMilestones::customised_seconds);
         return elapsed + (win->config.headless && !force_headless_startup_overlay()
-            ? openxmb::xmb::BootMilestones::complete_seconds : 0.0);
+            ? openxmb::xmb::BootMilestones::customised_seconds : 0.0);
     }
 
     openxmb::xmb::BootSample shell::startup_sample() {

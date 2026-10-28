@@ -18,6 +18,8 @@ param(
     [string]$ThemeColour = "",
     # MSAA sample count (0 keeps the scene default).
     [int]$SampleCount = 0,
+    # Shows the startup sequence pinned at this many seconds into the boot.
+    [double]$BootSeconds = -1,
     [switch]$BackgroundOnly
 )
 
@@ -86,6 +88,10 @@ function Invoke-SceneCapture {
 
     foreach ($key in $SceneEnv.Keys) {
         Set-Item -Path "Env:$key" -Value $SceneEnv[$key]
+    }
+    if ($BootSeconds -ge 0) {
+        $env:OPENXMB_HEADLESS_STARTUP = "1"
+        $env:OPENXMB_FIXED_BOOT_SECONDS = "$BootSeconds"
     }
 
     $env:SPDLOG_LEVEL = "warn"
