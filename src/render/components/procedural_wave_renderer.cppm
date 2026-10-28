@@ -88,12 +88,13 @@ public:
         color.setAttachments(blend);
         particlePipelines_=auroreengine::createPipelines(device_,cache,pipeline,renderPasses,"Procedural Sparkles");
 
-        constexpr auto grid=openxmb::xmb::kProceduralWaveGrid;
+        constexpr auto columns=openxmb::xmb::kProceduralWaveMeshColumns,rows=openxmb::xmb::kProceduralWaveMeshRows;
+        static_assert(columns*rows<=65536);
         std::vector<std::uint16_t> indices;
-        indices.reserve((grid-1)*(grid-1)*6);
-        for(std::uint32_t row=0;row+1<grid;++row) for(std::uint32_t col=0;col+1<grid;++col) {
-            const auto a=static_cast<std::uint16_t>(row*grid+col);
-            const auto b=static_cast<std::uint16_t>(a+1),c=static_cast<std::uint16_t>(a+grid),d=static_cast<std::uint16_t>(c+1);
+        indices.reserve((columns-1)*(rows-1)*6);
+        for(std::uint32_t row=0;row+1<rows;++row) for(std::uint32_t col=0;col+1<columns;++col) {
+            const auto a=static_cast<std::uint16_t>(row*columns+col);
+            const auto b=static_cast<std::uint16_t>(a+1),c=static_cast<std::uint16_t>(a+columns),d=static_cast<std::uint16_t>(c+1);
             indices.insert(indices.end(),{a,b,d,a,d,c});
         }
         indexCount_=static_cast<std::uint32_t>(indices.size());

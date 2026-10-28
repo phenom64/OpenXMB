@@ -51,7 +51,12 @@ vec3 wavePosition(vec2 a) {
         sin((p.x*s0.w*6.0+p.z*0.5)*s1.x*0.01+time*s0.x*s1.w*0.7)*0.5+
         sin((p.x*s0.w*10.0-p.z*0.8)*s1.x*0.005-time*s0.x*s1.w*0.35)*0.25);
     p.y-=s2.w*tanh((base+perturbation)*s2.z/s2.w);
-    p.z-=displacement(vec2(fract(uv.x-time*s0.x*0.04*s1.w),uv.y))*s5.w;
+    // The scrolling detail wraps around; cross-fade two half-period-offset
+    // samples so neither is used at its wrap point (a raw fract() wrap left a
+    // vertical seam drifting across the sheet).
+    float scroll=uv.x-time*s0.x*0.04*s1.w;
+    float seam=abs(2.0*fract(scroll)-1.0);
+    p.z-=mix(displacement(vec2(fract(scroll),uv.y)),displacement(vec2(fract(scroll+0.5),uv.y)),seam)*s5.w;
     p.y=p.y*s6.z+s6.x+p.x*s6.y;
     p.y+=(pc.audio.x*0.012+pc.audio.w*0.028)*sin(p.x*3.0+time*0.8);
     return p;
@@ -92,9 +97,21 @@ void main() {
     }
 
     if (pc.mode_motion.x<0.5) {
-        vec2 a=vec2(float(gl_VertexIndex%100),float(gl_VertexIndex/100))/99.0*2.0-1.0;
+        // kProceduralWaveMeshColumns x kProceduralWaveMeshRows.
+        const int COLUMNS=128,MESH_ROWS=448;
+        vec2 a=vec2(float(gl_VertexIndex%COLUMNS),float(gl_VertexIndex/COLUMNS))/vec2(COLUMNS-1,MESH_ROWS-1)*2.0-1.0;
         position=wavePosition(a);
-        if(pc.effect.w>0.5) {float center=wavePosition(vec2(a.x,0)).y;position.y=center+(position.y-center)*1.65;}
+        // Smooth surface normal from the analytic surface, interpolated per
+        // fragment; per-triangle derivative normals faceted the sheet into
+        // hard streaks the reference's soft translucent sheets do not have.
+        const float e=1.0/99.0;
+        vec3 du=wavePosition(a+vec2(e,0))-wavePosition(a-vec2(e,0));
+        vec3 dv=wavePosition(a+vec2(0,e))-wavePosition(a-vec2(0,e));
+        if(pc.effect.w>0.5) {
+            float center=wavePosition(vec2(a.x,0)).y;position.y=center+(position.y-center)*1.65;
+            du.y*=1.65;dv.y*=1.65;
+        }
+        particle_style=vec4(normalize(cross(du,dv)),0);
         edge_sprite=vec2(a.y,0);
         // Vulkan's framebuffer Y axis is downward. Depth is unused, so avoid
         // clipping the reference's eye-space ribbon against Vulkan's Z plane.
@@ -131,28 +148,36 @@ void main() {
     y=center+y*wave.settings[10].y+wave.settings[10].x+motion.y;
     const vec2 corners[6]=vec2[6](vec2(-1,-1),vec2(1,-1),vec2(-1,1),vec2(-1,1),vec2(1,-1),vec2(1,1));
     vec2 c=corners[gl_VertexIndex];
-    float pixels=max(0.0,r.z*wave.settings[9].z+wave.settings[9].y);
-    // Population variation seen in the RPCS3 wave captures (a visual
-    // approximation, not the firmware shader): most motes are dim, small and
-    // slightly elongated; a few are bright warm or pink glints; a few are
-    // large, faint, flat out-of-focus discs.
+    // Particle population measured from the RPCS3 wave captures: most are
+    // tiny sharp motes with a faint glow; each is a flake that turns over
+    // (2.5-8 s per turn) and glints twice a turn for ~0.3 s at 2.5-4x its
+    // resting brightness, briefly taking an iridescent tint, and narrows when
+    // edge-on; a few near the camera are large, flat, soft bokeh discs that
+    // gather on the left and drift faster (parallax).
+    float seconds=pc.resolution_time_gain.z;
     float h1=seed(id*7u+4001u),h2=seed(id*7u+4002u),h3=seed(id*7u+4003u),h4=seed(id*7u+4004u);
-    particle_alpha*=mix(0.5,1.0,pow(h1,1.6));
-    vec2 shape=vec2(1.0);
-    if(h2<0.045) {
-        particle_alpha*=2.4+h3;
-        pixels*=1.25;
-        particle_style.rgb=h4<0.25 ? vec3(1.0,0.97,0.92) : h4<0.5 ? vec3(1.0,0.78,0.86) :
-            h4<0.75 ? vec3(1.0,0.88,0.60) : vec3(1.0,0.72,0.45);
-    } else if(h2>0.94) {
-        particle_style.a=1.0;
-        particle_alpha*=0.5;
-        pixels=(10.0+10.0*h3)*pc.resolution_time_gain.y/1080.0;
-    } else {
-        float stretch=1.0+0.6*h3;
-        shape=vec2(stretch,1.0/pow(stretch,0.25));
+    float h5=seed(id*7u+4005u),h6=seed(id*7u+4006u);
+    float turn=6.2831853*seconds/(2.5+5.5*h5)+h6*6.2831853;
+    float facing=abs(cos(turn));
+    float glint=pow(facing,40.0)*(1.5+2.0*h3);
+    particle_alpha*=mix(0.5,1.0,pow(h1,1.6))*mix(0.55,1.0,facing)*(1.0+glint);
+    vec3 iridescent=h4<0.3 ? vec3(1.0) : h4<0.5 ? vec3(1.0,0.74,0.86) : h4<0.7 ? vec3(1.0,0.86,0.58) :
+        h4<0.85 ? vec3(0.86,0.80,1.0) : vec3(0.80,0.95,1.0);
+    particle_style.rgb=mix(vec3(1.0,0.97,0.92),iridescent,clamp(glint*0.45,0.0,1.0));
+    // Quads are four core widths across so the glow halo fits inside.
+    float core=(1.1+1.9*pow(r.z-0.1,0.5)+1.2*h3*h3)*pc.resolution_time_gain.y/1080.0;
+    float pixels=core*4.0;
+    vec2 shape=vec2(mix(0.45,1.0,facing),1.0);
+    if(h2>0.92) {
+        float life=fract(h1+seconds*0.2/(1.0+h3));
+        x=-0.62-life*0.5;
+        y=(pc.mode_motion.w>0.5 ? wavePosition(vec2(x,0)).y : 0.0)+wave.settings[10].x+(h6-0.5)*0.22-life*0.15+motion.y;
+        particle_style=vec4(mix(vec3(1.0,0.95,0.88),iridescent,0.35*glint),1.0);
+        particle_alpha=0.22*(0.5+0.5*h4)*sin(life*3.14159265)*(1.0+0.6*glint);
+        pixels=(6.0+18.0*h3*h3)*pc.resolution_time_gain.y/1080.0;
+        shape=vec2(1.0);
     }
-    float angle=h4*6.2831853+time*0.05*(h1-0.5);
+    float angle=h4*6.2831853+seconds*0.15*(h1-0.5);
     vec2 corner=mat2(cos(angle),sin(angle),-sin(angle),cos(angle))*(c*shape);
     // A native quad replaces gl_PointSize, so large-point feature support is
     // unnecessary; the fragment falloff stays in the quad's own coordinates.

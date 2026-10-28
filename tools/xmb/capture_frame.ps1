@@ -11,6 +11,9 @@ param(
     [int]$Frames = 0,
     # Overrides the pinned clock, e.g. to match the month (theme colour) of a reference capture.
     [long]$FixedUnixSeconds = 0,
+    # Overrides the pinned wave animation time (seconds); below -1 lets the
+    # wave run live so a sequence shows its motion.
+    [double]$WaveSeconds = -1,
     [switch]$BackgroundOnly
 )
 
@@ -93,7 +96,8 @@ function Invoke-SceneCapture {
     $env:OPENXMB_CONFIG = $configPath
     $env:OPENXMB_CONFIG_READ_ONLY = "1"
     $env:OPENXMB_FIXED_UNIX_SECONDS = if ($FixedUnixSeconds -gt 0) { "$FixedUnixSeconds" } else { "$([long]$defaults.fixed_unix_seconds)" }
-    $env:OPENXMB_FIXED_WAVE_SECONDS = "$([double]$defaults.fixed_wave_seconds)"
+    if ($WaveSeconds -lt -1) { Remove-Item Env:OPENXMB_FIXED_WAVE_SECONDS -ErrorAction SilentlyContinue }
+    else { $env:OPENXMB_FIXED_WAVE_SECONDS = if ($WaveSeconds -ge 0) { "$WaveSeconds" } else { "$([double]$defaults.fixed_wave_seconds)" } }
 
     $args = @("--width", "$Width", "--height", "$Height", "--no-fullscreen")
     if ($BackgroundOnly) {

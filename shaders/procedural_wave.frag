@@ -77,14 +77,19 @@ void main() {
         }
         float distanceSquared=dot(edge_sprite,edge_sprite);
         if(distanceSquared>1.0) discard;
-        float glow=mix((1.0-distanceSquared)*(1.0-distanceSquared),
-            1.0-smoothstep(0.55,1.0,sqrt(distanceSquared)),particle_style.a);
+        float d=sqrt(distanceSquared);
+        // Motes: a sharp core a quarter of the quad wide plus a soft glow.
+        // Bokeh: a flat out-of-focus disc with a soft rim.
+        float mote=exp(-distanceSquared*48.0)+0.20*exp(-d*7.0)*(1.0-distanceSquared);
+        float disc=(1.0-smoothstep(0.5,1.0,d))*(0.9+0.1*smoothstep(0.3,0.8,d));
+        float glow=mix(mote,disc,particle_style.a);
         float a=clamp(particle_alpha*wave.settings[9].x*glow*pc.resolution_time_gain.w,0.0,1.0);
         color=vec4(pc.particle_tint.rgb*particle_style.rgb*a,a);
         return;
     }
-    // Undo the Vulkan Y flip when deriving the reference material's normals.
-    vec3 n=normalize(cross(dFdx(position),-dFdy(position)));
+    // The vertex stage supplies the smooth analytic normal; only its facing
+    // matters (the sheet is seen from both sides through its folds).
+    vec3 n=normalize(particle_style.xyz);n.z=abs(n.z);
     vec4 material=wave.settings[7];
     float fresnel=material.w*pow(max(0.0,1.0-n.z),material.z);
     float soft=wave.settings[8].y;
