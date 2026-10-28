@@ -16,6 +16,8 @@ param(
     [double]$WaveSeconds = -1,
     # Renders with a custom theme colour (e.g. "#2b4d9e") instead of the scene's.
     [string]$ThemeColour = "",
+    # MSAA sample count (0 keeps the scene default).
+    [int]$SampleCount = 0,
     [switch]$BackgroundOnly
 )
 
@@ -66,7 +68,7 @@ function Invoke-SceneCapture {
     $cfg.shell.'background-type' = $defaults.background_type
     $cfg.shell.'theme-colour-mode' = $defaults.theme_colour_mode
     if ($ThemeColour) { $cfg.shell.'theme-colour-mode' = "custom"; $cfg.shell.'theme-custom-colour' = $ThemeColour }
-    $cfg.render.'sample-count' = [int]$defaults.sample_count
+    $cfg.render.'sample-count' = if ($SampleCount -gt 0) { $SampleCount } else { [int]$defaults.sample_count }
     $cfg.render.vsync = $false
     $cfg.render.'max-fps' = [int]$defaults.max_fps
     $cfg.render.'show-fps' = $false

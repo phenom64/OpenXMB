@@ -22,69 +22,51 @@ layout(location=2) out float particle_alpha;
 // Particle colour multiplier (rgb) and out-of-focus disc weight (a).
 layout(location=3) out vec4 particle_style;
 
-const int ROWS=64;
-const int POINTS=28;
-float spline(int row,float u) {
-    float s=clamp(u,0.0,1.0)*25.0;
-    int i=min(int(s),24), base=row*POINTS+i;
-    float t=min(s-float(i),1.0),t2=t*t,t3=t2*t;
-    return ((1.0-3.0*t+3.0*t2-t3)*wave.control[base]+(4.0-6.0*t2+3.0*t3)*wave.control[base+1]+
-        (1.0+3.0*t+3.0*t2-3.0*t3)*wave.control[base+2]+t3*wave.control[base+3])/6.0;
-}
-float displacement(vec2 uv) {
-    float row=clamp(uv.y,0.0,1.0)*float(ROWS-1);
-    int i=min(int(row),ROWS-1);
-    return mix(spline(i,uv.x),spline(min(i+1,ROWS-1),uv.x),fract(row));
-}
-vec3 wavePosition(vec2 a) {
-    vec4 s0=wave.settings[0],s1=wave.settings[1],s2=wave.settings[2];
-    vec4 s3=wave.settings[3],s4=wave.settings[4],s5=wave.settings[5],s6=wave.settings[6];
-    float time=wave.settings[8].z;
-    vec2 uv=(a+1.0)*0.5;
-    vec3 p=vec3(a.x,displacement(uv),a.y);
-    p.y+=sin(p.x*s3.x+s5.x+time*s0.x)*s3.w;
-    p.z+=cos(p.z*s4.z+s5.z+time*s0.x)*s4.w;
-    float base=cos(p.x*s6.w-time*0.5*s1.w)*s2.x+s2.y;
-    base*=1.0-s0.z;
-    base+=s0.y*sin(p.x*s0.w+time*s0.x*s1.w*0.25);
-    float perturbation=s1.y*s1.z*(
-        sin((p.x*s0.w*6.0+p.z*0.5)*s1.x*0.01+time*s0.x*s1.w*0.7)*0.5+
-        sin((p.x*s0.w*10.0-p.z*0.8)*s1.x*0.005-time*s0.x*s1.w*0.35)*0.25);
-    p.y-=s2.w*tanh((base+perturbation)*s2.z/s2.w);
-    // The scrolling detail wraps around; cross-fade two half-period-offset
-    // samples so neither is used at its wrap point (a raw fract() wrap left a
-    // vertical seam drifting across the sheet).
-    float scroll=uv.x-time*s0.x*0.04*s1.w;
-    float seam=abs(2.0*fract(scroll)-1.0);
-    p.z-=mix(displacement(vec2(fract(scroll),uv.y)),displacement(vec2(fract(scroll+0.5),uv.y)),seam)*s5.w;
-    p.y=p.y*s6.z+s6.x+p.x*s6.y;
-    p.y+=(pc.audio.x*0.012+pc.audio.w*0.028)*sin(p.x*3.0+time*0.8);
-    return p;
-}
-// The firmware's wave reads as a few thin translucent ribbons that twist
-// (their projected width swells, pinches to an edge-on line and crosses)
-// around a shared, slowly swinging centre line, wider towards the left. The
-// mesh's depth rows are split into RIBBONS bands; ribbon-local s runs -1..1
-// across each band and only the band interiors are visible.
-const int RIBBONS=4;
-const float RIBBON_DEPTH=0.04;
-// The shared centre line keeps the reference model's motion with ~0.72 of
-// its swing (the firmware's measured swing is ~150 px at 1080p).
+const float SHEET_RADIUS=0.11,SHEET_B2=0.75,SHEET_B3=0.45,SHEET_DEPTH=0.15,PLEAT_DEPTH=0.7;
+// The firmware's centre line is one long sine (about 3.8 half-widths per
+// wavelength) whose phase drifts rightward, so the screen always shows a
+// single smooth S rather than several bumps; its amplitude breathes slowly.
+// posY and tilt keep their meaning as offsets (music mode animates them).
 float waveCentre(float x) {
-    float middle=wavePosition(vec2(0.0)).y;
-    return middle+(wavePosition(vec2(x,0.0)).y-middle)*0.72;
+    float t=wave.settings[8].z;
+    float amplitude=0.2+0.06*sin(0.37*t+1.0)+0.035*sin(0.83*t);
+    float phase=-0.26*t-0.09*sin(0.19*t+2.0);
+    float y=wave.settings[6].x+0.148+(wave.settings[6].y*0.22+0.045*sin(0.23*t+2.0))*x+amplitude*sin(1.66*x+phase);
+    return y+(pc.audio.x*0.012+pc.audio.w*0.028)*sin(x*3.0+t*0.8);
 }
-vec3 ribbonPosition(vec2 a,out float s) {
-    float time=wave.settings[8].z;
-    float u=(a.y*0.5+0.5)*float(RIBBONS);
-    float k=min(floor(u),float(RIBBONS-1));
-    s=clamp((u-k)*2.0-1.0,-1.0,1.0);
-    float x=a.x;
-    float spread=mix(1.6,0.78,x*0.5+0.5);
-    float offset=0.075*(k-1.5)*(0.65+0.35*sin(0.7*x+0.13*time+k*1.9))+
-        0.018*sin(2.3*x-0.21*time+1.7*k);
-    float halfWidth=(0.078+0.028*fract(k*0.618))*sin(1.6*x*(1.0+0.15*k)+0.17*time*(1.0+0.1*k)+2.1*k);
-    return vec3(x,waveCentre(x)+(offset+s*halfWidth)*spread,s*RIBBON_DEPTH+k);
+// The firmware's wave is one translucent sheet rolled into a closed tube
+// and seen side-on, shaded by its angle to the viewer: the top and bottom
+// outlines are where the surface turns edge-on (brightest), the face-on
+// middle is a dark "eye", and harmonics in the cross-section add inner folds
+// that are born and die along the wave, drawing tapered bright lenses.
+// Mesh rows run once around the cross-section (v in 0..2pi).
+// Cross-section at screen x: (height, depth) for loop angle v, in units of
+// the radius, plus the radius itself.
+vec3 sheetSection(float x,float v) {
+    float t=wave.settings[8].z;
+    float radius=SHEET_RADIUS*mix(1.06,0.86,x*0.5+0.5)*(1.0+0.18*sin(1.3*x-0.11*t+0.6));
+    float b2=SHEET_B2*(0.6+0.4*sin(1.2*x+0.16*t+1.1));
+    float b3=SHEET_B3*sin(1.6*x-0.23*t+2.3);
+    float p2=0.9*x+0.07*t,p3=-1.4*x+0.12*t;
+    float y=sin(v)+b2*sin(2.0*v+p2)+b3*sin(3.0*v+p3);
+    // The pleats run much deeper than the main loop, so they are seen
+    // nearly edge-on over long stretches and stack into bright strands,
+    // while the loop's outline stays a thinner edge.
+    float z=SHEET_DEPTH*cos(v)+PLEAT_DEPTH*(b2*cos(2.0*v+p2)+b3*cos(3.0*v+p3));
+    return vec3(y,z,radius);
+}
+vec3 sheetPosition(vec2 a) {
+    vec3 section=sheetSection(a.x,(a.y+1.0)*3.14159265);
+    return vec3(a.x,waveCentre(a.x)+section.z*section.x,section.y);
+}
+// The column's outline (lowest and highest height around the loop).
+vec2 sheetExtent(float x) {
+    vec2 extent=vec2(1e9,-1e9);
+    for(int i=0;i<48;++i) {
+        float y=sheetSection(x,float(i)*(6.2831853/48.0)).x;
+        extent=vec2(min(extent.x,y),max(extent.y,y));
+    }
+    return extent;
 }
 // Integer hashing keeps the cloud identical across runs and GPU vendors.
 float seed(uint n) {
@@ -125,22 +107,22 @@ void main() {
         // kProceduralWaveMeshColumns x kProceduralWaveMeshRows.
         const int COLUMNS=128,MESH_ROWS=448;
         vec2 a=vec2(float(gl_VertexIndex%COLUMNS),float(gl_VertexIndex/COLUMNS))/vec2(COLUMNS-1,MESH_ROWS-1)*2.0-1.0;
-        float s,s1,s2;
-        position=ribbonPosition(a,s);
+        position=sheetPosition(a);
         // Smooth analytic normal (per-triangle derivative normals faceted the
-        // sheet into hard streaks). Steps stay inside one ribbon band.
-        const float e=1.0/127.0,f=0.25/float(MESH_ROWS);
-        float sx=sign(0.5-fract((a.y*0.5+0.5)*float(RIBBONS)));
-        vec3 du=ribbonPosition(a+vec2(e,0),s1)-ribbonPosition(a-vec2(e,0),s2);
-        vec3 dv=(ribbonPosition(a+vec2(0,f*sx),s1)-position)*sx;
+        // sheet into hard streaks); the cross-section is closed, so central
+        // differences wrap.
+        const float e=1.0/127.0,f=1.0/float(MESH_ROWS);
+        vec3 du=sheetPosition(a+vec2(e,0))-sheetPosition(a-vec2(e,0));
+        vec3 dv=sheetPosition(a+vec2(0,f))-sheetPosition(a-vec2(0,f));
         if(pc.effect.w>0.5) {
             float center=waveCentre(a.x);position.y=center+(position.y-center)*1.65;
             du.y*=1.65;dv.y*=1.65;
         }
         particle_style=vec4(normalize(cross(du,dv)),0);
-        // Per-vertex visibility, so the strips joining neighbouring ribbons
-        // (whose vertices sit on ribbon borders) stay invisible; plus a rim.
-        edge_sprite=vec2(smoothstep(0.5,0.95,abs(s)),1.0-smoothstep(0.6,1.0,abs(s)));
+        // Position across the band: -1 and 1 on the outline.
+        vec2 extent=sheetExtent(a.x);
+        float height=sheetSection(a.x,(a.y+1.0)*3.14159265).x;
+        edge_sprite=vec2(a.y,(2.0*height-extent.x-extent.y)/max(extent.y-extent.x,1e-3));
         // Vulkan's framebuffer Y axis is downward. Depth is unused, so avoid
         // clipping the reference's eye-space ribbon against Vulkan's Z plane.
         gl_Position=vec4(position.x,-position.y,0,1);
@@ -168,58 +150,67 @@ void main() {
     float ratio=clamp(pc.resolution_time_gain.x/pc.resolution_time_gain.y,1.0,2.0)*0.375;
     float x=fract(time*(r.x-0.5)/15.0+r.y*50.0)*2.0-1.0;
     float y=sin(time*(r.y+1.5)/4.0+r.x*100.0)/((6.0-r.x*4.0*r.y)/ratio);
-    float op=mix(sin(time*(r.x+0.5)*12.0+r.y*10.0),sin(time*(r.y+1.5)*6.0+r.x*4.0),y*0.5+0.5)*r.x+r.y;
-    particle_alpha=op*op*(1.0-fract(r.x+time*0.00285));
     vec2 motion=pc.mode_motion.yz*(0.6+r.z*0.8);
     x=fract((x+motion.x+1.0)*0.5)*2.0-1.0;
-    float center=pc.mode_motion.w>0.5 ? wavePosition(vec2(x,0)).y : 0.0;
-    y=center+y*wave.settings[10].y+wave.settings[10].x+motion.y;
-    const vec2 corners[6]=vec2[6](vec2(-1,-1),vec2(1,-1),vec2(-1,1),vec2(-1,1),vec2(1,-1),vec2(1,1));
-    vec2 c=corners[gl_VertexIndex];
-    // Particle population measured from PS3 captures (RPCS3 and a 1080p
-    // recording): most are small flat flakes (3-5 px cores with a soft glow)
-    // tumbling in 3D; the stream comes towards the camera at the left, where
-    // flakes grow into large, soft, out-of-focus discs.
     float seconds=pc.resolution_time_gain.z;
     float h1=seed(id*7u+4001u),h2=seed(id*7u+4002u),h3=seed(id*7u+4003u),h4=seed(id*7u+4004u);
-    float h5=seed(id*7u+4005u),h6=seed(id*7u+4006u),h7=seed(id*7u+4007u);
-    // Each flake's normal turns about its own random axis (2.5-8 s a turn).
+    float h5=seed(id*7u+4005u),h6=seed(id*7u+4006u),h7=seed(id*7u+4007u),h8=seed(id*7u+4008u);
+    // Flakes fill much of the screen's height, densest around the wave.
+    float center=pc.mode_motion.w>0.5 ? waveCentre(x) : 0.0;
+    y=center+y*wave.settings[10].y*(h8>0.55 ? 2.4 : 1.0)+wave.settings[10].x+motion.y;
+    const vec2 corners[6]=vec2[6](vec2(-1,-1),vec2(1,-1),vec2(-1,1),vec2(-1,1),vec2(1,-1),vec2(1,1));
+    vec2 c=corners[gl_VertexIndex];
+    // Particle population measured from PS3 captures (lossless RPCS3 frames
+    // and a 1080p recording): small flat discs tumbling in 3D, so they show
+    // as circles narrowing to ellipses and slivers; most are dim, a few flash
+    // tinted when they mirror the light. Near the camera on the left the
+    // stream defocuses into flat, feather-edged discs.
+    // Each flake turns about its own random axis (2.5-8 s a turn).
     vec3 axis=normalize(vec3(h5-0.5,h6-0.5,h7-0.5)+vec3(0.0,0.0,0.001));
-    vec3 n0=normalize(cross(axis,vec3(0.36,0.48,0.8)));
+    vec3 e0=normalize(cross(axis,vec3(0.36,0.48,0.8))),f0=cross(axis,e0);
     float turn=6.2831853*seconds/(2.5+5.5*h5)+h6*6.2831853;
-    vec3 normal=n0*cos(turn)+cross(axis,n0)*sin(turn)+axis*dot(axis,n0)*(1.0-cos(turn));
-    // Projected outline: an ellipse, thin when edge-on, round face-on, its
-    // long axis perpendicular to the normal's screen direction.
+    float ct=cos(turn),st=sin(turn);
+    // Rodrigues rotation of the flake's two in-plane edges.
+    vec3 e1=e0*ct+cross(axis,e0)*st+axis*dot(axis,e0)*(1.0-ct);
+    vec3 e2=f0*ct+cross(axis,f0)*st+axis*dot(axis,f0)*(1.0-ct);
+    vec3 normal=cross(e1,e2);
     float facing=abs(normal.z);
-    vec2 across=length(normal.xy)>1e-3 ? normalize(normal.xy) : vec2(1.0,0.0);
-    // Glint when the flake mirrors the light towards the viewer.
-    float glint=pow(max(abs(dot(normal,normalize(vec3(-0.3,0.45,1.0)))),0.0),36.0)*(1.6+2.2*h3);
-    particle_alpha*=mix(0.55,1.0,pow(h1,1.4))*mix(0.5,1.0,facing)*(1.0+glint);
+    // A glint lasts ~0.3 s in the captures, so only ~1% flash at once.
+    float glint=pow(abs(dot(normal,normalize(vec3(-0.3,0.45,1.0)))),80.0)*(1.6+2.2*h3);
+    // Measured: the median flake is only ~15 levels above the background,
+    // while rare glints reach ~115.
+    particle_alpha=mix(0.045,0.15,h1)*(0.45+0.55*sqrt(facing))*(1.0+6.0*glint);
     vec3 iridescent=h4<0.3 ? vec3(1.0) : h4<0.5 ? vec3(1.0,0.74,0.86) : h4<0.7 ? vec3(1.0,0.86,0.58) :
         h4<0.85 ? vec3(0.86,0.80,1.0) : vec3(0.80,0.95,1.0);
-    particle_style.rgb=mix(vec3(1.0,0.97,0.92),iridescent,clamp(glint*0.45,0.0,1.0));
+    particle_style.rgb=mix(vec3(1.0,0.97,0.92),iridescent,clamp(glint*0.5,0.0,1.0));
     float scale=pc.resolution_time_gain.y/1080.0;
-    // Quads are four core widths across so the glow halo fits inside.
-    float core=(2.6+1.6*h3+2.0*pow(r.z-0.1,0.6))*scale;
-    float pixels=core*4.0;
-    vec2 shape=vec2(mix(0.28,1.0,facing),1.0);
-    if(h2>0.88) {
+    // Disc radius, in pixels.
+    float half_edge=(1.9+1.5*h3+1.5*pow(r.z-0.1,0.6))*scale;
+    float glow=clamp(glint,0.0,2.0);
+    if(h2>0.9) {
         // The near-camera stream on the left: depth falls from the screen
-        // edge inwards, so size and defocus fall with it.
+        // edge inwards, so size and defocus fall with it. Fast at first,
+        // slowing as it nears the edge, so the cloud is densest there.
         float life=fract(h1+seconds*0.18/(1.0+h3));
-        x=-0.5-life*0.62;
-        float nearness=clamp((-0.5-x)/0.62,0.0,1.0);
-        y=(pc.mode_motion.w>0.5 ? waveCentre(x) : 0.0)+wave.settings[10].x+(h6-0.5)*mix(0.12,0.3,nearness)-life*0.12+motion.y;
-        particle_style.a=smoothstep(0.25,0.8,nearness);
-        particle_style.rgb=mix(vec3(1.0,0.95,0.88),iridescent,0.35*glint);
-        particle_alpha=mix(0.85,0.38,particle_style.a)*(0.55+0.45*h4)*sin(life*3.14159265)*(1.0+0.6*glint);
-        pixels=mix(core*4.0,(10.0+16.0*h3*h3)*scale,particle_style.a);
-        shape=mix(shape,vec2(1.0),particle_style.a);
+        x=-0.62-0.52*sqrt(life);
+        float nearness=clamp((-0.62-x)/0.52,0.0,1.0);
+        y=(pc.mode_motion.w>0.5 ? waveCentre(x) : 0.0)+wave.settings[10].x+(h6-0.5)*mix(0.1,0.32,nearness)-life*0.06+motion.y;
+        particle_style.a=h7>0.4 ? smoothstep(0.15,0.7,nearness) : 0.0;
+        particle_style.rgb=mix(vec3(1.0,0.95,0.88),iridescent,0.6);
+        particle_alpha=mix(particle_alpha*1.6,0.06+0.2*h4*h4,particle_style.a)*sin(life*3.14159265);
+        half_edge*=mix(1.0,1.5,nearness);
+        if(particle_style.a>0.0) {
+            // Flat disc, 12-30 px across.
+            float pixels=mix(half_edge*4.0,(12.0+18.0*h3*h3)*scale,particle_style.a);
+            gl_Position=vec4(vec2(x,-y)+c*pixels/pc.resolution_time_gain.xy,0,1);
+            position=vec3(0);edge_sprite=c;return;
+        }
     }
-    vec2 corner=mat2(across.x,across.y,-across.y,across.x)*(c*shape);
-    // A native quad replaces gl_PointSize, so large-point feature support is
-    // unnecessary; the fragment falloff stays in the quad's own coordinates.
-    gl_Position=vec4(vec2(x,-y)+corner*pixels/pc.resolution_time_gain.xy,0,1);
-    position=vec3(0);
+    // The flake's disc, rotated in 3D and projected (an ellipse), inside a
+    // quad 1.8x its size so a glinting flake's glow fits; the extra pixel
+    // keeps edge-on slivers from vanishing between pixel centres.
+    vec2 corner=(c.x*e1.xy+c.y*e2.xy)*half_edge*1.8+c*(0.7*scale);
+    gl_Position=vec4(vec2(x,-y)+corner*2.0/pc.resolution_time_gain.xy,0,1);
+    position=vec3(glow,0,0);
     edge_sprite=c;
 }
