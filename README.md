@@ -37,7 +37,10 @@ The rendering backend is powered by [**AuroreEngine**](https://github.com/phenom
 
 ## Getting Started
 
-For Beta 3 downloads, supported platforms and limitations, see the
+The `dev` branch develops **OpenXMB 0.4.0 Beta 4**; it is not a release.
+Existing profiles and libraries remain in their existing locations.
+
+For the published Beta 3 downloads, supported platforms and limitations, see the
 [release notes](docs/releases/v0.3.0-beta.3.md).
 
 ### Prerequisites

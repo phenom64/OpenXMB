@@ -259,13 +259,13 @@ class PortableTests(unittest.TestCase):
                  patch.object(module, 'relocate_webkit_injected_bundle'), \
                  patch.object(module, 'prepare_fallbacks'), \
                  patch.object(module, 'copy_copyright') as copy_copyright:
-                module.build(stage, output, '0.3.0-beta.3')
+                module.build(stage, output, '0.4.0-beta.4')
                 self.assertIn(gles_source, copy_copyright.call_args.args[0])
-            archive = output / 'OpenXMB-0.3.0-beta.3-linux-x86_64.tar.gz'
+            archive = output / 'OpenXMB-0.4.0-beta.4-linux-x86_64.tar.gz'
             with tarfile.open(archive, 'r:gz') as tar:
-                self.assertIn(b'../../share/shell/fonts', tar.extractfile('OpenXMB-0.3.0-beta.3-linux-x86_64/etc/fonts/fonts.conf').read())
+                self.assertIn(b'../../share/shell/fonts', tar.extractfile('OpenXMB-0.4.0-beta.4-linux-x86_64/etc/fonts/fonts.conf').read())
                 for name in STAGED_FONTS:
-                    member = f'OpenXMB-0.3.0-beta.3-linux-x86_64/share/shell/fonts/{name}'
+                    member = f'OpenXMB-0.4.0-beta.4-linux-x86_64/share/shell/fonts/{name}'
                     self.assertEqual(tar.extractfile(member).read(), (stage / 'share/shell/fonts' / name).read_bytes())
 
     def test_runtime_fallback_never_overrides_compatible_host(self):
@@ -448,16 +448,16 @@ class PortableTests(unittest.TestCase):
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
             with tempfile.TemporaryDirectory() as tmp:
-                archive = Path(tmp) / 'OpenXMB-0.3.0-beta.3-linux-x86_64.tar.gz'
+                archive = Path(tmp) / 'OpenXMB-0.4.0-beta.4-linux-x86_64.tar.gz'
                 payload = b'fixture'
                 with tarfile.open(archive, 'w:gz') as tar:
-                    entry = tarfile.TarInfo('OpenXMB-0.3.0-beta.3-linux-x86_64/fixture')
+                    entry = tarfile.TarInfo('OpenXMB-0.4.0-beta.4-linux-x86_64/fixture')
                     entry.size = len(payload)
                     tar.addfile(entry, io.BytesIO(payload))
                 def check_extracted(app, output, version, render):
                     self.assertEqual((app / 'fixture').read_bytes(), payload)
                     self.assertIn('portable test ü', str(app))
-                    self.assertEqual(version, '0.3.0-beta.3')
+                    self.assertEqual(version, '0.4.0-beta.4')
                     self.assertTrue(render)
                     self.assertEqual(output, (Path(tmp) / 'output').resolve())
                 with patch.object(module, 'run_extracted', side_effect=check_extracted) as run:
@@ -471,7 +471,7 @@ class PortableTests(unittest.TestCase):
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
             with tempfile.TemporaryDirectory() as tmp:
-                archive = Path(tmp) / 'OpenXMB-0.3.0-beta.3-linux-x86_64.tar.gz'
+                archive = Path(tmp) / 'OpenXMB-0.4.0-beta.4-linux-x86_64.tar.gz'
                 with tarfile.open(archive, 'w:gz') as tar:
                     entry = tarfile.TarInfo('../../escape')
                     tar.addfile(entry, io.BytesIO())
@@ -485,7 +485,7 @@ class PortableTests(unittest.TestCase):
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
             with tempfile.TemporaryDirectory() as tmp:
-                archive = Path(tmp) / 'OpenXMB-0.3.0-beta.3-linux-x86_64.tar.gz'
+                archive = Path(tmp) / 'OpenXMB-0.4.0-beta.4-linux-x86_64.tar.gz'
                 root = archive.name.removesuffix('.tar.gz')
                 for kind, target in ((tarfile.FIFOTYPE, ''), (tarfile.SYMTYPE, '../../escape'),
                                      (tarfile.LNKTYPE, '/tmp/escape')):
@@ -504,7 +504,7 @@ class PortableTests(unittest.TestCase):
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
             with tempfile.TemporaryDirectory() as tmp:
-                archive = Path(tmp) / 'OpenXMB-0.3.0-beta.3-linux-x86_64.tar.gz'
+                archive = Path(tmp) / 'OpenXMB-0.4.0-beta.4-linux-x86_64.tar.gz'
                 with tarfile.open(archive, 'w:gz') as tar:
                     entry = tarfile.TarInfo(archive.name.removesuffix('.tar.gz'))
                     entry.type = tarfile.DIRTYPE

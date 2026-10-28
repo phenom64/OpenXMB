@@ -16,10 +16,10 @@ class ReleaseArtifactTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.directory = Path(self.temporary.name)
-        self.names = ['openxmb_0.3.0~beta.3_amd64.deb',
-                      'OpenXMB-0.3.0-beta.3-windows-x86_64.zip',
-                      'OpenXMB-0.3.0-beta.3-macos-universal.dmg',
-                      'OpenXMB-0.3.0-beta.3-linux-x86_64.tar.gz']
+        self.names = ['openxmb_0.4.0~beta.4_amd64.deb',
+                      'OpenXMB-0.4.0-beta.4-windows-x86_64.zip',
+                      'OpenXMB-0.4.0-beta.4-macos-universal.dmg',
+                      'OpenXMB-0.4.0-beta.4-linux-x86_64.tar.gz']
         for name in self.names:
             contents = (name + '\n').encode() * 100
             (self.directory / name).write_bytes(contents)
@@ -27,7 +27,7 @@ class ReleaseArtifactTests(unittest.TestCase):
                 hashlib.sha256(contents).hexdigest() + '  ' + name + '\n')
 
     def verify(self):
-        return release.verify_assets(self.directory, '0.3.0-beta.3')
+        return release.verify_assets(self.directory, '0.4.0-beta.4')
 
     def test_complete_artifacts_produce_release_checksums(self):
         paths = self.verify()
@@ -70,25 +70,25 @@ class ReleaseArtifactTests(unittest.TestCase):
 class ReleaseRecoveryTests(unittest.TestCase):
     def test_existing_correct_tag_is_preserved(self):
         with patch.object(release,'api',return_value={'object':{'sha':'approved-sha'}}), patch.object(release.subprocess,'run') as run:
-            release.reserve_tag('phenom64/OpenXMB','approved-sha','v0.3.0-beta.3')
+            release.reserve_tag('phenom64/OpenXMB','approved-sha','v0.4.0-beta.4')
             run.assert_not_called()
 
     def test_conflicting_tag_is_never_moved(self):
         with patch.object(release,'api',return_value={'object':{'sha':'other-sha'}}), patch.object(release.subprocess,'run') as run:
-            with self.assertRaises(RuntimeError):release.reserve_tag('phenom64/OpenXMB','approved-sha','v0.3.0-beta.3')
+            with self.assertRaises(RuntimeError):release.reserve_tag('phenom64/OpenXMB','approved-sha','v0.4.0-beta.4')
             run.assert_not_called()
 
     def test_missing_tag_is_reserved_explicitly(self):
         with patch.object(release,'api',return_value=None), patch.object(release.subprocess,'run') as run:
-            release.reserve_tag('phenom64/OpenXMB','approved-sha','v0.3.0-beta.3')
+            release.reserve_tag('phenom64/OpenXMB','approved-sha','v0.4.0-beta.4')
             self.assertIn('sha=approved-sha',run.call_args.args[0])
 
 
 class DraftLookupTests(unittest.TestCase):
     def test_draft_is_found_when_tag_endpoint_omits_it(self):
-        draft={'id':123,'draft':True,'tag_name':'v0.3.0-beta.3'}
+        draft={'id':123,'draft':True,'tag_name':'v0.4.0-beta.4'}
         with patch.object(release,'api',side_effect=[None,[draft]]):
-            self.assertEqual(release.find_release('phenom64/OpenXMB','v0.3.0-beta.3'),draft)
+            self.assertEqual(release.find_release('phenom64/OpenXMB','v0.4.0-beta.4'),draft)
 
 
 if __name__ == '__main__':
