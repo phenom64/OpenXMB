@@ -117,8 +117,8 @@ void test_tooling_present(const std::filesystem::path &root) {
   require(std::filesystem::is_regular_file(
               root / "tools/xmb/install_reference_frames.ps1"),
           "install_reference_frames.ps1 exists");
-  require_contains(capture_frame, "-Filter \"*.png\"",
-                   "capture_frame.ps1 clears only stale PNG captures");
+  require_contains(capture_frame, "-Filter \"*$extension\"",
+                   "capture_frame.ps1 clears only stale captures of the pattern's type");
   require_contains(capture_frame, "Remove-Item -Force",
                    "capture_frame.ps1 clears stale scene PNGs");
 }
