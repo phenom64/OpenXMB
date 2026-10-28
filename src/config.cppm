@@ -21,7 +21,6 @@ module;
 #include <array>
 #include <chrono>
 #include <cstdint>
-#include <charconv>
 #include <cmath>
 #include <cstdlib>
 #include <filesystem>
@@ -33,6 +32,7 @@ module;
 #include <vector>
 
 #include <glm/vec3.hpp>
+#include <fast_float/fast_float.h>
 
 #ifdef _WIN32
 #ifndef NOMINMAX
@@ -179,7 +179,7 @@ export namespace config
             }
             double number(std::string_view key,double fallback) const {
                 const auto value=preference(key);double result{};
-                const auto [end,error]=std::from_chars(value.data(),value.data()+value.size(),result);
+                const auto [end,error]=fast_float::from_chars(value.data(),value.data()+value.size(),result);
                 return error==std::errc{} && end==value.data()+value.size() && std::isfinite(result)?result:fallback;
             }
             bool enabled(std::string_view key,bool fallback=true) const {

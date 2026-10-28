@@ -71,7 +71,8 @@ void SDLCALL measure(void *, Uint8 *bytes, int length) {
 }
 void signal_and_mixer(const std::filesystem::path &root) {
   const auto fixture = root / "seek-signal.wav";
-  wave(fixture, 2.0, true);
+  // Leave room for scheduler delays while the switch test exercises playback.
+  wave(fixture, 8.0, true);
   Player player;
   require(player.set_queue({{fixture, "Seek signal"}}), "signal fixture opens");
   player.set_ducking_enabled(false);
@@ -116,9 +117,49 @@ void signal_and_mixer(const std::filesystem::path &root) {
   require(std::abs(player.snapshot().volume - 0.6f) < 0.001f && std::abs(player.snapshot().effective_volume - 0.3f) < 0.001f, "settings gain preserves per-player user volume");
   player.set_output_gain(1.0f);
   player.pause();
-  const double device_position = player.snapshot().position;
-  require(player.set_output_device("System Default"), "default output device reopens");
-  require(player.snapshot().status == Status::paused && std::abs(player.snapshot().position - device_position) < 0.002, "output switch preserves pause and position");
+  const auto before_switch = player.snapshot();
+  const double device_position = before_switch.position;
+  int before_rate = 0, before_channels = 0;
+  Uint16 before_format = 0;
+  Mix_QuerySpec(&before_rate, &before_format, &before_channels);
+  const bool switched = player.set_output_device("System Default");
+  const auto after_switch = player.snapshot();
+  const auto switch_details = [&] {
+    const char *driver = SDL_GetCurrentAudioDriver();
+    const auto status_name = [](Status status) {
+      switch (status) {
+        case Status::stopped: return "stopped";
+        case Status::playing: return "playing";
+        case Status::paused: return "paused";
+        case Status::ended: return "ended";
+        case Status::error: return "error";
+      }
+      return "unknown";
+    };
+    int after_rate = 0, after_channels = 0;
+    Uint16 after_format = 0;
+    Mix_QuerySpec(&after_rate, &after_format, &after_channels);
+    std::string details = " driver=" + std::string(driver ? driver : "<none>") +
+      " before_status=" + status_name(before_switch.status) +
+      " before_position=" + std::to_string(before_switch.position) +
+      " duration=" + std::to_string(before_switch.metadata.duration) +
+      " before_error=" + before_switch.error +
+      " before_mixer=" + std::to_string(before_rate) + "/" + std::to_string(before_format) + "/" + std::to_string(before_channels) +
+      " after_status=" + status_name(after_switch.status) +
+      " after_position=" + std::to_string(after_switch.position) +
+      " after_error=" + after_switch.error +
+      " after_mixer=" + std::to_string(after_rate) + "/" + std::to_string(after_format) + "/" + std::to_string(after_channels);
+    const int count = SDL_GetNumAudioDevices(0);
+    details += " device_count=" + std::to_string(count) + " devices=[";
+    for (int i = 0; i < count; ++i) {
+      const char *name = SDL_GetAudioDeviceName(i, 0);
+      details += (i ? ", " : "") + std::string(name ? name : "<null>");
+    }
+    return details + "] SDL_error=" + SDL_GetError();
+  };
+  if (!switched) require(false, "default output device reopens:" + switch_details());
+  if (!(after_switch.status == Status::paused && std::abs(after_switch.position - device_position) < 0.002))
+    require(false, "output switch preserves pause and position:" + switch_details());
   require(!player.set_output_device("OpenXMB nonexistent audio output"), "missing output is rejected");
   require(player.snapshot().status == Status::paused && !player.snapshot().error.empty(), "failed output switch restores transport with actionable error");
   require(player.play(), "music resumes on restored audio output");

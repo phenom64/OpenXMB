@@ -1339,6 +1339,28 @@ else()
   endif()
 endif()
 
+# GNU gettext ignores LANGUAGE under C.UTF-8. Carry one real message locale
+# for minimal Linux installations without changing their system locale setup.
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  find_program(OPENXMB_LOCALEDEF_EXECUTABLE localedef)
+  if(OPENXMB_LOCALEDEF_EXECUTABLE AND EXISTS "/usr/share/i18n/locales/en_US")
+    file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/.native-locales")
+    execute_process(COMMAND "${OPENXMB_LOCALEDEF_EXECUTABLE}" --no-archive -i en_US -f UTF-8
+      "${CMAKE_CURRENT_BINARY_DIR}/.native-locales/en_US.UTF-8"
+      RESULT_VARIABLE _openxmb_locale_result)
+    if(NOT _openxmb_locale_result EQUAL 0)
+      message(FATAL_ERROR "Could not prepare the portable gettext message locale")
+    endif()
+    if(EXISTS "/usr/share/doc/locales/copyright")
+      configure_file("/usr/share/doc/locales/copyright"
+        "${CMAKE_CURRENT_BINARY_DIR}/.native-locales/COPYRIGHT" COPYONLY)
+    endif()
+    install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/.native-locales" DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}")
+  else()
+    message(WARNING "localedef/en_US source unavailable; explicit language selection requires an installed non-C locale")
+  endif()
+endif()
+
 # Read languages and compile .po -> .mo for development and install
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/po/LINGUAS" AND GETTEXT_FOUND)
   file(STRINGS po/LINGUAS LINGUAS)
@@ -1458,9 +1480,17 @@ if(OPENXMB_BUILD_NATIVE_TESTS)
   openxmb_configure_native_test(openxmb_language_switch_tests)
   add_test(NAME openxmb_language_switch_tests COMMAND openxmb_language_switch_tests
     "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/locales" --all-packs)
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set_tests_properties(openxmb_language_switch_tests PROPERTIES ENVIRONMENT "LC_ALL=C.UTF-8")
+  endif()
   add_executable(openxmb_language_font_tests tests/localization/font_selection_tests.cpp src/localization/font_selection.cpp)
   target_link_libraries(openxmb_language_font_tests PRIVATE Freetype::Freetype Intl::Intl)
   set_target_properties(openxmb_language_font_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
   openxmb_configure_native_test(openxmb_language_font_tests)
-  add_test(NAME openxmb_language_font_tests COMMAND openxmb_language_font_tests "${CMAKE_CURRENT_BINARY_DIR}/shell" "${CMAKE_CURRENT_BINARY_DIR}/locales")
+  if(WIN32)
+    set(_openxmb_font_test_assets "${CMAKE_CURRENT_BINARY_DIR}/shell")
+  else()
+    set(_openxmb_font_test_assets "${CMAKE_CURRENT_BINARY_DIR}/share/shell")
+  endif()
+  add_test(NAME openxmb_language_font_tests COMMAND openxmb_language_font_tests "${_openxmb_font_test_assets}" "${CMAKE_CURRENT_BINARY_DIR}/locales")
 endif()

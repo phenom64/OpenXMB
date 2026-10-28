@@ -11,8 +11,9 @@ python3 scripts/packaging/linux_portable.py \
 It produces `OpenXMB-0.3.0-beta.3-linux-x86_64.tar.gz` and its `.sha256`.
 The builder requires Python 3, patchelf, ldd, readelf, dpkg-query,
 gio-querymodules, FFmpeg, Poppler tools, WebKitGTK 4.1 with its process
-executables, glib-networking, and the `fonts-noto-core` and `fonts-noto-cjk`
-packages including their copyright files. It uses ldd, so the stage and all
+executables, and glib-networking. The release build driver provisions pinned
+Noto fonts and OFL notices into the install stage; the portable builder requires
+those files in `share/shell/fonts`. It uses ldd, so the stage and all
 build-host libraries must be trusted. Build on glibc 2.39; the archive does not
 contain glibc, the ELF loader, or GPU driver implementations. Drivers, display
 services, `bwrap`, `xdg-dbus-proxy`, and system certificates are host needs.
@@ -24,8 +25,8 @@ relative `--force-dir` paths. It selects a compatible host `libstdc++` and
 `libgcc_s` before using the bundled fallbacks. If a fallback is necessary, a
 host GPU driver can still require newer symbols than that fallback provides;
 test that case on the target system. Packaged GIO modules include the TLS
-backend. The Noto fonts are in `share/shell/fonts`, and their Debian copyright
-records are in `share/doc/openxmb/dependencies`.
+backend. The staged Noto fonts, OFL licenses, and copyright notices are preserved
+in `share/shell/fonts`.
 
 Runner invocation (the archive is extracted to a temporary path containing
 spaces and non-ASCII characters):

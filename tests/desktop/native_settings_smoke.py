@@ -30,6 +30,7 @@ def main():
     profile = r.output / 'profile'
     profile.mkdir()
     config = json.loads((ROOT / 'config.json').read_text())
+    config.setdefault('preferences', {}).update({'startup.intro': 'Off', 'startup.warning': 'Off'})
     config['render'].update({'sample-count': 1, 'max-fps': 30, 'vsync': False, 'show-fps': False, 'show-mem': False, 'icon-glass-refraction': True})
     config['shell'].update({'background-type': 'original', 'theme-colour-mode': 'custom', 'theme-custom-colour': '#d7122d', 'font-path': 'default', 'language': 'en'})
     m.json_write(profile / 'config.json', config)

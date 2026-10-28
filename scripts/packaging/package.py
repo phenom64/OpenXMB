@@ -46,6 +46,9 @@ def notices(destination):
 def shared_assets(stage, destination):
     for name in ['shell', 'OpenXMB', 'locale']:
         shutil.copytree(stage / 'share' / name, destination / name, dirs_exist_ok=True)
+    native_locales = stage / 'share/.native-locales'
+    if native_locales.is_dir():
+        shutil.copytree(native_locales, destination / '.native-locales', dirs_exist_ok=True)
 
 
 def linux(stage, destination):

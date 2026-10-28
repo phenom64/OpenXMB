@@ -18,8 +18,8 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 TOOLS = ('ffmpeg', 'ffprobe', 'pdfinfo', 'pdftoppm', 'pdftotext')
-FONTS = ((Path('/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf'), 'NotoSansDevanagari-Regular.ttf'),
-         (Path('/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'), 'NotoSansCJK-Regular.ttc'))
+FONT_RESOURCES = ('NotoSansDevanagari-Regular.ttf', 'NotoSansCJK-Regular.ttc', 'NotoSans-Regular.ttf',
+                  'OFL-Noto.txt', 'OFL-NotoCJK.txt', 'COPYRIGHT-Noto.txt', 'COPYRIGHT-NotoCJK.txt')
 REQUIRED = ('bin/openxmb-web', 'bin/XMS.bin', 'bin/openxmb-integrations',
             'bin/openxmb-retro', 'share/OpenXMB/config.json',
             'share/shell/Play-Regular.ttf', 'share/shell/catalog/en.json')
@@ -135,6 +135,10 @@ def validate_stage(stage):
             raise RuntimeError('Missing staged resource: ' + name)
     if not (stage / 'share/locale').is_dir():
         raise RuntimeError('Missing staged resource: share/locale')
+    for name in FONT_RESOURCES:
+        path = stage / 'share/shell/fonts' / name
+        if not path.is_file() or path.stat().st_size == 0:
+            raise RuntimeError('Missing or empty staged font resource: share/shell/fonts/' + name)
 
 
 def relocate_webkit_bytes(data, original):
@@ -331,9 +335,6 @@ def build(stage, output, version):
             raise RuntimeError('Missing build dependency: ' + program)
     if platform.libc_ver()[0] != 'glibc' or platform.libc_ver()[1] != '2.39':
         raise RuntimeError('Build on the Ubuntu 24.04 glibc 2.39 baseline')
-    for font, _ in FONTS:
-        if not font.is_file():
-            raise RuntimeError('Missing required Noto font: ' + str(font))
     output.mkdir(parents=True, exist_ok=True)
     name = f'OpenXMB-{version}-linux-x86_64'
     artifact = output / (name + '.tar.gz')
@@ -344,13 +345,6 @@ def build(stage, output, version):
         for binary in (p for p in app.rglob('*') if is_elf(p)):
             if host_only(binary.name):
                 raise RuntimeError('The stage contains a host-only library or driver: ' + str(binary))
-        fonts = app / 'share/shell/fonts'
-        fonts.mkdir(parents=True, exist_ok=True)
-        for source, filename in FONTS:
-            shutil.copy2(source, fonts / filename)
-        for package in ('fonts-noto-core', 'fonts-noto-cjk'):
-            if not (Path('/usr/share/doc') / package / 'copyright').is_file():
-                raise RuntimeError('Missing Noto font copyright: ' + package)
         schemas = Path('/usr/share/glib-2.0/schemas')
         if not (schemas / 'gschemas.compiled').is_file():
             raise RuntimeError('Missing compiled GSettings schemas')
@@ -384,13 +378,9 @@ def build(stage, output, version):
             shutil.copy2(ROOT / filename, notices / filename)
         shutil.copytree(ROOT / 'LICENSES', notices / 'LICENSES', dirs_exist_ok=True)
         copyright_sources = (sources | {Path(shutil.which(t)).resolve() for t in (*TOOLS, 'readelf')}
-                             | {font for font, _ in FONTS}
                              | set(Path('/usr/lib/x86_64-linux-gnu/gio/modules').glob('*.so'))
                              | {p for p in webkit_dir.rglob('*') if p.is_file()})
         copy_copyright(copyright_sources, notices / 'dependencies')
-        for package in ('fonts-noto-core', 'fonts-noto-cjk'):
-            shutil.copy2(Path('/usr/share/doc') / package / 'copyright',
-                         notices / 'dependencies' / (package + '.copyright'))
         temporary_archive = Path(temporary) / artifact.name
         with tarfile.open(temporary_archive, 'w:gz', format=tarfile.PAX_FORMAT) as archive:
             archive.add(app, arcname=name)

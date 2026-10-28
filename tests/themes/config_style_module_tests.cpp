@@ -3,8 +3,15 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <limits>
+#include <locale>
 #include <nlohmann/json.hpp>
 import openxmb.config;
+namespace {
+struct comma_decimal : std::numpunct<char> {
+  char do_decimal_point() const override { return ','; }
+};
+}
 int main() {
   namespace fs=std::filesystem;
   using json=nlohmann::json;
@@ -14,6 +21,26 @@ int main() {
   const auto require=[&](bool b,const char* text){++checks;if(!b)throw std::runtime_error(text);};
   try {
     config::config a;a.profileConfigPath=root/"profile.json";
+    const auto check_number=[&](const char* input,double expected) {
+      a.preferences["numeric-test"]=input;
+      require(a.number("numeric-test",-42)==expected,input);
+    };
+    check_number("0",0);check_number("-0.5",-.5);check_number(".5",.5);
+    check_number("1.",1);check_number("1.25e+2",125);check_number("2E-2",.02);
+    check_number("4.9406564584124654e-324",std::numeric_limits<double>::denorm_min());
+    a.preferences["numeric-test"]="-0";
+    require(std::signbit(a.number("numeric-test",-42)),"numeric parser preserves negative zero");
+    require(a.number("missing-numeric-test",-42)==-42,"missing numeric preference uses fallback");
+    a.preferences["numeric-test"]=std::string("1\0x",3);
+    require(a.number("numeric-test",-42)==-42,"numeric parser rejects embedded trailing NUL");
+    for(const auto* input:{"", " 1", "1 ", "+1", "1x", "1e", "0x1p2", "1,5", "nan", "inf", "-inf", "1e9999", "1e-9999"})
+      check_number(input,-42);
+    const auto previous_locale=std::locale();
+    try {
+      std::locale::global(std::locale(previous_locale,new comma_decimal));
+      check_number("1.5",1.5);check_number("1,5",-42);
+    } catch (...) {std::locale::global(previous_locale);throw;}
+    std::locale::global(previous_locale);
     a.setTextScale(3);require(a.textScale==2,"text scale upper bound");
     a.setTextScale(.1);require(a.textScale==.5,"text scale lower bound");a.setTextScale(.85);
     a.setTextColor("#123456");a.setIconColor("#abcdef");a.setClockColor("#fedcba");a.setParticleColor("#204060");

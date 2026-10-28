@@ -62,6 +62,7 @@ def main():
     profile = runner.output / 'profile'
     profile.mkdir()
     config = json.loads((ROOT / 'config.json').read_text())
+    config.setdefault('preferences', {}).update({'startup.intro': 'Off', 'startup.warning': 'Off'})
     config.setdefault('render', {}).update({'sample-count': 4, 'max-fps': 30,
         'vsync': False, 'show-fps': False, 'show-mem': False})
     config.setdefault('shell', {}).update({'background-type': 'original', 'font-path': 'default'})

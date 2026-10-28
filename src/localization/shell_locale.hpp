@@ -4,6 +4,7 @@
 #include <libintl.h>
 #include "language_options.hpp"
 #include <algorithm>
+#include <clocale>
 #include <cstdlib>
 #include <filesystem>
 #include <string>
@@ -47,11 +48,31 @@ inline void apply(std::string_view requested, const std::filesystem::path& direc
     setlocale(LC_MESSAGES,"");
     const auto* messages=setlocale(LC_MESSAGES,nullptr);
     if(language!="auto" && (!messages || std::string_view(messages)=="C" ||
+                           std::string_view(messages).starts_with("C.") ||
                            std::string_view(messages)=="POSIX")) {
 #ifdef _WIN32
         setlocale(LC_MESSAGES,"en_US.UTF-8");
 #else
-        if(!setlocale(LC_MESSAGES,"C.UTF-8")) setlocale(LC_MESSAGES,"en_US.UTF-8");
+        // glibc intentionally ignores LANGUAGE for C.<encoding> as well as C.
+        // Select a real message locale; keep all other locale categories intact.
+        if(!setlocale(LC_MESSAGES,"en_US.UTF-8") && !setlocale(LC_MESSAGES,"en_US.utf8")) {
+#if defined(__linux__)
+            // Minimal distributions can contain only C locales. The Linux
+            // package carries a message locale compiled at its glibc baseline.
+            // LOCPATH is needed only while loading it, and remains user-owned.
+            const auto bundled=std::filesystem::absolute(directory).parent_path()/".native-locales";
+            if(std::filesystem::is_directory(bundled)) {
+                const auto* previous=std::getenv("LOCPATH");
+                const bool had_previous=previous!=nullptr;
+                const std::string saved=previous?previous:"";
+                const auto lookup=bundled.string()+(saved.empty()?"":":"+saved);
+                setenv("LOCPATH",lookup.c_str(),1);
+                setlocale(LC_MESSAGES,"en_US.UTF-8");
+                if(had_previous) setenv("LOCPATH",saved.c_str(),1);
+                else unsetenv("LOCPATH");
+            }
+#endif
+        }
 #endif
     }
     bindtextdomain("shell",std::filesystem::absolute(directory).string().c_str());

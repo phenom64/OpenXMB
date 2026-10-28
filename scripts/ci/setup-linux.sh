@@ -18,7 +18,7 @@ apt_options=(-o DPkg::Lock::Timeout=180 -o Acquire::Retries=3
 sudo env DEBIAN_FRONTEND=noninteractive apt-get "${apt_options[@]}" update
 sudo env DEBIAN_FRONTEND=noninteractive apt-get "${apt_options[@]}" install -y --no-install-recommends \
   clang-19 clang-tools-19 lld-19 g++-14 cmake ninja-build pkg-config \
-  gettext libarchive-dev zlib1g-dev libx11-dev libxtst-dev libcurl4-openssl-dev \
+  gettext locales libarchive-dev zlib1g-dev libx11-dev libxtst-dev libcurl4-openssl-dev \
   libavcodec-dev libavformat-dev libavutil-dev libswresample-dev libswscale-dev \
   libfmt-dev libfreetype-dev libglm-dev libharfbuzz-dev libxmp-dev fonts-noto-core fonts-noto-cjk \
   libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libvulkan-dev \

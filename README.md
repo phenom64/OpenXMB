@@ -61,7 +61,7 @@ Before you begin, ensure you have the following tools and libraries installed (v
   - Freetype: `libfreetype-dev`
   - glm: `libglm-dev`
   - fmt: `libfmt-dev`
-  - gettext (i18n): `gettext`
+  - gettext (i18n): `gettext`, `locales` (Linux message-locale generation)
   - Theme/comic archives: `libarchive-dev`, `zlib1g-dev`
   - Linux desktop integration: `libx11-dev`, `libxtst-dev`
   - Optional embedded Linux browser: `libwebkit2gtk-4.1-dev`, `libgtk-3-dev`
@@ -80,6 +80,10 @@ The default preset builds a Release configuration with native desktop media, bro
 cmake --preset default
 cmake --build --preset default
 ```
+
+Release builds provision pinned Noto fonts and their licence notices automatically.
+For the same script coverage in a development build, run
+`python3 scripts/ci/fonts.py --build-dir build/default` before the language tests.
 
 For editor/debug work, use `cmake --preset dev && cmake --build --preset dev`.
 

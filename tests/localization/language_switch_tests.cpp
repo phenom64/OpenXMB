@@ -38,6 +38,13 @@ int main(int argc, char** argv) {
 #endif
     };
     const auto original_numeric=std::string(setlocale(LC_NUMERIC,nullptr));
+#if defined(__linux__)
+    // Prevent a developer machine's locale archive from masking the minimal-
+    // distro case. The shell must find its packaged non-C message locale.
+    const auto original_locpath=environment("LOCPATH");
+    const auto unavailable=std::filesystem::path(argv[2])/"unavailable-native-locales";
+    setenv("LOCPATH",unavailable.string().c_str(),1);
+#endif
     for(const auto& [language, expected] : {
         std::pair{"de", "Einstellungen"}, {"fr", "Paramètres"},
         {"pl", "Ustawienia"}, {"hi", "सेटिंग्स"}, {"en", "Settings"},
@@ -84,6 +91,11 @@ int main(int argc, char** argv) {
     apply("auto");
     check(environment("LANGUAGE").empty(),"auto removes explicit language override");
     check(std::string(setlocale(LC_NUMERIC,nullptr))==original_numeric,"language switching preserves numeric locale");
+#if defined(__linux__)
+    check(environment("LOCPATH")==unavailable.string(),"message locale loading preserves LOCPATH");
+    if(original_locpath.empty()) unsetenv("LOCPATH");
+    else setenv("LOCPATH",original_locpath.c_str(),1);
+#endif
 #ifdef _WIN32
     const auto old_all=environment("LC_ALL");
     const auto old_messages=environment("LC_MESSAGES");

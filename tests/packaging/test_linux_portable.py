@@ -3,6 +3,7 @@ import hashlib
 import io
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -12,6 +13,8 @@ from unittest.mock import patch
 
 SCRIPT = Path(__file__).resolve().parents[2] / 'scripts/packaging/linux_portable.py'
 SMOKE_SCRIPT = SCRIPT.with_name('portable_smoke.py')
+STAGED_FONTS = ('NotoSansDevanagari-Regular.ttf', 'NotoSansCJK-Regular.ttc', 'NotoSans-Regular.ttf',
+                'OFL-Noto.txt', 'OFL-NotoCJK.txt', 'COPYRIGHT-Noto.txt', 'COPYRIGHT-NotoCJK.txt')
 
 
 class PortableTests(unittest.TestCase):
@@ -128,10 +131,78 @@ class PortableTests(unittest.TestCase):
             self.assertEqual(lines[1:], ['--force-dir', 'folder with space', 'ユニコード'])
             self.assertIn(Path(tmp).name, lines[0])
 
-    def test_fonts_are_required_and_bundled_at_lookup_paths(self):
-        self.assertIsNotNone(self.module, 'portable packager is missing')
-        self.assertEqual(self.module.FONTS[0][1], 'NotoSansDevanagari-Regular.ttf')
-        self.assertEqual(self.module.FONTS[1][1], 'NotoSansCJK-Regular.ttc')
+    def populate_stage(self, stage):
+        for name in self.module.REQUIRED:
+            path = stage / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(b'fixture')
+        (stage / 'share/locale').mkdir(parents=True, exist_ok=True)
+        directory = stage / 'share/shell/fonts'
+        directory.mkdir(parents=True, exist_ok=True)
+        for name in STAGED_FONTS:
+            (directory / name).write_bytes(('staged ' + name).encode())
+
+    def test_stage_rejects_missing_or_empty_fonts_and_notices(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            stage = Path(tmp) / 'stage'
+            self.populate_stage(stage)
+            self.module.validate_stage(stage)
+            for name in STAGED_FONTS:
+                path = stage / 'share/shell/fonts' / name
+                original = path.read_bytes()
+                for contents in (None, b''):
+                    with self.subTest(name=name, contents=contents):
+                        if contents is None:
+                            path.unlink()
+                        else:
+                            path.write_bytes(contents)
+                        with self.assertRaisesRegex(RuntimeError, name.replace('.', r'\.')):
+                            self.module.validate_stage(stage)
+                        path.write_bytes(original)
+
+    def test_archive_preserves_staged_fonts_without_host_font_packages(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            stage, output = root / 'stage', root / 'output'
+            self.populate_stage(stage)
+            executable = root / 'tool'
+            executable.write_bytes(b'tool fixture')
+            schemas = root / 'schemas'
+            schemas.mkdir()
+            (schemas / 'gschemas.compiled').write_bytes(b'schemas')
+            original_copytree = shutil.copytree
+            original_is_file = Path.is_file
+            def copytree(source, destination, *args, **kwargs):
+                if os.fspath(source).replace('\\', '/').endswith('/usr/share/glib-2.0/schemas'):
+                    source = schemas
+                return original_copytree(source, destination, *args, **kwargs)
+            def is_file(path):
+                if str(path).replace('\\', '/').endswith('/usr/share/glib-2.0/schemas/gschemas.compiled'):
+                    return True
+                return original_is_file(path)
+            def helpers(app):
+                library = app / 'webkit-library'
+                library.write_bytes(b'webkit')
+                return library, root / 'webkit'
+            module = self.module
+            with patch.object(module.platform, 'system', return_value='Linux'), \
+                 patch.object(module.platform, 'machine', return_value='x86_64'), \
+                 patch.object(module.platform, 'libc_ver', return_value=('glibc', '2.39')), \
+                 patch.object(module.shutil, 'which', return_value=str(executable)), \
+                 patch.object(module.shutil, 'copytree', side_effect=copytree), \
+                 patch.object(Path, 'is_file', is_file), \
+                 patch.object(module, 'copy_gio_modules'), \
+                 patch.object(module, 'collect_elf_dependencies', return_value=set()), \
+                 patch.object(module, 'webkit_helpers', side_effect=helpers), \
+                 patch.object(module, 'relocate_webkit_bytes', return_value=b'webkit'), \
+                 patch.object(module, 'prepare_fallbacks'), \
+                 patch.object(module, 'copy_copyright'):
+                module.build(stage, output, '0.3.0-beta.3')
+            archive = output / 'OpenXMB-0.3.0-beta.3-linux-x86_64.tar.gz'
+            with tarfile.open(archive, 'r:gz') as tar:
+                for name in STAGED_FONTS:
+                    member = f'OpenXMB-0.3.0-beta.3-linux-x86_64/share/shell/fonts/{name}'
+                    self.assertEqual(tar.extractfile(member).read(), (stage / 'share/shell/fonts' / name).read_bytes())
 
     def test_runtime_fallback_never_overrides_compatible_host(self):
         bash = Path('C:/Program Files/Git/bin/bash.exe') if os.name == 'nt' else Path('/bin/sh')

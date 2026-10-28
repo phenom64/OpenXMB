@@ -7,6 +7,7 @@ from pathlib import Path
 import platform
 import shutil
 import subprocess
+import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -46,6 +47,7 @@ def main():
     validate_media_tools()
     build = args.build_dir.resolve()
     stage = args.stage.resolve()
+    run(sys.executable, ROOT / 'scripts/ci/fonts.py', '--build-dir', build)
     config = [
         'cmake', '-S', ROOT, '-B', build, '-G', 'Ninja',
         '-DCMAKE_BUILD_TYPE=Release', f'-DCMAKE_INSTALL_PREFIX={stage}',
@@ -90,6 +92,7 @@ def main():
     tests = subprocess.run(['ctest', '--test-dir', str(build), '--output-on-failure',
                             '--no-tests=error', '-j', '1'], cwd=ROOT)
     run('cmake', '--install', build)
+    run(sys.executable, ROOT / 'scripts/ci/fonts.py', '--build-dir', build, '--stage', stage)
     stage.mkdir(parents=True, exist_ok=True)
     (stage / 'build-info.json').write_text(json.dumps({
         'version': (ROOT / 'VERSION').read_text().strip(), 'architecture': args.arch,
