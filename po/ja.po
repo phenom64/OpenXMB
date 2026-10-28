@@ -5071,3 +5071,80 @@ msgstr "取り込み用フォルダー"
 
 msgid "Preset:"
 msgstr "プリセット:"
+
+# Initial setup prompts, navigation and save errors.
+
+msgid "Initial Setup"
+msgstr "初期設定"
+
+msgid "Select a language."
+msgstr "言語を選択してください。"
+
+msgid "Select a time zone."
+msgstr "タイムゾーンを選択してください。"
+
+msgid "Set the time and date."
+msgstr "日付と時刻を設定してください。"
+
+msgid "Enter your user name."
+msgstr "ユーザー名を入力してください。"
+
+msgid "Finish initial setup."
+msgstr "初期設定を完了してください。"
+
+msgid "Press Enter to finish initial setup."
+msgstr "Enterキーを押して初期設定を完了してください。"
+
+msgid "Automatically adjust for daylight saving time"
+msgstr "サマータイムに自動で切り替える"
+
+msgid "Use the system clock automatically"
+msgstr "システムの時計を自動的に使用する"
+
+msgid "Use up and down to select. Press right to continue."
+msgstr "上下で選択します。右を押すと次に進みます。"
+
+msgid "Select a time zone or adjust daylight saving. Press right to continue."
+msgstr "タイムゾーンを選択するか、サマータイムを設定します。右を押すと次に進みます。"
+
+msgid "Use up and down to adjust values; left and right select fields."
+msgstr "上下で値を変更し、左右で項目を選択します。"
+
+msgid "Edit the date and time or use the system clock. Press right to continue."
+msgstr "日付と時刻を編集するか、システムの時計を使用します。右を押すと次に進みます。"
+
+msgid "Edit the user name, or press right to continue."
+msgstr "ユーザー名を編集するか、右を押して次に進んでください。"
+
+msgid "Finish initial setup?"
+msgstr "初期設定を完了しますか？"
+
+msgid "Your choices will be saved for OpenXMB."
+msgstr "選択した内容をOpenXMBに保存します。"
+
+msgid "Region"
+msgstr "地域"
+
+msgid "Daylight saving"
+msgstr "サマータイム"
+
+msgid "Toggle"
+msgstr "切り替え"
+
+msgid "This time zone does not observe daylight saving time."
+msgstr "このタイムゾーンではサマータイムを実施していません。"
+
+msgid "Daylight saving rules are unavailable."
+msgstr "サマータイムの規則を利用できません。"
+
+msgid "No time zone is available."
+msgstr "利用できるタイムゾーンがありません。"
+
+msgid "Could not save settings. Please try again."
+msgstr "設定を保存できませんでした。もう一度お試しください。"
+
+msgid "Could not save OpenXMB settings. Check that the profile folder is writable, then try again."
+msgstr "OpenXMBの設定を保存できませんでした。プロフィールフォルダーに書き込みできることを確認して、もう一度お試しください。"
+
+msgid "This local time is skipped or repeated by daylight saving. Choose a different time or turn off automatic daylight saving."
+msgstr "サマータイムの切り替えにより、この現地時刻は存在しないか、2回発生します。別の時刻を選ぶか、サマータイムの自動切り替えをオフにしてください。"

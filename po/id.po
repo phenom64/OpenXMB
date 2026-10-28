@@ -5071,3 +5071,80 @@ msgstr "Kotak impor"
 
 msgid "Preset:"
 msgstr "Prasetel:"
+
+# Initial setup prompts, navigation and save errors.
+
+msgid "Initial Setup"
+msgstr "Pengaturan Awal"
+
+msgid "Select a language."
+msgstr "Pilih bahasa."
+
+msgid "Select a time zone."
+msgstr "Pilih zona waktu."
+
+msgid "Set the time and date."
+msgstr "Atur tanggal dan waktu."
+
+msgid "Enter your user name."
+msgstr "Masukkan nama pengguna Anda."
+
+msgid "Finish initial setup."
+msgstr "Selesaikan pengaturan awal."
+
+msgid "Press Enter to finish initial setup."
+msgstr "Tekan Enter untuk menyelesaikan pengaturan awal."
+
+msgid "Automatically adjust for daylight saving time"
+msgstr "Sesuaikan waktu musim panas secara otomatis"
+
+msgid "Use the system clock automatically"
+msgstr "Gunakan jam sistem secara otomatis"
+
+msgid "Use up and down to select. Press right to continue."
+msgstr "Gunakan atas dan bawah untuk memilih. Tekan kanan untuk melanjutkan."
+
+msgid "Select a time zone or adjust daylight saving. Press right to continue."
+msgstr "Pilih zona waktu atau sesuaikan waktu musim panas. Tekan kanan untuk melanjutkan."
+
+msgid "Use up and down to adjust values; left and right select fields."
+msgstr "Gunakan atas dan bawah untuk mengubah nilai; kiri dan kanan untuk memilih bidang."
+
+msgid "Edit the date and time or use the system clock. Press right to continue."
+msgstr "Sunting tanggal dan waktu atau gunakan jam sistem. Tekan kanan untuk melanjutkan."
+
+msgid "Edit the user name, or press right to continue."
+msgstr "Sunting nama pengguna, atau tekan kanan untuk melanjutkan."
+
+msgid "Finish initial setup?"
+msgstr "Selesaikan pengaturan awal?"
+
+msgid "Your choices will be saved for OpenXMB."
+msgstr "Pilihan Anda akan disimpan untuk OpenXMB."
+
+msgid "Region"
+msgstr "Wilayah"
+
+msgid "Daylight saving"
+msgstr "Waktu musim panas"
+
+msgid "Toggle"
+msgstr "Aktifkan/nonaktifkan"
+
+msgid "This time zone does not observe daylight saving time."
+msgstr "Zona waktu ini tidak menerapkan waktu musim panas."
+
+msgid "Daylight saving rules are unavailable."
+msgstr "Aturan waktu musim panas tidak tersedia."
+
+msgid "No time zone is available."
+msgstr "Tidak ada zona waktu yang tersedia."
+
+msgid "Could not save settings. Please try again."
+msgstr "Tidak dapat menyimpan pengaturan. Silakan coba lagi."
+
+msgid "Could not save OpenXMB settings. Check that the profile folder is writable, then try again."
+msgstr "Tidak dapat menyimpan pengaturan OpenXMB. Pastikan folder profil dapat ditulisi, lalu coba lagi."
+
+msgid "This local time is skipped or repeated by daylight saving. Choose a different time or turn off automatic daylight saving."
+msgstr "Waktu lokal ini dilewati atau diulang karena perubahan waktu musim panas. Pilih waktu lain atau nonaktifkan penyesuaian waktu musim panas otomatis."

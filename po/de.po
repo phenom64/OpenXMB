@@ -5327,3 +5327,80 @@ msgstr "Import-Eingang"
 
 msgid "Preset:"
 msgstr "Voreinstellung:"
+
+# Initial setup prompts, navigation and save errors.
+
+msgid "Initial Setup"
+msgstr "Ersteinrichtung"
+
+msgid "Select a language."
+msgstr "Wählen Sie eine Sprache aus."
+
+msgid "Select a time zone."
+msgstr "Wählen Sie eine Zeitzone aus."
+
+msgid "Set the time and date."
+msgstr "Stellen Sie Uhrzeit und Datum ein."
+
+msgid "Enter your user name."
+msgstr "Geben Sie Ihren Benutzernamen ein."
+
+msgid "Finish initial setup."
+msgstr "Schließen Sie die Ersteinrichtung ab."
+
+msgid "Press Enter to finish initial setup."
+msgstr "Drücken Sie die Eingabetaste, um die Ersteinrichtung abzuschließen."
+
+msgid "Automatically adjust for daylight saving time"
+msgstr "Automatisch auf Sommerzeit umstellen"
+
+msgid "Use the system clock automatically"
+msgstr "Systemuhr automatisch verwenden"
+
+msgid "Use up and down to select. Press right to continue."
+msgstr "Mit oben und unten auswählen. Zum Fortfahren rechts drücken."
+
+msgid "Select a time zone or adjust daylight saving. Press right to continue."
+msgstr "Wählen Sie eine Zeitzone aus oder stellen Sie die Sommerzeit ein. Zum Fortfahren rechts drücken."
+
+msgid "Use up and down to adjust values; left and right select fields."
+msgstr "Mit oben und unten Werte ändern; mit links und rechts Felder auswählen."
+
+msgid "Edit the date and time or use the system clock. Press right to continue."
+msgstr "Bearbeiten Sie Datum und Uhrzeit oder verwenden Sie die Systemuhr. Zum Fortfahren rechts drücken."
+
+msgid "Edit the user name, or press right to continue."
+msgstr "Bearbeiten Sie den Benutzernamen oder drücken Sie rechts, um fortzufahren."
+
+msgid "Finish initial setup?"
+msgstr "Ersteinrichtung abschließen?"
+
+msgid "Your choices will be saved for OpenXMB."
+msgstr "Ihre Auswahl wird für OpenXMB gespeichert."
+
+msgid "Region"
+msgstr "Region"
+
+msgid "Daylight saving"
+msgstr "Sommerzeit"
+
+msgid "Toggle"
+msgstr "Umschalten"
+
+msgid "This time zone does not observe daylight saving time."
+msgstr "In dieser Zeitzone gibt es keine Sommerzeit."
+
+msgid "Daylight saving rules are unavailable."
+msgstr "Die Sommerzeitregeln sind nicht verfügbar."
+
+msgid "No time zone is available."
+msgstr "Es ist keine Zeitzone verfügbar."
+
+msgid "Could not save settings. Please try again."
+msgstr "Die Einstellungen konnten nicht gespeichert werden. Bitte versuchen Sie es erneut."
+
+msgid "Could not save OpenXMB settings. Check that the profile folder is writable, then try again."
+msgstr "Die OpenXMB-Einstellungen konnten nicht gespeichert werden. Prüfen Sie, ob der Profilordner beschreibbar ist, und versuchen Sie es erneut."
+
+msgid "This local time is skipped or repeated by daylight saving. Choose a different time or turn off automatic daylight saving."
+msgstr "Diese Ortszeit wird bei der Sommerzeitumstellung übersprungen oder wiederholt. Wählen Sie eine andere Uhrzeit oder deaktivieren Sie die automatische Sommerzeitumstellung."

@@ -5071,3 +5071,80 @@ msgstr "Папка импорта"
 
 msgid "Preset:"
 msgstr "Предустановка:"
+
+# Initial setup prompts, navigation and save errors.
+
+msgid "Initial Setup"
+msgstr "Первоначальная настройка"
+
+msgid "Select a language."
+msgstr "Выберите язык."
+
+msgid "Select a time zone."
+msgstr "Выберите часовой пояс."
+
+msgid "Set the time and date."
+msgstr "Установите дату и время."
+
+msgid "Enter your user name."
+msgstr "Введите имя пользователя."
+
+msgid "Finish initial setup."
+msgstr "Завершите первоначальную настройку."
+
+msgid "Press Enter to finish initial setup."
+msgstr "Нажмите Enter, чтобы завершить первоначальную настройку."
+
+msgid "Automatically adjust for daylight saving time"
+msgstr "Автоматически переходить на летнее время"
+
+msgid "Use the system clock automatically"
+msgstr "Автоматически использовать системные часы"
+
+msgid "Use up and down to select. Press right to continue."
+msgstr "Выбирайте кнопками вверх и вниз. Нажмите вправо, чтобы продолжить."
+
+msgid "Select a time zone or adjust daylight saving. Press right to continue."
+msgstr "Выберите часовой пояс или настройте переход на летнее время. Нажмите вправо, чтобы продолжить."
+
+msgid "Use up and down to adjust values; left and right select fields."
+msgstr "Меняйте значения кнопками вверх и вниз; выбирайте поля кнопками влево и вправо."
+
+msgid "Edit the date and time or use the system clock. Press right to continue."
+msgstr "Измените дату и время или используйте системные часы. Нажмите вправо, чтобы продолжить."
+
+msgid "Edit the user name, or press right to continue."
+msgstr "Измените имя пользователя или нажмите вправо, чтобы продолжить."
+
+msgid "Finish initial setup?"
+msgstr "Завершить первоначальную настройку?"
+
+msgid "Your choices will be saved for OpenXMB."
+msgstr "Выбранные настройки будут сохранены для OpenXMB."
+
+msgid "Region"
+msgstr "Регион"
+
+msgid "Daylight saving"
+msgstr "Летнее время"
+
+msgid "Toggle"
+msgstr "Переключить"
+
+msgid "This time zone does not observe daylight saving time."
+msgstr "В этом часовом поясе нет перехода на летнее время."
+
+msgid "Daylight saving rules are unavailable."
+msgstr "Правила перехода на летнее время недоступны."
+
+msgid "No time zone is available."
+msgstr "Нет доступных часовых поясов."
+
+msgid "Could not save settings. Please try again."
+msgstr "Не удалось сохранить настройки. Попробуйте ещё раз."
+
+msgid "Could not save OpenXMB settings. Check that the profile folder is writable, then try again."
+msgstr "Не удалось сохранить настройки OpenXMB. Убедитесь, что папка профиля доступна для записи, и попробуйте ещё раз."
+
+msgid "This local time is skipped or repeated by daylight saving. Choose a different time or turn off automatic daylight saving."
+msgstr "При переходе на летнее или зимнее время это местное время пропускается или повторяется. Выберите другое время или отключите автоматический переход на летнее время."

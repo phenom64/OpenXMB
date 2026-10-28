@@ -5335,3 +5335,80 @@ msgstr "Import inbox"
 
 msgid "Preset:"
 msgstr "Preset:"
+
+# Initial setup prompts, navigation and save errors.
+
+msgid "Initial Setup"
+msgstr "Initial Setup"
+
+msgid "Select a language."
+msgstr "Select a language."
+
+msgid "Select a time zone."
+msgstr "Select a time zone."
+
+msgid "Set the time and date."
+msgstr "Set the time and date."
+
+msgid "Enter your user name."
+msgstr "Enter your user name."
+
+msgid "Finish initial setup."
+msgstr "Finish initial setup."
+
+msgid "Press Enter to finish initial setup."
+msgstr "Press Enter to finish initial setup."
+
+msgid "Automatically adjust for daylight saving time"
+msgstr "Automatically adjust for daylight saving time"
+
+msgid "Use the system clock automatically"
+msgstr "Use the system clock automatically"
+
+msgid "Use up and down to select. Press right to continue."
+msgstr "Use up and down to select. Press right to continue."
+
+msgid "Select a time zone or adjust daylight saving. Press right to continue."
+msgstr "Select a time zone or adjust daylight saving. Press right to continue."
+
+msgid "Use up and down to adjust values; left and right select fields."
+msgstr "Use up and down to adjust values; left and right select fields."
+
+msgid "Edit the date and time or use the system clock. Press right to continue."
+msgstr "Edit the date and time or use the system clock. Press right to continue."
+
+msgid "Edit the user name, or press right to continue."
+msgstr "Edit the user name, or press right to continue."
+
+msgid "Finish initial setup?"
+msgstr "Finish initial setup?"
+
+msgid "Your choices will be saved for OpenXMB."
+msgstr "Your choices will be saved for OpenXMB."
+
+msgid "Region"
+msgstr "Region"
+
+msgid "Daylight saving"
+msgstr "Daylight saving"
+
+msgid "Toggle"
+msgstr "Toggle"
+
+msgid "This time zone does not observe daylight saving time."
+msgstr "This time zone does not observe daylight saving time."
+
+msgid "Daylight saving rules are unavailable."
+msgstr "Daylight saving rules are unavailable."
+
+msgid "No time zone is available."
+msgstr "No time zone is available."
+
+msgid "Could not save settings. Please try again."
+msgstr "Could not save settings. Please try again."
+
+msgid "Could not save OpenXMB settings. Check that the profile folder is writable, then try again."
+msgstr "Could not save OpenXMB settings. Check that the profile folder is writable, then try again."
+
+msgid "This local time is skipped or repeated by daylight saving. Choose a different time or turn off automatic daylight saving."
+msgstr "This local time is skipped or repeated by daylight saving. Choose a different time or turn off automatic daylight saving."

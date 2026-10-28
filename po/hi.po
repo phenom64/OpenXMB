@@ -5325,3 +5325,80 @@ msgstr "आयात इनबॉक्स"
 
 msgid "Preset:"
 msgstr "प्रीसेट:"
+
+# Initial setup prompts, navigation and save errors.
+
+msgid "Initial Setup"
+msgstr "प्रारंभिक सेटअप"
+
+msgid "Select a language."
+msgstr "भाषा चुनें।"
+
+msgid "Select a time zone."
+msgstr "समय क्षेत्र चुनें।"
+
+msgid "Set the time and date."
+msgstr "दिनांक और समय सेट करें।"
+
+msgid "Enter your user name."
+msgstr "अपना उपयोगकर्ता नाम दर्ज करें।"
+
+msgid "Finish initial setup."
+msgstr "प्रारंभिक सेटअप पूरा करें।"
+
+msgid "Press Enter to finish initial setup."
+msgstr "प्रारंभिक सेटअप पूरा करने के लिए Enter दबाएँ।"
+
+msgid "Automatically adjust for daylight saving time"
+msgstr "ग्रीष्मकालीन समय के लिए स्वतः समायोजित करें"
+
+msgid "Use the system clock automatically"
+msgstr "सिस्टम घड़ी का स्वतः उपयोग करें"
+
+msgid "Use up and down to select. Press right to continue."
+msgstr "चुनने के लिए ऊपर और नीचे दबाएँ। आगे बढ़ने के लिए दायाँ दबाएँ।"
+
+msgid "Select a time zone or adjust daylight saving. Press right to continue."
+msgstr "समय क्षेत्र चुनें या ग्रीष्मकालीन समय समायोजित करें। आगे बढ़ने के लिए दायाँ दबाएँ।"
+
+msgid "Use up and down to adjust values; left and right select fields."
+msgstr "मान बदलने के लिए ऊपर और नीचे दबाएँ; फ़ील्ड चुनने के लिए बायाँ और दायाँ दबाएँ।"
+
+msgid "Edit the date and time or use the system clock. Press right to continue."
+msgstr "दिनांक और समय संपादित करें या सिस्टम घड़ी का उपयोग करें। आगे बढ़ने के लिए दायाँ दबाएँ।"
+
+msgid "Edit the user name, or press right to continue."
+msgstr "उपयोगकर्ता नाम संपादित करें या आगे बढ़ने के लिए दायाँ दबाएँ।"
+
+msgid "Finish initial setup?"
+msgstr "प्रारंभिक सेटअप पूरा करें?"
+
+msgid "Your choices will be saved for OpenXMB."
+msgstr "आपके चयन OpenXMB के लिए सहेजे जाएँगे।"
+
+msgid "Region"
+msgstr "क्षेत्र"
+
+msgid "Daylight saving"
+msgstr "ग्रीष्मकालीन समय"
+
+msgid "Toggle"
+msgstr "चालू/बंद करें"
+
+msgid "This time zone does not observe daylight saving time."
+msgstr "इस समय क्षेत्र में ग्रीष्मकालीन समय लागू नहीं होता।"
+
+msgid "Daylight saving rules are unavailable."
+msgstr "ग्रीष्मकालीन समय के नियम उपलब्ध नहीं हैं।"
+
+msgid "No time zone is available."
+msgstr "कोई समय क्षेत्र उपलब्ध नहीं है।"
+
+msgid "Could not save settings. Please try again."
+msgstr "सेटिंग्स सहेजी नहीं जा सकीं। कृपया फिर से प्रयास करें।"
+
+msgid "Could not save OpenXMB settings. Check that the profile folder is writable, then try again."
+msgstr "OpenXMB की सेटिंग्स सहेजी नहीं जा सकीं। जाँचें कि प्रोफ़ाइल फ़ोल्डर में लिखने की अनुमति है, फिर दोबारा प्रयास करें।"
+
+msgid "This local time is skipped or repeated by daylight saving. Choose a different time or turn off automatic daylight saving."
+msgstr "ग्रीष्मकालीन समय के कारण यह स्थानीय समय छूट जाता है या दोहराया जाता है। कोई दूसरा समय चुनें या ग्रीष्मकालीन समय का स्वचालित समायोजन बंद करें।"

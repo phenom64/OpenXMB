@@ -5325,3 +5325,80 @@ msgstr "Dossier d’importation"
 
 msgid "Preset:"
 msgstr "Préréglage :"
+
+# Initial setup prompts, navigation and save errors.
+
+msgid "Initial Setup"
+msgstr "Configuration initiale"
+
+msgid "Select a language."
+msgstr "Sélectionnez une langue."
+
+msgid "Select a time zone."
+msgstr "Sélectionnez un fuseau horaire."
+
+msgid "Set the time and date."
+msgstr "Réglez la date et l’heure."
+
+msgid "Enter your user name."
+msgstr "Saisissez votre nom d’utilisateur."
+
+msgid "Finish initial setup."
+msgstr "Terminez la configuration initiale."
+
+msgid "Press Enter to finish initial setup."
+msgstr "Appuyez sur Entrée pour terminer la configuration initiale."
+
+msgid "Automatically adjust for daylight saving time"
+msgstr "Passer automatiquement à l’heure d’été"
+
+msgid "Use the system clock automatically"
+msgstr "Utiliser automatiquement l’horloge du système"
+
+msgid "Use up and down to select. Press right to continue."
+msgstr "Utilisez haut et bas pour sélectionner. Appuyez sur droite pour continuer."
+
+msgid "Select a time zone or adjust daylight saving. Press right to continue."
+msgstr "Sélectionnez un fuseau horaire ou réglez l’heure d’été. Appuyez sur droite pour continuer."
+
+msgid "Use up and down to adjust values; left and right select fields."
+msgstr "Utilisez haut et bas pour modifier les valeurs, gauche et droite pour sélectionner les champs."
+
+msgid "Edit the date and time or use the system clock. Press right to continue."
+msgstr "Modifiez la date et l’heure ou utilisez l’horloge du système. Appuyez sur droite pour continuer."
+
+msgid "Edit the user name, or press right to continue."
+msgstr "Modifiez le nom d’utilisateur ou appuyez sur droite pour continuer."
+
+msgid "Finish initial setup?"
+msgstr "Terminer la configuration initiale ?"
+
+msgid "Your choices will be saved for OpenXMB."
+msgstr "Vos choix seront enregistrés pour OpenXMB."
+
+msgid "Region"
+msgstr "Région"
+
+msgid "Daylight saving"
+msgstr "Heure d’été"
+
+msgid "Toggle"
+msgstr "Activer/désactiver"
+
+msgid "This time zone does not observe daylight saving time."
+msgstr "Ce fuseau horaire n’applique pas l’heure d’été."
+
+msgid "Daylight saving rules are unavailable."
+msgstr "Les règles de l’heure d’été ne sont pas disponibles."
+
+msgid "No time zone is available."
+msgstr "Aucun fuseau horaire n’est disponible."
+
+msgid "Could not save settings. Please try again."
+msgstr "Impossible d’enregistrer les paramètres. Veuillez réessayer."
+
+msgid "Could not save OpenXMB settings. Check that the profile folder is writable, then try again."
+msgstr "Impossible d’enregistrer les paramètres d’OpenXMB. Vérifiez que le dossier du profil est accessible en écriture, puis réessayez."
+
+msgid "This local time is skipped or repeated by daylight saving. Choose a different time or turn off automatic daylight saving."
+msgstr "Cette heure locale est omise ou répétée lors du changement d’heure. Choisissez une autre heure ou désactivez le passage automatique à l’heure d’été."

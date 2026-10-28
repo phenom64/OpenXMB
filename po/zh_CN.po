@@ -5071,3 +5071,80 @@ msgstr "待导入项目"
 
 msgid "Preset:"
 msgstr "预设："
+
+# Initial setup prompts, navigation and save errors.
+
+msgid "Initial Setup"
+msgstr "初始设置"
+
+msgid "Select a language."
+msgstr "请选择语言。"
+
+msgid "Select a time zone."
+msgstr "请选择时区。"
+
+msgid "Set the time and date."
+msgstr "请设置日期和时间。"
+
+msgid "Enter your user name."
+msgstr "请输入用户名。"
+
+msgid "Finish initial setup."
+msgstr "请完成初始设置。"
+
+msgid "Press Enter to finish initial setup."
+msgstr "按 Enter 键完成初始设置。"
+
+msgid "Automatically adjust for daylight saving time"
+msgstr "自动调整夏令时"
+
+msgid "Use the system clock automatically"
+msgstr "自动使用系统时钟"
+
+msgid "Use up and down to select. Press right to continue."
+msgstr "使用上、下方向选择。按右方向继续。"
+
+msgid "Select a time zone or adjust daylight saving. Press right to continue."
+msgstr "选择时区或调整夏令时。按右方向继续。"
+
+msgid "Use up and down to adjust values; left and right select fields."
+msgstr "使用上、下方向调整数值，使用左、右方向选择字段。"
+
+msgid "Edit the date and time or use the system clock. Press right to continue."
+msgstr "编辑日期和时间或使用系统时钟。按右方向继续。"
+
+msgid "Edit the user name, or press right to continue."
+msgstr "编辑用户名，或按右方向继续。"
+
+msgid "Finish initial setup?"
+msgstr "完成初始设置？"
+
+msgid "Your choices will be saved for OpenXMB."
+msgstr "您的选择将保存至 OpenXMB。"
+
+msgid "Region"
+msgstr "地区"
+
+msgid "Daylight saving"
+msgstr "夏令时"
+
+msgid "Toggle"
+msgstr "切换"
+
+msgid "This time zone does not observe daylight saving time."
+msgstr "此时区不实行夏令时。"
+
+msgid "Daylight saving rules are unavailable."
+msgstr "夏令时规则不可用。"
+
+msgid "No time zone is available."
+msgstr "没有可用的时区。"
+
+msgid "Could not save settings. Please try again."
+msgstr "无法保存设置。请重试。"
+
+msgid "Could not save OpenXMB settings. Check that the profile folder is writable, then try again."
+msgstr "无法保存 OpenXMB 设置。请确认个人配置文件夹可写入，然后重试。"
+
+msgid "This local time is skipped or repeated by daylight saving. Choose a different time or turn off automatic daylight saving."
+msgstr "由于夏令时调整，此本地时间会被跳过或重复。请选择其他时间，或关闭自动夏令时调整。"
