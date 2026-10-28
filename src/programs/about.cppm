@@ -1,4 +1,5 @@
 module;
+#include "../localization/shell_locale.hpp"
 #include <SDL2/SDL.h>
 #undef main
 #include <algorithm>
@@ -105,7 +106,7 @@ public:
             c.text("This program is licensed to you under the GNU General Public License version 3.0.",960,606,25,{1,1,1,1},0,true);
             c.text("For more information, see the Licenses section.",960,646,25,{1,1,1,1},0,true);
             icons_.draw(c,"branding/syndromatic",960,817,104);
-            constexpr std::string_view footer="& © 2025-2026. Syndromatic Limited Britannia. All rights reserved.";
+            const auto footer=::openxmb::localization::shell_locale::translate("& © 2025-2026. Syndromatic Limited Britannia. All rights reserved.");
             const auto footer_width=renderer.text_width_pixels(footer,24*c.scale)/c.scale;
             c.text("TM",960-footer_width*0.5F-22,919,11,{1,1,1,1});
             c.text(footer,960,929,24,{1,1,1,1},0,true);
@@ -113,7 +114,7 @@ public:
             c.rect(220,180,1480,680,{0,0,0,0.38F});
             icons_.box(c,"branding/openxmb",740,45,440,120);
             c.text("System Information",960,240,32,{1,1,1,1},0,true);
-            float y=315;for(const auto& [label,value]:rows_) {c.text(label,290,y,24,{1,1,1,0.75F});c.text(value,760,y,24);y+=46;}
+            float y=315;for(const auto& [label,value]:rows_) {c.text(::openxmb::localization::shell_locale::translate(label),290,y,24,{1,1,1,0.75F});c.text(value,760,y,24);y+=46;}
         }
         const auto previous_scale=renderer.text_scale;renderer.text_scale=1.0F;
         shell->render_controller_buttons(renderer,0.5F,0.94F,std::array{std::pair{page_?action::up:action::down,page_?"About":"System Information"},std::pair{action::options,"Licenses"},std::pair{action::cancel,"Back"}});

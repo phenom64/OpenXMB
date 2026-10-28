@@ -1,5 +1,7 @@
 module;
+#include "../../localization/ui_literal_text.hpp"
 #include "openxmb/xmb/catalog.hpp"
+#include "../../localization/shell_locale.hpp"
 #include "../input_bindings.hpp"
 #include "openxmb/music/player.hpp"
 #include "openxmb/desktop/library.hpp"
@@ -145,6 +147,11 @@ export std::string value(const std::string& key,shell* host=nullptr) {
     if(key=="startup.intro"||key=="startup.warning"||key=="audio.startup"||key=="audio.background"||key=="audio.duck"||key=="music.background"||key=="music.artwork"||key=="video.resume"||key=="photo.repeat"||key=="input.osk"||key=="power.keep.awake") return "On";
     return {};
 }
+export std::string display_value(const std::string& key,shell* host=nullptr) {
+    const auto raw=value(key,host);
+    return key=="language" ? openxmb::localization::shell_locale::language_label(raw) :
+        openxmb::localization::shell_locale::translate(raw);
+}
 void show_error(shell* shell,const std::string& message) {
     shell->emplace_overlay<message_overlay>("Settings",message);
 }
@@ -247,7 +254,7 @@ export void activate(shell* shell,const openxmb::xmb::CatalogNode& node) {
     if(key=="debug.decoder") {const auto& m=openxmb::music::service().snapshot().metadata;show_error(shell,"Music codec: "+m.codec+"\nSample rate: "+std::to_string(m.sample_rate)+" Hz\nChannels: "+std::to_string(m.channels)+"\nVideo decoder details are available in the video player's information display.");return;}
     if(key=="input.keyboard"||key=="input.controller") {
         const bool controller=key=="input.controller";
-        shell->emplace_overlay<choice_overlay>(std::vector<std::string>{"Left","Right","Up","Down","Confirm","Back","Options","Extra","Restore Defaults"},0,[shell,controller](unsigned i){
+        shell->emplace_overlay<choice_overlay>(::app::detail::localize_ui_choices(std::vector<std::string>{"Left","Right","Up","Down","Confirm","Back","Options","Extra","Restore Defaults"}),0,[shell,controller](unsigned i){
             static const std::array<std::string,8> actions{"left","right","up","down","ok","cancel","options","extra"};
             if(i==8) {for(const auto& action:actions) config::CONFIG.preferences.erase((controller?"pad.":"key.")+action);config::CONFIG.save_config();shell->reload_button_icons();return;}
             shell->queue_panel(std::string(controller?"bind.pad.":"bind.key.")+actions[i]);
@@ -257,7 +264,7 @@ export void activate(shell* shell,const openxmb::xmb::CatalogNode& node) {
     if(key=="display.monitor") for(int i=0;i<SDL_GetNumVideoDisplays();++i) values.push_back(std::to_string(i));
     if(key=="display.resolution") {for(int i=0;i<SDL_GetNumDisplayModes(0);++i) {SDL_DisplayMode mode{};if(SDL_GetDisplayMode(0,i,&mode)==0) {const auto item=std::to_string(mode.w)+"x"+std::to_string(mode.h);if(std::find(values.begin(),values.end(),item)==values.end())values.push_back(item);}}}
     if(key=="audio.device") {values.push_back("System Default");for(int i=0;i<SDL_GetNumAudioDevices(0);++i) if(auto* name=SDL_GetAudioDeviceName(i,0))values.emplace_back(name);}
-    if(!values.empty()) {const auto current=value(key,shell);const auto it=std::find(values.begin(),values.end(),current);const auto selected=it==values.end()?0:static_cast<unsigned>(it-values.begin());shell->emplace_overlay<choice_overlay>(values,selected,[shell,key,values](unsigned i){if(i<values.size())try{apply(shell,key,values[i]);}catch(const std::exception& e){show_error(shell,e.what());}});return;}
+    if(!values.empty()) {const auto current=value(key,shell);const auto it=std::find(values.begin(),values.end(),current);const auto selected=it==values.end()?0:static_cast<unsigned>(it-values.begin());auto labels=values;for(auto& label:labels)label=key=="audio.device"&&label!="System Default"?label:key=="language"?openxmb::localization::shell_locale::language_label(label):openxmb::localization::shell_locale::translate(label);shell->emplace_overlay<choice_overlay>(labels,selected,[shell,key,values](unsigned i){if(i<values.size())try{apply(shell,key,values[i]);}catch(const std::exception& e){show_error(shell,e.what());}});return;}
     shell->emplace_overlay<text_entry_overlay>(node.id.substr(node.id.find_last_of('.')+1),value(key,shell),[shell,key](std::string text){try{apply(shell,key,text);}catch(const std::exception& e){show_error(shell,e.what());}});
 }
 }

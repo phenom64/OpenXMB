@@ -40,6 +40,7 @@ module;
 
 // gettext
 #include <libintl.h>
+#include "../localization/shell_locale.hpp"
 #include <ctime>
 #include <SDL2/SDL.h>
 #undef main
@@ -54,6 +55,7 @@ module;
 #include "openxmb/music/player.hpp"
 #include "input_bindings.hpp"
 #include "components/media_motion.hpp"
+#include "../localization/font_selection.hpp"
 #include "openxmb/integrations/desktop.hpp"
 #include "openxmb/themes/library.hpp"
 #include <map>
@@ -213,7 +215,7 @@ namespace app
     {
         phase::preload();
 
-        font_render = std::make_unique<font_renderer>(config::CONFIG.fontPath.string(), 32, device, allocator, win->swapchainExtent, win->gpuFeatures);
+        font_render = std::make_unique<font_renderer>(openxmb::localization::select_font(config::CONFIG.fontPath,config::CONFIG.asset_directory,config::CONFIG.language).string(), 32, device, allocator, win->swapchainExtent, win->gpuFeatures);
         image_render = std::make_unique<image_renderer>(device, win->swapchainExtent, win->gpuFeatures);
         image_render->setAllocator(allocator);
         simple_render = std::make_unique<simple_renderer>(device, allocator, win->swapchainExtent, win->gpuFeatures);
@@ -355,6 +357,7 @@ namespace app
             debugName(device, upsamplePipeline.get(), "Upsample Pipeline");
         }
 
+        font_render->set_preload_texts(openxmb::localization::font_catalog_texts(config::CONFIG.locale_directory,config::CONFIG.language));
         add_task(font_render->preload(loader, {shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get(), nullptr, 0x20, 0x1ff));
         image_render->preload({backgroundRenderPass.get(), shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
         simple_render->preload({shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
@@ -640,36 +643,10 @@ namespace app
     }
 
     void shell::reload_language() {
-        // Apply LANGUAGE env and rebind gettext domain
         try {
             const std::string& lang = config::CONFIG.language;
-            if(lang.empty() || lang == "auto") {
-                // Let system locale decide
-#if __linux__ || defined(__APPLE__)
-                unsetenv("LANGUAGE");
-                unsetenv("LC_MESSAGES");
-                unsetenv("LC_ALL");
-#endif
-            } else {
-#if __linux__ || defined(__APPLE__)
-                setenv("LANGUAGE", lang.c_str(), 1);
-                // Be more explicit so gettext reloads catalogs reliably
-                setenv("LC_MESSAGES", lang.c_str(), 1);
-                setenv("LC_ALL", lang.c_str(), 1);
-#endif
-            }
-            // Reinitialize locale from environment or set to specific language
-            if(lang.empty() || lang == "auto") {
-                setlocale(LC_ALL, "");
-            } else {
-                // Try direct set first (may fail if locale not generated); fallback to env-driven
-                if(!setlocale(LC_ALL, lang.c_str())) {
-                    setlocale(LC_ALL, "");
-                }
-            }
-            bindtextdomain(constants::name, config::CONFIG.locale_directory.string().c_str());
-            bind_textdomain_codeset(constants::name, "UTF-8");
-            textdomain(constants::name);
+            openxmb::localization::shell_locale::apply(lang, config::CONFIG.locale_directory);
+            reload_fonts();
             spdlog::info("Language set to '{}'; reloading menus", lang);
 
             // Rebuild main menu to refresh translated strings
@@ -1722,8 +1699,8 @@ namespace app
         const auto inherit = [&](const char* from, const char* to) {
             if(source.contains(from) && !source[from].is_null()) value[to] = source[from];
         };
-        // Native captured packs and MaXMB packs share the same validated style
-        // setters. Disabled components retain the pre-theme baseline.
+        // Imported packs share validated style setters. Disabled components
+        // retain the pre-theme baseline.
         if(theme.components.colors) {
             inherit("icon-color", "icon-color"); inherit("text-color", "text-color");
             inherit("clock-color", "clock-color"); inherit("particle-color", "particle-color");
@@ -1740,7 +1717,10 @@ namespace app
             const auto requested=value["font-path"].get<std::string>();
             const auto path=requested=="default"?config::CONFIG.fallback_font:std::filesystem::u8path(requested);
             if(path!=previous_font)try {
-                validated_font=std::make_unique<font_renderer>(path.string(),32,device,allocator,win->swapchainExtent,win->gpuFeatures);
+                if(!openxmb::localization::font_covers(path,u8""))throw std::runtime_error("Cannot load font face");
+                const auto rendered=openxmb::localization::select_font(path,config::CONFIG.asset_directory,config::CONFIG.language);
+                validated_font=std::make_unique<font_renderer>(rendered.string(),32,device,allocator,win->swapchainExtent,win->gpuFeatures);
+                validated_font->set_preload_texts(openxmb::localization::font_catalog_texts(config::CONFIG.locale_directory,config::CONFIG.language));
                 validated_font->preload(loader,{shellRenderPass.get()},win->config.sampleCount,win->pipelineCache.get(),nullptr,0x20,0x1ff).get();
                 validated_font->prepare(win->swapchainImageCount);
             } catch(...) {
@@ -1803,14 +1783,19 @@ namespace app
     void shell::set_font_file(const std::string& value) {
         const auto path=value=="default"?config::CONFIG.fallback_font:std::filesystem::u8path(value);
         win->waitIdle();
-        auto replacement=std::make_unique<font_renderer>(path.string(),32,device,allocator,win->swapchainExtent,win->gpuFeatures);
+        if(!openxmb::localization::font_covers(path,u8""))throw std::runtime_error("Cannot load font face");
+        const auto rendered=openxmb::localization::select_font(path,config::CONFIG.asset_directory,config::CONFIG.language);
+        auto replacement=std::make_unique<font_renderer>(rendered.string(),32,device,allocator,win->swapchainExtent,win->gpuFeatures);
+        replacement->set_preload_texts(openxmb::localization::font_catalog_texts(config::CONFIG.locale_directory,config::CONFIG.language));
         replacement->preload(loader,{shellRenderPass.get()},win->config.sampleCount,win->pipelineCache.get(),nullptr,0x20,0x1ff).get();
         replacement->prepare(win->swapchainImageCount);
         config::CONFIG.setFontPath(path.string());font_render=std::move(replacement);
     }
     void shell::reload_fonts() {
         win->waitIdle();
-        auto replacement = std::make_unique<font_renderer>(config::CONFIG.fontPath.string(), 32, device, allocator, win->swapchainExtent, win->gpuFeatures);
+        const auto rendered=openxmb::localization::select_font(config::CONFIG.fontPath,config::CONFIG.asset_directory,config::CONFIG.language);
+        auto replacement = std::make_unique<font_renderer>(rendered.string(), 32, device, allocator, win->swapchainExtent, win->gpuFeatures);
+        replacement->set_preload_texts(openxmb::localization::font_catalog_texts(config::CONFIG.locale_directory,config::CONFIG.language));
         replacement->preload(loader, {shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get(), nullptr, 0x20, 0x1ff).get();
         replacement->prepare(win->swapchainImageCount);
         font_render = std::move(replacement);

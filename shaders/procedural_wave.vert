@@ -13,6 +13,7 @@ layout(push_constant) uniform Push {
     vec4 effect;
     vec4 audio;
     vec4 flow;
+    vec4 camera_motion;
 } pc;
 
 layout(location=0) out vec3 position;
@@ -77,8 +78,14 @@ void main() {
         position=vec3(world.x,h,z);edge_sprite=vec2(flowWarp(world,seconds),world.y);
         float aspect=pc.resolution_time_gain.x/pc.resolution_time_gain.y;
         const float nearPlane=0.04,farPlane=60.0;
-        gl_Position=vec4(x/(0.8*aspect),flowHorizon()*z+(flowCameraHeight(seconds)-h)/0.65,
-            farPlane/(farPlane-nearPlane)*z-farPlane*nearPlane/(farPlane-nearPlane),z);return;
+        vec3 view=vec3(x,flowCameraHeight(seconds)-h,z);
+        float yaw=pc.camera_motion.x,pitch=pc.camera_motion.y,roll=pc.camera_motion.z;
+        view.xz=mat2(cos(yaw),-sin(yaw),sin(yaw),cos(yaw))*view.xz;
+        view.yz=mat2(cos(pitch),-sin(pitch),sin(pitch),cos(pitch))*view.yz;
+        view.xy=mat2(cos(roll),-sin(roll),sin(roll),cos(roll))*view.xy;
+        position.z=view.z;
+        gl_Position=vec4(view.x/(0.8*aspect),flowHorizon()*view.z+view.y/0.65,
+            farPlane/(farPlane-nearPlane)*view.z-farPlane*nearPlane/(farPlane-nearPlane),view.z);return;
     }
 
     if (pc.mode_motion.x<0.5) {
@@ -93,6 +100,22 @@ void main() {
     }
     uint id=uint(gl_InstanceIndex);
     vec3 r=vec3(seed(id*3u+1337u),seed(id*3u+1338u),pow(seed(id*3u+1339u),8.0)+0.1);
+    if(pc.effect.z>0.5) {
+        float age=fract(seed(id+219u)+pc.flow.x*0.045);
+        float depth=1.0+age*3.5;
+        vec2 center=vec2((r.x-0.5)*4.0,(r.y-0.5)*3.0)/depth;
+        center+=vec2(0.07*sin(pc.flow.x*0.032),0.08);
+        center=flowScreen(center*0.5+0.5)*2.0-1.0;
+        const vec2 corners[6]=vec2[6](vec2(-1,-1),vec2(1,-1),vec2(-1,1),vec2(-1,1),vec2(1,-1),vec2(1,1));
+        vec2 c=corners[gl_VertexIndex];
+        float angle=pc.camera_motion.z+0.12*sin(pc.flow.x*0.06+r.x*6.0);
+        vec2 corner=mat2(cos(angle),-sin(angle),sin(angle),cos(angle))*(c*vec2(1.0,0.64));
+        float pixels=(4.0+42.0*pow(r.y,5.0))/depth*pc.resolution_time_gain.x/1280.0;
+        gl_Position=vec4(center+corner*pixels/pc.resolution_time_gain.xy,0,1);
+        edge_sprite=c;position=vec3(0);
+        particle_alpha=sin(age*3.14159265)*sin(age*3.14159265)*(0.25+r.x*0.65);
+        return;
+    }
     float time=pc.resolution_time_gain.z*wave.settings[9].w;
     float ratio=clamp(pc.resolution_time_gain.x/pc.resolution_time_gain.y,1.0,2.0)*0.375;
     float x=fract(time*(r.x-0.5)/15.0+r.y*50.0)*2.0-1.0;

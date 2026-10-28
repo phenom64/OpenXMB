@@ -1,0 +1,5073 @@
+# OpenXMB translations.
+msgid ""
+msgstr ""
+"Project-Id-Version: OpenXMB 1.0\n"
+"Language: zh_TW\n"
+"PO-Revision-Date: 2026-10-28 00:00+0000\n"
+"Last-Translator: Machine-assisted translation\n"
+"Language-Team: zh_TW\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgid "\nSample rate: "
+msgstr "\n取樣率："
+
+msgid "\nVideo decoder details are available in the video player's information display."
+msgstr "\n視訊解碼器詳細資訊可在影片播放器的資訊顯示中找到。"
+
+msgid " Hz\nChannels: "
+msgstr "Hz\n通道："
+
+msgid " for "
+msgstr "為了"
+
+msgid " games to the library."
+msgstr "去圖書館玩遊戲。"
+
+msgid "(No registered devices)"
+msgstr "（沒有註冊設備）"
+
+msgid "*User"
+msgstr "*用戶"
+
+msgid "+1"
+msgstr "+1"
+
+msgid "+2"
+msgstr "+2"
+
+msgid "+3"
+msgstr "+3"
+
+msgid "+4"
+msgstr "+4"
+
+msgid "-1"
+msgstr "-1"
+
+msgid "-2"
+msgstr "-2"
+
+msgid "-3"
+msgstr "-3"
+
+msgid "-4"
+msgstr "-4"
+
+msgid "1"
+msgstr "1"
+
+msgid "1 minute"
+msgstr "1分鐘"
+
+msgid "1. Transfer data from this system to the other OpenXMB system."
+msgstr "1. 將資料從該系統傳輸到另一個 OpenXMB 系統。"
+
+msgid "10"
+msgstr "10"
+
+msgid "10 Images"
+msgstr "10 張圖片"
+
+msgid "10 minutes"
+msgstr "10分鐘"
+
+msgid "10 seconds"
+msgstr "10秒"
+
+msgid "1000BASE-T Full-Duplex"
+msgstr "1000BASE-T 全雙工"
+
+msgid "1000BASE-T Half-Duplex"
+msgstr "1000BASE-T 半雙工"
+
+msgid "100BASE-TX Full-Duplex"
+msgstr "100BASE-TX 全雙工"
+
+msgid "100BASE-TX Half-Duplex"
+msgstr "100BASE-TX 半雙工"
+
+msgid "106481"
+msgstr "106481"
+
+msgid "1080i"
+msgstr "1080i"
+
+msgid "1080p"
+msgstr "1080p"
+
+msgid "1080p 24 Hz Output (HDMI)"
+msgstr "1080p 24 Hz 輸出 (HDMI)"
+
+msgid "10BASE-T Full-Duplex"
+msgstr "10BASE-T 全雙工"
+
+msgid "10BASE-T Half-Duplex"
+msgstr "10BASE-T 半雙工"
+
+msgid "11"
+msgstr "11"
+
+msgid "12-Hour Clock"
+msgstr "12 小時制"
+
+msgid "1245403"
+msgstr "1245403"
+
+msgid "1308922"
+msgstr "1308922"
+
+msgid "15 minutes"
+msgstr "15分鐘"
+
+msgid "15 seconds of video starting from this scene will be set as the icon.\nIf an icon has already been set, it will be overwritten.\nDo you want to continue?"
+msgstr "從該場景開始的 15 秒影片將被設定為圖示。\n如果已經設定了圖標，它將被覆蓋。\n您想繼續嗎？"
+
+msgid "2"
+msgstr "2"
+
+msgid "2 minutes"
+msgstr "2分鐘"
+
+msgid "2. Transfer data from the other OpenXMB system to this system."
+msgstr "2. 將資料從其他OpenXMB系統傳輸到本系統。"
+
+msgid "24-Hour Clock"
+msgstr "24 小時制"
+
+msgid "3"
+msgstr "3"
+
+msgid "30 minutes"
+msgstr "30分鐘"
+
+msgid "35 Tracks  28:00"
+msgstr "35 首曲目 28:00"
+
+msgid "358972"
+msgstr "358972"
+
+msgid "3D Display (PSP Remasters)"
+msgstr "3D 顯示（PSP 重製版）"
+
+msgid "4"
+msgstr "4"
+
+msgid "44.1 kHz"
+msgstr "44.1 kHz"
+
+msgid "48 kHz"
+msgstr "48kHz"
+
+msgid "480p"
+msgstr "480p"
+
+msgid "5"
+msgstr "5"
+
+msgid "5 minutes"
+msgstr "5分鐘"
+
+msgid "5 seconds"
+msgstr "5秒"
+
+msgid "50 Hz Video Output"
+msgstr "50赫茲視訊輸出"
+
+msgid "509987"
+msgstr "509987"
+
+msgid "551537"
+msgstr "551537"
+
+msgid "576p"
+msgstr "576p"
+
+msgid "586388"
+msgstr "586388"
+
+msgid "6"
+msgstr "6"
+
+msgid "677357"
+msgstr "677357"
+
+msgid "7"
+msgstr "7"
+
+msgid "720p"
+msgstr "720p"
+
+msgid "8"
+msgstr "8"
+
+msgid "88.2 kHz"
+msgstr "88.2kHz"
+
+msgid "893848"
+msgstr "893848"
+
+msgid "9"
+msgstr "9"
+
+msgid "96 kHz"
+msgstr "96kHz"
+
+msgid "976156"
+msgstr "976156"
+
+msgid "A-B Repeat"
+msgstr "A-B 重複"
+
+msgid "AAC"
+msgstr "AAC"
+
+msgid "AOSS"
+msgstr "奧索斯"
+
+msgid "ATERM-5F3C2A-G"
+msgstr "ATRM-5F3C2A-G"
+
+msgid "AV MULTI / S Video"
+msgstr "AV 多/S 視頻"
+
+msgid "AV MULTI / SCART"
+msgstr "AV 多路/SCART"
+
+msgid "AV Settings"
+msgstr "音訊設定"
+
+msgid "AVC  640x360"
+msgstr "AVC 640x360"
+
+msgid "Accessory"
+msgstr "配件"
+
+msgid "Accessory Settings"
+msgstr "配件設定"
+
+msgid "Ad Hoc Channel (PSP Remasters)"
+msgstr "特設頻道（PSP 重製版）"
+
+msgid "Ad Hoc Mode (PSP Remasters)"
+msgstr "臨時模式（PSP 重製版）"
+
+msgid "Add Term"
+msgstr "新增術語"
+
+msgid "Add a Friend"
+msgstr "新增好友"
+
+msgid "Add a player to your Friends list using their PlayStation®Network ID."
+msgstr "使用 PlayStation®Network ID 將玩家新增到您的好友清單中。"
+
+msgid "Add to Playlist"
+msgstr "新增到播放列表"
+
+msgid "Add words to be displayed as options for predictive text entry when using the on-screen keyboard.\nSelect an option."
+msgstr "新增使用螢幕鍵盤時顯示為預測文字輸入選項的單字。\n選擇一個選項。"
+
+msgid "Add words to be displayed as options for predictive text entry.\nSelect an option."
+msgstr "新增要顯示為預測文字輸入選項的單字。\n選擇一個選項。"
+
+msgid "Add/Edit Term"
+msgstr "新增/編輯術語"
+
+msgid "Added "
+msgstr "已新增"
+
+msgid "Address"
+msgstr "地址"
+
+msgid "Adjust settings for connection to the Internet.\nIf making a wired connection, you must have an Ethernet cable connected."
+msgstr "調整 Internet 連線設定。\n如果進行有線連接，則必須連接乙太網路電纜。"
+
+msgid "Adjust the OpenXMB scene brightness."
+msgstr "調整 OpenXMB 場景亮度。"
+
+msgid "Adjusts date and time settings."
+msgstr "調整日期和時間設定。"
+
+msgid "Adjusts parental control settings."
+msgstr "調整家長監護設定。"
+
+msgid "Adjusts settings for accessories that are connected to this system."
+msgstr "調整連接到該系統的附件的設定。"
+
+msgid "Adjusts settings for audio output."
+msgstr "調整音訊輸出的設定。"
+
+msgid "Adjusts settings for chat."
+msgstr "調整聊天設定。"
+
+msgid "Adjusts settings for games."
+msgstr "調整遊戲設定。"
+
+msgid "Adjusts settings for music."
+msgstr "調整音樂設定。"
+
+msgid "Adjusts settings for printers that are connected to this system."
+msgstr "調整連接到該系統的印表機的設定。"
+
+msgid "Adjusts settings for printers that are connected to this system.\n\nNo printer is connected to the system."
+msgstr "調整連接到該系統的印表機的設定。\n\n 沒有印表機連接到系統。"
+
+msgid "Adjusts settings for remote play. Remote play enables you to use a device that supports the remote play feature (such as a PSP™ system) to operate this system over a network."
+msgstr "調整遠端播放的設定。遠端播放可讓您使用支援遠端播放功能的裝置（例如PSP™系統）透過網路操作系統。"
+
+msgid "Adjusts settings for the Internet connection."
+msgstr "調整 Internet 連線的設定。"
+
+msgid "Adjusts settings for this OpenXMB system."
+msgstr "調整此 OpenXMB 系統的設定。"
+
+msgid "Adjusts settings for video output."
+msgstr "調整視訊輸出的設定。"
+
+msgid "Adjusts settings for video."
+msgstr "調整影片設定。"
+
+msgid "Adjusts settings related to the appearance of the XMB™ screen."
+msgstr "調整與 XMB™ 螢幕外觀相關的設定。"
+
+msgid "Adjusts settings to reduce power usage by this system."
+msgstr "調整設定以減少該系統的功耗。"
+
+msgid "Advanced"
+msgstr "進階"
+
+msgid "After 1 hour"
+msgstr "1小時後"
+
+msgid "After 10 Minutes"
+msgstr "10分鐘後"
+
+msgid "After 10 min."
+msgstr "10分鐘後。"
+
+msgid "After 2 hours"
+msgstr "2小時後"
+
+msgid "After 20 Minutes"
+msgstr "20分鐘後"
+
+msgid "After 3 hours"
+msgstr "3小時後"
+
+msgid "After 30 Minutes"
+msgstr "30分鐘後"
+
+msgid "After 30 min."
+msgstr "30分鐘後。"
+
+msgid "After 5 Minutes"
+msgstr "5分鐘後"
+
+msgid "After 5 hours"
+msgstr "5小時後"
+
+msgid "After 60 min."
+msgstr "60分鐘後。"
+
+msgid "After Launching a Game"
+msgstr "啟動遊戲後"
+
+msgid "Album Artwork"
+msgstr "專輯封面"
+
+msgid "Albums"
+msgstr "專輯"
+
+msgid "All"
+msgstr "全部"
+
+msgid "All data on the system storage will be erased.\nAre you sure you want to continue?"
+msgstr "系統儲存上的所有資料都將被刪除。\n您確定要繼續嗎？"
+
+msgid "All terms that were added will be deleted.\nAre you sure you want to continue?"
+msgstr "所有新增的術語都將被刪除。\n您確定要繼續嗎？"
+
+msgid "Analog Navigation"
+msgstr "類比導航"
+
+msgid "Anti-aliasing"
+msgstr "抗鋸齒"
+
+msgid "Apply a saved appearance preset."
+msgstr "套用已儲存的外觀預設。"
+
+msgid "Apply upscaling to PlayStation® format software."
+msgstr "將升級應用於 PlayStation® 格式軟體。"
+
+msgid "Are you sure you want to delete the track?"
+msgstr "您確定要刪除該曲目嗎？"
+
+msgid "Artist ▲"
+msgstr "藝術家▲"
+
+msgid "Artist ▼"
+msgstr "藝術家▼"
+
+msgid "Artists"
+msgstr "藝術家"
+
+msgid "Audio Device Settings"
+msgstr "音訊設備設定"
+
+msgid "Audio Input Connector / SCART / AV MULTI"
+msgstr "音訊輸入連接器 / SCART / AV MULTI"
+
+msgid "Audio Language"
+msgstr "音訊語言"
+
+msgid "Audio Multi-Output"
+msgstr "音訊多路輸出"
+
+msgid "Audio Options"
+msgstr "音訊選項"
+
+msgid "Audio Output Device"
+msgstr "音訊輸出設備"
+
+msgid "Audio Output Settings"
+msgstr "音訊輸出設定"
+
+msgid "Authentication"
+msgstr "認證"
+
+msgid "Authentication Setting"
+msgstr "認證設定"
+
+msgid "Auto"
+msgstr "汽車"
+
+msgid "Auto (Time of Day)"
+msgstr "自動（一天中的時間）"
+
+msgid "Auto-Detect"
+msgstr "自動偵測"
+
+msgid "Automatic"
+msgstr "自動"
+
+msgid "Automatic Update"
+msgstr "自動更新"
+
+msgid "Automatic detection or a preferred button style."
+msgstr "自動偵測或首選按鈕樣式。"
+
+msgid "Automatic setup by access point type."
+msgstr "按接入點類型自動設定。"
+
+msgid "Automatically use hardware decoding when available."
+msgstr "如果可用，請自動使用硬體解碼。"
+
+msgid "BD Audio Language"
+msgstr "BD 音訊語言"
+
+msgid "BD Audio Output Format (HDMI)"
+msgstr "BD 音訊輸出格式 (HDMI)"
+
+msgid "BD Data Utility"
+msgstr "BD 資料實用程式"
+
+msgid "BD Parental Control"
+msgstr "BD 家長監護"
+
+msgid "BD Remote Control Registration"
+msgstr "BD 遠端控制註冊"
+
+msgid "BD/DVD - Video Output Format (HDMI)"
+msgstr "BD/DVD - 視訊輸出格式 (HDMI)"
+
+msgid "BD/DVD Auto-start"
+msgstr "BD/DVD 自動啟動"
+
+msgid "BT Stereo Headphones"
+msgstr "藍牙立體聲耳機"
+
+msgid "Back"
+msgstr "返回"
+
+msgid "Back Up"
+msgstr "備份"
+
+msgid "Back up completed."
+msgstr "備份完成。"
+
+msgid "Back up or restore data on the system storage.\nSelect the operation you want to perform."
+msgstr "備份或還原系統儲存上的資料。\n選擇您要執行的動作。"
+
+msgid "Background"
+msgstr "背景"
+
+msgid "Background Audio"
+msgstr "背景音訊"
+
+msgid "Background File"
+msgstr "背景文件"
+
+msgid "Background Frame Limit"
+msgstr "背景幀限制"
+
+msgid "Background Music"
+msgstr "背景音樂"
+
+msgid "Background file not found."
+msgstr "未找到後台文件。"
+
+msgid "Backing up...\nDo not remove the storage media."
+msgstr "正在備份...\n不要移除儲存媒體。"
+
+msgid "Backs up data saved on the system storage to storage media, or restores data that has been backed up.\nSelect an option."
+msgstr "將系統儲存中儲存的資料備份到儲存介質，或還原已備份的資料。\n選擇一個選項。"
+
+msgid "Backup Utility"
+msgstr "備份工具"
+
+msgid "Baltic"
+msgstr "波羅的海"
+
+msgid "Before the Storm"
+msgstr "Before the Storm"
+
+msgid "Beneath the Ashes"
+msgstr "Beneath the Ashes"
+
+msgid "Bing"
+msgstr "Bing"
+
+msgid "Bitstream"
+msgstr "位元流"
+
+msgid "Black"
+msgstr "黑色"
+
+msgid "Block Noise Reduction"
+msgstr "塊降噪"
+
+msgid "Blue"
+msgstr "藍色"
+
+msgid "Bluetooth Keyboard"
+msgstr "Bluetooth 鍵盤"
+
+msgid "Bluetooth Mouse"
+msgstr "Bluetooth 滑鼠"
+
+msgid "Bluetooth® Headset"
+msgstr "Bluetooth® 耳機"
+
+msgid "Borderless"
+msgstr "無邊框"
+
+msgid "Breathtaking Vision"
+msgstr "Breathtaking Vision"
+
+msgid "Bright"
+msgstr "明亮"
+
+msgid "Brightness"
+msgstr "亮度"
+
+msgid "British English"
+msgstr "英式英語"
+
+msgid "Brown"
+msgstr "棕色"
+
+msgid "Browse and purchase games, add-ons, movies, and more for your OpenXMB system.\n\nDownload demos, full games, themes, wallpapers, and exclusive content.\n\nA broadband Internet connection and a PlayStation®Network account are required to use PlayStation®Store."
+msgstr "瀏覽和購買遊戲、附加元件、電影等您的 OpenXMB 系統。\n\n 下載示範、完整遊戲、主題、桌布和獨家內容。\n\n 需要寬頻網際網路連線和 PlayStation®Network 帳號才能使用 PlayStation®Store。"
+
+msgid "Browse folders, songs, albums, artists or saved playlists."
+msgstr "瀏覽資料夾、歌曲、專輯、藝人或已儲存的播放清單。"
+
+msgid "Browser"
+msgstr "瀏覽器"
+
+msgid "Buffalo-A1B2C3"
+msgstr "水牛-A1B2C3"
+
+msgid "By Album"
+msgstr "按專輯"
+
+msgid "By Artist"
+msgstr "按藝術家"
+
+msgid "By Genre"
+msgstr "按類型"
+
+msgid "By Month"
+msgstr "按月"
+
+msgid "By Release Year"
+msgstr "按發布年份"
+
+msgid "By Track"
+msgstr "按曲目"
+
+msgid "By Year"
+msgstr "按年份"
+
+msgid "Calibrate Motion Controller"
+msgstr "校準運動控制器"
+
+msgid "Calibrates the magnetic sensor of a motion controller. Use this setting when the motion controller does not control on-screen movement as expected."
+msgstr "校準運動控制器的磁性感測器。當運動控制器未如預期控制螢幕上的運動時，請使用此設定。"
+
+msgid "Calibrates the magnetic sensor of a motion controller. Use this setting when the motion controller does not control on-screen movement as expected.\n\nPlace the controller on a flat surface, then press the X button."
+msgstr "校準運動控制器的磁性感測器。當運動控制器未如預期控制螢幕上的運動時，請使用此設定。\n\n 將控制器放在平坦的表面上，然後按下 X 鈕。"
+
+msgid "Camera Device Settings"
+msgstr "相機設備設定"
+
+msgid "Can you read this screen?\nSelect [Yes] if you can.\n\nIf you do not press any buttons, the system will automatically go back to the previous setting."
+msgstr "你能讀懂這個畫面嗎？\n如果可以，請選擇 [是]。\n\n 若不按任何按鈕，系統將自動回到先前的設定。"
+
+msgid "Cancel"
+msgstr "取消"
+
+msgid "Canyon"
+msgstr "峽谷"
+
+msgid "Caution-Echidnas May Eat Your Brain"
+msgstr "Caution-Echidnas May Eat Your Brain"
+
+msgid "Central European"
+msgstr "中歐"
+
+msgid "Change Binding"
+msgstr "更改綁定"
+
+msgid "Change Effect"
+msgstr "改變效果"
+
+msgid "Change Icon"
+msgstr "更改圖示"
+
+msgid "Change Password"
+msgstr "更改密碼"
+
+msgid "Change the number assigned to the controller that is currently in use."
+msgstr "變更指派給目前使用的控制器的編號。"
+
+msgid "Change the number assigned to the controller that is currently in use.\n\nPress the PS button on the controller you want to reassign."
+msgstr "變更指派給目前使用的控制器的編號。\n\n 按下要重新指派的控制器上的 PS 按鈕。"
+
+msgid "Change the password required to play games or videos, or to use the Internet browser.\n\nEnter your current password."
+msgstr "變更玩遊戲或影片或使用網路瀏覽器所需的密碼。\n\n 輸入您目前的密碼。"
+
+msgid "Channel 1"
+msgstr "頻道1"
+
+msgid "Channel 11"
+msgstr "11頻道"
+
+msgid "Channel 6"
+msgstr "頻道6"
+
+msgid "Chapters"
+msgstr "章節"
+
+msgid "Character Set"
+msgstr "字元集"
+
+msgid "Chat Rooms"
+msgstr "聊天室"
+
+msgid "Chat Settings"
+msgstr "聊天設定"
+
+msgid "Checking for the latest version of the system software..."
+msgstr "正在檢查系統軟體的最新版本..."
+
+msgid "Checking network configuration...\nPlease wait."
+msgstr "正在檢查網路設定...\n請稍候。"
+
+msgid "Chinese"
+msgstr "中文"
+
+msgid "Chinese (simplified)"
+msgstr "中文（簡體）"
+
+msgid "Chinese (traditional)"
+msgstr "中文（繁體）"
+
+msgid "Choose a 12-hour or 24-hour clock."
+msgstr "選擇 12 小時或 24 小時制。"
+
+msgid "Choose a TrueType or OpenType font file."
+msgstr "選擇 TrueType 或 OpenType 字型檔。"
+
+msgid "Choose a photo or video background."
+msgstr "選擇照片或影片背景。"
+
+msgid "Choose an action, then press its controller button."
+msgstr "選擇一個操作，然後按下其控制器按鈕。"
+
+msgid "Choose an action, then press its keyboard key."
+msgstr "選擇一個操作，然後按其鍵盤鍵。"
+
+msgid "Choose an existing folder."
+msgstr "選擇一個現有資料夾。"
+
+msgid "Choose how OpenXMB uses the display."
+msgstr "選擇 OpenXMB 如何使用顯示。"
+
+msgid "Choose how the shell behaves while a game runs."
+msgstr "選擇遊戲運行時 shell 的行為方式。"
+
+msgid "Choose the folder scanned for games."
+msgstr "選擇掃描遊戲的資料夾。"
+
+msgid "Choose the full-screen music presentation."
+msgstr "選擇全螢幕音樂示範。"
+
+msgid "Choose the fullscreen display resolution."
+msgstr "選擇全螢幕顯示解析度。"
+
+msgid "Choose the icon material."
+msgstr "選擇圖標材質。"
+
+msgid "Choose the root folder for music and playlists."
+msgstr "選擇音樂和播放清單的根資料夾。"
+
+msgid "Choose the root folder for photos."
+msgstr "選擇照片的根資料夾。"
+
+msgid "Choose the root folder for videos."
+msgstr "選擇影片的根資料夾。"
+
+msgid "Classic"
+msgstr "經典"
+
+msgid "Clear Browsing Data"
+msgstr "清除瀏覽數據"
+
+msgid "Clear Browsing Data?"
+msgstr "清除瀏覽資料？"
+
+msgid "Clear Thumbnail Cache?"
+msgstr "清除縮圖快取？"
+
+msgid "Colour"
+msgstr "顏色"
+
+msgid "Component / D-Terminal"
+msgstr "組件/D 端子"
+
+msgid "Compose and send a new message."
+msgstr "撰寫並發送新訊息。"
+
+msgid "Composite / S Video"
+msgstr "複合/S 視頻"
+
+msgid "Configure Ad Hoc Mode settings for PSP® Remasters."
+msgstr "為 PSP® Remasters 配置臨時模式設定。"
+
+msgid "Configure BD/DVD auto-start settings."
+msgstr "配置 BD/DVD 自動啟動設定。"
+
+msgid "Configure audio output settings."
+msgstr "配置音訊輸出設定。"
+
+msgid "Configure the screen saver settings."
+msgstr "配置螢幕保護程式設定。"
+
+msgid "Configure the screen size for PSP® Remasters."
+msgstr "配置 PSP® Remasters 的螢幕尺寸。"
+
+msgid "Configure video output settings according to your TV."
+msgstr "根據您的電視配置視訊輸出設定。"
+
+msgid "Confirm"
+msgstr "確認"
+
+msgid "Connect"
+msgstr "連接"
+
+msgid "Connect PS Vita System Using Network"
+msgstr "使用網路連接 PS Vita 系統"
+
+msgid "Connecting...\nPlease wait."
+msgstr "正在連接...\n請稍候。"
+
+msgid "Connection test completed."
+msgstr "連接測試完成。"
+
+msgid "Continue after the last photograph."
+msgstr "最後一張照片後繼續。"
+
+msgid "Continue audio when OpenXMB loses focus."
+msgstr "當 OpenXMB 失去焦點時繼續播放音訊。"
+
+msgid "Continue music after closing the player."
+msgstr "關閉播放器後繼續播放音樂。"
+
+msgid "Control for HDMI"
+msgstr "HDMI 的控制"
+
+msgid "Controller Auto-Off"
+msgstr "控制器自動關閉"
+
+msgid "Controller Bindings"
+msgstr "控制器綁定"
+
+msgid "Controller Prompts"
+msgstr "控制器提示"
+
+msgid "Controller Vibration"
+msgstr "控制器振動"
+
+msgid "Controller Vibration Function"
+msgstr "控制器振動功能"
+
+msgid "Copy"
+msgstr "複製"
+
+msgid "Copy Multiple"
+msgstr "複製多個"
+
+msgid "Corrupted Data"
+msgstr "資料損壞"
+
+msgid "Create New Internal Memory Card"
+msgstr "建立新的內部記憶卡"
+
+msgid "Create New User"
+msgstr "建立新用戶"
+
+msgid "Create a new internal memory card."
+msgstr "建立新的內部記憶卡。"
+
+msgid "Crimson"
+msgstr "深紅色"
+
+msgid "Cross Color Reduction Filter"
+msgstr "串色減少濾鏡"
+
+msgid "Crossfade"
+msgstr "交叉淡入淡出"
+
+msgid "Custom"
+msgstr "客製化"
+
+msgid "Cyan"
+msgstr "青色"
+
+msgid "Cyrillic"
+msgstr "西里爾字母"
+
+msgid "DD/MM/YYYY"
+msgstr "日/月/年"
+
+msgid "DHCP Host Name"
+msgstr "DHCP 主機名"
+
+msgid "DNS Setting"
+msgstr "DNS 設定"
+
+msgid "DNS Setting\nIn most cases, select [Automatic]."
+msgstr "DNS 設定\n 大多數情況下，選擇[自動]。"
+
+msgid "DTS 5.1 Ch."
+msgstr "DTS 5.1 頻道。"
+
+msgid "DVD Audio Language"
+msgstr "DVD 音訊語言"
+
+msgid "DVD Parental Control"
+msgstr "DVD 家長監護"
+
+msgid "Danish"
+msgstr "丹麥語"
+
+msgid "Dark Blue"
+msgstr "深藍色"
+
+msgid "Dark Green"
+msgstr "深綠色"
+
+msgid "Data Transfer Utility"
+msgstr "資料傳輸實用程式"
+
+msgid "Date"
+msgstr "日期"
+
+msgid "Date (YYYY/MM/DD)"
+msgstr "日期（年/月/日）"
+
+msgid "Date Format"
+msgstr "日期格式"
+
+msgid "Date and Time"
+msgstr "日期和時間"
+
+msgid "Date and Time Settings"
+msgstr "日期和時間設定"
+
+msgid "Day"
+msgstr "日"
+
+msgid "Day/Night"
+msgstr "白天/夜晚"
+
+msgid "Daylight Saving"
+msgstr "夏令時"
+
+msgid "Dead Batteries"
+msgstr "Dead Batteries"
+
+msgid "Decoder Information"
+msgstr "解碼器訊息"
+
+msgid "Deep Color Output (HDMI)"
+msgstr "深色輸出 (HDMI)"
+
+msgid "Default"
+msgstr "預設"
+
+msgid "Default Repeat"
+msgstr "預設重複"
+
+msgid "Default Router"
+msgstr "預設路由器"
+
+msgid "Default Screen Fit"
+msgstr "預設螢幕適配"
+
+msgid "Default Shuffle"
+msgstr "預設隨機播放"
+
+msgid "Default Sort"
+msgstr "預設排序"
+
+msgid "Default browser page scale."
+msgstr "預設瀏覽器頁面比例。"
+
+msgid "Default volume for music playback."
+msgstr "音樂播放的預設音量。"
+
+msgid "Default volume for video playback."
+msgstr "影片播放的預設音量。"
+
+msgid "Delay between held directional inputs in milliseconds."
+msgstr "保持的方向輸入之間的延遲（以毫秒為單位）。"
+
+msgid "Delete"
+msgstr "刪除"
+
+msgid "Delete All"
+msgstr "全部刪除"
+
+msgid "Delete BD data saved on the system storage."
+msgstr "刪除系統儲存體上已儲存的BD資料。"
+
+msgid "Delete Backup Data"
+msgstr "刪除備份數據"
+
+msgid "Delete Multiple"
+msgstr "刪除多個"
+
+msgid "Delete PS Vita System's Backup Files"
+msgstr "刪除PS Vita系統的備份文件"
+
+msgid "Delete Predictive Text Dictionary"
+msgstr "刪除預測文字字典"
+
+msgid "Delete Registered Device"
+msgstr "刪除註冊設備"
+
+msgid "Delete Term"
+msgstr "刪除術語"
+
+msgid "Deletes backup files for the PS Vita system saved on this system."
+msgstr "刪除儲存在本系統上的 PS Vita 系統的備份檔案。"
+
+msgid "Deletes backup files for the PS Vita system saved on this system.\n\nThe backup files for the PS Vita system will be deleted.\nYou can only delete the backup files for your account.\n\nDo you want to delete the backup files?"
+msgstr "刪除儲存在本系統上的 PS Vita 系統的備份檔案。\n\n PS Vita 系統的備份檔案將會被刪除。\n您只能刪除您帳號的備份檔案。\n\n 您要刪除備份檔案嗎？"
+
+msgid "Deletes registered remote play devices from this system.\nSelect a device to delete."
+msgstr "從此系統中刪除已註冊的遠端播放設備。\n選擇要刪除的設備。"
+
+msgid "Deletes words that were added automatically to the dictionary when using the on-screen keyboard."
+msgstr "刪除使用螢幕鍵盤時自動新增到字典中的單字。"
+
+msgid "Deletes words that were added automatically to the dictionary when using the on-screen keyboard.\n\nThe predictive text dictionary will be deleted.\nAre you sure you want to continue?"
+msgstr "刪除使用螢幕鍵盤時自動新增到字典中的單字。\n\n 預測文字字典將會被刪除。\n您確定要繼續嗎？"
+
+msgid "Deletion completed."
+msgstr "刪除完成。"
+
+msgid "Device List"
+msgstr "設備列表"
+
+msgid "Dictionary Type"
+msgstr "字典類型"
+
+msgid "Dim"
+msgstr "昏暗"
+
+msgid "Dim the scene after inactivity."
+msgstr "不活動後調暗場景。"
+
+msgid "Directory for browser downloads."
+msgstr "瀏覽器下載目錄。"
+
+msgid "Disable"
+msgstr "停用"
+
+msgid "Disabled"
+msgstr "殘障人士"
+
+msgid "Disc Auto-Start"
+msgstr "光碟自動啟動"
+
+msgid "Disconnect"
+msgstr "斷開連接"
+
+msgid "Disconnect All"
+msgstr "全部斷開"
+
+msgid "Display"
+msgstr "顯示"
+
+msgid "Display GPU memory use."
+msgstr "顯示 GPU 記憶體使用量。"
+
+msgid "Display Mode"
+msgstr "顯示模式"
+
+msgid "Display PSP® Remasters in 3D."
+msgstr "以 3D 形式顯示 PSP® 重製版。"
+
+msgid "Display Settings"
+msgstr "顯示設定"
+
+msgid "Display [What's New]"
+msgstr "顯示[新動態]"
+
+msgid "Display available cover artwork."
+msgstr "顯示可用的封面圖稿。"
+
+msgid "Display information about the selected content."
+msgstr "顯示所選內容的資訊。"
+
+msgid "Display the shell frame rate."
+msgstr "顯示 shell 幀速率。"
+
+msgid "Displays a list of PS Vita systems registered with this system.\n\nNo PS Vita systems are currently registered."
+msgstr "顯示在此系統中註冊的 PS Vita 系統清單。\n\n 目前尚未註冊任何 PS Vita 系統。"
+
+msgid "Displays a list of devices registered with this system.\n\nNo devices are currently registered for remote play."
+msgstr "顯示在此系統中註冊的設備清單。\n\n 目前沒有註冊用於遠端播放的設備。"
+
+msgid "Displays current network settings and connection status."
+msgstr "顯示目前網路設定和連線狀態。"
+
+msgid "Displays manuals for the software installed on the OpenXMB system."
+msgstr "顯示 OpenXMB 系統上安裝的軟體的手冊。"
+
+msgid "Displays the messages you have received."
+msgstr "顯示您收到的訊息。"
+
+msgid "Displays the messages you have sent."
+msgstr "顯示您已發送的訊息。"
+
+msgid "Displays the registration code that is required to play DivX® VOD content."
+msgstr "顯示播放 DivX® VOD 內容所需的註冊代碼。"
+
+msgid "Displays the registration code that is required to play DivX® VOD content.\n\nRegistration Code:\n\n8C9D7E1F\n\nVisit http://www.divx.com/vod/ for instructions on how to register the code."
+msgstr "顯示播放 DivX® VOD 內容所需的註冊代碼。\n\n 註冊代碼：\n\n 8C9D7E1F\n\n 請造訪 http://www.divx.com/vod/ 以了解如何註冊代碼的說明。"
+
+msgid "DivX® VOD Registration Code"
+msgstr "DivX® 點播註冊碼"
+
+msgid "Divided from Grace"
+msgstr "Divided from Grace"
+
+msgid "Do Not Display"
+msgstr "不顯示"
+
+msgid "Do Not Set"
+msgstr "不設定"
+
+msgid "Do Not Use"
+msgstr "請勿使用"
+
+msgid "Do you want to back up data on the system storage to other storage media?\n\nLimitations may apply when backing up certain copyright-protected content."
+msgstr "您想將系統儲存上的資料備份到其他儲存媒體嗎？\n\n 備份某些受版權保護的內容時可能有限制。"
+
+msgid "Do you want to cancel?\nThe settings you have made so far will not be saved if you cancel."
+msgstr "您想取消嗎？\n如果取消，您迄今為止所做的設定將不會被儲存。"
+
+msgid "Do you want to overwrite the wallpaper?\nIf you do, the current wallpaper will be lost.\nOnly one wallpaper image can be saved."
+msgstr "您想覆蓋壁紙嗎？\n如果這樣做，目前的壁紙將會遺失。\n只能儲存一張壁紙影像。"
+
+msgid "Do you want to perform advanced settings?"
+msgstr "您想進行進階設定嗎？"
+
+msgid "Dolby Digital 5.1 Ch."
+msgstr "杜比數位 5.1 聲道"
+
+msgid "Double Scale"
+msgstr "雙刻度"
+
+msgid "Down"
+msgstr "向下"
+
+msgid "Downloads Folder"
+msgstr "下載資料夾"
+
+msgid "DuckDuckGo"
+msgstr "DuckDuckGo"
+
+msgid "Dusk"
+msgstr "黃昏"
+
+msgid "Dutch"
+msgstr "荷蘭語"
+
+msgid "EAP Authentication"
+msgstr "EAP認證"
+
+msgid "EAP-MD5"
+msgstr "EAP-MD5"
+
+msgid "Easy"
+msgstr "簡單"
+
+msgid "Echo Cancellation"
+msgstr "迴聲消除"
+
+msgid "Edit"
+msgstr "編輯"
+
+msgid "Edit Term"
+msgstr "編輯術語"
+
+msgid "Elevator Music"
+msgstr "Elevator Music"
+
+msgid "Emulation Configuration"
+msgstr "仿真配置"
+
+msgid "Enable"
+msgstr "啟用"
+
+msgid "Enable ATRAC"
+msgstr "啟用 ATRAC"
+
+msgid "Enable WMA Playback"
+msgstr "啟用 WMA 播放"
+
+msgid "Enable analog controller navigation."
+msgstr "啟用模擬控制器導航。"
+
+msgid "Enable controller feedback."
+msgstr "啟用控制器回饋。"
+
+msgid "Enabled"
+msgstr "啟用"
+
+msgid "English"
+msgstr "英語"
+
+msgid "English (UK)"
+msgstr "英語（英國）"
+
+msgid "English (US)"
+msgstr "英語（美國）"
+
+msgid "English (United Kingdom)"
+msgstr "英語（英國）"
+
+msgid "English (United States)"
+msgstr "英語（美國）"
+
+msgid "Enter Manually"
+msgstr "手動輸入"
+
+msgid "Enter a new 4-digit password."
+msgstr "輸入新的 4 位數密碼。"
+
+msgid "Enter the new password again to confirm."
+msgstr "再次輸入新密碼確認。"
+
+msgid "Eternal Excavation"
+msgstr "Eternal Excavation"
+
+msgid "Evening"
+msgstr "晚上"
+
+msgid "External Subtitle"
+msgstr "外部字幕"
+
+msgid "Extra"
+msgstr "額外"
+
+msgid "FON_FREE_INTERNET"
+msgstr "FON_FREE_INTERNET"
+
+msgid "FREE* to access, PlayStation®Store is the only place to download new and exclusive PS3™ games, FREE playable demos, add-on packs, and high-definition videos.\n\nGet more for your PS3™ and visit PlayStation®Store today.\n\n* Broadband Internet connection required."
+msgstr "免費*訪問，PlayStation®Store 是下載全新獨家 PS3™ 遊戲、免費試玩版、附加包和高清視頻的唯一場所。\n\n 為您的 PS3™ 取得更多資訊並立即存取 PlayStation®Store。\n\n * 需要寬頻網路連線。"
+
+msgid "Fade"
+msgstr "淡出"
+
+msgid "Fast"
+msgstr "快"
+
+msgid "Fast Forward"
+msgstr "快轉"
+
+msgid "Fast Reverse"
+msgstr "快退"
+
+msgid "File logging is unavailable on this platform."
+msgstr "文件記錄在此平台上不可用。"
+
+msgid "Fill"
+msgstr "填充"
+
+msgid "Film Date ▲"
+msgstr "拍攝日期 ▲"
+
+msgid "Film Date ▼"
+msgstr "影片日期 ▼"
+
+msgid "Finish"
+msgstr "完成"
+
+msgid "Finnish"
+msgstr "芬蘭語"
+
+msgid "Fit"
+msgstr "適合"
+
+msgid "Flow"
+msgstr "Flow"
+
+msgid "Flow visualiser"
+msgstr "Flow 視覺效果"
+
+
+
+msgid "Folder Repeat"
+msgstr "資料夾重複"
+
+msgid "Folders"
+msgstr "資料夾"
+
+msgid "Follow the on-screen instructions on your PlayStation®Vita system."
+msgstr "請依照 PlayStation®Vita 系統上的螢幕說明進行操作。"
+
+msgid "Font"
+msgstr "字體"
+
+msgid "Font File"
+msgstr "字型文件"
+
+msgid "Font file not found."
+msgstr "未找到字體檔案。"
+
+msgid "Format Hard Disk"
+msgstr "格式化硬碟"
+
+msgid "Format System Storage"
+msgstr "格式化系統存儲"
+
+msgid "Format Utility"
+msgstr "格式實用程式"
+
+msgid "Format completed."
+msgstr "格式化完成。"
+
+msgid "Formats the system storage and restores the system software to its default settings.\n\nAll data on the hard disk will be deleted, and the system software will be reinstalled.\nDo you want to continue?"
+msgstr "格式化系統儲存並將系統軟體還原為預設設定。\n\n 硬碟上的所有資料將會被刪除，系統軟體將會重新安裝。\n您想繼續嗎？"
+
+msgid "Formats the system storage and restores the system software to its default settings.\nAre you sure you want to continue?"
+msgstr "格式化系統儲存並將系統軟體還原為預設設定。\n您確定要繼續嗎？"
+
+msgid "Formats the system storage. All data on the system storage will be deleted during formatting."
+msgstr "格式化系統儲存。格式化期間系統儲存上的所有資料將被刪除。"
+
+msgid "Formats the system storage. All data on the system storage will be deleted during formatting.\nSelect an option."
+msgstr "格式化系統儲存。格式化期間系統儲存上的所有資料將被刪除。\n選擇一個選項。"
+
+msgid "Formatting...\nDo not remove the storage media."
+msgstr "正在格式化...\n請勿移除儲存媒體。"
+
+msgid "Formatting...\nDo not turn off the system."
+msgstr "正在格式化...\n不要關閉系統。"
+
+msgid "Fractal Dive"
+msgstr "Fractal Dive"
+
+msgid "Frame Advance"
+msgstr "幀前進"
+
+msgid "Frame Limit"
+msgstr "幀數限制"
+
+msgid "Frame Noise Reduction"
+msgstr "影格降噪"
+
+msgid "Frame Reverse"
+msgstr "幀反轉"
+
+msgid "French"
+msgstr "法語"
+
+msgid "Friends"
+msgstr "朋友"
+
+msgid "Full"
+msgstr "滿"
+
+msgid "Full Format"
+msgstr "完整格式"
+
+msgid "Full Screen"
+msgstr "全螢幕"
+
+msgid "Fullscreen"
+msgstr "全螢幕"
+
+msgid "GMT"
+msgstr "格林威治標準時間"
+
+msgid "GMT+00:00 Casablanca"
+msgstr "GMT+00:00 卡薩布蘭卡"
+
+msgid "GMT+00:00 Dublin"
+msgstr "GMT+00:00 都柏林"
+
+msgid "GMT+00:00 Lisbon"
+msgstr "GMT+00:00 里斯本"
+
+msgid "GMT+00:00 London"
+msgstr "GMT+00:00 倫敦"
+
+msgid "GMT+00:00 Reykjavik"
+msgstr "GMT+00:00 雷克雅維克"
+
+msgid "GMT+01:00"
+msgstr "格林威治標準時間+01:00"
+
+msgid "GMT+01:00 Amsterdam"
+msgstr "GMT+01:00 阿姆斯特丹"
+
+msgid "GMT+01:00 Berlin"
+msgstr "GMT+01:00 柏林"
+
+msgid "GMT+01:00 Madrid"
+msgstr "GMT+01:00 馬德里"
+
+msgid "GMT+01:00 Paris"
+msgstr "GMT+01:00 巴黎"
+
+msgid "GMT+01:00 Rome"
+msgstr "GMT+01:00 羅馬"
+
+msgid "GMT+01:00 Stockholm"
+msgstr "GMT+01:00 斯德哥爾摩"
+
+msgid "GMT+02:00"
+msgstr "格林威治標準時間+02:00"
+
+msgid "GMT+02:00 Athens"
+msgstr "GMT+02:00 雅典"
+
+msgid "GMT+02:00 Cairo"
+msgstr "GMT+02:00 開羅"
+
+msgid "GMT+02:00 Helsinki"
+msgstr "GMT+02:00 赫爾辛基"
+
+msgid "GMT+02:00 Johannesburg"
+msgstr "GMT+02:00 約翰尼斯堡"
+
+msgid "GMT+03:00"
+msgstr "格林威治標準時間+03:00"
+
+msgid "GMT+03:00 Istanbul"
+msgstr "GMT+03:00 伊斯坦堡"
+
+msgid "GMT+03:00 Moscow"
+msgstr "GMT+03:00 莫斯科"
+
+msgid "GMT+03:00 Nairobi"
+msgstr "GMT+03:00 內羅畢"
+
+msgid "GMT+03:30 Tehran"
+msgstr "GMT+03:30 德黑蘭"
+
+msgid "GMT+04:00"
+msgstr "格林威治標準時間+04:00"
+
+msgid "GMT+04:00 Dubai"
+msgstr "GMT+04:00 杜拜"
+
+msgid "GMT+04:30 Kabul"
+msgstr "GMT+04:30 喀布爾"
+
+msgid "GMT+05:00"
+msgstr "格林威治標準時間+05:00"
+
+msgid "GMT+05:00 Karachi"
+msgstr "GMT+05:00 卡拉奇"
+
+msgid "GMT+05:30"
+msgstr "格林威治標準時間+05:30"
+
+msgid "GMT+05:30 New Delhi"
+msgstr "GMT+05:30 新德里"
+
+msgid "GMT+05:45 Kathmandu"
+msgstr "GMT+05:45 加德滿都"
+
+msgid "GMT+06:00"
+msgstr "格林威治標準時間+06:00"
+
+msgid "GMT+06:00 Dhaka"
+msgstr "GMT+06:00 達卡"
+
+msgid "GMT+07:00"
+msgstr "格林威治標準時間+07:00"
+
+msgid "GMT+07:00 Bangkok"
+msgstr "GMT+07:00 曼谷"
+
+msgid "GMT+07:00 Jakarta"
+msgstr "GMT+07:00 雅加達"
+
+msgid "GMT+08:00"
+msgstr "格林威治標準時間+08:00"
+
+msgid "GMT+08:00 Beijing"
+msgstr "GMT+08:00 北京"
+
+msgid "GMT+08:00 Hong Kong"
+msgstr "GMT+08:00 香港"
+
+msgid "GMT+08:00 Singapore"
+msgstr "GMT+08:00 新加坡"
+
+msgid "GMT+09:00"
+msgstr "格林威治標準時間+09:00"
+
+msgid "GMT+09:00 Seoul"
+msgstr "GMT+09:00 首爾"
+
+msgid "GMT+09:00 Tokyo"
+msgstr "GMT+09:00 東京"
+
+msgid "GMT+09:30 Adelaide"
+msgstr "GMT+09:30 阿德雷德"
+
+msgid "GMT+10:00"
+msgstr "格林尼治標準時間+10:00"
+
+msgid "GMT+10:00 Guam"
+msgstr "GMT+10:00 關島"
+
+msgid "GMT+10:00 Sydney"
+msgstr "GMT+10:00 悉尼"
+
+msgid "GMT+11:00"
+msgstr "格林尼治標準時間+11:00"
+
+msgid "GMT+11:00 Solomon Islands"
+msgstr "GMT+11:00 所羅門群島"
+
+msgid "GMT+12:00"
+msgstr "格林尼治標準時間+12:00"
+
+msgid "GMT+12:00 Auckland"
+msgstr "GMT+12:00 奧克蘭"
+
+msgid "GMT+13:00 Samoa"
+msgstr "GMT+13:00 薩摩亞"
+
+msgid "GMT-01:00"
+msgstr "GMT-01:00"
+
+msgid "GMT-01:00 Azores"
+msgstr "GMT-01:00 亞速爾群島"
+
+msgid "GMT-02:00"
+msgstr "GMT-02:00"
+
+msgid "GMT-03:00"
+msgstr "GMT-03:00"
+
+msgid "GMT-03:00 Buenos Aires"
+msgstr "GMT-03:00 布宜諾斯艾利斯"
+
+msgid "GMT-03:00 Sao Paulo"
+msgstr "GMT-03:00 聖保羅"
+
+msgid "GMT-03:30 Newfoundland"
+msgstr "GMT-03:30 紐芬蘭"
+
+msgid "GMT-04:00"
+msgstr "GMT-04:00"
+
+msgid "GMT-04:00 Atlantic (Canada)"
+msgstr "GMT-04:00 大西洋（加拿大）"
+
+msgid "GMT-04:00 Caracas"
+msgstr "GMT-04:00 加拉加斯"
+
+msgid "GMT-04:00 Santiago"
+msgstr "GMT-04:00 聖地牙哥"
+
+msgid "GMT-05:00"
+msgstr "GMT-05:00"
+
+msgid "GMT-05:00 Bogota"
+msgstr "GMT-05:00 波哥大"
+
+msgid "GMT-05:00 Eastern Time (US & Canada)"
+msgstr "GMT-05:00 東部時間（美國和加拿大）"
+
+msgid "GMT-05:00 Lima"
+msgstr "GMT-05:00 利馬"
+
+msgid "GMT-06:00"
+msgstr "GMT-06:00"
+
+msgid "GMT-06:00 Central Time (US & Canada)"
+msgstr "GMT-06:00 中部時間（美國和加拿大）"
+
+msgid "GMT-06:00 Mexico City"
+msgstr "GMT-06:00 墨西哥城"
+
+msgid "GMT-07:00"
+msgstr "GMT-07:00"
+
+msgid "GMT-07:00 Chihuahua"
+msgstr "GMT-07:00 奇瓦瓦州"
+
+msgid "GMT-07:00 Mountain Time (US & Canada)"
+msgstr "GMT-07:00 山區時間（美國和加拿大）"
+
+msgid "GMT-08:00"
+msgstr "GMT-08:00"
+
+msgid "GMT-08:00 Pacific Time (US & Canada)"
+msgstr "GMT-08:00 太平洋時間（美國和加拿大）"
+
+msgid "GMT-08:00 Tijuana"
+msgstr "GMT-08:00 蒂華納"
+
+msgid "GMT-09:00"
+msgstr "GMT-09:00"
+
+msgid "GMT-09:00 Alaska"
+msgstr "GMT-09:00 阿拉斯加"
+
+msgid "GMT-10:00"
+msgstr "GMT-10:00"
+
+msgid "GMT-10:00 Hawaii"
+msgstr "GMT-10:00 夏威夷"
+
+msgid "GMT-11:00"
+msgstr "GMT-11:00"
+
+msgid "GMT-11:00 Samoa"
+msgstr "GMT-11:00 薩摩亞"
+
+msgid "GMT-12:00"
+msgstr "GMT-12:00"
+
+msgid "Game"
+msgstr "遊戲"
+
+msgid "Game Data Utility"
+msgstr "遊戲數據實用程式"
+
+msgid "Game Library Folder"
+msgstr "遊戲庫資料夾"
+
+msgid "Game Settings"
+msgstr "遊戲設定"
+
+msgid "Generated thumbnails will be recreated when needed. Original media is preserved."
+msgstr "產生的縮圖將在需要時重新建立。原始媒體被保留。"
+
+msgid "Genre ▲"
+msgstr "類型 ▲"
+
+msgid "Genre ▼"
+msgstr "類型 ▼"
+
+msgid "German"
+msgstr "德文"
+
+msgid "Glass Icons"
+msgstr "玻璃圖示"
+
+msgid "Globe"
+msgstr "地球儀"
+
+msgid "Go To"
+msgstr "前往"
+
+msgid "Gold"
+msgstr "黃金"
+
+msgid "Google"
+msgstr "Google"
+
+msgid "Gray"
+msgstr "灰色"
+
+msgid "Greek"
+msgstr "希臘文"
+
+msgid "Green"
+msgstr "綠色"
+
+msgid "Groove Basin"
+msgstr "Groove Basin"
+
+msgid "Group Content"
+msgstr "小組內容"
+
+msgid "HDD Audio Language"
+msgstr "硬碟音訊語言"
+
+msgid "HDMI"
+msgstr "HDMI"
+
+msgid "Heads Up for Tails"
+msgstr "Heads Up for Tails"
+
+msgid "Heat Blur"
+msgstr "Heat Blur"
+
+msgid "Helium Stairways"
+msgstr "Helium Stairways"
+
+msgid "High"
+msgstr "高"
+
+msgid "High Pitch"
+msgstr "高音調"
+
+msgid "Hindi"
+msgstr "印地語"
+
+msgid "Home directory unavailable."
+msgstr "主目錄不可用。"
+
+msgid "Homepage"
+msgstr "首頁"
+
+msgid "Hours added to local system time for display."
+msgstr "加到本機系統時間以供顯示的小時數。"
+
+msgid "How photographs fit on screen."
+msgstr "照片如何適應螢幕。"
+
+msgid "How video fits on the screen."
+msgstr "影片如何適合螢幕。"
+
+msgid "Hydrochill"
+msgstr "Hydrochill"
+
+msgid "IP Address"
+msgstr "IP 地址"
+
+msgid "IP Address Setting"
+msgstr "IP 地址設置"
+
+msgid "Ice Cap 4 Life"
+msgstr "Ice Cap 4 Life"
+
+msgid "Icon Colour"
+msgstr "圖示顏色"
+
+msgid "Icon Style"
+msgstr "圖示風格"
+
+msgid "Idle Dimming"
+msgstr "空閒調光"
+
+msgid "If you format, all data on the system storage will be deleted.\nThis data cannot be restored.\nAre you sure you want to continue?"
+msgstr "如果格式化，系統儲存上的所有資料都將被刪除。\n該資料無法復原。\n您確定要繼續嗎？"
+
+msgid "If you perform a connection test, the current connection will be terminated and the system will be disconnected.\nDo you want to continue?"
+msgstr "如果執行連線測試，目前連線將終止，系統將被中斷。\n您想繼續嗎？"
+
+msgid "Image Name"
+msgstr "圖片名稱"
+
+msgid "Import Date ▲"
+msgstr "進口日期 ▲"
+
+msgid "Import Date ▼"
+msgstr "進口日期 ▼"
+
+msgid "Import a theme archive or theme folder."
+msgstr "匯入主題存檔或主題資料夾。"
+
+msgid "Inbox"
+msgstr "收件匣"
+
+msgid "Information"
+msgstr "資訊"
+
+msgid "Input Device"
+msgstr "輸入裝置"
+
+msgid "Install"
+msgstr "安裝"
+
+msgid "Install Theme"
+msgstr "安裝主題"
+
+msgid "Instant Advance"
+msgstr "即時進階"
+
+msgid "Instant Replay"
+msgstr "即時重播"
+
+msgid "Interface Text Size"
+msgstr "介面文字大小"
+
+msgid "Interface Volume"
+msgstr "接口體積"
+
+msgid "Internal Memory Card"
+msgstr "內建記憶卡"
+
+msgid "Internal memory card for PS/PS2 saved data."
+msgstr "用於保存 PS/PS2 資料的內部記憶卡。"
+
+msgid "Internet Browser"
+msgstr "網際網路瀏覽器"
+
+msgid "Internet Browser Start Control"
+msgstr "網際網路瀏覽器啟動控制"
+
+msgid "Internet Connection"
+msgstr "網路連線"
+
+msgid "Internet Connection Settings"
+msgstr "網路連線設定"
+
+msgid "Internet Connection Test"
+msgstr "網路連線測試"
+
+msgid "Internet Search"
+msgstr "網路搜尋"
+
+msgid "Internet connection settings have been completed.\n\nSave completed."
+msgstr "網路連線設定已完成。\n\n 儲存完成。"
+
+msgid "It will take about 10 seconds for the access point to be ready.\nPlease wait..."
+msgstr "接入點準備就緒大約需要 10 秒鐘。\n請稍候..."
+
+msgid "Italian"
+msgstr "義大利語"
+
+msgid "Ivory Gadget"
+msgstr "Ivory Gadget"
+
+msgid "Japanese"
+msgstr "日語"
+
+msgid "Keep Running"
+msgstr "繼續奔跑"
+
+msgid "Keep this computer awake while media plays."
+msgstr "播放媒體時保持電腦處於喚醒狀態。"
+
+msgid "Key Repeat Delay"
+msgstr "按鍵重複延遲"
+
+msgid "Key Repeat Rate"
+msgstr "按鍵重複率"
+
+msgid "Key Tone"
+msgstr "按鍵音"
+
+msgid "Keyboard Bindings"
+msgstr "鍵盤綁定"
+
+msgid "Keyboard Entry Method"
+msgstr "鍵盤輸入法"
+
+msgid "Keyboard Type"
+msgstr "鍵盤類型"
+
+msgid "Knuckleduster"
+msgstr "Knuckleduster"
+
+msgid "Korean"
+msgstr "韓語"
+
+msgid "Language"
+msgstr "語言"
+
+msgid "Language 1"
+msgstr "語言1"
+
+msgid "Launch at Login"
+msgstr "登入時啟動"
+
+msgid "Lava Passion"
+msgstr "Lava Passion"
+
+msgid "Left"
+msgstr "左"
+
+msgid "Left + Right"
+msgstr "左+右"
+
+msgid "Left-handed"
+msgstr "左撇子"
+
+msgid "Level 1"
+msgstr "1級"
+
+msgid "Level 2"
+msgstr "2級"
+
+msgid "Level 3"
+msgstr "3級"
+
+msgid "Level 4"
+msgstr "4級"
+
+msgid "Level 5"
+msgstr "5級"
+
+msgid "Level 6"
+msgstr "6級"
+
+msgid "Level 7"
+msgstr "7級"
+
+msgid "Level 8"
+msgstr "8級"
+
+msgid "Library View"
+msgstr "圖書館視圖"
+
+msgid "Licenses"
+msgstr "許可證"
+
+msgid "Light Purple"
+msgstr "淺紫色"
+
+msgid "Lime"
+msgstr "石灰"
+
+msgid "Limited"
+msgstr "有限公司"
+
+msgid "Linear PCM"
+msgstr "線性PCM"
+
+msgid "Linear PCM 2 Ch. 44.1 kHz"
+msgstr "線性 PCM 2 頻道44.1 kHz"
+
+msgid "Linear PCM 5.1 Ch."
+msgstr "線性 PCM 5.1 通道"
+
+msgid "Linear PCM 7.1 Ch."
+msgstr "線性 PCM 7.1 通道"
+
+msgid "List of Registered PS Vita Systems"
+msgstr "已註冊 PS Vita 系統列表"
+
+msgid "Live at the Sandopolis"
+msgstr "Live at the Sandopolis"
+
+msgid "Long"
+msgstr "長"
+
+msgid "Low"
+msgstr "低"
+
+msgid "Low Pitch"
+msgstr "低音調"
+
+msgid "MM/DD/YYYY"
+msgstr "月/日/年"
+
+msgid "MTU"
+msgstr "最大傳輸單元"
+
+msgid "Magenta"
+msgstr "洋紅色"
+
+msgid "Malicious Fingers"
+msgstr "Malicious Fingers"
+
+msgid "Manage Bluetooth® Devices"
+msgstr "管理 Bluetooth® 設備"
+
+msgid "Manage Bluetooth® devices."
+msgstr "管理 Bluetooth® 設備。"
+
+msgid "Manage your PlayStation®Network account."
+msgstr "管理您的 PlayStation®Network 帳戶。"
+
+msgid "Manages game data installed on the OpenXMB system. To delete a game data item, select it and then press the @T button."
+msgstr "管理安裝在 OpenXMB 系統上的遊戲資料。若要刪除遊戲資料項，請選擇它，然後按@T按鈕。"
+
+msgid "Manages internal memory cards for use with PlayStation® and PlayStation®2 format software."
+msgstr "管理與 PlayStation® 和 PlayStation®2 格式軟體一起使用的內部記憶卡。"
+
+msgid "Manual"
+msgstr "手冊"
+
+msgid "Master Volume"
+msgstr "主音量"
+
+msgid "Maximum shell rendering rate."
+msgstr "最大外殼渲染速率。"
+
+msgid "Media Server Connection"
+msgstr "媒體伺服器連接"
+
+msgid "Memory Card Utility (PS/PS2)"
+msgstr "記憶卡實用程式 (PS/PS2)"
+
+msgid "Message Box"
+msgstr "留言箱"
+
+msgid "Microphone Level"
+msgstr "麥克風電平"
+
+msgid "Microphone Volume"
+msgstr "麥克風音量"
+
+msgid "Minimise"
+msgstr "最小化"
+
+msgid "Momentary Standstill"
+msgstr "Momentary Standstill"
+
+msgid "Morning"
+msgstr "早安"
+
+msgid "Mosquito Noise Reduction"
+msgstr "減少蚊蟲噪音"
+
+msgid "Mouse Type"
+msgstr "滑鼠類型"
+
+msgid "Move OpenXMB to a connected display."
+msgstr "將 OpenXMB 移至連接的顯示器。"
+
+msgid "Multisample anti-aliasing for supported graphics hardware."
+msgstr "支援圖形硬體的多重取樣抗鋸齒。"
+
+msgid "Music"
+msgstr "音樂"
+
+msgid "Music Folder"
+msgstr "音樂資料夾"
+
+msgid "Music Settings"
+msgstr "音樂設定"
+
+msgid "Music Visualiser"
+msgstr "音樂視覺師"
+
+msgid "Music Volume"
+msgstr "音樂音量"
+
+msgid "Music codec: "
+msgstr "音樂編解碼器："
+
+msgid "My PlayStation®Network Account"
+msgstr "我的 PlayStation®Network 帳戶"
+
+msgid "MyHome_5GHz (Private Networks Only)"
+msgstr "MyHome_5GHz（僅限專用網路）"
+
+msgid "NETGEAR-Guest"
+msgstr "NETGEAR-訪客"
+
+msgid "Name"
+msgstr "名稱"
+
+msgid "Navigation Repeat"
+msgstr "導航重複"
+
+msgid "Network"
+msgstr "網路"
+
+msgid "Network Settings"
+msgstr "網路設定"
+
+msgid "Next"
+msgstr "下一步"
+
+msgid "Night"
+msgstr "夜晚"
+
+msgid "No"
+msgstr "否"
+
+msgid "No saved theme presets."
+msgstr "沒有儲存的主題預設。"
+
+msgid "No wireless stereo headset is connected."
+msgstr "未連接無線立體聲耳機。"
+
+msgid "None"
+msgstr "無"
+
+msgid "Normal"
+msgstr "正常"
+
+msgid "Norwegian"
+msgstr "挪威語"
+
+msgid "Notification Messages"
+msgstr "通知訊息"
+
+msgid "Obtaining the date and time via the Internet..."
+msgstr "透過網路取得日期和時間..."
+
+msgid "Obtains the correct date and time automatically via the Internet when you sign in to PSN, and sets them on your system."
+msgstr "當您登入 PSN 時，透過網路自動取得正確的日期和時間，並在您的系統上進行設定。"
+
+msgid "Obtains the correct date and time automatically via the Internet when you sign in to PSN, and sets them on your system.\n\nA network connection is required for this feature."
+msgstr "當您登入 PSN 時，透過網路自動取得正確的日期和時間，並在您的系統上進行設定。\n\n 此功能需要網路連線。"
+
+msgid "Off"
+msgstr "關閉"
+
+msgid "On"
+msgstr "開"
+
+msgid "On-Screen Keyboard"
+msgstr "螢幕鍵盤"
+
+msgid "One"
+msgstr "一"
+
+msgid "Online Instruction Manuals"
+msgstr "線上指導手冊"
+
+msgid "Open Log Folder"
+msgstr "打開日誌資料夾"
+
+msgid "Open the location of diagnostic logs."
+msgstr "打開診斷日誌的位置。"
+
+msgid "OpenXMB system"
+msgstr "OpenXMB系統"
+
+msgid "OpenXMB version and information about this computer."
+msgstr "OpenXMB 版本和有關此計算機的資訊。"
+
+msgid "Operate other devices on the network from this system."
+msgstr "從該系統操作網路上的其他設備。"
+
+msgid "Optical Digital"
+msgstr "光數碼"
+
+msgid "Options"
+msgstr "選項"
+
+msgid "Orange"
+msgstr "橘色"
+
+msgid "Order of year, month and day."
+msgstr "年、月、日的順序。"
+
+msgid "Original"
+msgstr "原創"
+
+msgid "Output Device"
+msgstr "輸出裝置"
+
+msgid "Output Frequency"
+msgstr "輸出頻率"
+
+msgid "Outputs Deep Color video signal. If the video output is not clean or the colors do not look right, set this option to [Off]."
+msgstr "輸出深色視訊訊號。如果視訊輸出不乾淨或顏色看起來不正確，請將此選項設為[關閉]。"
+
+msgid "PLAYSTATION(R)3 Headset"
+msgstr "PLAYSTATION(R)3 耳機"
+
+msgid "PPPoE"
+msgstr "PPPoE"
+
+msgid "PPPoE Password"
+msgstr "PPPoE密碼"
+
+msgid "PPPoE User Name"
+msgstr "PPPoE用戶名"
+
+msgid "PS Upscaler"
+msgstr "PS 升級器"
+
+msgid "PS Vita System Application Utility"
+msgstr "PS Vita 系統應用程式"
+
+msgid "PS/PS2 Smoothing"
+msgstr "PS/PS2 平滑"
+
+msgid "PS3-HOME-NET"
+msgstr "PS3-家庭網絡"
+
+msgid "PSN is all about entertainment and interaction.\nEnjoy FREE* online gaming, download amazing new games, game expansion packs for a host of top titles, watch trailers and get your hands on exclusive content, chat with friends, and compare Trophies.\n\nSign up today – it's easy and it's FREE!\n\n* Broadband Internet connection required."
+msgstr "PSN 的核心是娛樂和互動。\n享受免費* 線上遊戲，下載精彩的新遊戲、眾多頂級遊戲的遊戲擴充包、觀看預告片並獲得獨家內容、與朋友聊天並比較獎盃。\n\n 立即註冊 – 非常簡單，而且免費！\n\n * 需要寬頻網路連線。"
+
+msgid "Page Zoom"
+msgstr "頁面縮放"
+
+msgid "Page opened when launching the browser."
+msgstr "啟動瀏覽器時開啟頁面。"
+
+msgid "Parental Control"
+msgstr "家長監護"
+
+msgid "Password"
+msgstr "密碼"
+
+msgid "Pause"
+msgstr "暫停"
+
+msgid "Photo"
+msgstr "照片"
+
+msgid "Photo Album"
+msgstr "相簿"
+
+msgid "Photo Album 2"
+msgstr "相簿2"
+
+msgid "Photo Gallery"
+msgstr "照片庫"
+
+msgid "Photos"
+msgstr "照片"
+
+msgid "Photosensitivity Warning"
+msgstr "光敏警告"
+
+msgid "Pictures Folder"
+msgstr "圖片資料夾"
+
+msgid "Pink"
+msgstr "粉紅色"
+
+msgid "Play"
+msgstr "玩"
+
+msgid "Play Remote Devices"
+msgstr "播放遠端設備"
+
+msgid "Play from Beginning"
+msgstr "從頭開始玩"
+
+msgid "Play the startup cue in full."
+msgstr "完整播放啟動提示。"
+
+msgid "Play the startup sequence."
+msgstr "播放啟動序列。"
+
+msgid "PlayStation®Network"
+msgstr "PlayStation®Network"
+
+msgid "PlayStation®Plus"
+msgstr "PlayStation®Plus"
+
+msgid "PlayStation®Store"
+msgstr "PlayStation®Store"
+
+msgid "Players Blocked"
+msgstr "玩家被封鎖"
+
+msgid "Players Met"
+msgstr "玩家見面"
+
+msgid "Playlists"
+msgstr "播放清單"
+
+msgid "Please wait..."
+msgstr "請稍等..."
+
+msgid "Pointer Speed"
+msgstr "指針速度"
+
+msgid "Polish"
+msgstr "波蘭語"
+
+msgid "Pop"
+msgstr "流行音樂"
+
+msgid "Port Number"
+msgstr "連接埠號"
+
+msgid "Portrait"
+msgstr "肖像"
+
+msgid "Portuguese"
+msgstr "葡萄牙語"
+
+msgid "Portuguese (Brazil)"
+msgstr "葡萄牙語（巴西）"
+
+msgid "Portuguese (Portugal)"
+msgstr "葡萄牙語（葡萄牙）"
+
+msgid "Power Indicator"
+msgstr "電源指示燈"
+
+msgid "Power Save"
+msgstr "省電"
+
+msgid "Power Save Settings"
+msgstr "省電設定"
+
+msgid "Predictive Input"
+msgstr "預測輸入"
+
+msgid "Preferred audio track language."
+msgstr "首選音軌語言。"
+
+msgid "Preferred interface language."
+msgstr "首選介面語言。"
+
+msgid "Preferred subtitle track language."
+msgstr "首選字幕軌道語言。"
+
+msgid "Preparing...\nPlease wait."
+msgstr "正在準備...\n請稍候。"
+
+msgid "Preset name"
+msgstr "預設名稱"
+
+msgid "Press and hold the \"AOSS Button\" of the access point until the AOSS indicator starts blinking.\nIf you don't press the button within 2 minutes, the operation will be canceled."
+msgstr "按住接入點的“AOSS 按鈕”，直到 AOSS 指示燈開始閃爍。\n若2分鐘內沒有按下按鈕，操作將會取消。"
+
+msgid "Press and hold the \"Rakuraku Start Button\" of the access point until the \"POWER\" LED blinks in [Green].\nIf you don't press the button within 1 minute, the operation will be canceled."
+msgstr "按住接入點的「Rakuraku Start Button」直至「POWER」LED 閃爍[綠色]。\n若1分鐘內沒有按下按鈕，操作將會取消。"
+
+msgid "Press the \"Rakuraku Start Button\" again. Press and hold until the \"POWER\" LED turns [Orange].\nIf you don't press the button within 30 seconds, the operation will be canceled."
+msgstr "再次按下「樂樂開始按鈕」。按住直到“POWER”LED 變成[橘色]。\n若30秒內沒有按下按鈕，操作將會取消。"
+
+msgid "Press the START button and ENTER button of the BD remote control you want to register at the same time, and hold down until the screen changes."
+msgstr "同時按下要註冊的 BD 遙控器的 START 按鈕和 ENTER 按鈕，並按住直到螢幕變更。"
+
+msgid "Prevent Sleep During Playback"
+msgstr "防止播放期間休眠"
+
+msgid "Previous"
+msgstr "上一頁"
+
+msgid "Primary DNS"
+msgstr "主要 DNS"
+
+msgid "Print"
+msgstr "列印"
+
+msgid "Printer Settings"
+msgstr "印表機設定"
+
+msgid "Proxy Server"
+msgstr "代理伺服器"
+
+msgid "Quick Format"
+msgstr "快速格式化"
+
+msgid "Quiet Interface During Music"
+msgstr "音樂播放時介面安靜"
+
+msgid "RGB"
+msgstr "RGB"
+
+msgid "RGB Full Range (HDMI)"
+msgstr "RGB 全範圍 (HDMI)"
+
+msgid "Rakuraku WLAN Start"
+msgstr "樂樂 WLAN 啟動"
+
+msgid "Randomise slideshow order."
+msgstr "隨機化投影片順序。"
+
+msgid "Read the program and third-party license notices."
+msgstr "閱讀程式和第三方許可聲明。"
+
+msgid "Reading"
+msgstr "閱讀"
+
+msgid "Reassign Controllers"
+msgstr "重新分配控制器"
+
+msgid "Red"
+msgstr "紅色"
+
+msgid "Red Sphere, Blue Sphere"
+msgstr "Red Sphere, Blue Sphere"
+
+msgid "Reduce background movement and sparkles."
+msgstr "減少背景移動和閃爍。"
+
+msgid "Reduce navigation sound volume while music is playing."
+msgstr "播放音樂時降低導航音量。"
+
+msgid "Reduce rendering while unfocused."
+msgstr "不聚焦時減少渲染。"
+
+msgid "Reduced Motion"
+msgstr "減少運動"
+
+msgid "Reduces rainbow-effect artifacts. This setting is used when the system outputs composite signal to a VIDEO IN or SCART connector."
+msgstr "減少彩虹效應偽影。當系統將複合訊號輸出到 VIDEO IN 或 SCART 連接器時，請使用此設定。"
+
+msgid "Refresh folders and metadata from your music location."
+msgstr "從您的音樂位置刷新資料夾和元資料。"
+
+msgid "Refresh the configured game library."
+msgstr "刷新配置的遊戲庫。"
+
+msgid "Register BD Remote Control"
+msgstr "暫存器BD遠端控制"
+
+msgid "Register Bluetooth® Device"
+msgstr "註冊 Bluetooth® 設備"
+
+msgid "Register Device"
+msgstr "註冊設備"
+
+msgid "Register New Device"
+msgstr "註冊新設備"
+
+msgid "Register PlayStation®Vita"
+msgstr "註冊PlayStation®Vita"
+
+msgid "Register a BD remote control for use with the OpenXMB system.\n\nPress the START button and ENTER button of the BD remote control you want to register at the same time, and hold down until the screen changes."
+msgstr "註冊 BD 遙控器以與 OpenXMB 系統一起使用。\n\n 同時按下要註冊的 BD 遙控器的 START 按鈕和 ENTER 按鈕，並按住直至螢幕變更。"
+
+msgid "Register a device (such as a PS Vita or a PSP™ system) to be used for remote play with this system. Select this option to register a device for remote play if using it for the first time.\n\nEnter the following number on the remote device:\n\n12345678"
+msgstr "註冊用於透過此系統進行遠端遊戲的裝置（例如 PS Vita 或 PSP™ 系統）。如果第一次使用設備，請選擇此選項以註冊遠端播放設備。\n\n 在遠端設備上輸入下列號碼：\n\n 12345678"
+
+msgid "Register a remote play device with this system."
+msgstr "向該系統註冊遠端播放設備。"
+
+msgid "Register completed."
+msgstr "註冊完成。"
+
+msgid "Register or manage Bluetooth® devices such as headsets, keyboards and mouse devices.\nSelect an option."
+msgstr "註冊或管理 Bluetooth® 設備，例如耳機、鍵盤和滑鼠設備。\n選擇一個選項。"
+
+msgid "Register the BD Remote Control."
+msgstr "註冊 BD 遙控器。"
+
+msgid "Registered Device:  "
+msgstr "註冊設備："
+
+msgid "Registering...\nPlease wait."
+msgstr "正在註冊...\n請稍候。"
+
+msgid "Registration completed."
+msgstr "註冊完成。"
+
+msgid "Registration with the selected device will be deleted.\nAre you sure you want to continue?"
+msgstr "所選設備的註冊將被刪除。\n您確定要繼續嗎？"
+
+msgid "Release Year ▲"
+msgstr "發售年份 ▲"
+
+msgid "Release Year ▼"
+msgstr "發售年份 ▼"
+
+msgid "Release the controls, then press a "
+msgstr "釋放控件，然後按"
+
+msgid "Remember the last playback position."
+msgstr "記住最後的播放位置。"
+
+msgid "Remote Play Device"
+msgstr "遠端播放設備"
+
+msgid "Remote Play Settings"
+msgstr "遠端播放設定"
+
+msgid "Remote Start"
+msgstr "遠端啟動"
+
+msgid "Remove browser cookies and cached site data."
+msgstr "刪除瀏覽器 cookie 和快取的網站資料。"
+
+msgid "Remove browser cookies, site storage and cached pages?"
+msgstr "刪除瀏覽器 cookie、網站儲存和快取頁面？"
+
+msgid "Remove from Playlist"
+msgstr "從播放清單中刪除"
+
+msgid "Repeat"
+msgstr "重複"
+
+msgid "Repeat All"
+msgstr "全部重複"
+
+msgid "Repeat Off"
+msgstr "重複關閉"
+
+msgid "Repeat On"
+msgstr "重複開啟"
+
+msgid "Repeat One"
+msgstr "重複一"
+
+msgid "Repeat Slideshow"
+msgstr "重複投影片放映"
+
+msgid "Repeat setting when opening the player."
+msgstr "開啟播放器時重複設定。"
+
+msgid "Rescan Game Library"
+msgstr "重新掃描遊戲庫"
+
+msgid "Rescan Music Library"
+msgstr "重新掃描音樂庫"
+
+msgid "Resolution"
+msgstr "解析度"
+
+msgid "Restore"
+msgstr "恢復"
+
+msgid "Restore Default Settings"
+msgstr "恢復預設設定"
+
+msgid "Restore Default Settings?"
+msgstr "恢復預設設定？"
+
+msgid "Restore Defaults"
+msgstr "恢復預設值"
+
+msgid "Restore OpenXMB System"
+msgstr "恢復 OpenXMB 系統"
+
+msgid "Restore Original Theme"
+msgstr "恢復原來的主題"
+
+msgid "Restore Original Theme?"
+msgstr "恢復原來的主題？"
+
+msgid "Restore completed.\nThe default settings have been restored."
+msgstr "恢復完成。\n已恢復預設設定。"
+
+msgid "Restore the original OpenXMB appearance."
+msgstr "恢復原來的 OpenXMB 外觀。"
+
+msgid "Restore the original theme appearance?"
+msgstr "恢復原來的主題外觀？"
+
+msgid "Restore this profile's preferences? Your media files will be preserved."
+msgstr "恢復此設定檔的首選項？您的媒體檔案將被保留。"
+
+msgid "Restore this profile's shell settings; preserve media."
+msgstr "還原此設定檔的 shell 設定；儲存媒體。"
+
+msgid "Restores the system software to its default settings.\n\nAll system settings will be restored to their default values.\nDo you want to continue?"
+msgstr "將系統軟體恢復至預設設定。\n\n 所有系統設定將恢復為預設值。\n您想繼續嗎？"
+
+msgid "Restores the system software to its default settings.\nAre you sure you want to continue?"
+msgstr "將系統軟體恢復至預設設定。\n您確定要繼續嗎？"
+
+msgid "Resume"
+msgstr "履歷"
+
+msgid "Resume Playback"
+msgstr "繼續播放"
+
+msgid "Return to Beginning"
+msgstr "返回起點"
+
+msgid "Right"
+msgstr "右"
+
+msgid "Right-handed"
+msgstr "右手"
+
+msgid "Robotnik Radio"
+msgstr "Robotnik Radio"
+
+msgid "Rotate Left"
+msgstr "向左旋轉"
+
+msgid "Rotate Right"
+msgstr "向右旋轉"
+
+msgid "Rounded"
+msgstr "圓形"
+
+msgid "Russian"
+msgstr "俄文"
+
+msgid "SSID"
+msgstr "SSID"
+
+msgid "Save Theme Preset"
+msgstr "儲存主題預設"
+
+msgid "Save completed.\nIt may take 1 minute or longer to restart the access point."
+msgstr "儲存完成。\n重新啟動存取點可能需要 1 分鐘或更長。"
+
+msgid "Save the current appearance with a name."
+msgstr "用名稱儲存目前外觀。"
+
+msgid "Saved Data Utility (PS2)"
+msgstr "儲存資料實用程式 (PS2)"
+
+msgid "Saved Data Utility (PS3™)"
+msgstr "儲存資料實用程式 (PS3™)"
+
+msgid "Saved Data Utility (minis/PSP™)"
+msgstr "儲存資料實用程式 (minis/PSP™)"
+
+msgid "Saved Theme Presets"
+msgstr "儲存的主題預設"
+
+msgid "Scale subtitle text."
+msgstr "縮放字幕文字。"
+
+msgid "Scale text throughout OpenXMB."
+msgstr "縮放整個 OpenXMB 中的文字。"
+
+msgid "Scan"
+msgstr "掃描"
+
+msgid "Scanning...\nPlease wait."
+msgstr "正在掃描...\n請稍候。"
+
+msgid "Scans the network and connects to a media server. To use this function, a media server must be set up to allow connections from the OpenXMB system."
+msgstr "掃描網路並連接到媒體伺服器。若要使用此功能，必須設定媒體伺服器以允許來自 OpenXMB 系統的連線。"
+
+msgid "Scene Search"
+msgstr "場景搜尋"
+
+msgid "Schumacher Bar"
+msgstr "Schumacher Bar"
+
+msgid "Scrambled Eggman"
+msgstr "Scrambled Eggman"
+
+msgid "Screen Mode"
+msgstr "螢幕模式"
+
+msgid "Screen Saver"
+msgstr "螢幕保護程式"
+
+msgid "Search Engine"
+msgstr "搜尋引擎"
+
+msgid "Search for Media Servers"
+msgstr "搜尋媒體伺服器"
+
+msgid "Search provider used for non-address text."
+msgstr "用於非地址文字的搜尋提供者。"
+
+msgid "Search the Internet."
+msgstr "上網搜尋一下。"
+
+msgid "Searching for the other OpenXMB system..."
+msgstr "正在搜尋其他 OpenXMB 系統..."
+
+msgid "Secondary DNS"
+msgstr "次要 DNS"
+
+msgid "Seconds each photograph remains visible."
+msgstr "每張照片保持可見的秒數。"
+
+msgid "Security"
+msgstr "安全性"
+
+msgid "Security Settings"
+msgstr "安全設定"
+
+msgid "Select a connection method."
+msgstr "選擇連接方法。"
+
+msgid "Select a setting method."
+msgstr "選擇設定方法。"
+
+msgid "Select a theme."
+msgstr "選擇一個主題。"
+
+msgid "Select all resolutions that are supported by your TV."
+msgstr "選擇您的電視支援的所有解析度。"
+
+msgid "Select an available playback device."
+msgstr "選擇可用的播放設備。"
+
+msgid "Select an existing playlist or create a new playlist."
+msgstr "選擇現有的播放清單或建立新的播放清單。"
+
+msgid "Select an installed core and game content."
+msgstr "選擇已安裝的核心和遊戲內容。"
+
+msgid "Select an output format supported by the TV or AV amplifier (receiver) in use."
+msgstr "選擇所使用的電視或 AV 擴大機（接收器）支援的輸出格式。"
+
+msgid "Select an update method."
+msgstr "選擇更新方法。"
+
+msgid "Select the Bluetooth® device to register."
+msgstr "選擇要註冊的 Bluetooth® 設備。"
+
+msgid "Select the access point to be used."
+msgstr "選擇要使用的接入點。"
+
+msgid "Select the connector on the TV or AV amplifier (receiver)."
+msgstr "選擇電視或 AV 擴大機（接收器）上的連接器。"
+
+msgid "Select the connector on the TV."
+msgstr "選擇電視上的連接器。"
+
+msgid "Select the destination for the selected items."
+msgstr "選擇所選項目的目的地。"
+
+msgid "Select the keyboard type."
+msgstr "選擇鍵盤類型。"
+
+msgid "Select the method for setting the output format."
+msgstr "選擇設定輸出格式的方法。"
+
+msgid "Select the operation mode of the network device."
+msgstr "選擇網路設備的運作模式。"
+
+msgid "Select the operation mode of the network device.\nIn most cases, select Auto-Detect."
+msgstr "選擇網路設備的運作模式。\n在大多數情況下，選擇自動偵測。"
+
+msgid "Select the system you are using."
+msgstr "選擇您正在使用的系統。"
+
+msgid "Select the type of connector on your TV."
+msgstr "選擇電視上的連接器類型。"
+
+msgid "Send a Message"
+msgstr "發送訊息"
+
+msgid "Sent Items"
+msgstr "已發送物品"
+
+msgid "Set"
+msgstr "套裝"
+
+msgid "Set Audio Output Settings"
+msgstr "設定音訊輸出設定"
+
+msgid "Set Manually"
+msgstr "手動設定"
+
+msgid "Set as Wallpaper"
+msgstr "設定為壁紙"
+
+msgid "Set the Ad Hoc Mode channel for PSP® Remasters."
+msgstr "為 PSP® Remasters 設定 Ad Hoc 模式通道。"
+
+msgid "Set the BD audio output format."
+msgstr "設定 BD 音訊輸出格式。"
+
+msgid "Set the DHCP host name.\nIn most cases this setting does not need to be changed."
+msgstr "設定 DHCP 主機名稱。\n在大多數情況下，不需要變更此設定。"
+
+msgid "Set the default BD audio language."
+msgstr "設定預設 BD 音訊語言。"
+
+msgid "Set the default DVD audio language."
+msgstr "設定預設 DVD 音訊語言。"
+
+msgid "Set the default audio language for content on the HDD."
+msgstr "設定 HDD 上內容的預設音訊語言。"
+
+msgid "Set the time and date.\n\nUse the arrow keys to adjust each field, then press the X button to apply."
+msgstr "設定時間和日期。\n\n 使用箭頭鍵調整每個字段，然後按 X 按鈕套用。"
+
+msgid "Set via Internet"
+msgstr "透過網路設定"
+
+msgid "Sets for daylight saving time."
+msgstr "設定夏令時。"
+
+msgid "Sets for use of a preset combination of elements such as colour, background or icons."
+msgstr "用於使用預設元素組合（例如顏色、背景或圖示）的集合。"
+
+msgid "Sets the audio input and output devices for voice/video chat and other communication features."
+msgstr "設定語音/視訊聊天和其他通訊功能的音訊輸入和輸出設備。"
+
+msgid "Sets the audio input and output devices for voice/video chat and other communication features.\nSelect an audio device."
+msgstr "設定語音/視訊聊天和其他通訊功能的音訊輸入和輸出設備。\n選擇音訊設備。"
+
+msgid "Sets the audio input and output devices.\nSelect an option."
+msgstr "設定音訊輸入和輸出設備。\n選擇一個選項。"
+
+msgid "Sets the audio output device for use during remote play. To output audio from a PS Vita system, a PSP™ system, a PC or a mobile phone, select [Remote Play Device]."
+msgstr "設定遠端播放期間使用的音訊輸出設備。若要從 PS Vita 系統、PSP™ 系統、PC 或手機輸出音頻，請選擇[遠端播放設備]。"
+
+msgid "Sets the background of the XMB™ screen."
+msgstr "設定 XMB™ 螢幕的背景。"
+
+msgid "Sets the colour of the background and options menu."
+msgstr "設定背景和選項選單的顏色。"
+
+msgid "Sets the date and time for this system."
+msgstr "設定該系統的日期和時間。"
+
+msgid "Sets the date and time for this system.\nSelect how to set the date and time."
+msgstr "設定該系統的日期和時間。\n選擇如何設定日期和時間。"
+
+msgid "Sets the delay before key repeat starts."
+msgstr "設定按鍵重複開始之前的延遲。"
+
+msgid "Sets the font displayed on the XMB™ screen."
+msgstr "設定 XMB™ 螢幕上顯示的字體。"
+
+msgid "Sets the method for connecting the system to the Internet.\nSelect a connection method."
+msgstr "設定係統連接網路的方法。\n選擇連接方法。"
+
+msgid "Sets the method for connecting the system to the Internet. Select this option to connect to a wireless LAN or to change the settings."
+msgstr "設定係統連接網路的方法。選擇此選項可連接到無線 LAN 或變更設定。"
+
+msgid "Sets the mouse type. Set this option based on which hand you use to operate the mouse."
+msgstr "設定滑鼠類型。根據您使用哪隻手操作滑鼠來設定此選項。"
+
+msgid "Sets the order of display for year, month and day."
+msgstr "設定年、月、日的顯示順序。"
+
+msgid "Sets the output format of video content recorded in a wide color range. Set this option as necessary for the TV in use."
+msgstr "設定以寬色彩範圍錄製的影片內容的輸出格式。根據所使用電視的需要設定此選項。"
+
+msgid "Sets the output method for color signals when playing BDs or DVDs."
+msgstr "設定播放 BD 或 DVD 時彩色訊號的輸出方法。"
+
+msgid "Sets the playback method for content items recorded at 24 Hz (frames/second)."
+msgstr "設定以 24 Hz（幀/秒）記錄的內容項目的播放方法。"
+
+msgid "Sets the playback method for content recorded at 50 Hz. This setting is used when playing content saved on the system storage or storage media."
+msgstr "設定以 50 Hz 錄製的內容的播放方法。播放儲存在系統記憶體或儲存媒體上的內容時使用此設定。"
+
+msgid "Sets the range of RGB output signals for an HDMI connection."
+msgstr "設定 HDMI 連接的 RGB 輸出訊號範圍。"
+
+msgid "Sets the rate at which a held key repeats."
+msgstr "設定按住的鍵重複的速率。"
+
+msgid "Sets the speed at which the mouse pointer moves. The mouse pointer is displayed in the Internet browser and in games and other software that support use of a mouse."
+msgstr "設定滑鼠指標移動的速度。滑鼠指標顯示在 Internet 瀏覽器以及支援使用滑鼠的遊戲和其他軟體中。"
+
+msgid "Sets the text entry method for a connected keyboard."
+msgstr "設定所連接鍵盤的文字輸入方法。"
+
+msgid "Sets the time display to either a 12-hour or 24-hour clock."
+msgstr "將時間顯示設定為 12 小時製或 24 小時制。"
+
+msgid "Sets the time-of-day lighting (day, dusk, night or automatic)."
+msgstr "設定一天中不同時間的照明（白天、黃昏、夜間或自動）。"
+
+msgid "Sets the time-of-day lighting of the XMB™ screen."
+msgstr "設定 XMB™ 螢幕的時間照明。"
+
+msgid "Sets to output audio through multiple connectors simultaneously. Audio output to connectors that are not selected in [Audio Output Settings] is downscaled to 2 Ch."
+msgstr "設定同時透過多個連接器輸出音訊。未在 [音訊輸出設定] 中選擇的連接器的音訊輸出將縮小為 2 個頻道。"
+
+msgid "Sets whether or not to automatically turn off controllers. If you do not use a controller for a set amount of time, it will turn off automatically."
+msgstr "設定是否自動關閉控制器。如果您在設定的時間內不使用控制器，它將自動關閉。"
+
+msgid "Sets whether or not to automatically turn off this system. If you do not operate the system for a set amount of time, the system will turn off automatically."
+msgstr "設定是否自動關閉本系統。如果您在設定的時間內沒有作業系統，系統將自動關閉。"
+
+msgid "Sets whether or not to connect this system to the Internet. Select this option if you want to temporarily disable the Internet connection."
+msgstr "設定是否將本系統連接到網際網路。如果您想暫時停用 Internet 連接，請選擇此選項。"
+
+msgid "Sets whether or not to connect to media servers."
+msgstr "設定是否連接媒體伺服器。"
+
+msgid "Sets whether or not to output all audio to the headset."
+msgstr "設定是否將所有音訊輸出到耳機。"
+
+msgid "Sets whether or not to turn on this system automatically when a registered device is connected for remote play."
+msgstr "設定連接註冊設備進行遠端播放時是否自動開啟本系統。"
+
+msgid "Sets whether or not to use key tones on the XMB™ menu."
+msgstr "設定是否使用 XMB™ 選單上的按鍵音。"
+
+msgid "Sets whether or not to use the vibration function. This setting will be applied to all controllers that support the vibration function."
+msgstr "設定是否使用震動功能。此設定將應用於所有支援振動功能的控制器。"
+
+msgid "Settings"
+msgstr "設定"
+
+msgid "Settings List"
+msgstr "設定列表"
+
+msgid "Settings and Connection Status List"
+msgstr "設定和連線狀態列表"
+
+msgid "Short"
+msgstr "短"
+
+msgid "Show FPS"
+msgstr "顯示FPS"
+
+msgid "Show GPU Memory"
+msgstr "顯示 GPU 內存"
+
+msgid "Show Seconds"
+msgstr "顯示秒數"
+
+msgid "Show background particles."
+msgstr "顯示背景粒子。"
+
+msgid "Show seconds in the clock."
+msgstr "在時鐘中顯示秒數。"
+
+msgid "Show the animated background ribbon."
+msgstr "顯示動畫背景功能區。"
+
+msgid "Show the controller keyboard during text entry."
+msgstr "在文字輸入期間顯示控制器鍵盤。"
+
+msgid "Show the dismissible startup warning."
+msgstr "顯示可忽略的啟動警告。"
+
+msgid "Shuffle"
+msgstr "隨機播放"
+
+msgid "Shuffle Slideshow"
+msgstr "隨機播放幻燈片"
+
+msgid "Shuffle tracks in the play queue."
+msgstr "隨機播放播放隊列中的曲目。"
+
+msgid "Sign Up"
+msgstr "註冊"
+
+msgid "Sign in to PlayStation®Network to add friends, exchange messages and join chat rooms."
+msgstr "登入 PlayStation®Network 新增朋友、交換訊息並加入聊天室。"
+
+msgid "Sign in to use Friends features"
+msgstr "登入以使用好友功能"
+
+msgid "Sign up for a PlayStation®Network account.\nA broadband Internet connection is required."
+msgstr "註冊 PlayStation®Network 帳戶。\n需要寬頻網路連線。"
+
+msgid "Size"
+msgstr "尺寸"
+
+msgid "Slide"
+msgstr "幻燈片"
+
+msgid "Slideshow"
+msgstr "幻燈片"
+
+msgid "Slideshow Duration"
+msgstr "幻燈片持續時間"
+
+msgid "Slideshow Speed"
+msgstr "幻燈片播放速度"
+
+msgid "Slideshow Style"
+msgstr "幻燈片風格"
+
+msgid "Slideshow Transition"
+msgstr "幻燈片過渡"
+
+msgid "Slow"
+msgstr "慢"
+
+msgid "Slow (Forward)"
+msgstr "慢速（前進）"
+
+msgid "Slow (Reverse)"
+msgstr "慢速（反向）"
+
+msgid "Smooth"
+msgstr "光滑"
+
+msgid "Smooth out the rough edges of images of PlayStation® and PlayStation®2 format software."
+msgstr "平滑 PlayStation® 和 PlayStation®2 格式軟體影像的粗糙邊緣。"
+
+msgid "So Long and Thanks for All the..."
+msgstr "So Long and Thanks for All the..."
+
+msgid "Software Instruction Manuals"
+msgstr "軟體使用說明書"
+
+msgid "Songs"
+msgstr "歌曲"
+
+msgid "Sonic the Hedgehog and Knuckles"
+msgstr "Sonic the Hedgehog and Knuckles"
+
+msgid "Sort By"
+msgstr "排序方式"
+
+msgid "Sort tracks in each folder."
+msgstr "對每個資料夾中的曲目進行排序。"
+
+msgid "Sound"
+msgstr "聲音"
+
+msgid "Sound Set Folder"
+msgstr "聲音設定資料夾"
+
+msgid "Sound Settings"
+msgstr "聲音設定"
+
+msgid "Sound folder not found."
+msgstr "未找到聲音資料夾。"
+
+msgid "Sound set needs a playable "
+msgstr "聲音集需要可播放"
+
+msgid "Spanish"
+msgstr "西班牙語"
+
+msgid "Sparkle Colour"
+msgstr "閃耀色彩"
+
+msgid "Sparkles"
+msgstr "閃閃發光"
+
+msgid "Speed and Duplex"
+msgstr "速度和雙工"
+
+msgid "Standard Input"
+msgstr "標準輸入"
+
+msgid "Start OpenXMB when you sign in."
+msgstr "登入時啟動 OpenXMB。"
+
+msgid "Start a Chat"
+msgstr "開始聊天"
+
+msgid "Start a new text chat with a friend or a group."
+msgstr "與朋友或群組開始新的文字聊天。"
+
+msgid "Starts the system automatically and downloads game patches, uploads new saved data to online storage and syncs trophy information with the server."
+msgstr "自動啟動系統並下載遊戲補丁，上傳新儲存的資料到線上儲存並與伺服器同步獎盃資訊。"
+
+msgid "Startup Intro"
+msgstr "啟動動畫"
+
+msgid "Startup Sound"
+msgstr "啟動聲音"
+
+msgid "Status of Registered Devices"
+msgstr "註冊設備的狀態"
+
+msgid "Stereo Headset Audio Extension"
+msgstr "立體聲耳機音訊擴展"
+
+msgid "Stop"
+msgstr "停止"
+
+msgid "Stranger to Closure"
+msgstr "Stranger to Closure"
+
+msgid "Subnet Mask"
+msgstr "子網路遮罩"
+
+msgid "Subscribe to PlayStation®Plus and get your hands on all the benefits that come with membership."
+msgstr "訂閱 PlayStation®Plus 並享受會員資格帶來的所有福利。"
+
+msgid "Subtitle Language"
+msgstr "字幕語言"
+
+msgid "Subtitle Options"
+msgstr "字幕選項"
+
+msgid "Subtitle Size"
+msgstr "字幕大小"
+
+msgid "Swedish"
+msgstr "瑞典語"
+
+msgid "Synchronise presentation to the display."
+msgstr "將演示同步到顯示器。"
+
+msgid "System"
+msgstr "系統"
+
+msgid "System Auto-Off"
+msgstr "系統自動關閉"
+
+msgid "System Default"
+msgstr "系統預設值"
+
+msgid "System Default Device"
+msgstr "系統預設設備"
+
+msgid "System Information"
+msgstr "系統資訊"
+
+msgid "System Language"
+msgstr "系統語言"
+
+msgid "System Name"
+msgstr "系統名稱"
+
+msgid "System Settings"
+msgstr "系統設定"
+
+msgid "System Update"
+msgstr "系統更新"
+
+msgid "Teal"
+msgstr "青色"
+
+msgid "Term"
+msgstr "期限"
+
+msgid "Tests the Internet connection and displays the results."
+msgstr "測試 Internet 連線並顯示結果。"
+
+msgid "Tests the Internet connection and displays the results.\n\nObtain IP Address    Succeeded\nInternet Connection  Succeeded\nPlayStation™Network  Succeeded\nNAT Type             Type 2\nUPnP                 Available\nConnection Speed (Download)  85.4 Mbps\nConnection Speed (Upload)    24.7 Mbps"
+msgstr "測試 Internet 連線並顯示結果。\n\n 取得 IP 位址成功\n上網成功\nPlayStation™Network 成功\nNAT 類型類型 2\nUPnP 可用\n連接速度（下載）85.4 Mbps \n2bps \n2"
+
+msgid "Tests the image from a camera that is connected to the system using a USB cable. You can adjust settings to reduce flickering for some cameras."
+msgstr "測試使用 USB 電纜連接到系統的攝影機的影像。您可以調整設定以減少某些相機的閃爍。"
+
+msgid "Tests the image from a camera that is connected to the system using a USB cable. You can adjust settings to reduce flickering for some cameras.\n\nNo camera is currently connected."
+msgstr "測試使用 USB 電纜連接到系統的攝影機的影像。您可以調整設定以減少某些相機的閃爍。\n\n 目前未連接任何相機。"
+
+msgid "Text Colour"
+msgstr "文字顏色"
+
+msgid "That Freezing Feeling"
+msgstr "That Freezing Feeling"
+
+msgid "The Doomsday"
+msgstr "The Doomsday"
+
+msgid "The Secluded Stronghold"
+msgstr "The Secluded Stronghold"
+
+msgid "The Wait is Over!"
+msgstr "The Wait is Over!"
+
+msgid "The audio output settings have been updated."
+msgstr "音訊輸出設定已更新。"
+
+msgid "The date and time have been set."
+msgstr "日期和時間已確定。"
+
+msgid "The image will be deleted.\nAre you sure you want to continue?"
+msgstr "該圖像將被刪除。\n您確定要繼續嗎？"
+
+msgid "The name displayed by OpenXMB."
+msgstr "OpenXMB 顯示的名稱。"
+
+msgid "The other OpenXMB system was not found.\nCheck that both systems are connected to the same network."
+msgstr "找不到另一個 OpenXMB 系統。\n檢查兩個系統是否連接到相同網路。"
+
+msgid "The password has been changed."
+msgstr "密碼已更改。"
+
+msgid "The passwords do not match.\nTry again."
+msgstr "密碼不符。\n再試一次。"
+
+msgid "The selected items will be deleted.\nAre you sure you want to continue?"
+msgstr "所選項目將被刪除。\n您確定要繼續嗎？"
+
+msgid "The system and devices connected via HDMI can operate each other."
+msgstr "透過HDMI連接的系統和設備可以相互操作。"
+
+msgid "The system has been restored to its default settings."
+msgstr "系統已恢復至預設設定。"
+
+msgid "The system software is up to date.\n\nThe latest version of the system software has already been installed."
+msgstr "系統軟體是最新的。\n\n 已安裝最新版本的系統軟體。"
+
+msgid "The term has been added."
+msgstr "該術語已新增。"
+
+msgid "The title that is currently playing will be deleted.\nAre you sure you want to continue?"
+msgstr "目前正在播放的標題將被刪除。\n您確定要繼續嗎？"
+
+msgid "The video output settings have been updated."
+msgstr "視訊輸出設定已更新。"
+
+msgid "Theme"
+msgstr "主題"
+
+msgid "Theme Settings"
+msgstr "主題設定"
+
+msgid "Theme archive or folder"
+msgstr "主題存檔或資料夾"
+
+msgid "There are no registered devices."
+msgstr "沒有已註冊的設備。"
+
+msgid "There are no subtitle options available."
+msgstr "沒有可用的字幕選項。"
+
+msgid "There is no audio."
+msgstr "沒有音訊。"
+
+msgid "There is no backup data.\nConnect storage media that contains the backup data."
+msgstr "沒有備份資料。\n連接包含備份資料的儲存媒體。"
+
+msgid "This feature is not available yet. This will be implemented in a future beta. Sorry!"
+msgstr "此功能尚不可用。這將在未來的測試版中實施。對不起！"
+
+msgid "This file is not a supported image or video."
+msgstr "該文件不是受支援的圖像或影片。"
+
+msgid "This is the system to transfer data from"
+msgstr "這是傳輸資料的系統"
+
+msgid "This is the system to transfer data to"
+msgstr "這是將資料傳輸到的系統"
+
+msgid "This sample count is unavailable on the active GPU."
+msgstr "此樣本計數在活動 GPU 上不可用。"
+
+msgid "This video cannot be opened."
+msgstr "該視頻無法打開。"
+
+msgid "Three Ring Nightfall"
+msgstr "Three Ring Nightfall"
+
+msgid "Time"
+msgstr "時間"
+
+msgid "Time (HH:MM)"
+msgstr "時間（小時：分鐘）"
+
+msgid "Time Format"
+msgstr "時間格式"
+
+msgid "Time Zone"
+msgstr "時區"
+
+msgid "Time Zone Offset"
+msgstr "時區偏移"
+
+msgid "Title Repeat"
+msgstr "標題重複"
+
+msgid "Title ▲"
+msgstr "標題▲"
+
+msgid "Title ▼"
+msgstr "標題▼"
+
+msgid "To register (pair), you will need to prepare the Bluetooth® device.\nFor information on preparing the device, refer to the instructions supplied with the Bluetooth® device."
+msgstr "要註冊（配對），您需要準備 Bluetooth® 設備。\n有關準備設備的信息，請參閱 Bluetooth® 設備隨附的說明。"
+
+msgid "Transfers data from your current OpenXMB system to a new OpenXMB system over a network.\n\nConnect both systems to the same network, then follow the on-screen instructions on each system."
+msgstr "透過網路將資料從目前的 OpenXMB 系統傳輸到新的 OpenXMB 系統。\n\n 將兩個系統連接到同一網絡，然後按照每個系統上的螢幕指示進行操作。"
+
+msgid "Transfers data that is saved on one OpenXMB system to another OpenXMB system. You can use this feature when replacing the OpenXMB system that you usually use with another OpenXMB system."
+msgstr "將一個 OpenXMB 系統上儲存的資料傳送到另一個 OpenXMB 系統。當您將通常使用的 OpenXMB 系統替換為另一個 OpenXMB 系統時，可以使用此功能。"
+
+msgid "Transition between photographs."
+msgstr "照片之間的過渡。"
+
+msgid "Trimming"
+msgstr "修剪"
+
+msgid "Trophy Collection"
+msgstr "獎盃收藏"
+
+msgid "Trophy Notifications"
+msgstr "獎杯通知"
+
+msgid "Turkish"
+msgstr "土耳其語"
+
+msgid "Turn Off System"
+msgstr "關閉系統"
+
+msgid "Turn Off System Automatically After Background Download"
+msgstr "後台下載後自動關閉系統"
+
+msgid "UPnP"
+msgstr "通用即插即用"
+
+msgid "USB Headset"
+msgstr "USB 耳機"
+
+msgid "Unable to update launch at login."
+msgstr "無法在登入時更新啟動。"
+
+msgid "Unlimited"
+msgstr "無限"
+
+msgid "Unregister All"
+msgstr "全部取消註冊"
+
+msgid "Up"
+msgstr "向上"
+
+msgid "Update the OpenXMB system software."
+msgstr "更新OpenXMB系統軟體。"
+
+msgid "Update via Internet"
+msgstr "透過網路更新"
+
+msgid "Update via Storage Media"
+msgstr "透過儲存媒體更新"
+
+msgid "Upscale"
+msgstr "上等"
+
+msgid "Use"
+msgstr "使用"
+
+msgid "Use a folder containing ok.wav, confirm.wav, cancel.wav and back.wav."
+msgstr "使用包含 ok.wav、confirm.wav、cancel.wav 和 back.wav 的資料夾。"
+
+msgid "Use a hexadecimal colour such as #ffeefc."
+msgstr "使用十六進制顏色，例如#ffeefc。"
+
+msgid "Use a hexadecimal colour."
+msgstr "使用十六進制顏色。"
+
+msgid "Use a six-digit hexadecimal colour such as #ffeefc."
+msgstr "使用六位十六進位顏色，例如#ffeefc。"
+
+msgid "Use auto or a hexadecimal colour."
+msgstr "使用自動或十六進位顏色。"
+
+msgid "Use refractive icon materials."
+msgstr "使用折射圖示材料。"
+
+msgid "Use the selected Bluetooth® device to enter the pass key shown below and press the Enter key within 30 seconds.\\n\\nPass Key:  0000"
+msgstr "使用所選的 Bluetooth® 裝置輸入如下所示的密碼，並在 30 秒內按 Enter 鍵。 \\n\\n密碼：0000"
+
+msgid "User Name"
+msgstr "使用者名稱"
+
+msgid "Users"
+msgstr "使用者"
+
+msgid "Using the device you want to register, select [Settings] > [Network Settings] > [Internet Connection], and then enter the numbers shown below.\n\nRegistration code:  2461-8053\n\nThe registration code is valid for 5 minutes."
+msgstr "使用要註冊的設備，選擇[設定] > [網路設定] > [網路連線]，然後輸入如下所示的數字。\n\n 註冊碼：2461-8053\n\n 註冊碼有效期限為5分鐘。"
+
+msgid "VSync"
+msgstr "VSync"
+
+msgid "Video"
+msgstr "影片"
+
+msgid "Video Decoding"
+msgstr "視訊解碼"
+
+msgid "Video Editor & Uploader"
+msgstr "影片編輯器和上傳器"
+
+msgid "Video Output Settings"
+msgstr "視訊輸出設定"
+
+msgid "Video Settings"
+msgstr "影片設定"
+
+msgid "Video Volume"
+msgstr "視訊音量"
+
+msgid "Videos Folder"
+msgstr "影片資料夾"
+
+msgid "View"
+msgstr "查看"
+
+msgid "View Mode (PSP Remasters)"
+msgstr "查看模式（PSP 重製版）"
+
+msgid "View Web pages on the Internet."
+msgstr "查看 Internet 上的網頁。"
+
+msgid "View active audio and video playback diagnostics."
+msgstr "查看活動音訊和視訊播放診斷。"
+
+msgid "View and join active chat rooms."
+msgstr "查看並加入活躍的聊天室。"
+
+msgid "View messages you have received and sent."
+msgstr "查看您已收到和發送的訊息。"
+
+msgid "View the list of players you have blocked. You will not receive messages from blocked players."
+msgstr "查看您已封鎖的玩家清單。您將不會收到來自被封鎖玩家的訊息。"
+
+msgid "View the list of players you have met during online play."
+msgstr "查看您在線上遊戲中遇到的玩家清單。"
+
+msgid "View the online instruction manuals.\nThe latest version of the manual will be available."
+msgstr "請查看線上說明手冊。\n將提供最新版本的手冊。"
+
+msgid "View trophies that you have earned."
+msgstr "看看您獲得的獎杯。"
+
+msgid "Violet"
+msgstr "紫羅蘭色"
+
+msgid "Visual Player"
+msgstr "視覺播放器"
+
+msgid "Voice Changer"
+msgstr "變聲器"
+
+msgid "Volume Control"
+msgstr "音量控制"
+
+msgid "Volume for all OpenXMB audio."
+msgstr "所有 OpenXMB 音訊的音量。"
+
+msgid "Volume of navigation and confirmation sounds."
+msgstr "導航和確認聲音的音量。"
+
+msgid "WEP"
+msgstr "WEP"
+
+msgid "WEP Key"
+msgstr "WEP 鑰匙"
+
+msgid "WLAN Security Setting"
+msgstr "無線網路安全設定"
+
+msgid "WLAN Settings"
+msgstr "無線區域網路設定"
+
+msgid "WPA Key"
+msgstr "WPA 鑰匙"
+
+msgid "WPA-PSK (AES)"
+msgstr "WPA-PSK (AES)"
+
+msgid "WPA-PSK (TKIP)"
+msgstr "WPA-PSK (TKIP)"
+
+msgid "WPA-PSK / WPA2-PSK"
+msgstr "WPA-PSK / WPA2-PSK"
+
+msgid "WPA2-PSK (AES)"
+msgstr "WPA2-PSK (AES)"
+
+msgid "WPA2-PSK (TKIP)"
+msgstr "WPA2-PSK (TKIP)"
+
+msgid "Waiting for the device to connect..."
+msgstr "正在等待裝置連接..."
+
+msgid "Walk on Water"
+msgstr "Walk on Water"
+
+msgid "Wallpaper"
+msgstr "壁紙"
+
+msgid "Water on the Dancefloor"
+msgstr "Water on the Dancefloor"
+
+msgid "Wave"
+msgstr "Wave"
+
+msgid "Wave visualiser"
+msgstr "Wave 視覺效果"
+
+
+
+msgid "Welcome Clip"
+msgstr "歡迎剪輯"
+
+msgid "Welcome to PlayStation®3.\nThe \"What's New\" screen is where to find all the latest PlayStation® news, updates, plus easy access to the games you've most recently played.\nTo access the \"What's New\" screen, connect to PSN* – it's free to join and it's your gateway to a world of entertainment, so sign up today!\n\n* Broadband Internet connection required."
+msgstr "歡迎來到PlayStation®3。\n在「最新消息」畫面中可以找到所有最新的 PlayStation® 新聞、更新，並且可以輕鬆存取您最近玩過的遊戲。\n要存取「新增功能」螢幕，請連接到 PSN* – 免費加入，它是您通往娛樂世界的門戶，所以立即註冊！\n\n * 需要寬頻網路連線。"
+
+msgid "Welcome to PlayStation®Network"
+msgstr "歡迎來到PlayStation®Network"
+
+msgid "Western (Latin)"
+msgstr "西方（拉丁）"
+
+msgid "What's New"
+msgstr "最新消息"
+
+msgid "White"
+msgstr "白色"
+
+msgid "Window Mode"
+msgstr "視窗模式"
+
+msgid "Windowed"
+msgstr "開窗"
+
+msgid "Wired Connection"
+msgstr "有線連接"
+
+msgid "Wireless"
+msgstr "無線"
+
+msgid "Wireless Headset 2.0"
+msgstr "無線耳機2.0"
+
+msgid "Wireless Stereo Headset Settings"
+msgstr "無線立體聲耳機設置"
+
+msgid "XMB Waves"
+msgstr "XMB波"
+
+msgid "Y Cb Cr"
+msgstr "釔鎘鉻"
+
+msgid "Y Pb/Cb Pr/Cr Super-White (HDMI)"
+msgstr "Y Pb/Cb Pr/Cr 超白 (HDMI)"
+
+msgid "YYYY/MM/DD"
+msgstr "年/月/日"
+
+msgid "Yellow"
+msgstr "黃色"
+
+msgid "Yes"
+msgstr "是的"
+
+msgid "You can change the voice that is input using an audio input device."
+msgstr "您可以變更使用音訊輸入裝置輸入的語音。"
+
+msgid "You can edit a video that you like, upload it to a video sharing website, and then invite your friends to view the video."
+msgstr "您可以編輯自己喜歡的視頻，將其上傳到視頻共享網站，然後邀請您的朋友觀看該視頻。"
+
+msgid "You cannot create an icon less than 15 seconds in length."
+msgstr "您不能建立長度短於 15 秒的圖示。"
+
+msgid "Zoom"
+msgstr "變焦"
+
+msgid "Zoom In"
+msgstr "放大"
+
+msgid "Zoom Out"
+msgstr "縮小"
+
+msgid "auto"
+msgstr "汽車"
+
+msgid "category.settings.accessory.settings"
+msgstr "類別.設定.配件.設置"
+
+msgid "category.settings.display.settings"
+msgstr "類別.設定.顯示.設定"
+
+msgid "category.settings.music.settings"
+msgstr "類別.設定.音樂.設置"
+
+msgid "category.settings.network.settings"
+msgstr "類別.設定.網路.設定"
+
+msgid "category.settings.power.save.settings"
+msgstr "類別.設定.電源.儲存.設定"
+
+msgid "controller button"
+msgstr "控制器按鈕"
+
+msgid "corp-eap"
+msgstr "企業EAP"
+
+msgid "en"
+msgstr "zh"
+
+msgid "fr"
+msgstr "FR"
+
+msgid "hi"
+msgstr "嗨"
+
+msgid "http://s3k.ocremix.org - Project Chaos - Bonus Tracks"
+msgstr "http://s3k.ocremix.org - Project Chaos - Bonus Tracks"
+
+msgid "iMushroom"
+msgstr "iMushroom"
+
+msgid "keyboard key"
+msgstr "鍵盤鍵"
+
+msgid "linksys"
+msgstr "連結系統"
+
+msgid "System Software\nVersion 4.91\n\nMAC Address (Wired)\n00:1F:A7:00:00:00\n\nMAC Address (Wi-Fi)\n00:1F:A7:00:00:01\n\nIP Address\n192.168.1.10\n\nSystem Storage\n466 GB free of 500 GB"
+msgstr "系統軟體\n版本 4.91\n\nMAC 位址（有線）\n00:1F:A7:00:00:00\n\nMAC 位址（Wi-Fi）\n00:1F:A7:00:00:01\n\nIP 位址\n192.168.1.10\n\n系統儲存空間\n500 GB 中尚有 466 GB 可用"
+
+msgid "Displays current network settings and the Internet connection status.\n\nConnection Name    Default\nConnection Type    Wired\nIP Address         192.168.1.10\nSubnet Mask        255.255.255.0\nDefault Gateway    192.168.1.1\nPrimary DNS        8.8.8.8\nSecondary DNS      8.8.4.4"
+msgstr "顯示目前的網路設定與網際網路連線狀態。\n\n連線名稱    預設\n連線類型    有線\nIP 位址         192.168.1.10\n子網路遮罩        255.255.255.0\n預設閘道    192.168.1.1\n主要 DNS        8.8.8.8\n次要 DNS      8.8.4.4"
+
+msgid "Indonesian"
+msgstr "印尼語"
+
+msgid "Simplified Chinese"
+msgstr "簡體中文"
+
+msgid "Traditional Chinese"
+msgstr "繁體中文"
+
+msgid "\nThe original was preserved."
+msgstr "\n原件被保留。"
+
+msgid "   Off"
+msgstr "   關閉"
+
+msgid "   On"
+msgstr "   開"
+
+msgid "  Played "
+msgstr "  玩過 "
+
+msgid "  Select to cycle"
+msgstr "  選擇循環"
+
+msgid "  Select to remove scan root"
+msgstr "  選擇刪除掃描根目錄"
+
+msgid " (active)"
+msgstr " （主動）"
+
+msgid " (away locally)"
+msgstr " （遠離本地）"
+
+msgid " (present locally)"
+msgstr " （目前在當地）"
+
+msgid " Last error: "
+msgstr " 最後一個錯誤： "
+
+msgid " RPCS3 root(s)."
+msgstr " RPCS3 根。"
+
+msgid " Settings"
+msgstr " 設定"
+
+msgid " cores / "
+msgstr " 核心 / "
+
+msgid " cores found. Left/Right cycles the core field."
+msgstr " 發現核心。左/右循環核心字段。"
+
+msgid " game(s)."
+msgstr " 遊戲。"
+
+msgid " path"
+msgstr " 路徑"
+
+msgid " playable discs found."
+msgstr " 找到可播放的光碟。"
+
+msgid " theme(s)."
+msgstr " 主題。"
+
+msgid " threads"
+msgstr " 執行緒"
+
+msgid " times"
+msgstr " 次"
+
+msgid " to the default printer?"
+msgstr " 到預設印表機？"
+
+msgid " tracks"
+msgstr " 曲目"
+
+msgid " tracks added to "
+msgstr " 曲目添加到 "
+
+msgid " upload bytes"
+msgstr " 上傳位元組"
+
+msgid " will be moved to a recovery folder. It will not be permanently deleted."
+msgstr " 將被移動到恢復資料夾。它不會被永久刪除。"
+
+msgid "& © 2025-2026. Syndromatic Limited Britannia. All rights reserved."
+msgstr "& © 2025-2026. Syndromatic Limited Britannia. 版權所有。"
+
+msgid ". Select it to apply."
+msgstr "。選擇它來應用。"
+
+msgid "12-hour"
+msgstr "12小時"
+
+msgid "15 seconds"
+msgstr "15秒"
+
+msgid "1½ speed (muted)"
+msgstr "1½ 速度（靜音）"
+
+msgid "24-hour"
+msgstr "24小時"
+
+msgid "3 seconds"
+msgstr "3秒"
+
+msgid "? Music files are preserved."
+msgstr "？音樂檔案被保留。"
+
+msgid "A core is already running. Return to its window or stop the session."
+msgstr "一個核心已經在運作。返回其視窗或停止會話。"
+
+msgid "About"
+msgstr "關於"
+
+msgid "Active local user changed. Settings and themes use this profile."
+msgstr "活動本地用戶已更改。設定和主題使用此設定檔。"
+
+msgid "Add Current Play Queue"
+msgstr "新增目前播放隊列"
+
+msgid "Add Selected to Playlist..."
+msgstr "將所選內容新增至播放清單..."
+
+msgid "Add Track / Folder / Playlist..."
+msgstr "新增曲目/資料夾/播放清單..."
+
+msgid "Add custom section"
+msgstr "新增自訂部分"
+
+msgid "Add detected RPCS3 game folders"
+msgstr "新增偵測到的 RPCS3 遊戲資料夾"
+
+msgid "Add game folder"
+msgstr "新增遊戲資料夾"
+
+msgid "Add game manually"
+msgstr "手動新增遊戲"
+
+msgid "Add local friend"
+msgstr "新增本地好友"
+
+msgid "Add local trophy"
+msgstr "新增本地獎杯"
+
+msgid "Add to Queue"
+msgstr "添加到隊列"
+
+msgid "Added to Playlist"
+msgstr "已新增至播放列表"
+
+msgid "Address: "
+msgstr "地址： "
+
+msgid "Adjust settings for the OpenXMB system."
+msgstr "調整 OpenXMB 系統的設定。"
+
+msgid "Album"
+msgstr "專輯"
+
+msgid "Album art exceeds texture upload capacity"
+msgstr "專輯封面超出紋理上傳容量"
+
+msgid "Album: "
+msgstr "專輯： "
+
+msgid "All videos"
+msgstr "所有影片"
+
+msgid "An artwork request is already in progress"
+msgstr "藝術品請求已在進行中"
+
+msgid "Animated Theme"
+msgstr "動畫主題"
+
+msgid "Anti-aliasing    "
+msgstr "抗鋸齒    "
+
+msgid "Apply a theme first, then use this action."
+msgstr "首先應用主題，然後使用此操作。"
+
+msgid "Apply this change to local library data"
+msgstr "將此變更套用至本機庫數據"
+
+msgid "Archive this user profile?"
+msgstr "存檔此用戶個人資料？"
+
+msgid "Archives the user's data; at least one profile is retained"
+msgstr "歸檔用戶的資料；至少保留一份個人資料"
+
+msgid "Arguments (quote values containing spaces)"
+msgstr "參數（包含空格的引用值）"
+
+msgid "Arrows + Z/X/A/S: play   Space: pause   F5/F8: save/load   F12: screenshot"
+msgstr "箭頭 + Z/X/A/S：播放 空格：暫停 F5/F8：儲存/載入 F12：螢幕截圖"
+
+msgid "Artist"
+msgstr "藝術家"
+
+msgid "Artist: "
+msgstr "藝術家： "
+
+msgid "Artwork key environment variable (no key values)"
+msgstr "圖稿鍵環境變數（無鍵值）"
+
+msgid "Artwork provider disabled"
+msgstr "藝術品提供者已禁用"
+
+msgid "Artwork saved: "
+msgstr "保存的藝術品： "
+
+msgid "Audio CDs, DVD and Blu-ray folders/devices. Playback uses an installed desktop player."
+msgstr "音訊 CD、DVD 和 Blu-ray 資料夾/設備。使用已安裝的桌面播放器進行播放。"
+
+msgid "Audio is muted during speed playback"
+msgstr "快速播放期間音訊被靜音"
+
+msgid "Audio output active"
+msgstr "音訊輸出有效"
+
+msgid "Audio track"
+msgstr "音軌"
+
+msgid "Avatar"
+msgstr "阿凡達"
+
+msgid "Avatar image"
+msgstr "頭像圖片"
+
+msgid "Avatar image path"
+msgstr "頭像圖片路徑"
+
+msgid "Away locally"
+msgstr "離開本地"
+
+msgid "Background / animation"
+msgstr "背景/動畫"
+
+msgid "Background image"
+msgstr "背景圖片"
+
+msgid "Binding saved"
+msgstr "綁定已儲存"
+
+msgid "Biography"
+msgstr "傳記"
+
+msgid "Browse in a separate system-browser window with your own keyboard and mouse."
+msgstr "使用您自己的鍵盤和滑鼠在單獨的系統瀏覽器視窗中瀏覽。"
+
+msgid "Browser address"
+msgstr "瀏覽器地址"
+
+msgid "CPU Cores / Threads"
+msgstr "CPU 核心/執行緒"
+
+msgid "CPU Threads"
+msgstr "CPU執行緒"
+
+msgid "Cannot Add Tracks"
+msgstr "無法新增曲目"
+
+msgid "Cannot Create Playlist"
+msgstr "無法建立播放列表"
+
+msgid "Cannot open file"
+msgstr "無法開啟文件"
+
+msgid "Cannot save video position: "
+msgstr "無法儲存影片位置： "
+
+msgid "Capture your desktop or start OpenXMB automatically when you log in."
+msgstr "擷取您的桌面或在您登入時自動啟動 OpenXMB。"
+
+msgid "Channels"
+msgstr "頻道"
+
+msgid "Channels: "
+msgstr "通路： "
+
+msgid "Choose Font File..."
+msgstr "選擇字型檔..."
+
+msgid "Choose executable, arguments, artwork, preview video and music"
+msgstr "選擇可執行檔、參數、藝術作品、預覽影片和音樂"
+
+msgid "Close"
+msgstr "關閉"
+
+msgid "Close dedicated browser session"
+msgstr "關閉專用瀏覽器會話"
+
+msgid "Close menu"
+msgstr "關閉選單"
+
+msgid "Codec"
+msgstr "編解碼器"
+
+msgid "Codec: "
+msgstr "編解碼器： "
+
+msgid "Configure scan roots without moving your games"
+msgstr "配置掃描根目錄而不移動您的遊戲"
+
+msgid "Confirm: play from track    Options: playlist    Extra: edit track    Back: close"
+msgstr "確認：從曲目播放 選項：播放清單 額外：編輯曲目 返回：關閉"
+
+msgid "Content: "
+msgstr "內容： "
+
+msgid "Control browser with gamepad"
+msgstr "使用遊戲手把控制瀏覽器"
+
+msgid "Controller prompts    "
+msgstr "控制器提示    "
+
+msgid "Controller rumble    "
+msgstr "控制器隆隆聲    "
+
+msgid "Core started in its own window. Escape returns here; F5 saves and F8 loads."
+msgstr "Core 在它自己的視窗中啟動。逃亡又回到這裡； F5 保存，F8 載入。"
+
+msgid "Core: "
+msgstr "核： "
+
+msgid "Could not save slideshow"
+msgstr "無法儲存幻燈片"
+
+msgid "Create Custom Theme"
+msgstr "建立自訂主題"
+
+msgid "Create Custom Theme..."
+msgstr "建立自訂主題..."
+
+msgid "Create a named category backed by a local folder"
+msgstr "建立由本機資料夾支援的命名類別"
+
+msgid "Create local user"
+msgstr "建立本地用戶"
+
+msgid "Creating custom theme..."
+msgstr "建立自訂主題..."
+
+msgid "Custom Sections"
+msgstr "客製化部分"
+
+msgid "Custom category"
+msgstr "自訂類別"
+
+msgid "Custom category name"
+msgstr "自訂類別名稱"
+
+msgid "Custom section"
+msgstr "客製化部分"
+
+msgid "Custom section saved"
+msgstr "已儲存自訂部分"
+
+msgid "Custom sections"
+msgstr "自訂部分"
+
+msgid "Custom theme created. Export it as a ZIP to share."
+msgstr "建立自訂主題。將其匯出為 ZIP 以便共用。"
+
+msgid "Date: "
+msgstr "日期： "
+
+msgid "Dedicated Graphics Memory"
+msgstr "專用顯存"
+
+msgid "Defaults restored"
+msgstr "恢復預設值"
+
+msgid "Delete "
+msgstr "刪除 "
+
+msgid "Delete Playlist..."
+msgstr "刪除播放清單..."
+
+msgid "Delete Playlist?"
+msgstr "刪除播放清單？"
+
+msgid "Delete local user"
+msgstr "刪除本機用戶"
+
+msgid "Delete preset? Type DELETE to confirm"
+msgstr "刪除預設？鍵入 DELETE 進行確認"
+
+msgid "Description"
+msgstr "描述"
+
+msgid "Designed by Kavish Krishnakumar in Manchester."
+msgstr "由曼徹斯特的 Kavish Krishnakumar 設計。"
+
+msgid "Desktop Tools"
+msgstr "桌面工具"
+
+msgid "Developer"
+msgstr "開發商"
+
+msgid "Disable artwork provider"
+msgstr "禁用藝術品提供者"
+
+msgid "Disabled or key absent; local artwork remains available"
+msgstr "殘疾人或鑰匙缺失；當地藝術品仍可使用"
+
+msgid "Disc Media"
+msgstr "光碟媒體"
+
+msgid "Disc ready. Select it to play."
+msgstr "光碟準備好了。選擇它來播放。"
+
+msgid "Discard"
+msgstr "丟棄"
+
+msgid "Discard unsaved edits and reload the saved track list?"
+msgstr "放棄未儲存的編輯並重新載入已儲存的曲目清單？"
+
+msgid "Display name"
+msgstr "顯示名稱"
+
+msgid "Document information"
+msgstr "文件訊息"
+
+msgid "Document page exceeds texture upload limit"
+msgstr "文檔頁面超出紋理上傳限制"
+
+msgid "Done"
+msgstr "完成"
+
+msgid "Double speed (muted)"
+msgstr "雙倍速（靜音）"
+
+msgid "Download artwork for this game"
+msgstr "下載該遊戲的美術作品"
+
+msgid "Edit Selected Track"
+msgstr "編輯選定的曲目"
+
+msgid "Emulation"
+msgstr "模擬"
+
+msgid "Emulation session finished. Save RAM is stored automatically."
+msgstr "模擬會話結束。儲存RAM會自動儲存。"
+
+msgid "Enable the provider and configure its key first; no request was made"
+msgstr "首先啟用提供者並配置其金鑰；沒有提出請求"
+
+msgid "Enabled and key is configured"
+msgstr "已啟用且金鑰已配置"
+
+msgid "End of queue"
+msgstr "隊列末尾"
+
+msgid "Enter"
+msgstr "輸入"
+
+msgid "Enter Address"
+msgstr "輸入地址"
+
+msgid "Enter Text"
+msgstr "輸入文字"
+
+msgid "Executable"
+msgstr "執行檔"
+
+msgid "Executable path or command"
+msgstr "可執行路徑或命令"
+
+msgid "Exit"
+msgstr "退出"
+
+msgid "Export selected theme..."
+msgstr "匯出選定的主題..."
+
+msgid "Export theme ZIP (new filename)"
+msgstr "匯出主題 ZIP（新檔案名稱）"
+
+msgid "Exporting theme..."
+msgstr "正在匯出主題..."
+
+msgid "FPS: {:.2f}"
+msgstr "FPS：{:.2f}"
+
+msgid "Failed to get file size"
+msgstr "取得檔案大小失敗"
+
+msgid "Failed to map file"
+msgstr "映射檔案失敗"
+
+msgid "Failed to open file"
+msgstr "無法開啟文件"
+
+msgid "Failed to open video"
+msgstr "無法打開視頻"
+
+msgid "Failed to read file"
+msgstr "讀取文件失敗"
+
+msgid "Favorites are kept in your local profile"
+msgstr "收藏夾保存在您的本地個人資料中"
+
+msgid "First page"
+msgstr "第一頁"
+
+msgid "Fit page"
+msgstr "適合頁面"
+
+msgid "Folder"
+msgstr "資料夾"
+
+msgid "Folder does not exist"
+msgstr "資料夾不存在"
+
+msgid "Font file"
+msgstr "字型文件"
+
+msgid "For more information, see the Licenses section."
+msgstr "有關更多信息，請參閱許可證部分。"
+
+msgid "Forward"
+msgstr "前進"
+
+msgid "Frame cap    "
+msgstr "框帽    "
+
+msgid "Friend display name"
+msgstr "好友顯示名稱"
+
+msgid "Friends - local simulation"
+msgstr "老友記-本地模擬"
+
+msgid "Full screen (stretch)"
+msgstr "全螢幕（拉伸）"
+
+msgid "GPU Local Memory"
+msgstr "GPU 本地內存"
+
+msgid "Game Library"
+msgstr "遊戲庫"
+
+msgid "Game details"
+msgstr "遊戲詳情"
+
+msgid "Game folder path"
+msgstr "遊戲資料夾路徑"
+
+msgid "Game library"
+msgstr "遊戲庫"
+
+msgid "Game library folders"
+msgstr "遊戲庫資料夾"
+
+msgid "Game title"
+msgstr "遊戲名稱"
+
+msgid "Game/content file (empty for no-content cores)"
+msgstr "遊戲/內容檔案（對於無內容核心為空白）"
+
+msgid "Genre"
+msgstr "流派"
+
+msgid "Genre: "
+msgstr "類型： "
+
+msgid "Glass icons    "
+msgstr "玻璃圖示    "
+
+msgid "Grade"
+msgstr "等級"
+
+msgid "Graphics Driver"
+msgstr "顯示卡驅動程式"
+
+msgid "Graphics Processor"
+msgstr "圖形處理器"
+
+msgid "Home"
+msgstr "首頁"
+
+msgid "IF YOU HAVE A HISTORY OF EPILEPSY OR SEIZURES, CONSULT A DOCTOR BEFORE USE. CERTAIN PATTERNS MAY TRIGGER SEIZURES WITH NO PRIOR HISTORY. BEFORE USING THIS PRODUCT, CAREFULLY READ THE INSTRUCTION MANUAL."
+msgstr "如果您有癲癇或癲癇病史，請在使用前諮詢醫生。某些模式可能引發無既往病史的癲癇發作。在使用本產品前，請先仔細閱讀使用說明書。"
+
+msgid "Icon"
+msgstr "圖示"
+
+msgid "Icon image"
+msgstr "圖示圖像"
+
+msgid "Icons"
+msgstr "圖示"
+
+msgid "Image exceeds texture upload limit"
+msgstr "圖片超出紋理上傳限制"
+
+msgid "Import .p3t, .zip or theme folder"
+msgstr "導入 .p3t、.zip 或主題資料夾"
+
+msgid "Import inbox ("
+msgstr "導入收件匣（"
+
+msgid "Import theme or icon pack..."
+msgstr "匯入主題或圖示包..."
+
+msgid "Imported "
+msgstr "進口 "
+
+msgid "Importing inbox..."
+msgstr "正在導入收件匣..."
+
+msgid "Importing theme..."
+msgstr "正在導入主題..."
+
+msgid "Imports game manifests, desktop entries and native executables"
+msgstr "導入遊戲清單、桌面條目和本機可執行文件"
+
+msgid "Install / manage themes..."
+msgstr "安裝/管理主題..."
+
+msgid "Install CUPS client tools (lp or lpr), configure a printer, and add the tools to PATH."
+msgstr "安裝 CUPS 用戶端工具（lp 或 lpr），設定印表機，並將工具新增至 PATH。"
+
+msgid "Installed Memory"
+msgstr "已安裝內存"
+
+msgid "Installed copy removed. Original import source was kept."
+msgstr "已安裝的副本已刪除。保留原始進口來源。"
+
+msgid "InterfaceFX TEXT PROBE: The quick brown fox jumps over the lazy dog."
+msgstr "InterfaceFX 文字探測：敏捷的棕色狐狸跳過了懶狗。"
+
+msgid "Keep current data"
+msgstr "保留當前數據"
+
+msgid "Keeps all game files"
+msgstr "保留所有遊戲文件"
+
+msgid "Keeps its folder and files"
+msgstr "保留其資料夾和文件"
+
+msgid "Keeps the executable and source media"
+msgstr "保留執行檔和來源媒體"
+
+msgid "Keyboard Controls"
+msgstr "鍵盤控制"
+
+msgid "Keyboard bindings"
+msgstr "鍵盤綁定"
+
+msgid "Last page"
+msgstr "最後一頁"
+
+msgid "Launch "
+msgstr "發射 "
+
+msgid "Launch arguments"
+msgstr "啟動參數"
+
+msgid "Left/Right page · Home/End first/last · Up/Down or wheel zoom · Drag to pan · P print · Tab options"
+msgstr "左/右頁·首頁/尾頁·第一個/最後一個·向上/向下或滾輪縮放·拖曳平移·P列印·選項卡選項"
+
+msgid "Library"
+msgstr "圖書館"
+
+msgid "Libretro core library"
+msgstr "Libretro 核心庫"
+
+msgid "Loading page…"
+msgstr "正在載入頁面..."
+
+msgid "Loading…"
+msgstr "加載中..."
+
+msgid "Local Account"
+msgstr "本地帳戶"
+
+msgid "Local Friends"
+msgstr "當地朋友"
+
+msgid "Local Profiles"
+msgstr "當地概況"
+
+msgid "Local account - no online sign-in"
+msgstr "本機帳戶 - 無需線上登入"
+
+msgid "Local account display name"
+msgstr "本機帳戶顯示名稱"
+
+msgid "Local account status"
+msgstr "本地帳戶狀態"
+
+msgid "Local biography"
+msgstr "當地傳記"
+
+msgid "Local friend"
+msgstr "當地朋友"
+
+msgid "Local friend's name"
+msgstr "當地朋友的名字"
+
+msgid "Local friends"
+msgstr "當地朋友"
+
+msgid "Local library updated"
+msgstr "本機庫已更新"
+
+msgid "Local profile"
+msgstr "本地簡介"
+
+msgid "Local status"
+msgstr "當地狀況"
+
+msgid "Local status text"
+msgstr "本地狀態文字"
+
+msgid "Local trophies"
+msgstr "本地獎杯"
+
+msgid "Local trophy"
+msgstr "本地獎杯"
+
+msgid "Local users"
+msgstr "本地用戶"
+
+msgid "Locked: "
+msgstr "鎖定： "
+
+msgid "Looking up game artwork..."
+msgstr "正在查找遊戲原圖..."
+
+msgid "Makes HTTPS requests only when provider and key are configured"
+msgstr "僅當配置了提供者和金鑰時才發出 HTTPS 請求"
+
+msgid "Manage game folders"
+msgstr "管理遊戲資料夾"
+
+msgid "Manage offline simulated friend records"
+msgstr "管理離線模擬好友記錄"
+
+msgid "Manage offline trophy records"
+msgstr "管理離線獎盃記錄"
+
+msgid "Mark favorite"
+msgstr "標記最愛"
+
+msgid "Mark locked"
+msgstr "標記已鎖定"
+
+msgid "Media folder"
+msgstr "媒體資料夾"
+
+msgid "Memory Transfer Rate"
+msgstr "記憶體傳輸率"
+
+msgid "Menu"
+msgstr "選單"
+
+msgid "Mounted optical-disc directory or device"
+msgstr "已安裝的光碟目錄或設備"
+
+msgid "Move Down"
+msgstr "下移"
+
+msgid "Move Selected Down"
+msgstr "下移所選內容"
+
+msgid "Move Selected Up"
+msgstr "上移所選內容"
+
+msgid "Move Up"
+msgstr "向上移動"
+
+msgid "Move photo to OpenXMB Trash?"
+msgstr "將照片移至 OpenXMB 垃圾箱？"
+
+msgid "Move to Trash"
+msgstr "移至垃圾箱"
+
+msgid "Music Player"
+msgstr "音樂播放器"
+
+msgid "Music folder"
+msgstr "音樂資料夾"
+
+msgid "My Section"
+msgstr "我的版塊"
+
+msgid "My Theme"
+msgstr "我的主題"
+
+msgid "Native YUV GPU conversion"
+msgstr "原生 YUV GPU 轉換"
+
+msgid "Native libretro software cores. Provide your own core, content and BIOS files."
+msgstr "原生 libretro 軟體核心。提供您自己的核心、內容和 BIOS 檔案。"
+
+msgid "New Game"
+msgstr "新遊戲"
+
+msgid "New Playlist"
+msgstr "新播放列表"
+
+msgid "New Playlist..."
+msgstr "新播放清單..."
+
+msgid "New User"
+msgstr "新用戶"
+
+msgid "New user name"
+msgstr "新用戶名"
+
+msgid "Next frame"
+msgstr "下一幀"
+
+msgid "Next page"
+msgstr "下一頁"
+
+msgid "Next video"
+msgstr "下一個視頻"
+
+msgid "No RPCS3 data folder detected. Add your disc or installed-game folder manually."
+msgstr "未偵測到 RPCS3 資料資料夾。手動新增光碟或已安裝的遊戲資料夾。"
+
+msgid "No audio CD, mounted DVD, or mounted Blu-ray was found."
+msgstr "未找到音訊 CD、已安裝的 DVD 或已安裝的 Blu-ray。"
+
+msgid "No audio tracks"
+msgstr "沒有音軌"
+
+msgid "No entries yet. Use the actions above to add one."
+msgstr "還沒有條目。使用上述操作新增一個。"
+
+msgid "No native viewer is registered for this file type"
+msgstr "沒有為此文件類型註冊本機檢視器"
+
+msgid "No playable disc structure was found at that path."
+msgstr "在該路徑中找不到可播放的光碟結構。"
+
+msgid "No print service is available"
+msgstr "不提供列印服務"
+
+msgid "No viewer is available for "
+msgstr "沒有檢視器可供查看 "
+
+msgid "None (no-content core)"
+msgstr "無（無內容核心）"
+
+msgid "Normal (fit)"
+msgstr "正常（適合）"
+
+msgid "Normal speed"
+msgstr "正常速度"
+
+msgid "Offline simulation; no messages or remote requests are sent"
+msgstr "離線模擬；不發送任何訊息或遠端請求"
+
+msgid "Offline tracking; does not connect to a console account"
+msgstr "離線追蹤；未連接到控制台帳戶"
+
+msgid "Only this local profile is changed"
+msgstr "僅更改此本機設定檔"
+
+msgid "Open "
+msgstr "打開 "
+
+msgid "Open / Resume"
+msgstr "開啟/恢復"
+
+msgid "Open Link"
+msgstr "打開連結"
+
+msgid "Open a dedicated browser window first."
+msgstr "首先開啟一個專用的瀏覽器視窗。"
+
+msgid "Open browser window"
+msgstr "開啟瀏覽器視窗"
+
+msgid "Open disc directory/device..."
+msgstr "開啟光碟目錄/裝置..."
+
+msgid "Open in native viewer"
+msgstr "在本機檢視器中開啟"
+
+msgid "OpenXMB "
+msgstr "OpenXMB "
+
+msgid "OpenXMB Settings"
+msgstr "OpenXMB 設定"
+
+msgid "Opening Internet Browser…"
+msgstr "開啟網際網路瀏覽器..."
+
+msgid "Opening video…"
+msgstr "開啟影片..."
+
+msgid "Operating System"
+msgstr "作業系統"
+
+msgid "Optical Media"
+msgstr "光學媒體"
+
+msgid "Optional RAWG artwork provider"
+msgstr "可選的 RAWG 藝術品提供商"
+
+msgid "Options: save / add to playlist / reorder / remove"
+msgstr "選項：儲存/新增至播放清單/重新排序/刪除"
+
+msgid "Original appearance restored."
+msgstr "恢復了原來的面貌。"
+
+msgid "Original size"
+msgstr "原始尺寸"
+
+msgid "Overlay layers"
+msgstr "疊加層"
+
+msgid "PHOTOSENSITIVE EPILEPSY"
+msgstr "光敏性癲癇"
+
+msgid "Page Information"
+msgstr "頁面資訊"
+
+msgid "Page loaded"
+msgstr "頁面已載入"
+
+msgid "Paused"
+msgstr "已暫停"
+
+msgid "Photo Playlists"
+msgstr "照片播放列表"
+
+msgid "Photo copy saved"
+msgstr "照片副本已儲存"
+
+msgid "Photo information"
+msgstr "照片訊息"
+
+msgid "Photo moved to OpenXMB Trash"
+msgstr "照片已移至 OpenXMB 垃圾箱"
+
+msgid "Photo operation failed"
+msgstr "照片操作失敗"
+
+msgid "Photo sent to print service"
+msgstr "照片寄至列印服務"
+
+msgid "Pictures folder"
+msgstr "圖片資料夾"
+
+msgid "Play Next"
+msgstr "播放下一個"
+
+msgid "Play Now"
+msgstr "立即播放"
+
+msgid "Play Queue"
+msgstr "播放隊列"
+
+msgid "Play from beginning"
+msgstr "從頭開始玩"
+
+msgid "Play preview music"
+msgstr "播放預覽音樂"
+
+msgid "Play video preview"
+msgstr "播放影片預覽"
+
+msgid "Playback error"
+msgstr "播放錯誤"
+
+msgid "Playback speed"
+msgstr "播放速度"
+
+msgid "Playing"
+msgstr "演奏"
+
+msgid "Playing "
+msgstr "演奏 "
+
+msgid "Playing game preview music"
+msgstr "播放遊戲預覽音樂"
+
+msgid "Playing playlist"
+msgstr "播放播放清單"
+
+msgid "Playlist"
+msgstr "播放清單"
+
+msgid "Playlist Created"
+msgstr "播放清單已建立"
+
+msgid "Playlist renamed"
+msgstr "播放清單已重新命名"
+
+msgid "Playlist saved"
+msgstr "播放清單已儲存"
+
+msgid "Present locally"
+msgstr "本地呈現"
+
+msgid "Preset applied."
+msgstr "應用預設。"
+
+msgid "Preset deleted."
+msgstr "預設已刪除。"
+
+msgid "Preset kept."
+msgstr "保留預設。"
+
+msgid "Preset saved."
+msgstr "預設已儲存。"
+
+msgid "Preset: "
+msgstr "預設： "
+
+msgid "Preview music"
+msgstr "預覽音樂"
+
+msgid "Preview video"
+msgstr "預覽影片"
+
+msgid "Previous frame"
+msgstr "上一幀"
+
+msgid "Previous page"
+msgstr "上一頁"
+
+msgid "Previous video"
+msgstr "上一個視頻"
+
+msgid "Print current page…"
+msgstr "列印當前頁..."
+
+msgid "Print document?"
+msgstr "列印文件？"
+
+msgid "Print entire PDF…"
+msgstr "列印整個 PDF..."
+
+msgid "Print job submitted"
+msgstr "列印作業已提交"
+
+msgid "Printing failed"
+msgstr "列印失敗"
+
+msgid "Printing unavailable"
+msgstr "無法列印"
+
+msgid "Processor"
+msgstr "處理器"
+
+msgid "Profile: "
+msgstr "簡介： "
+
+msgid "Provider enabled. Supply the key securely in environment settings."
+msgstr "提供者已啟用。在環境設定中安全地提供金鑰。"
+
+msgid "Queue added; choose Save to keep changes"
+msgstr "隊列已新增；選擇儲存以保留更改"
+
+msgid "RGBA upload"
+msgstr "RGBA上傳"
+
+msgid "Refresh"
+msgstr "重新整理"
+
+msgid "Refresh installed cores (Left/Right cycles core)"
+msgstr "刷新已安裝的核心（左/右循環核心）"
+
+msgid "Refresh optical media"
+msgstr "刷新光學介質"
+
+msgid "Release year (0 if unknown)"
+msgstr "發布年份（若未知則為 0）"
+
+msgid "Reload"
+msgstr "重新載入"
+
+msgid "Reload Saved Playlist"
+msgstr "重新載入已儲存的播放列表"
+
+msgid "Reload Saved Playlist?"
+msgstr "重新載入已儲存的播放清單？"
+
+msgid "Reload this playlist before saving; its contents could not be read."
+msgstr "儲存之前重新載入此播放清單；無法讀取其內容。"
+
+msgid "Remove Selected"
+msgstr "刪除所選內容"
+
+msgid "Remove favorite"
+msgstr "刪除收藏夾"
+
+msgid "Remove from Queue"
+msgstr "從佇列中刪除"
+
+msgid "Remove from game library"
+msgstr "從遊戲庫中刪除"
+
+msgid "Remove installed theme..."
+msgstr "刪除已安裝的主題..."
+
+msgid "Remove installed theme? Type DELETE to confirm"
+msgstr "刪除已安裝的主題？鍵入 DELETE 進行確認"
+
+msgid "Remove local friend"
+msgstr "刪除本地好友"
+
+msgid "Remove local friend?"
+msgstr "刪除本地好友？"
+
+msgid "Remove local trophy"
+msgstr "移除本地獎杯"
+
+msgid "Remove local trophy?"
+msgstr "移除本地獎盃？"
+
+msgid "Remove section"
+msgstr "刪除部分"
+
+msgid "Remove this custom section?"
+msgstr "刪除這個自訂部分嗎？"
+
+msgid "Remove this game entry?"
+msgstr "刪除這個遊戲條目嗎？"
+
+msgid "Remove this scan root?"
+msgstr "刪除這個掃描根目錄嗎？"
+
+msgid "Removes this offline record"
+msgstr "刪除該離線記錄"
+
+msgid "Rename Playlist"
+msgstr "重新命名播放列表"
+
+msgid "Rename Playlist..."
+msgstr "重新命名播放清單..."
+
+msgid "Rename section"
+msgstr "重新命名部分"
+
+msgid "Rename user"
+msgstr "重新命名用戶"
+
+msgid "Repeat all"
+msgstr "重複全部"
+
+msgid "Repeat off"
+msgstr "重複關閉"
+
+msgid "Repeat one"
+msgstr "重複一"
+
+msgid "Repeat: "
+msgstr "重複： "
+
+msgid "Replay 10 seconds"
+msgstr "重播10秒"
+
+msgid "Reported CPU Clock"
+msgstr "報告的 CPU 時鐘"
+
+msgid "Reset"
+msgstr "重置"
+
+msgid "Reset current profile settings"
+msgstr "重置目前設定檔設定"
+
+msgid "Reset settings?"
+msgstr "重置設定？"
+
+msgid "Resize"
+msgstr "調整大小"
+
+msgid "Restore default bindings"
+msgstr "恢復預設綁定"
+
+msgid "Restore the current profile's default shell preferences? Media files and other profiles are preserved."
+msgstr "恢復目前設定檔的預設 shell 首選項？媒體檔案和其他設定檔將被保留。"
+
+msgid "Restore the original appearance."
+msgstr "恢復原來的樣子。"
+
+msgid "Return"
+msgstr "返回"
+
+msgid "SDL scancode for "
+msgstr "SDL 掃描碼 "
+
+msgid "Save"
+msgstr "儲存"
+
+msgid "Save Playlist Changes?"
+msgstr "儲存播放清單變更嗎？"
+
+msgid "Save Queue as Playlist..."
+msgstr "將隊列另存為播放清單..."
+
+msgid "Save component preset"
+msgstr "儲存組件預設"
+
+msgid "Save component preset..."
+msgstr "儲存組件預設..."
+
+msgid "Save crop"
+msgstr "節省作物"
+
+msgid "Saved"
+msgstr "已儲存"
+
+msgid "Saved playlist loaded"
+msgstr "儲存的播放清單已加載"
+
+msgid "Saving…"
+msgstr "正在儲存..."
+
+msgid "Scan configured folders"
+msgstr "掃描配置的資料夾"
+
+msgid "Scan game folders"
+msgstr "掃描遊戲資料夾"
+
+msgid "Scene search"
+msgstr "場景搜尋"
+
+msgid "Screen mode"
+msgstr "螢幕模式"
+
+msgid "Scroll Down"
+msgstr "向下捲動"
+
+msgid "Scroll Up"
+msgstr "向上捲動"
+
+msgid "Section folder path"
+msgstr "節資料夾路徑"
+
+msgid "Section icon path"
+msgstr "部分圖示路徑"
+
+msgid "Section name"
+msgstr "欄位名稱"
+
+msgid "Select"
+msgstr "選擇"
+
+msgid "Select / Edit"
+msgstr "選擇/編輯"
+
+msgid "Select a core library"
+msgstr "選擇核心庫"
+
+msgid "Separate settings, themes, game library and local social data"
+msgstr "獨立的設定、主題、遊戲庫和本地社交數據"
+
+msgid "Shift"
+msgstr "轉變"
+
+msgid "Show FPS    "
+msgstr "顯示FPS    "
+
+msgid "Show GPU memory    "
+msgstr "顯示 GPU 內存    "
+
+msgid "Slideshow saved: "
+msgstr "幻燈片已儲存： "
+
+msgid "Sound effects"
+msgstr "音效"
+
+msgid "Space"
+msgstr "空間"
+
+msgid "Start OpenXMB at login: "
+msgstr "登入時啟動 OpenXMB： "
+
+msgid "Start emulation"
+msgstr "開始仿真"
+
+msgid "Started "
+msgstr "開始 "
+
+msgid "Status"
+msgstr "狀態"
+
+msgid "Stick: pointer  A: click  X: Tab  Y: text  Start: address  Shoulder: Enter  B: return"
+msgstr "棍棒：指標 A：點選 X：製表符 Y：文字 開始：位址 肩：輸入 B：返回"
+
+msgid "Stop emulation"
+msgstr "停止仿真"
+
+msgid "Stopped"
+msgstr "已停止"
+
+msgid "Stops optional provider lookups"
+msgstr "停止可選的提供者查找"
+
+msgid "Submit page "
+msgstr "提交頁面 "
+
+msgid "Submit the entire PDF to the default printer?"
+msgstr "將整個 PDF 提交到預設印表機？"
+
+msgid "Submitting print job…"
+msgstr "正在提交列印作業..."
+
+msgid "Subtitles"
+msgstr "字幕"
+
+msgid "Supported manifest: openxmb-game.json"
+msgstr "支援的清單：openxmb-game.json"
+
+msgid "Switch to "
+msgstr "切換到 "
+
+msgid "System Tools"
+msgstr "系統工具"
+
+msgid "Take screenshot"
+msgstr "截圖"
+
+msgid "Text"
+msgstr "文字"
+
+msgid "Text for the focused browser field"
+msgstr "焦點瀏覽器欄位的文字"
+
+msgid "The GNU General Public License version 3 or later applies to OpenXMB. License files could not be found in this installation."
+msgstr "GNU General Public License 版本 3 或更高版本適用於 OpenXMB。在此安裝中找不到許可證文件。"
+
+msgid "The Syndromatic Open Xross Media Bar shell experience."
+msgstr "Syndromatic Open Xross Media Bar shell 體驗。"
+
+msgid "The browser exited unexpectedly. Reopen Internet Browser; check the WebView2 Runtime if this continues."
+msgstr "瀏覽器意外退出。重新開啟網際網路瀏覽器；如果這種情況繼續存在，請檢查 WebView2 執行階段。"
+
+msgid "The core session could not continue. Check the selected core/content and its BIOS requirements."
+msgstr "核心會話無法繼續。檢查所選的核心/內容及其 BIOS 要求。"
+
+msgid "The document was accepted by the configured print command."
+msgstr "配置的列印命令接受了該文件。"
+
+msgid "The original is recoverable at:\n"
+msgstr "原件可在以下位置恢復：\n"
+
+msgid "The play queue is empty"
+msgstr "播放隊列為空"
+
+msgid "The scanner reads files; it never launches discovered games"
+msgstr "掃描器讀取檔案；它從不啟動發現的遊戲"
+
+msgid "The selected local item no longer exists"
+msgstr "所選的本地項目不再存在"
+
+msgid "Theme Library"
+msgstr "主題庫"
+
+msgid "Theme applied. Your component choices were saved."
+msgstr "主題已套用。您的組件選擇已儲存。"
+
+msgid "Theme colors"
+msgstr "主題顏色"
+
+msgid "Theme exported to "
+msgstr "主題導出到 "
+
+msgid "Theme kept."
+msgstr "主題保留。"
+
+msgid "Theme library refreshed."
+msgstr "主題庫已刷新。"
+
+msgid "Theme manager is not attached to the shell yet"
+msgstr "主題管理器尚未附加到 shell"
+
+msgid "Theme operation in progress. Originals remain unchanged."
+msgstr "主題操作正在進行中。原件保持不變。"
+
+msgid "This folder is empty."
+msgstr "該資料夾是空的。"
+
+msgid "This playlist is empty. Open Options to add tracks or a folder."
+msgstr "該播放清單是空的。開啟“選項”以新增曲目或資料夾。"
+
+msgid "This program is licensed to you under the GNU General Public License version 3.0."
+msgstr "程式根據 GNU General Public License 版本 3.0 授權給您。"
+
+msgid "This setting is not supported by this build."
+msgstr "此版本不支援此設定。"
+
+msgid "This video"
+msgstr "這個視頻"
+
+msgid "Title"
+msgstr "標題"
+
+msgid "Toggle simulated presence"
+msgstr "切換模擬存在"
+
+msgid "Track"
+msgstr "軌道"
+
+msgid "Track added to queue"
+msgstr "曲目已新增至隊列"
+
+msgid "Track will play next"
+msgstr "接下來將播放曲目"
+
+msgid "Track, Folder or Playlist Path"
+msgstr "曲目、資料夾或播放清單路徑"
+
+msgid "Track: "
+msgstr "曲目： "
+
+msgid "Trophy description"
+msgstr "獎盃說明"
+
+msgid "Trophy title"
+msgstr "獎盃名稱"
+
+msgid "Type into browser field..."
+msgstr "在瀏覽器欄位中輸入..."
+
+msgid "Unavailable"
+msgstr "不可用"
+
+msgid "Unlock local trophy"
+msgstr "解鎖本地獎杯"
+
+msgid "Unlocked: "
+msgstr "解鎖： "
+
+msgid "Up/Down: select    Confirm: change    Cancel: back"
+msgstr "上/下：選擇 確認：更改 取消：返回"
+
+msgid "Use an SDL scancode from 4 to 512"
+msgstr "使用 SDL 掃描碼從 4 到 512"
+
+msgid "User name"
+msgstr "使用者名稱"
+
+msgid "User profile"
+msgstr "使用者資料"
+
+msgid "Uses installed RPCS3 data roots; custom disc folders can be added normally"
+msgstr "使用已安裝的 RPCS3 資料根；自訂光碟資料夾可以正常新增"
+
+msgid "VSync    "
+msgstr "VSync    "
+
+msgid "Video Memory: {:.2f}/{:.2f} MB"
+msgstr "視訊記憶體：{:.2f}/{:.2f} MB"
+
+msgid "Video could not be loaded"
+msgstr "影片無法載入"
+
+msgid "Video information"
+msgstr "視訊訊息"
+
+msgid "Video list"
+msgstr "影片列表"
+
+msgid "Video playback failed"
+msgstr "影片播放失敗"
+
+msgid "Video upload failed: "
+msgstr "影片上傳失敗： "
+
+msgid "Videos folder"
+msgstr "影片資料夾"
+
+msgid "View background artwork"
+msgstr "查看背景藝術品"
+
+msgid "Volume"
+msgstr "體積"
+
+msgid "Volume  "
+msgstr "體積  "
+
+msgid "Volume +"
+msgstr "音量+"
+
+msgid "Volume −"
+msgstr "體積 -"
+
+msgid "Wait for the photo to finish loading"
+msgstr "等待照片加載完成"
+
+msgid "Wallpaper updated"
+msgstr "壁紙更新"
+
+msgid "Web address"
+msgstr "網址"
+
+msgid "Working directory"
+msgstr "工作目錄"
+
+msgid "Year"
+msgstr "年份"
+
+msgid "Year must be 0-9999"
+msgstr "年份必須為 0-9999"
+
+msgid "Zoom in"
+msgstr "放大"
+
+msgid "Zoom must be between 0.25 and 5.0"
+msgstr "縮放必須介於 0.25 和 5.0 之間"
+
+msgid "Zoom out"
+msgstr "縮小"
+
+msgid "open "
+msgstr "打開 "
+
+msgid "version "
+msgstr "版本 "
+
+msgid "¼ speed (muted)"
+msgstr "¼ 速度（靜音）"
+
+msgid "½ speed (muted)"
+msgstr "½ 速度（靜音）"
+
+msgid "← More text →"
+msgstr "← 更多文字 →"
+
+msgid "✓ Off"
+msgstr "✓ 關閉"
+
+msgid "Vulkan"
+msgstr "Vulkan"
+
+msgid "OK"
+msgstr "確定"
+
+# Native player metadata labels; preserve dynamic metadata separately.
+
+msgid "Album:"
+msgstr "專輯："
+
+msgid "Artist:"
+msgstr "藝術家："
+
+msgid "Genre:"
+msgstr "流派："
+
+msgid "Date:"
+msgstr "日期："
+
+msgid "Track:"
+msgstr "軌道："
+
+msgid "Codec:"
+msgstr "編解碼器："
+
+msgid "Channels:"
+msgstr "頻道："
+
+msgid "Use system language"
+msgstr "使用系統語言"
+
+msgid "Import inbox"
+msgstr "待匯入項目"
+
+msgid "Preset:"
+msgstr "預設："

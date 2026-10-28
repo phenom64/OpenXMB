@@ -1,0 +1,5073 @@
+# OpenXMB translations.
+msgid ""
+msgstr ""
+"Project-Id-Version: OpenXMB 1.0\n"
+"Language: ja\n"
+"PO-Revision-Date: 2026-10-28 00:00+0000\n"
+"Last-Translator: Machine-assisted translation\n"
+"Language-Team: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgid "\nSample rate: "
+msgstr "\nサンプルレート:"
+
+msgid "\nVideo decoder details are available in the video player's information display."
+msgstr "\nビデオ デコーダーの詳細は、ビデオ プレーヤーの情報表示で確認できます。"
+
+msgid " Hz\nChannels: "
+msgstr "Hz\nチャンネル:"
+
+msgid " for "
+msgstr "のために"
+
+msgid " games to the library."
+msgstr "ゲームを図書館に。"
+
+msgid "(No registered devices)"
+msgstr "(登録されているデバイスがありません)"
+
+msgid "*User"
+msgstr "*ユーザー"
+
+msgid "+1"
+msgstr "+1"
+
+msgid "+2"
+msgstr "+2"
+
+msgid "+3"
+msgstr "+3"
+
+msgid "+4"
+msgstr "+4"
+
+msgid "-1"
+msgstr "-1"
+
+msgid "-2"
+msgstr "-2"
+
+msgid "-3"
+msgstr "-3"
+
+msgid "-4"
+msgstr "-4"
+
+msgid "1"
+msgstr "1"
+
+msgid "1 minute"
+msgstr "1分"
+
+msgid "1. Transfer data from this system to the other OpenXMB system."
+msgstr "1. このシステムから他の OpenXMB システムにデータを転送します。"
+
+msgid "10"
+msgstr "10"
+
+msgid "10 Images"
+msgstr "10枚の画像"
+
+msgid "10 minutes"
+msgstr "10分"
+
+msgid "10 seconds"
+msgstr "10秒"
+
+msgid "1000BASE-T Full-Duplex"
+msgstr "1000BASE-T 全二重"
+
+msgid "1000BASE-T Half-Duplex"
+msgstr "1000BASE-T 半二重"
+
+msgid "100BASE-TX Full-Duplex"
+msgstr "100BASE-TX 全二重"
+
+msgid "100BASE-TX Half-Duplex"
+msgstr "100BASE-TX半二重"
+
+msgid "106481"
+msgstr "106481"
+
+msgid "1080i"
+msgstr "1080i"
+
+msgid "1080p"
+msgstr "1080p"
+
+msgid "1080p 24 Hz Output (HDMI)"
+msgstr "1080p 24 Hz 出力 (HDMI)"
+
+msgid "10BASE-T Full-Duplex"
+msgstr "10BASE-T 全二重"
+
+msgid "10BASE-T Half-Duplex"
+msgstr "10BASE-T 半二重"
+
+msgid "11"
+msgstr "11"
+
+msgid "12-Hour Clock"
+msgstr "12時間時計"
+
+msgid "1245403"
+msgstr "1245403"
+
+msgid "1308922"
+msgstr "1308922"
+
+msgid "15 minutes"
+msgstr "15分"
+
+msgid "15 seconds of video starting from this scene will be set as the icon.\nIf an icon has already been set, it will be overwritten.\nDo you want to continue?"
+msgstr "このシーンから始まる15秒間の動画がアイコンとして設定されます。\nすでにアイコンが設定されている場合は上書きされます。\n続行しますか?"
+
+msgid "2"
+msgstr "2"
+
+msgid "2 minutes"
+msgstr "2分"
+
+msgid "2. Transfer data from the other OpenXMB system to this system."
+msgstr "2. 他の OpenXMB システムからこのシステムにデータを転送します。"
+
+msgid "24-Hour Clock"
+msgstr "24時間時計"
+
+msgid "3"
+msgstr "3"
+
+msgid "30 minutes"
+msgstr "30分"
+
+msgid "35 Tracks  28:00"
+msgstr "35 トラック 28:00"
+
+msgid "358972"
+msgstr "358972"
+
+msgid "3D Display (PSP Remasters)"
+msgstr "3D ディスプレイ (PSP リマスター)"
+
+msgid "4"
+msgstr "4"
+
+msgid "44.1 kHz"
+msgstr "44.1kHz"
+
+msgid "48 kHz"
+msgstr "48kHz"
+
+msgid "480p"
+msgstr "480p"
+
+msgid "5"
+msgstr "5"
+
+msgid "5 minutes"
+msgstr "5分"
+
+msgid "5 seconds"
+msgstr "5秒"
+
+msgid "50 Hz Video Output"
+msgstr "50 Hz ビデオ出力"
+
+msgid "509987"
+msgstr "509987"
+
+msgid "551537"
+msgstr "551537"
+
+msgid "576p"
+msgstr "576p"
+
+msgid "586388"
+msgstr "586388"
+
+msgid "6"
+msgstr "6"
+
+msgid "677357"
+msgstr "677357"
+
+msgid "7"
+msgstr "7"
+
+msgid "720p"
+msgstr "720p"
+
+msgid "8"
+msgstr "8"
+
+msgid "88.2 kHz"
+msgstr "88.2kHz"
+
+msgid "893848"
+msgstr "893848"
+
+msgid "9"
+msgstr "9"
+
+msgid "96 kHz"
+msgstr "96kHz"
+
+msgid "976156"
+msgstr "976156"
+
+msgid "A-B Repeat"
+msgstr "A-Bリピート"
+
+msgid "AAC"
+msgstr "AAC"
+
+msgid "AOSS"
+msgstr "AOSS"
+
+msgid "ATERM-5F3C2A-G"
+msgstr "ATERM-5F3C2A-G"
+
+msgid "AV MULTI / S Video"
+msgstr "AVマルチ/Sビデオ"
+
+msgid "AV MULTI / SCART"
+msgstr "AVマルチ/SCART"
+
+msgid "AV Settings"
+msgstr "AV設定"
+
+msgid "AVC  640x360"
+msgstr "AVC 640x360"
+
+msgid "Accessory"
+msgstr "アクセサリ"
+
+msgid "Accessory Settings"
+msgstr "アクセサリ設定"
+
+msgid "Ad Hoc Channel (PSP Remasters)"
+msgstr "アドホック チャンネル (PSP リマスター)"
+
+msgid "Ad Hoc Mode (PSP Remasters)"
+msgstr "アドホック モード (PSP リマスター)"
+
+msgid "Add Term"
+msgstr "用語を追加"
+
+msgid "Add a Friend"
+msgstr "友達を追加する"
+
+msgid "Add a player to your Friends list using their PlayStation®Network ID."
+msgstr "PlayStation®Network ID を使用してプレイヤーをフレンド リストに追加します。"
+
+msgid "Add to Playlist"
+msgstr "プレイリストに追加"
+
+msgid "Add words to be displayed as options for predictive text entry when using the on-screen keyboard.\nSelect an option."
+msgstr "スクリーン キーボードを使用するときに、予測テキスト入力のオプションとして表示される単語を追加します。\nオプションを選択します。"
+
+msgid "Add words to be displayed as options for predictive text entry.\nSelect an option."
+msgstr "予測文字入力の選択肢として表示する単語を追加します。\nオプションを選択します。"
+
+msgid "Add/Edit Term"
+msgstr "用語の追加/編集"
+
+msgid "Added "
+msgstr "追加されました"
+
+msgid "Address"
+msgstr "住所"
+
+msgid "Adjust settings for connection to the Internet.\nIf making a wired connection, you must have an Ethernet cable connected."
+msgstr "インターネットへの接続設定を調整します。\n有線接続を行う場合は、イーサネット ケーブルを接続する必要があります。"
+
+msgid "Adjust the OpenXMB scene brightness."
+msgstr "OpenXMB シーンの明るさを調整します。"
+
+msgid "Adjusts date and time settings."
+msgstr "日付と時刻の設定を調整します。"
+
+msgid "Adjusts parental control settings."
+msgstr "ペアレンタルコントロールの設定を調整します。"
+
+msgid "Adjusts settings for accessories that are connected to this system."
+msgstr "このシステムに接続されているアクセサリの設定を調整します。"
+
+msgid "Adjusts settings for audio output."
+msgstr "音声出力の設定を調整します。"
+
+msgid "Adjusts settings for chat."
+msgstr "チャットの設定を調整します。"
+
+msgid "Adjusts settings for games."
+msgstr "ゲームの設定を調整します。"
+
+msgid "Adjusts settings for music."
+msgstr "音楽の設定を調整します。"
+
+msgid "Adjusts settings for printers that are connected to this system."
+msgstr "このシステムに接続されているプリンターの設定を調整します。"
+
+msgid "Adjusts settings for printers that are connected to this system.\n\nNo printer is connected to the system."
+msgstr "このシステムに接続されているプリンターの設定を調整します。\n\n システムにプリンターが接続されていません。"
+
+msgid "Adjusts settings for remote play. Remote play enables you to use a device that supports the remote play feature (such as a PSP™ system) to operate this system over a network."
+msgstr "リモートプレイの設定を行います。リモート プレイを使用すると、リモート プレイ機能をサポートするデバイス (PSP™ システムなど) を使用して、ネットワーク経由で本システムを操作できます。"
+
+msgid "Adjusts settings for the Internet connection."
+msgstr "インターネット接続の設定を調整します。"
+
+msgid "Adjusts settings for this OpenXMB system."
+msgstr "この OpenXMB システムの設定を調整します。"
+
+msgid "Adjusts settings for video output."
+msgstr "ビデオ出力の設定を調整します。"
+
+msgid "Adjusts settings for video."
+msgstr "ビデオの設定を調整します。"
+
+msgid "Adjusts settings related to the appearance of the XMB™ screen."
+msgstr "XMB™画面の外観に関する設定を調整します。"
+
+msgid "Adjusts settings to reduce power usage by this system."
+msgstr "このシステムによる電力使用量を削減するように設定を調整します。"
+
+msgid "Advanced"
+msgstr "上級者向け"
+
+msgid "After 1 hour"
+msgstr "1時間後"
+
+msgid "After 10 Minutes"
+msgstr "10分後"
+
+msgid "After 10 min."
+msgstr "10分後"
+
+msgid "After 2 hours"
+msgstr "2時間後"
+
+msgid "After 20 Minutes"
+msgstr "20分後"
+
+msgid "After 3 hours"
+msgstr "3時間後"
+
+msgid "After 30 Minutes"
+msgstr "30分後"
+
+msgid "After 30 min."
+msgstr "30分後"
+
+msgid "After 5 Minutes"
+msgstr "5分後"
+
+msgid "After 5 hours"
+msgstr "5時間後"
+
+msgid "After 60 min."
+msgstr "60分後"
+
+msgid "After Launching a Game"
+msgstr "ゲーム起動後"
+
+msgid "Album Artwork"
+msgstr "アルバムアートワーク"
+
+msgid "Albums"
+msgstr "アルバム"
+
+msgid "All"
+msgstr "すべて"
+
+msgid "All data on the system storage will be erased.\nAre you sure you want to continue?"
+msgstr "システムストレージ上のすべてのデータが消去されます。\n続行してもよろしいですか?"
+
+msgid "All terms that were added will be deleted.\nAre you sure you want to continue?"
+msgstr "追加された用語はすべて削除されます。\n続行してもよろしいですか?"
+
+msgid "Analog Navigation"
+msgstr "アナログナビゲーション"
+
+msgid "Anti-aliasing"
+msgstr "アンチエイリアシング"
+
+msgid "Apply a saved appearance preset."
+msgstr "保存した外観プリセットを適用します。"
+
+msgid "Apply upscaling to PlayStation® format software."
+msgstr "PlayStation® 形式のソフトウェアにアップスケーリングを適用します。"
+
+msgid "Are you sure you want to delete the track?"
+msgstr "トラックを削除してもよろしいですか?"
+
+msgid "Artist ▲"
+msgstr "アーティスト▲"
+
+msgid "Artist ▼"
+msgstr "アーティスト ▼"
+
+msgid "Artists"
+msgstr "アーティスト"
+
+msgid "Audio Device Settings"
+msgstr "オーディオデバイスの設定"
+
+msgid "Audio Input Connector / SCART / AV MULTI"
+msgstr "オーディオ入力コネクタ / SCART / AV MULTI"
+
+msgid "Audio Language"
+msgstr "音声言語"
+
+msgid "Audio Multi-Output"
+msgstr "オーディオマルチ出力"
+
+msgid "Audio Options"
+msgstr "オーディオオプション"
+
+msgid "Audio Output Device"
+msgstr "オーディオ出力デバイス"
+
+msgid "Audio Output Settings"
+msgstr "音声出力設定"
+
+msgid "Authentication"
+msgstr "認証"
+
+msgid "Authentication Setting"
+msgstr "認証設定"
+
+msgid "Auto"
+msgstr "自動"
+
+msgid "Auto (Time of Day)"
+msgstr "自動 (時刻)"
+
+msgid "Auto-Detect"
+msgstr "自動検出"
+
+msgid "Automatic"
+msgstr "自動"
+
+msgid "Automatic Update"
+msgstr "自動更新"
+
+msgid "Automatic detection or a preferred button style."
+msgstr "自動検出または優先ボタン スタイル。"
+
+msgid "Automatic setup by access point type."
+msgstr "アクセスポイントの種類に応じた自動設定。"
+
+msgid "Automatically use hardware decoding when available."
+msgstr "利用可能な場合は、ハードウェア デコードを自動的に使用します。"
+
+msgid "BD Audio Language"
+msgstr "BD オーディオ言語"
+
+msgid "BD Audio Output Format (HDMI)"
+msgstr "BD オーディオ出力形式 (HDMI)"
+
+msgid "BD Data Utility"
+msgstr "BD データユーティリティ"
+
+msgid "BD Parental Control"
+msgstr "BD ペアレンタルコントロール"
+
+msgid "BD Remote Control Registration"
+msgstr "BD リモコンの登録"
+
+msgid "BD/DVD - Video Output Format (HDMI)"
+msgstr "BD/DVD - ビデオ出力フォーマット (HDMI)"
+
+msgid "BD/DVD Auto-start"
+msgstr "BD/DVD 自動起動"
+
+msgid "BT Stereo Headphones"
+msgstr "BT ステレオヘッドフォン"
+
+msgid "Back"
+msgstr "戻る"
+
+msgid "Back Up"
+msgstr "バックアップ"
+
+msgid "Back up completed."
+msgstr "バックアップが完了しました。"
+
+msgid "Back up or restore data on the system storage.\nSelect the operation you want to perform."
+msgstr "システムストレージ上のデータをバックアップまたは復元します。\n実行する操作を選択します。"
+
+msgid "Background"
+msgstr "背景"
+
+msgid "Background Audio"
+msgstr "バックグラウンドオーディオ"
+
+msgid "Background File"
+msgstr "背景ファイル"
+
+msgid "Background Frame Limit"
+msgstr "背景フレーム制限"
+
+msgid "Background Music"
+msgstr "バックグラウンドミュージック"
+
+msgid "Background file not found."
+msgstr "バックグラウンド ファイルが見つかりません。"
+
+msgid "Backing up...\nDo not remove the storage media."
+msgstr "バックアップ中...\n記憶メディアは取り外さないでください。"
+
+msgid "Backs up data saved on the system storage to storage media, or restores data that has been backed up.\nSelect an option."
+msgstr "本体ストレージに保存されているデータを記憶メディアにバックアップしたり、バックアップしたデータをリストアしたりできます。\nオプションを選択します。"
+
+msgid "Backup Utility"
+msgstr "バックアップユーティリティ"
+
+msgid "Baltic"
+msgstr "バルト海"
+
+msgid "Before the Storm"
+msgstr "Before the Storm"
+
+msgid "Beneath the Ashes"
+msgstr "Beneath the Ashes"
+
+msgid "Bing"
+msgstr "Bing"
+
+msgid "Bitstream"
+msgstr "ビットストリーム"
+
+msgid "Black"
+msgstr "ブラック"
+
+msgid "Block Noise Reduction"
+msgstr "ブロックノイズの低減"
+
+msgid "Blue"
+msgstr "ブルー"
+
+msgid "Bluetooth Keyboard"
+msgstr "Bluetooth キーボード"
+
+msgid "Bluetooth Mouse"
+msgstr "Bluetooth マウス"
+
+msgid "Bluetooth® Headset"
+msgstr "Bluetooth® ヘッドセット"
+
+msgid "Borderless"
+msgstr "ボーダレス"
+
+msgid "Breathtaking Vision"
+msgstr "Breathtaking Vision"
+
+msgid "Bright"
+msgstr "明るい"
+
+msgid "Brightness"
+msgstr "明るさ"
+
+msgid "British English"
+msgstr "イギリス英語"
+
+msgid "Brown"
+msgstr "ブラウン"
+
+msgid "Browse and purchase games, add-ons, movies, and more for your OpenXMB system.\n\nDownload demos, full games, themes, wallpapers, and exclusive content.\n\nA broadband Internet connection and a PlayStation®Network account are required to use PlayStation®Store."
+msgstr "OpenXMB システム用のゲーム、アドオン、映画などを参照して購入します。\n\n デモ、完全なゲーム、テーマ、壁紙、限定コンテンツをダウンロードします。\n\n PlayStation®Store を使用するには、ブロードバンド インターネット接続と PlayStation®Network アカウントが必要です。"
+
+msgid "Browse folders, songs, albums, artists or saved playlists."
+msgstr "フォルダー、曲、アルバム、アーティスト、または保存されたプレイリストを参照します。"
+
+msgid "Browser"
+msgstr "ブラウザ"
+
+msgid "Buffalo-A1B2C3"
+msgstr "バッファロー-A1B2C3"
+
+msgid "By Album"
+msgstr "アルバム別"
+
+msgid "By Artist"
+msgstr "アーティスト別"
+
+msgid "By Genre"
+msgstr "ジャンル別"
+
+msgid "By Month"
+msgstr "月別"
+
+msgid "By Release Year"
+msgstr "発売年別"
+
+msgid "By Track"
+msgstr "トラック別"
+
+msgid "By Year"
+msgstr "年別"
+
+msgid "Calibrate Motion Controller"
+msgstr "モーションコントローラーの校正"
+
+msgid "Calibrates the magnetic sensor of a motion controller. Use this setting when the motion controller does not control on-screen movement as expected."
+msgstr "モーションコントローラーの磁気センサーを校正します。モーション コントローラーが画面上の動きを期待どおりに制御しない場合は、この設定を使用します。"
+
+msgid "Calibrates the magnetic sensor of a motion controller. Use this setting when the motion controller does not control on-screen movement as expected.\n\nPlace the controller on a flat surface, then press the X button."
+msgstr "モーションコントローラーの磁気センサーを校正します。モーション コントローラーが画面上の動きを期待どおりに制御しない場合は、この設定を使用します。\n\n コントローラーを平らな場所に置き、X ボタンを押します。"
+
+msgid "Camera Device Settings"
+msgstr "カメラデバイスの設定"
+
+msgid "Can you read this screen?\nSelect [Yes] if you can.\n\nIf you do not press any buttons, the system will automatically go back to the previous setting."
+msgstr "この画面読めますか？\n可能であれば [はい] を選択してください。\n\n ボタンを何も押さないと、システムは自動的に前の設定に戻ります。"
+
+msgid "Cancel"
+msgstr "キャンセル"
+
+msgid "Canyon"
+msgstr "キャニオン"
+
+msgid "Caution-Echidnas May Eat Your Brain"
+msgstr "Caution-Echidnas May Eat Your Brain"
+
+msgid "Central European"
+msgstr "中央ヨーロッパ"
+
+msgid "Change Binding"
+msgstr "バインディングの変更"
+
+msgid "Change Effect"
+msgstr "変更効果"
+
+msgid "Change Icon"
+msgstr "アイコンの変更"
+
+msgid "Change Password"
+msgstr "パスワードの変更"
+
+msgid "Change the number assigned to the controller that is currently in use."
+msgstr "現在使用しているコントローラーに割り当てられている番号を変更します。"
+
+msgid "Change the number assigned to the controller that is currently in use.\n\nPress the PS button on the controller you want to reassign."
+msgstr "現在使用しているコントローラーに割り当てられている番号を変更します。\n\n 再割り当てしたいコントローラーの PS ボタンを押します。"
+
+msgid "Change the password required to play games or videos, or to use the Internet browser.\n\nEnter your current password."
+msgstr "ゲームやビデオをプレイしたり、インターネットブラウザを使用したりするときに必要なパスワードを変更します。\n\n 現在のパスワードを入力します。"
+
+msgid "Channel 1"
+msgstr "チャンネル1"
+
+msgid "Channel 11"
+msgstr "チャンネル11"
+
+msgid "Channel 6"
+msgstr "チャンネル6"
+
+msgid "Chapters"
+msgstr "章"
+
+msgid "Character Set"
+msgstr "文字セット"
+
+msgid "Chat Rooms"
+msgstr "チャットルーム"
+
+msgid "Chat Settings"
+msgstr "チャット設定"
+
+msgid "Checking for the latest version of the system software..."
+msgstr "システム ソフトウェアの最新バージョンを確認しています..."
+
+msgid "Checking network configuration...\nPlease wait."
+msgstr "ネットワーク構成を確認しています...\nお待ちください。"
+
+msgid "Chinese"
+msgstr "中国語"
+
+msgid "Chinese (simplified)"
+msgstr "中国語（簡体字）"
+
+msgid "Chinese (traditional)"
+msgstr "中国語（繁体字）"
+
+msgid "Choose a 12-hour or 24-hour clock."
+msgstr "12 時間制または 24 時間制を選択します。"
+
+msgid "Choose a TrueType or OpenType font file."
+msgstr "TrueType または OpenType フォント ファイルを選択します。"
+
+msgid "Choose a photo or video background."
+msgstr "写真またはビデオの背景を選択します。"
+
+msgid "Choose an action, then press its controller button."
+msgstr "アクションを選択し、コントローラーのボタンを押します。"
+
+msgid "Choose an action, then press its keyboard key."
+msgstr "アクションを選択し、キーボードのキーを押します。"
+
+msgid "Choose an existing folder."
+msgstr "既存のフォルダーを選択します。"
+
+msgid "Choose how OpenXMB uses the display."
+msgstr "OpenXMB がディスプレイをどのように使用するかを選択します。"
+
+msgid "Choose how the shell behaves while a game runs."
+msgstr "ゲームの実行中にシェルがどのように動作するかを選択します。"
+
+msgid "Choose the folder scanned for games."
+msgstr "ゲームをスキャンしたフォルダーを選択します。"
+
+msgid "Choose the full-screen music presentation."
+msgstr "全画面音楽プレゼンテーションを選択します。"
+
+msgid "Choose the fullscreen display resolution."
+msgstr "全画面表示の解像度を選択します。"
+
+msgid "Choose the icon material."
+msgstr "アイコンの素材を選択します。"
+
+msgid "Choose the root folder for music and playlists."
+msgstr "音楽とプレイリストのルート フォルダーを選択します。"
+
+msgid "Choose the root folder for photos."
+msgstr "写真のルート フォルダーを選択します。"
+
+msgid "Choose the root folder for videos."
+msgstr "ビデオのルート フォルダーを選択します。"
+
+msgid "Classic"
+msgstr "クラシック"
+
+msgid "Clear Browsing Data"
+msgstr "閲覧データをクリアする"
+
+msgid "Clear Browsing Data?"
+msgstr "閲覧データを消去しますか?"
+
+msgid "Clear Thumbnail Cache?"
+msgstr "サムネイルのキャッシュをクリアしますか?"
+
+msgid "Colour"
+msgstr "色"
+
+msgid "Component / D-Terminal"
+msgstr "コンポーネント / D端子"
+
+msgid "Compose and send a new message."
+msgstr "新しいメッセージを作成して送信します。"
+
+msgid "Composite / S Video"
+msgstr "コンポジット/Sビデオ"
+
+msgid "Configure Ad Hoc Mode settings for PSP® Remasters."
+msgstr "PSP® リマスターのアドホック モード設定を構成します。"
+
+msgid "Configure BD/DVD auto-start settings."
+msgstr "BD/DVD 自動起動設定を構成します。"
+
+msgid "Configure audio output settings."
+msgstr "音声出力の設定を行います。"
+
+msgid "Configure the screen saver settings."
+msgstr "スクリーンセーバーの設定を行います。"
+
+msgid "Configure the screen size for PSP® Remasters."
+msgstr "PSP® リマスターの画面サイズを構成します。"
+
+msgid "Configure video output settings according to your TV."
+msgstr "テレビに応じてビデオ出力設定を構成します。"
+
+msgid "Confirm"
+msgstr "確認する"
+
+msgid "Connect"
+msgstr "接続する"
+
+msgid "Connect PS Vita System Using Network"
+msgstr "ネットワークを使用してPS Vitaシステムを接続する"
+
+msgid "Connecting...\nPlease wait."
+msgstr "接続中...\nお待ちください。"
+
+msgid "Connection test completed."
+msgstr "接続テストが完了しました。"
+
+msgid "Continue after the last photograph."
+msgstr "最後の写真の後に続きます。"
+
+msgid "Continue audio when OpenXMB loses focus."
+msgstr "OpenXMB がフォーカスを失っても音声を継続します。"
+
+msgid "Continue music after closing the player."
+msgstr "プレーヤーを閉じた後も音楽を続けます。"
+
+msgid "Control for HDMI"
+msgstr "HDMI の制御"
+
+msgid "Controller Auto-Off"
+msgstr "コントローラーの自動オフ"
+
+msgid "Controller Bindings"
+msgstr "コントローラーのバインディング"
+
+msgid "Controller Prompts"
+msgstr "コントローラのプロンプト"
+
+msgid "Controller Vibration"
+msgstr "コントローラーの振動"
+
+msgid "Controller Vibration Function"
+msgstr "コントローラー振動機能"
+
+msgid "Copy"
+msgstr "コピー"
+
+msgid "Copy Multiple"
+msgstr "複数コピー"
+
+msgid "Corrupted Data"
+msgstr "破損したデータ"
+
+msgid "Create New Internal Memory Card"
+msgstr "新しい内蔵メモリカードを作成する"
+
+msgid "Create New User"
+msgstr "新しいユーザーの作成"
+
+msgid "Create a new internal memory card."
+msgstr "新しい内蔵メモリカードを作成します。"
+
+msgid "Crimson"
+msgstr "クリムゾン"
+
+msgid "Cross Color Reduction Filter"
+msgstr "クロスカラーリダクションフィルター"
+
+msgid "Crossfade"
+msgstr "クロスフェード"
+
+msgid "Custom"
+msgstr "カスタム"
+
+msgid "Cyan"
+msgstr "シアン"
+
+msgid "Cyrillic"
+msgstr "キリル文字"
+
+msgid "DD/MM/YYYY"
+msgstr "DD/MM/YYYY"
+
+msgid "DHCP Host Name"
+msgstr "DHCP ホスト名"
+
+msgid "DNS Setting"
+msgstr "DNS 設定"
+
+msgid "DNS Setting\nIn most cases, select [Automatic]."
+msgstr "DNS 設定\n通常は[自動]を選択します。"
+
+msgid "DTS 5.1 Ch."
+msgstr "DTS 5.1 チャンネル"
+
+msgid "DVD Audio Language"
+msgstr "DVD オーディオ言語"
+
+msgid "DVD Parental Control"
+msgstr "DVD ペアレンタルコントロール"
+
+msgid "Danish"
+msgstr "デンマーク語"
+
+msgid "Dark Blue"
+msgstr "ダークブルー"
+
+msgid "Dark Green"
+msgstr "ダークグリーン"
+
+msgid "Data Transfer Utility"
+msgstr "データ転送ユーティリティ"
+
+msgid "Date"
+msgstr "日付"
+
+msgid "Date (YYYY/MM/DD)"
+msgstr "日付 (YYYY/MM/DD)"
+
+msgid "Date Format"
+msgstr "日付形式"
+
+msgid "Date and Time"
+msgstr "日付と時刻"
+
+msgid "Date and Time Settings"
+msgstr "日付と時刻の設定"
+
+msgid "Day"
+msgstr "日"
+
+msgid "Day/Night"
+msgstr "昼/夜"
+
+msgid "Daylight Saving"
+msgstr "サマータイム"
+
+msgid "Dead Batteries"
+msgstr "Dead Batteries"
+
+msgid "Decoder Information"
+msgstr "デコーダ情報"
+
+msgid "Deep Color Output (HDMI)"
+msgstr "ディープカラー出力 (HDMI)"
+
+msgid "Default"
+msgstr "デフォルト"
+
+msgid "Default Repeat"
+msgstr "デフォルトの繰り返し"
+
+msgid "Default Router"
+msgstr "デフォルトルーター"
+
+msgid "Default Screen Fit"
+msgstr "デフォルトの画面フィット"
+
+msgid "Default Shuffle"
+msgstr "デフォルトのシャッフル"
+
+msgid "Default Sort"
+msgstr "デフォルトの並べ替え"
+
+msgid "Default browser page scale."
+msgstr "デフォルトのブラウザページスケール。"
+
+msgid "Default volume for music playback."
+msgstr "音楽再生のデフォルトの音量。"
+
+msgid "Default volume for video playback."
+msgstr "ビデオ再生のデフォルトの音量。"
+
+msgid "Delay between held directional inputs in milliseconds."
+msgstr "保持された方向入力間の遅延 (ミリ秒単位)。"
+
+msgid "Delete"
+msgstr "削除"
+
+msgid "Delete All"
+msgstr "すべて削除"
+
+msgid "Delete BD data saved on the system storage."
+msgstr "システムストレージに保存されているBDデータを削除します。"
+
+msgid "Delete Backup Data"
+msgstr "バックアップデータの削除"
+
+msgid "Delete Multiple"
+msgstr "複数の削除"
+
+msgid "Delete PS Vita System's Backup Files"
+msgstr "PS Vita本体のバックアップファイルを削除する"
+
+msgid "Delete Predictive Text Dictionary"
+msgstr "予測テキスト辞書の削除"
+
+msgid "Delete Registered Device"
+msgstr "登録済みデバイスの削除"
+
+msgid "Delete Term"
+msgstr "用語の削除"
+
+msgid "Deletes backup files for the PS Vita system saved on this system."
+msgstr "本機に保存されているPS Vitaのバックアップファイルを削除します。"
+
+msgid "Deletes backup files for the PS Vita system saved on this system.\n\nThe backup files for the PS Vita system will be deleted.\nYou can only delete the backup files for your account.\n\nDo you want to delete the backup files?"
+msgstr "本機に保存されているPS Vitaのバックアップファイルを削除します。\n\n PS Vita本体のバックアップファイルが削除されます。\n削除できるのは自分のアカウントのバックアップ ファイルのみです。\n\n バックアップ ファイルを削除しますか?"
+
+msgid "Deletes registered remote play devices from this system.\nSelect a device to delete."
+msgstr "登録されているリモートプレイ機器を本機から削除します。\n削除するデバイスを選択します。"
+
+msgid "Deletes words that were added automatically to the dictionary when using the on-screen keyboard."
+msgstr "スクリーンキーボードの使用時に辞書に自動的に追加された単語を削除します。"
+
+msgid "Deletes words that were added automatically to the dictionary when using the on-screen keyboard.\n\nThe predictive text dictionary will be deleted.\nAre you sure you want to continue?"
+msgstr "スクリーンキーボードの使用時に辞書に自動的に追加された単語を削除します。\n\n 予測テキスト辞書が削除されます。\n続行してもよろしいですか?"
+
+msgid "Deletion completed."
+msgstr "削除が完了しました。"
+
+msgid "Device List"
+msgstr "デバイスリスト"
+
+msgid "Dictionary Type"
+msgstr "辞書の種類"
+
+msgid "Dim"
+msgstr "薄暗い"
+
+msgid "Dim the scene after inactivity."
+msgstr "非アクティブになった後、シーンを暗くします。"
+
+msgid "Directory for browser downloads."
+msgstr "ブラウザのダウンロード用のディレクトリ。"
+
+msgid "Disable"
+msgstr "無効にする"
+
+msgid "Disabled"
+msgstr "障害者"
+
+msgid "Disc Auto-Start"
+msgstr "ディスクの自動スタート"
+
+msgid "Disconnect"
+msgstr "切断する"
+
+msgid "Disconnect All"
+msgstr "すべて切断する"
+
+msgid "Display"
+msgstr "ディスプレイ"
+
+msgid "Display GPU memory use."
+msgstr "GPU メモリ使用量を表示します。"
+
+msgid "Display Mode"
+msgstr "表示モード"
+
+msgid "Display PSP® Remasters in 3D."
+msgstr "PSP® リマスターを 3D で表示します。"
+
+msgid "Display Settings"
+msgstr "表示設定"
+
+msgid "Display [What's New]"
+msgstr "［新着情報］を表示する"
+
+msgid "Display available cover artwork."
+msgstr "利用可能なカバーアートワークを表示します。"
+
+msgid "Display information about the selected content."
+msgstr "選択したコンテンツに関する情報を表示します。"
+
+msgid "Display the shell frame rate."
+msgstr "シェルのフレームレートを表示します。"
+
+msgid "Displays a list of PS Vita systems registered with this system.\n\nNo PS Vita systems are currently registered."
+msgstr "本機に登録されているPS Vitaの一覧を表示します。\n\n 現在、PS Vita システムが登録されていません。"
+
+msgid "Displays a list of devices registered with this system.\n\nNo devices are currently registered for remote play."
+msgstr "本システムに登録されている機器の一覧を表示します。\n\n 現在リモートプレイに登録されている機器はありません。"
+
+msgid "Displays current network settings and connection status."
+msgstr "現在のネットワーク設定と接続ステータスを表示します。"
+
+msgid "Displays current network settings and the Internet connection status.\n\nConnection Name    Default\nConnection Type    Wired\nIP Address         192.168.1.10\nSubnet Mask        255.255.255.0\nDefault Gateway    192.168.1.1\nPrimary DNS        8.8.8.8\nSecondary DNS      8.8.4.4"
+msgstr "現在のネットワーク設定とインターネット接続状態を表示します。\n\n 接続名 デフォルト\n接続タイプ 有線\nIP アドレス 192.168.1.10\nサブネット マスク 255.255.255.0\nデフォルト ゲートウェイ 192.168.1.1\nプライマリ DNS 8.8.8.8\nセカンダリ DNS 8.8.4.4"
+
+msgid "Displays manuals for the software installed on the OpenXMB system."
+msgstr "OpenXMB システムにインストールされているソフトウェアのマニュアルを表示します。"
+
+msgid "Displays the messages you have received."
+msgstr "受信したメッセージを表示します。"
+
+msgid "Displays the messages you have sent."
+msgstr "送信したメッセージが表示されます。"
+
+msgid "Displays the registration code that is required to play DivX® VOD content."
+msgstr "DivX® VOD コンテンツを再生するために必要な登録コードが表示されます。"
+
+msgid "Displays the registration code that is required to play DivX® VOD content.\n\nRegistration Code:\n\n8C9D7E1F\n\nVisit http://www.divx.com/vod/ for instructions on how to register the code."
+msgstr "DivX® VOD コンテンツを再生するために必要な登録コードが表示されます。\n\n 登録コード:\n\n 8C9D7E1F\n\n コードの登録方法については、http://www.divx.com/vod/ を参照してください。"
+
+msgid "DivX® VOD Registration Code"
+msgstr "DivX® VOD 登録コード"
+
+msgid "Divided from Grace"
+msgstr "Divided from Grace"
+
+msgid "Do Not Display"
+msgstr "表示しない"
+
+msgid "Do Not Set"
+msgstr "設定しないでください"
+
+msgid "Do Not Use"
+msgstr "使用しないでください"
+
+msgid "Do you want to back up data on the system storage to other storage media?\n\nLimitations may apply when backing up certain copyright-protected content."
+msgstr "システムストレージ上のデータを他のストレージメディアにバックアップしますか?\n\n 特定の著作権で保護されたコンテンツをバックアップする場合には、制限が適用される場合があります。"
+
+msgid "Do you want to cancel?\nThe settings you have made so far will not be saved if you cancel."
+msgstr "キャンセルしますか?\nキャンセルすると、これまでの設定は保存されません。"
+
+msgid "Do you want to overwrite the wallpaper?\nIf you do, the current wallpaper will be lost.\nOnly one wallpaper image can be saved."
+msgstr "壁紙を上書きしますか?\nそうすると、現在の壁紙は失われます。\n保存できる壁紙画像は 1 つだけです。"
+
+msgid "Do you want to perform advanced settings?"
+msgstr "詳細な設定を行いますか?"
+
+msgid "Dolby Digital 5.1 Ch."
+msgstr "ドルビーデジタル5.1ch"
+
+msgid "Double Scale"
+msgstr "ダブルスケール"
+
+msgid "Down"
+msgstr "ダウン"
+
+msgid "Downloads Folder"
+msgstr "ダウンロードフォルダー"
+
+msgid "DuckDuckGo"
+msgstr "DuckDuckGo"
+
+msgid "Dusk"
+msgstr "夕暮れ"
+
+msgid "Dutch"
+msgstr "オランダ語"
+
+msgid "EAP Authentication"
+msgstr "EAP認証"
+
+msgid "EAP-MD5"
+msgstr "EAP-MD5"
+
+msgid "Easy"
+msgstr "簡単"
+
+msgid "Echo Cancellation"
+msgstr "エコーキャンセル"
+
+msgid "Edit"
+msgstr "編集"
+
+msgid "Edit Term"
+msgstr "用語の編集"
+
+msgid "Elevator Music"
+msgstr "Elevator Music"
+
+msgid "Emulation Configuration"
+msgstr "エミュレーション構成"
+
+msgid "Enable"
+msgstr "有効にする"
+
+msgid "Enable ATRAC"
+msgstr "ATRACを有効にする"
+
+msgid "Enable WMA Playback"
+msgstr "WMA 再生を有効にする"
+
+msgid "Enable analog controller navigation."
+msgstr "アナログ コントローラー ナビゲーションを有効にします。"
+
+msgid "Enable controller feedback."
+msgstr "コントローラーのフィードバックを有効にします。"
+
+msgid "Enabled"
+msgstr "有効"
+
+msgid "English"
+msgstr "英語"
+
+msgid "English (UK)"
+msgstr "英語(イギリス)"
+
+msgid "English (US)"
+msgstr "英語 (米国)"
+
+msgid "English (United Kingdom)"
+msgstr "英語 (イギリス)"
+
+msgid "English (United States)"
+msgstr "英語 (米国)"
+
+msgid "Enter Manually"
+msgstr "手動で入力"
+
+msgid "Enter a new 4-digit password."
+msgstr "新しい4桁のパスワードを入力してください。"
+
+msgid "Enter the new password again to confirm."
+msgstr "確認のために新しいパスワードをもう一度入力します。"
+
+msgid "Eternal Excavation"
+msgstr "Eternal Excavation"
+
+msgid "Evening"
+msgstr "夕方"
+
+msgid "External Subtitle"
+msgstr "外部字幕"
+
+msgid "Extra"
+msgstr "おまけ"
+
+msgid "FON_FREE_INTERNET"
+msgstr "FON_FREE_インターネット"
+
+msgid "FREE* to access, PlayStation®Store is the only place to download new and exclusive PS3™ games, FREE playable demos, add-on packs, and high-definition videos.\n\nGet more for your PS3™ and visit PlayStation®Store today.\n\n* Broadband Internet connection required."
+msgstr "無料* でアクセスできる PlayStation®Store は、新しく独占的な PS3™ ゲーム、無料でプレイ可能なデモ、アドオン パック、高解像度ビデオをダウンロードできる唯一の場所です。\n\n PS3™ をさらに入手するには、今すぐ PlayStation®Store にアクセスしてください。\n\n * ブロードバンド インターネット接続が必要です。"
+
+msgid "Fade"
+msgstr "フェード"
+
+msgid "Fast"
+msgstr "速い"
+
+msgid "Fast Forward"
+msgstr "早送り"
+
+msgid "Fast Reverse"
+msgstr "早戻し"
+
+msgid "File logging is unavailable on this platform."
+msgstr "このプラットフォームではファイル ログを利用できません。"
+
+msgid "Fill"
+msgstr "埋める"
+
+msgid "Film Date ▲"
+msgstr "映画デート▲"
+
+msgid "Film Date ▼"
+msgstr "撮影日 ▼"
+
+msgid "Finish"
+msgstr "終了"
+
+msgid "Finnish"
+msgstr "フィンランド語"
+
+msgid "Fit"
+msgstr "フィット"
+
+msgid "Flow"
+msgstr "Flow"
+
+msgid "Flow visualiser"
+msgstr "Flow ビジュアライザー"
+
+
+
+msgid "Folder Repeat"
+msgstr "フォルダーリピート"
+
+msgid "Folders"
+msgstr "フォルダー"
+
+msgid "Follow the on-screen instructions on your PlayStation®Vita system."
+msgstr "PlayStation®Vita システムの画面上の指示に従います。"
+
+msgid "Font"
+msgstr "フォント"
+
+msgid "Font File"
+msgstr "フォントファイル"
+
+msgid "Font file not found."
+msgstr "フォントファイルが見つかりません。"
+
+msgid "Format Hard Disk"
+msgstr "ハードディスクのフォーマット"
+
+msgid "Format System Storage"
+msgstr "システムストレージをフォーマットする"
+
+msgid "Format Utility"
+msgstr "フォーマットユーティリティ"
+
+msgid "Format completed."
+msgstr "フォーマットが完了しました。"
+
+msgid "Formats the system storage and restores the system software to its default settings.\n\nAll data on the hard disk will be deleted, and the system software will be reinstalled.\nDo you want to continue?"
+msgstr "システムストレージをフォーマットし、システムソフトウェアをデフォルト設定に復元します。\n\n ハードディスク上のすべてのデータが削除され、システム ソフトウェアが再インストールされます。\n続行しますか?"
+
+msgid "Formats the system storage and restores the system software to its default settings.\nAre you sure you want to continue?"
+msgstr "システムストレージをフォーマットし、システムソフトウェアをデフォルト設定に復元します。\n続行してもよろしいですか?"
+
+msgid "Formats the system storage. All data on the system storage will be deleted during formatting."
+msgstr "システムストレージをフォーマットします。フォーマット中は、システムストレージ上のすべてのデータが削除されます。"
+
+msgid "Formats the system storage. All data on the system storage will be deleted during formatting.\nSelect an option."
+msgstr "システムストレージをフォーマットします。フォーマット中は、システムストレージ上のすべてのデータが削除されます。\nオプションを選択します。"
+
+msgid "Formatting...\nDo not remove the storage media."
+msgstr "フォーマット中...\n記憶メディアは取り外さないでください。"
+
+msgid "Formatting...\nDo not turn off the system."
+msgstr "フォーマット中...\nシステムの電源を切らないでください。"
+
+msgid "Fractal Dive"
+msgstr "Fractal Dive"
+
+msgid "Frame Advance"
+msgstr "コマ送り"
+
+msgid "Frame Limit"
+msgstr "フレーム制限"
+
+msgid "Frame Noise Reduction"
+msgstr "フレームノイズの低減"
+
+msgid "Frame Reverse"
+msgstr "フレームリバース"
+
+msgid "French"
+msgstr "フランス語"
+
+msgid "Friends"
+msgstr "友達"
+
+msgid "Full"
+msgstr "フル"
+
+msgid "Full Format"
+msgstr "フルフォーマット"
+
+msgid "Full Screen"
+msgstr "全画面表示"
+
+msgid "Fullscreen"
+msgstr "フルスクリーン"
+
+msgid "GMT"
+msgstr "グリニッジ標準時"
+
+msgid "GMT+00:00 Casablanca"
+msgstr "GMT+00:00 カサブランカ"
+
+msgid "GMT+00:00 Dublin"
+msgstr "GMT+00:00 ダブリン"
+
+msgid "GMT+00:00 Lisbon"
+msgstr "GMT+00:00 リスボン"
+
+msgid "GMT+00:00 London"
+msgstr "GMT+00:00 ロンドン"
+
+msgid "GMT+00:00 Reykjavik"
+msgstr "GMT+00:00 レイキャビク"
+
+msgid "GMT+01:00"
+msgstr "GMT+01:00"
+
+msgid "GMT+01:00 Amsterdam"
+msgstr "GMT+01:00 アムステルダム"
+
+msgid "GMT+01:00 Berlin"
+msgstr "GMT+01:00 ベルリン"
+
+msgid "GMT+01:00 Madrid"
+msgstr "GMT+01:00 マドリッド"
+
+msgid "GMT+01:00 Paris"
+msgstr "GMT+01:00 パリ"
+
+msgid "GMT+01:00 Rome"
+msgstr "GMT+01:00 ローマ"
+
+msgid "GMT+01:00 Stockholm"
+msgstr "GMT+01:00 ストックホルム"
+
+msgid "GMT+02:00"
+msgstr "GMT+02:00"
+
+msgid "GMT+02:00 Athens"
+msgstr "GMT+02:00 アテネ"
+
+msgid "GMT+02:00 Cairo"
+msgstr "GMT+02:00 カイロ"
+
+msgid "GMT+02:00 Helsinki"
+msgstr "GMT+02:00 ヘルシンキ"
+
+msgid "GMT+02:00 Johannesburg"
+msgstr "GMT+02:00 ヨハネスブルグ"
+
+msgid "GMT+03:00"
+msgstr "GMT+03:00"
+
+msgid "GMT+03:00 Istanbul"
+msgstr "GMT+03:00 イスタンブール"
+
+msgid "GMT+03:00 Moscow"
+msgstr "GMT+03:00 モスクワ"
+
+msgid "GMT+03:00 Nairobi"
+msgstr "GMT+03:00 ナイロビ"
+
+msgid "GMT+03:30 Tehran"
+msgstr "GMT+03:30 テヘラン"
+
+msgid "GMT+04:00"
+msgstr "GMT+04:00"
+
+msgid "GMT+04:00 Dubai"
+msgstr "GMT+04:00 ドバイ"
+
+msgid "GMT+04:30 Kabul"
+msgstr "GMT+04:30 カブール"
+
+msgid "GMT+05:00"
+msgstr "GMT+05:00"
+
+msgid "GMT+05:00 Karachi"
+msgstr "GMT+05:00 カラチ"
+
+msgid "GMT+05:30"
+msgstr "GMT+05:30"
+
+msgid "GMT+05:30 New Delhi"
+msgstr "GMT+05:30 ニューデリー"
+
+msgid "GMT+05:45 Kathmandu"
+msgstr "GMT+05:45 カトマンズ"
+
+msgid "GMT+06:00"
+msgstr "GMT+06:00"
+
+msgid "GMT+06:00 Dhaka"
+msgstr "GMT+06:00 ダッカ"
+
+msgid "GMT+07:00"
+msgstr "GMT+07:00"
+
+msgid "GMT+07:00 Bangkok"
+msgstr "GMT+07:00 バンコク"
+
+msgid "GMT+07:00 Jakarta"
+msgstr "GMT+07:00 ジャカルタ"
+
+msgid "GMT+08:00"
+msgstr "GMT+08:00"
+
+msgid "GMT+08:00 Beijing"
+msgstr "GMT+08:00 北京"
+
+msgid "GMT+08:00 Hong Kong"
+msgstr "GMT+08:00 香港"
+
+msgid "GMT+08:00 Singapore"
+msgstr "GMT+08:00 シンガポール"
+
+msgid "GMT+09:00"
+msgstr "GMT+09:00"
+
+msgid "GMT+09:00 Seoul"
+msgstr "GMT+09:00 ソウル"
+
+msgid "GMT+09:00 Tokyo"
+msgstr "GMT+09:00 東京"
+
+msgid "GMT+09:30 Adelaide"
+msgstr "GMT+09:30 アデレード"
+
+msgid "GMT+10:00"
+msgstr "GMT+10:00"
+
+msgid "GMT+10:00 Guam"
+msgstr "GMT+10:00 グアム"
+
+msgid "GMT+10:00 Sydney"
+msgstr "GMT+10:00 シドニー"
+
+msgid "GMT+11:00"
+msgstr "GMT+11:00"
+
+msgid "GMT+11:00 Solomon Islands"
+msgstr "GMT+11:00 ソロモン諸島"
+
+msgid "GMT+12:00"
+msgstr "GMT+12:00"
+
+msgid "GMT+12:00 Auckland"
+msgstr "GMT+12:00 オークランド"
+
+msgid "GMT+13:00 Samoa"
+msgstr "GMT+13:00 サモア"
+
+msgid "GMT-01:00"
+msgstr "GMT-01:00"
+
+msgid "GMT-01:00 Azores"
+msgstr "GMT-01:00 アゾレス諸島"
+
+msgid "GMT-02:00"
+msgstr "GMT-02:00"
+
+msgid "GMT-03:00"
+msgstr "GMT-03:00"
+
+msgid "GMT-03:00 Buenos Aires"
+msgstr "GMT-03:00 ブエノスアイレス"
+
+msgid "GMT-03:00 Sao Paulo"
+msgstr "GMT-03:00 サンパウロ"
+
+msgid "GMT-03:30 Newfoundland"
+msgstr "GMT-03:30 ニューファンドランド島"
+
+msgid "GMT-04:00"
+msgstr "GMT-04:00"
+
+msgid "GMT-04:00 Atlantic (Canada)"
+msgstr "GMT-04:00 大西洋 (カナダ)"
+
+msgid "GMT-04:00 Caracas"
+msgstr "GMT-04:00 カラカス"
+
+msgid "GMT-04:00 Santiago"
+msgstr "GMT-04:00 サンティアゴ"
+
+msgid "GMT-05:00"
+msgstr "GMT-05:00"
+
+msgid "GMT-05:00 Bogota"
+msgstr "GMT-05:00 ボゴタ"
+
+msgid "GMT-05:00 Eastern Time (US & Canada)"
+msgstr "GMT-05:00 東部時間 (米国およびカナダ)"
+
+msgid "GMT-05:00 Lima"
+msgstr "GMT-05:00 リマ"
+
+msgid "GMT-06:00"
+msgstr "GMT-06:00"
+
+msgid "GMT-06:00 Central Time (US & Canada)"
+msgstr "GMT-06:00 中部時間 (米国およびカナダ)"
+
+msgid "GMT-06:00 Mexico City"
+msgstr "GMT-06:00 メキシコシティ"
+
+msgid "GMT-07:00"
+msgstr "GMT-07:00"
+
+msgid "GMT-07:00 Chihuahua"
+msgstr "GMT-07:00 チワワ"
+
+msgid "GMT-07:00 Mountain Time (US & Canada)"
+msgstr "GMT-07:00 山岳時間 (米国およびカナダ)"
+
+msgid "GMT-08:00"
+msgstr "GMT-08:00"
+
+msgid "GMT-08:00 Pacific Time (US & Canada)"
+msgstr "GMT-08:00 太平洋時間 (米国およびカナダ)"
+
+msgid "GMT-08:00 Tijuana"
+msgstr "GMT-08:00 ティファナ"
+
+msgid "GMT-09:00"
+msgstr "GMT-09:00"
+
+msgid "GMT-09:00 Alaska"
+msgstr "GMT-09:00 アラスカ"
+
+msgid "GMT-10:00"
+msgstr "GMT-10:00"
+
+msgid "GMT-10:00 Hawaii"
+msgstr "GMT-10:00 ハワイ"
+
+msgid "GMT-11:00"
+msgstr "GMT-11:00"
+
+msgid "GMT-11:00 Samoa"
+msgstr "GMT-11:00 サモア"
+
+msgid "GMT-12:00"
+msgstr "GMT-12:00"
+
+msgid "Game"
+msgstr "ゲーム"
+
+msgid "Game Data Utility"
+msgstr "ゲームデータユーティリティ"
+
+msgid "Game Library Folder"
+msgstr "ゲームライブラリフォルダー"
+
+msgid "Game Settings"
+msgstr "ゲーム設定"
+
+msgid "Generated thumbnails will be recreated when needed. Original media is preserved."
+msgstr "生成されたサムネイルは、必要に応じて再作成されます。オリジナルメディアは保存されます。"
+
+msgid "Genre ▲"
+msgstr "ジャンル▲"
+
+msgid "Genre ▼"
+msgstr "ジャンル ▼"
+
+msgid "German"
+msgstr "ドイツ語"
+
+msgid "Glass Icons"
+msgstr "ガラスのアイコン"
+
+msgid "Globe"
+msgstr "地球儀"
+
+msgid "Go To"
+msgstr "移動"
+
+msgid "Gold"
+msgstr "ゴールド"
+
+msgid "Google"
+msgstr "Google"
+
+msgid "Gray"
+msgstr "グレー"
+
+msgid "Greek"
+msgstr "ギリシャ語"
+
+msgid "Green"
+msgstr "緑"
+
+msgid "Groove Basin"
+msgstr "Groove Basin"
+
+msgid "Group Content"
+msgstr "グループコンテンツ"
+
+msgid "HDD Audio Language"
+msgstr "HDDオーディオ言語"
+
+msgid "HDMI"
+msgstr "HDMI"
+
+msgid "Heads Up for Tails"
+msgstr "Heads Up for Tails"
+
+msgid "Heat Blur"
+msgstr "Heat Blur"
+
+msgid "Helium Stairways"
+msgstr "Helium Stairways"
+
+msgid "High"
+msgstr "高"
+
+msgid "High Pitch"
+msgstr "ハイピッチ"
+
+msgid "Hindi"
+msgstr "ヒンディー語"
+
+msgid "Home directory unavailable."
+msgstr "ホーム ディレクトリが使用できません。"
+
+msgid "Homepage"
+msgstr "ホームページ"
+
+msgid "Hours added to local system time for display."
+msgstr "ローカル システム時間に時間を追加して表示します。"
+
+msgid "How photographs fit on screen."
+msgstr "写真が画面にどのように収まるか。"
+
+msgid "How video fits on the screen."
+msgstr "ビデオが画面にどのように収まるか。"
+
+msgid "Hydrochill"
+msgstr "Hydrochill"
+
+msgid "IP Address"
+msgstr "IP アドレス"
+
+msgid "IP Address Setting"
+msgstr "IP アドレス設定"
+
+msgid "Ice Cap 4 Life"
+msgstr "Ice Cap 4 Life"
+
+msgid "Icon Colour"
+msgstr "アイコンの色"
+
+msgid "Icon Style"
+msgstr "アイコンのスタイル"
+
+msgid "Idle Dimming"
+msgstr "アイドル調光"
+
+msgid "If you format, all data on the system storage will be deleted.\nThis data cannot be restored.\nAre you sure you want to continue?"
+msgstr "フォーマットすると、本体ストレージ上のすべてのデータが削除されます。\nこのデータは復元できません。\n続行してもよろしいですか?"
+
+msgid "If you perform a connection test, the current connection will be terminated and the system will be disconnected.\nDo you want to continue?"
+msgstr "接続テストを実行すると、現在の接続が終了し、システムが切断されます。\n続行しますか?"
+
+msgid "Image Name"
+msgstr "画像名"
+
+msgid "Import Date ▲"
+msgstr "輸入日▲"
+
+msgid "Import Date ▼"
+msgstr "輸入日 ▼"
+
+msgid "Import a theme archive or theme folder."
+msgstr "テーマ アーカイブまたはテーマ フォルダーをインポートします。"
+
+msgid "Inbox"
+msgstr "受信箱"
+
+msgid "Information"
+msgstr "情報"
+
+msgid "Input Device"
+msgstr "入力デバイス"
+
+msgid "Install"
+msgstr "インストール"
+
+msgid "Install Theme"
+msgstr "テーマのインストール"
+
+msgid "Instant Advance"
+msgstr "インスタントアドバンス"
+
+msgid "Instant Replay"
+msgstr "インスタントリプレイ"
+
+msgid "Interface Text Size"
+msgstr "インターフェースのテキストサイズ"
+
+msgid "Interface Volume"
+msgstr "インターフェースボリューム"
+
+msgid "Internal Memory Card"
+msgstr "内蔵メモリカード"
+
+msgid "Internal memory card for PS/PS2 saved data."
+msgstr "PS/PS2のセーブデータを保存できる内蔵メモリーカード。"
+
+msgid "Internet Browser"
+msgstr "インターネットブラウザ"
+
+msgid "Internet Browser Start Control"
+msgstr "インターネットブラウザ起動制御"
+
+msgid "Internet Connection"
+msgstr "インターネット接続"
+
+msgid "Internet Connection Settings"
+msgstr "インターネット接続設定"
+
+msgid "Internet Connection Test"
+msgstr "インターネット接続テスト"
+
+msgid "Internet Search"
+msgstr "インターネット検索"
+
+msgid "Internet connection settings have been completed.\n\nSave completed."
+msgstr "インターネット接続設定が完了しました。\n\n 保存が完了しました。"
+
+msgid "It will take about 10 seconds for the access point to be ready.\nPlease wait..."
+msgstr "アクセスポイントの準備が完了するまでに約 10 秒かかります。\nお待ちください..."
+
+msgid "Italian"
+msgstr "イタリア語"
+
+msgid "Ivory Gadget"
+msgstr "Ivory Gadget"
+
+msgid "Japanese"
+msgstr "日本語"
+
+msgid "Keep Running"
+msgstr "走り続ける"
+
+msgid "Keep this computer awake while media plays."
+msgstr "メディアの再生中は、このコンピュータを起動したままにしてください。"
+
+msgid "Key Repeat Delay"
+msgstr "キーリピート遅延"
+
+msgid "Key Repeat Rate"
+msgstr "キーリピート率"
+
+msgid "Key Tone"
+msgstr "キートーン"
+
+msgid "Keyboard Bindings"
+msgstr "キーボードバインディング"
+
+msgid "Keyboard Entry Method"
+msgstr "キーボード入力方法"
+
+msgid "Keyboard Type"
+msgstr "キーボードの種類"
+
+msgid "Knuckleduster"
+msgstr "Knuckleduster"
+
+msgid "Korean"
+msgstr "韓国語"
+
+msgid "Language"
+msgstr "言語"
+
+msgid "Language 1"
+msgstr "言語 1"
+
+msgid "Launch at Login"
+msgstr "ログイン時に起動"
+
+msgid "Lava Passion"
+msgstr "Lava Passion"
+
+msgid "Left"
+msgstr "左"
+
+msgid "Left + Right"
+msgstr "左+右"
+
+msgid "Left-handed"
+msgstr "左利き"
+
+msgid "Level 1"
+msgstr "レベル1"
+
+msgid "Level 2"
+msgstr "レベル2"
+
+msgid "Level 3"
+msgstr "レベル3"
+
+msgid "Level 4"
+msgstr "レベル4"
+
+msgid "Level 5"
+msgstr "レベル5"
+
+msgid "Level 6"
+msgstr "レベル6"
+
+msgid "Level 7"
+msgstr "レベル7"
+
+msgid "Level 8"
+msgstr "レベル8"
+
+msgid "Library View"
+msgstr "ライブラリビュー"
+
+msgid "Licenses"
+msgstr "ライセンス"
+
+msgid "Light Purple"
+msgstr "ライトパープル"
+
+msgid "Lime"
+msgstr "ライム"
+
+msgid "Limited"
+msgstr "限定"
+
+msgid "Linear PCM"
+msgstr "リニアPCM"
+
+msgid "Linear PCM 2 Ch. 44.1 kHz"
+msgstr "リニアPCM 2ch. 44.1kHz"
+
+msgid "Linear PCM 5.1 Ch."
+msgstr "リニアPCM 5.1ch"
+
+msgid "Linear PCM 7.1 Ch."
+msgstr "リニアPCM 7.1ch"
+
+msgid "List of Registered PS Vita Systems"
+msgstr "登録されているPS Vita本体一覧"
+
+msgid "Live at the Sandopolis"
+msgstr "Live at the Sandopolis"
+
+msgid "Long"
+msgstr "ロング"
+
+msgid "Low"
+msgstr "低い"
+
+msgid "Low Pitch"
+msgstr "ローピッチ"
+
+msgid "MM/DD/YYYY"
+msgstr "YYYY/MM/DD"
+
+msgid "MTU"
+msgstr "MTU"
+
+msgid "Magenta"
+msgstr "マゼンタ"
+
+msgid "Malicious Fingers"
+msgstr "Malicious Fingers"
+
+msgid "Manage Bluetooth® Devices"
+msgstr "Bluetooth® デバイスの管理"
+
+msgid "Manage Bluetooth® devices."
+msgstr "Bluetooth® デバイスを管理します。"
+
+msgid "Manage your PlayStation®Network account."
+msgstr "PlayStation®Network アカウントを管理します。"
+
+msgid "Manages game data installed on the OpenXMB system. To delete a game data item, select it and then press the @T button."
+msgstr "OpenXMB システムにインストールされたゲーム データを管理します。ゲームデータを削除するには、ゲームデータを選択して@Tボタンを押します。"
+
+msgid "Manages internal memory cards for use with PlayStation® and PlayStation®2 format software."
+msgstr "PlayStation® および PlayStation®2 形式のソフトウェアで使用する内部メモリ カードを管理します。"
+
+msgid "Manual"
+msgstr "マニュアル"
+
+msgid "Master Volume"
+msgstr "マスターボリューム"
+
+msgid "Maximum shell rendering rate."
+msgstr "最大シェル レンダリング レート。"
+
+msgid "Media Server Connection"
+msgstr "メディアサーバー接続"
+
+msgid "Memory Card Utility (PS/PS2)"
+msgstr "メモリーカードユーティリティ（PS/PS2）"
+
+msgid "Message Box"
+msgstr "メッセージボックス"
+
+msgid "Microphone Level"
+msgstr "マイクレベル"
+
+msgid "Microphone Volume"
+msgstr "マイクの音量"
+
+msgid "Minimise"
+msgstr "最小化する"
+
+msgid "Momentary Standstill"
+msgstr "Momentary Standstill"
+
+msgid "Morning"
+msgstr "朝"
+
+msgid "Mosquito Noise Reduction"
+msgstr "モスキートノイズの軽減"
+
+msgid "Mouse Type"
+msgstr "マウスの種類"
+
+msgid "Move OpenXMB to a connected display."
+msgstr "OpenXMB を接続されたディスプレイに移動します。"
+
+msgid "Multisample anti-aliasing for supported graphics hardware."
+msgstr "サポートされているグラフィックス ハードウェアのマルチサンプル アンチエイリアス。"
+
+msgid "Music"
+msgstr "音楽"
+
+msgid "Music Folder"
+msgstr "ミュージックフォルダー"
+
+msgid "Music Settings"
+msgstr "音楽設定"
+
+msgid "Music Visualiser"
+msgstr "ミュージックビジュアライザー"
+
+msgid "Music Volume"
+msgstr "音楽の音量"
+
+msgid "Music codec: "
+msgstr "音楽コーデック:"
+
+msgid "My PlayStation®Network Account"
+msgstr "私のPlayStation®Networkアカウント"
+
+msgid "MyHome_5GHz (Private Networks Only)"
+msgstr "MyHome_5GHz (プライベート ネットワークのみ)"
+
+msgid "NETGEAR-Guest"
+msgstr "NETGEAR-ゲスト"
+
+msgid "Name"
+msgstr "名前"
+
+msgid "Navigation Repeat"
+msgstr "ナビゲーションの繰り返し"
+
+msgid "Network"
+msgstr "ネットワーク"
+
+msgid "Network Settings"
+msgstr "ネットワーク設定"
+
+msgid "Next"
+msgstr "次へ"
+
+msgid "Night"
+msgstr "夜"
+
+msgid "No"
+msgstr "いいえ"
+
+msgid "No saved theme presets."
+msgstr "保存されたテーマのプリセットはありません。"
+
+msgid "No wireless stereo headset is connected."
+msgstr "ワイヤレス ステレオ ヘッドセットが接続されていません。"
+
+msgid "None"
+msgstr "なし"
+
+msgid "Normal"
+msgstr "ノーマル"
+
+msgid "Norwegian"
+msgstr "ノルウェー語"
+
+msgid "Notification Messages"
+msgstr "通知メッセージ"
+
+msgid "Obtaining the date and time via the Internet..."
+msgstr "インターネット経由で日時を取得中..."
+
+msgid "Obtains the correct date and time automatically via the Internet when you sign in to PSN, and sets them on your system."
+msgstr "PSN にサインインすると、インターネット経由で正しい日付と時刻が自動的に取得され、システムに設定されます。"
+
+msgid "Obtains the correct date and time automatically via the Internet when you sign in to PSN, and sets them on your system.\n\nA network connection is required for this feature."
+msgstr "PSN にサインインすると、インターネット経由で正しい日付と時刻が自動的に取得され、システムに設定されます。\n\n この機能にはネットワーク接続が必要です。"
+
+msgid "Off"
+msgstr "オフ"
+
+msgid "On"
+msgstr "オン"
+
+msgid "On-Screen Keyboard"
+msgstr "オンスクリーンキーボード"
+
+msgid "One"
+msgstr "1 つ"
+
+msgid "Online Instruction Manuals"
+msgstr "オンライン取扱説明書"
+
+msgid "Open Log Folder"
+msgstr "ログフォルダーを開く"
+
+msgid "Open the location of diagnostic logs."
+msgstr "診断ログの場所を開きます。"
+
+msgid "OpenXMB system"
+msgstr "OpenXMB システム"
+
+msgid "OpenXMB version and information about this computer."
+msgstr "OpenXMB のバージョンとこのコンピューターに関する情報。"
+
+msgid "Operate other devices on the network from this system."
+msgstr "本システムからネットワーク上の他の機器を操作します。"
+
+msgid "Optical Digital"
+msgstr "光デジタル"
+
+msgid "Options"
+msgstr "オプション"
+
+msgid "Orange"
+msgstr "オレンジ"
+
+msgid "Order of year, month and day."
+msgstr "年、月、日の順です。"
+
+msgid "Original"
+msgstr "オリジナル"
+
+msgid "Output Device"
+msgstr "出力デバイス"
+
+msgid "Output Frequency"
+msgstr "出力周波数"
+
+msgid "Outputs Deep Color video signal. If the video output is not clean or the colors do not look right, set this option to [Off]."
+msgstr "Deep Colorビデオ信号を出力します。ビデオ出力がきれいでない場合、または色が正しく見えない場合は、このオプションを [オフ] に設定してください。"
+
+msgid "PLAYSTATION(R)3 Headset"
+msgstr "PLAYSTATION(R)3 ヘッドセット"
+
+msgid "PPPoE"
+msgstr "PPPoE"
+
+msgid "PPPoE Password"
+msgstr "PPPoEパスワード"
+
+msgid "PPPoE User Name"
+msgstr "PPPoE ユーザー名"
+
+msgid "PS Upscaler"
+msgstr "PS アップスケーラー"
+
+msgid "PS Vita System Application Utility"
+msgstr "PS Vitaシステムアプリケーションユーティリティ"
+
+msgid "PS/PS2 Smoothing"
+msgstr "PS/PS2 スムージング"
+
+msgid "PS3-HOME-NET"
+msgstr "PS3-ホームネット"
+
+msgid "PSN is all about entertainment and interaction.\nEnjoy FREE* online gaming, download amazing new games, game expansion packs for a host of top titles, watch trailers and get your hands on exclusive content, chat with friends, and compare Trophies.\n\nSign up today – it's easy and it's FREE!\n\n* Broadband Internet connection required."
+msgstr "PSN はエンターテイメントとインタラクションがすべてです。\n無料*のオンライン ゲームを楽しみ、素晴らしい新しいゲームや多数のトップ タイトルのゲーム拡張パックをダウンロードし、トレーラーを見て限定コンテンツを手に入れ、友達とチャットし、トロフィーを比較しましょう。\n\n 今すぐサインアップしてください – 簡単で無料です。\n\n * ブロードバンド インターネット接続が必要です。"
+
+msgid "Page Zoom"
+msgstr "ページズーム"
+
+msgid "Page opened when launching the browser."
+msgstr "ブラウザ起動時に開かれるページ。"
+
+msgid "Parental Control"
+msgstr "ペアレンタルコントロール"
+
+msgid "Password"
+msgstr "パスワード"
+
+msgid "Pause"
+msgstr "一時停止"
+
+msgid "Photo"
+msgstr "写真"
+
+msgid "Photo Album"
+msgstr "フォトアルバム"
+
+msgid "Photo Album 2"
+msgstr "写真集 2"
+
+msgid "Photo Gallery"
+msgstr "フォトギャラリー"
+
+msgid "Photos"
+msgstr "写真"
+
+msgid "Photosensitivity Warning"
+msgstr "光過敏症に関する警告"
+
+msgid "Pictures Folder"
+msgstr "写真フォルダー"
+
+msgid "Pink"
+msgstr "ピンク"
+
+msgid "Play"
+msgstr "遊ぶ"
+
+msgid "Play Remote Devices"
+msgstr "リモートデバイスを再生する"
+
+msgid "Play from Beginning"
+msgstr "最初からプレイする"
+
+msgid "Play the startup cue in full."
+msgstr "起動キューをフル再生します。"
+
+msgid "Play the startup sequence."
+msgstr "起動シーケンスを再生します。"
+
+msgid "PlayStation®Network"
+msgstr "PlayStation®Network"
+
+msgid "PlayStation®Plus"
+msgstr "PlayStation®プラス"
+
+msgid "PlayStation®Store"
+msgstr "PlayStation®Store"
+
+msgid "Players Blocked"
+msgstr "ブロックされたプレイヤー"
+
+msgid "Players Met"
+msgstr "出会った選手たち"
+
+msgid "Playlists"
+msgstr "プレイリスト"
+
+msgid "Please wait..."
+msgstr "お待ちください..."
+
+msgid "Pointer Speed"
+msgstr "ポインターの速度"
+
+msgid "Polish"
+msgstr "ポーランド語"
+
+msgid "Pop"
+msgstr "ポップ"
+
+msgid "Port Number"
+msgstr "ポート番号"
+
+msgid "Portrait"
+msgstr "肖像画"
+
+msgid "Portuguese"
+msgstr "ポルトガル語"
+
+msgid "Portuguese (Brazil)"
+msgstr "ポルトガル語 (ブラジル)"
+
+msgid "Portuguese (Portugal)"
+msgstr "ポルトガル語 (ポルトガル)"
+
+msgid "Power Indicator"
+msgstr "パワーインジケーター"
+
+msgid "Power Save"
+msgstr "省電力"
+
+msgid "Power Save Settings"
+msgstr "省電力設定"
+
+msgid "Predictive Input"
+msgstr "予測入力"
+
+msgid "Preferred audio track language."
+msgstr "優先されるオーディオトラック言語。"
+
+msgid "Preferred interface language."
+msgstr "優先されるインターフェース言語。"
+
+msgid "Preferred subtitle track language."
+msgstr "優先される字幕トラック言語。"
+
+msgid "Preparing...\nPlease wait."
+msgstr "準備中...\nお待ちください。"
+
+msgid "Preset name"
+msgstr "プリセット名"
+
+msgid "Press and hold the \"AOSS Button\" of the access point until the AOSS indicator starts blinking.\nIf you don't press the button within 2 minutes, the operation will be canceled."
+msgstr "アクセスポイントの「AOSSボタン」をAOSSインジケーターが点滅するまで長押しします。\n2 分以内にボタンを押さない場合、操作はキャンセルされます。"
+
+msgid "Press and hold the \"Rakuraku Start Button\" of the access point until the \"POWER\" LED blinks in [Green].\nIf you don't press the button within 1 minute, the operation will be canceled."
+msgstr "アクセスポイントの「らくらくスタートボタン」を「POWER」LEDが［緑色］に点滅するまで長押しします。\n1分以内にボタンを押さないと操作がキャンセルされます。"
+
+msgid "Press the \"Rakuraku Start Button\" again. Press and hold until the \"POWER\" LED turns [Orange].\nIf you don't press the button within 30 seconds, the operation will be canceled."
+msgstr "もう一度「らくらくスタートボタン」を押してください。 「POWER」LEDが【オレンジ】になるまで押し続けます。\n30 秒以内にボタンを押さないと、操作はキャンセルされます。"
+
+msgid "Press the START button and ENTER button of the BD remote control you want to register at the same time, and hold down until the screen changes."
+msgstr "登録したいBDリモコンのSTARTボタンとENTERボタンを同時に押し、画面が切り替わるまで押し続けます。"
+
+msgid "Prevent Sleep During Playback"
+msgstr "再生中のスリープを防止する"
+
+msgid "Previous"
+msgstr "前へ"
+
+msgid "Primary DNS"
+msgstr "プライマリ DNS"
+
+msgid "Print"
+msgstr "印刷する"
+
+msgid "Printer Settings"
+msgstr "プリンターの設定"
+
+msgid "Proxy Server"
+msgstr "プロキシサーバー"
+
+msgid "Quick Format"
+msgstr "クイックフォーマット"
+
+msgid "Quiet Interface During Music"
+msgstr "音楽中の静かなインターフェイス"
+
+msgid "RGB"
+msgstr "RGB"
+
+msgid "RGB Full Range (HDMI)"
+msgstr "RGB フルレンジ (HDMI)"
+
+msgid "Rakuraku WLAN Start"
+msgstr "らくらく無線LANスタート"
+
+msgid "Randomise slideshow order."
+msgstr "スライドショーの順序をランダムにします。"
+
+msgid "Read the program and third-party license notices."
+msgstr "プログラムとサードパーティのライセンス通知を読んでください。"
+
+msgid "Reading"
+msgstr "読書"
+
+msgid "Reassign Controllers"
+msgstr "コントローラの再割り当て"
+
+msgid "Red"
+msgstr "赤"
+
+msgid "Red Sphere, Blue Sphere"
+msgstr "Red Sphere, Blue Sphere"
+
+msgid "Reduce background movement and sparkles."
+msgstr "背景の動きや輝きを軽減します。"
+
+msgid "Reduce navigation sound volume while music is playing."
+msgstr "音楽再生中はナビゲーションの音量を下げてください。"
+
+msgid "Reduce rendering while unfocused."
+msgstr "焦点が合っていないときのレンダリングを減らします。"
+
+msgid "Reduced Motion"
+msgstr "モーションの軽減"
+
+msgid "Reduces rainbow-effect artifacts. This setting is used when the system outputs composite signal to a VIDEO IN or SCART connector."
+msgstr "虹効果のアーティファクトを軽減します。この設定は、システムがコンポジット信号を VIDEO IN または SCART コネクタに出力する場合に使用されます。"
+
+msgid "Refresh folders and metadata from your music location."
+msgstr "音楽の場所からフォルダーとメタデータを更新します。"
+
+msgid "Refresh the configured game library."
+msgstr "設定されたゲーム ライブラリを更新します。"
+
+msgid "Register BD Remote Control"
+msgstr "BD リモート コントロールを登録する"
+
+msgid "Register Bluetooth® Device"
+msgstr "Bluetooth® デバイスを登録する"
+
+msgid "Register Device"
+msgstr "デバイスの登録"
+
+msgid "Register New Device"
+msgstr "新しいデバイスを登録する"
+
+msgid "Register PlayStation®Vita"
+msgstr "PlayStation®Vita を登録する"
+
+msgid "Register a BD remote control for use with the OpenXMB system.\n\nPress the START button and ENTER button of the BD remote control you want to register at the same time, and hold down until the screen changes."
+msgstr "OpenXMB システムで使用するために BD リモコンを登録します。\n\n 登録したいBDリモコンのSTARTボタンとENTERボタンを同時に押し、画面が切り替わるまで押し続けます。"
+
+msgid "Register a device (such as a PS Vita or a PSP™ system) to be used for remote play with this system. Select this option to register a device for remote play if using it for the first time.\n\nEnter the following number on the remote device:\n\n12345678"
+msgstr "リモートプレイで使用する機器（PS VitaやPSP™など）を本機に登録します。機器を初めて使用する場合に、リモートプレイに機器を登録する場合にこのオプションを選択します。\n\n リモート デバイスで次の番号を入力します:\n\n 12345678"
+
+msgid "Register a remote play device with this system."
+msgstr "リモートプレイ機器を本機に登録します。"
+
+msgid "Register completed."
+msgstr "登録が完了しました。"
+
+msgid "Register or manage Bluetooth® devices such as headsets, keyboards and mouse devices.\nSelect an option."
+msgstr "ヘッドセット、キーボード、マウス デバイスなどの Bluetooth® デバイスを登録または管理します。\nオプションを選択します。"
+
+msgid "Register the BD Remote Control."
+msgstr "BD リモコンを登録します。"
+
+msgid "Registered Device:  "
+msgstr "登録済みデバイス:"
+
+msgid "Registering...\nPlease wait."
+msgstr "登録中...\nお待ちください。"
+
+msgid "Registration completed."
+msgstr "登録が完了しました。"
+
+msgid "Registration with the selected device will be deleted.\nAre you sure you want to continue?"
+msgstr "選択したデバイスの登録が削除されます。\n続行してもよろしいですか?"
+
+msgid "Release Year ▲"
+msgstr "発売年▲"
+
+msgid "Release Year ▼"
+msgstr "発売年 ▼"
+
+msgid "Release the controls, then press a "
+msgstr "コントロールを放し、a を押します。"
+
+msgid "Remember the last playback position."
+msgstr "最後の再生位置を記憶します。"
+
+msgid "Remote Play Device"
+msgstr "リモートプレイデバイス"
+
+msgid "Remote Play Settings"
+msgstr "リモートプレイの設定"
+
+msgid "Remote Start"
+msgstr "リモートスタート"
+
+msgid "Remove browser cookies and cached site data."
+msgstr "ブラウザの Cookie とキャッシュされたサイト データを削除します。"
+
+msgid "Remove browser cookies, site storage and cached pages?"
+msgstr "ブラウザの Cookie、サイト ストレージ、キャッシュされたページを削除しますか?"
+
+msgid "Remove from Playlist"
+msgstr "プレイリストから削除"
+
+msgid "Repeat"
+msgstr "リピート"
+
+msgid "Repeat All"
+msgstr "すべて繰り返す"
+
+msgid "Repeat Off"
+msgstr "リピートオフ"
+
+msgid "Repeat On"
+msgstr "リピートオン"
+
+msgid "Repeat One"
+msgstr "1 回繰り返します"
+
+msgid "Repeat Slideshow"
+msgstr "スライドショーを繰り返す"
+
+msgid "Repeat setting when opening the player."
+msgstr "プレーヤーを開いたときに設定を繰り返します。"
+
+msgid "Rescan Game Library"
+msgstr "ゲームライブラリを再スキャンする"
+
+msgid "Rescan Music Library"
+msgstr "音楽ライブラリを再スキャンする"
+
+msgid "Resolution"
+msgstr "解像度"
+
+msgid "Restore"
+msgstr "復元"
+
+msgid "Restore Default Settings"
+msgstr "デフォルト設定の復元"
+
+msgid "Restore Default Settings?"
+msgstr "デフォルト設定を復元しますか?"
+
+msgid "Restore Defaults"
+msgstr "デフォルトに戻す"
+
+msgid "Restore OpenXMB System"
+msgstr "OpenXMB システムを復元します"
+
+msgid "Restore Original Theme"
+msgstr "元のテーマを復元する"
+
+msgid "Restore Original Theme?"
+msgstr "元のテーマを復元しますか?"
+
+msgid "Restore completed.\nThe default settings have been restored."
+msgstr "復元が完了しました。\nデフォルト設定が復元されました。"
+
+msgid "Restore the original OpenXMB appearance."
+msgstr "元の OpenXMB の外観を復元します。"
+
+msgid "Restore the original theme appearance?"
+msgstr "元のテーマの外観を復元しますか?"
+
+msgid "Restore this profile's preferences? Your media files will be preserved."
+msgstr "このプロファイルの設定を復元しますか?メディア ファイルは保存されます。"
+
+msgid "Restore this profile's shell settings; preserve media."
+msgstr "このプロファイルのシェル設定を復元します。メディアを保存します。"
+
+msgid "Restores the system software to its default settings.\n\nAll system settings will be restored to their default values.\nDo you want to continue?"
+msgstr "システムソフトウェアをデフォルト設定に戻します。\n\n すべてのシステム設定がデフォルト値に復元されます。\n続行しますか?"
+
+msgid "Restores the system software to its default settings.\nAre you sure you want to continue?"
+msgstr "システムソフトウェアをデフォルト設定に戻します。\n続行してもよろしいですか?"
+
+msgid "Resume"
+msgstr "再開"
+
+msgid "Resume Playback"
+msgstr "再生を再開する"
+
+msgid "Return to Beginning"
+msgstr "最初に戻る"
+
+msgid "Right"
+msgstr "右"
+
+msgid "Right-handed"
+msgstr "右利き"
+
+msgid "Robotnik Radio"
+msgstr "Robotnik Radio"
+
+msgid "Rotate Left"
+msgstr "左に回転"
+
+msgid "Rotate Right"
+msgstr "右回転"
+
+msgid "Rounded"
+msgstr "丸い"
+
+msgid "Russian"
+msgstr "ロシア語"
+
+msgid "SSID"
+msgstr "SSID"
+
+msgid "Save Theme Preset"
+msgstr "テーマプリセットの保存"
+
+msgid "Save completed.\nIt may take 1 minute or longer to restart the access point."
+msgstr "保存が完了しました。\nアクセス ポイントの再起動には 1 分以上かかる場合があります。"
+
+msgid "Save the current appearance with a name."
+msgstr "現在の外観を名前を付けて保存します。"
+
+msgid "Saved Data Utility (PS2)"
+msgstr "セーブデータユーティリティ(PS2)"
+
+msgid "Saved Data Utility (PS3™)"
+msgstr "保存データユーティリティ (PS3™)"
+
+msgid "Saved Data Utility (minis/PSP™)"
+msgstr "保存データユーティリティ (minis/PSP™)"
+
+msgid "Saved Theme Presets"
+msgstr "保存されたテーマのプリセット"
+
+msgid "Scale subtitle text."
+msgstr "字幕テキストのスケール。"
+
+msgid "Scale text throughout OpenXMB."
+msgstr "OpenXMB 全体でテキストを拡大縮小します。"
+
+msgid "Scan"
+msgstr "スキャン"
+
+msgid "Scanning...\nPlease wait."
+msgstr "スキャン中...\nお待ちください。"
+
+msgid "Scans the network and connects to a media server. To use this function, a media server must be set up to allow connections from the OpenXMB system."
+msgstr "ネットワークをスキャンしてメディア サーバーに接続します。この機能を使用するには、OpenXMB システムからの接続を許可するようにメディア サーバーを設定する必要があります。"
+
+msgid "Scene Search"
+msgstr "シーンサーチ"
+
+msgid "Schumacher Bar"
+msgstr "Schumacher Bar"
+
+msgid "Scrambled Eggman"
+msgstr "Scrambled Eggman"
+
+msgid "Screen Mode"
+msgstr "スクリーンモード"
+
+msgid "Screen Saver"
+msgstr "スクリーンセーバー"
+
+msgid "Search Engine"
+msgstr "検索エンジン"
+
+msgid "Search for Media Servers"
+msgstr "メディアサーバーの検索"
+
+msgid "Search provider used for non-address text."
+msgstr "住所以外のテキストに使用される検索プロバイダー。"
+
+msgid "Search the Internet."
+msgstr "インターネットを検索してください。"
+
+msgid "Searching for the other OpenXMB system..."
+msgstr "他の OpenXMB システムを検索しています..."
+
+msgid "Secondary DNS"
+msgstr "セカンダリ DNS"
+
+msgid "Seconds each photograph remains visible."
+msgstr "各写真は数秒間表示されたままになります。"
+
+msgid "Security"
+msgstr "セキュリティ"
+
+msgid "Security Settings"
+msgstr "セキュリティ設定"
+
+msgid "Select a connection method."
+msgstr "接続方法を選択します。"
+
+msgid "Select a setting method."
+msgstr "設定方法を選択します。"
+
+msgid "Select a theme."
+msgstr "テーマを選択します。"
+
+msgid "Select all resolutions that are supported by your TV."
+msgstr "テレビでサポートされているすべての解像度を選択します。"
+
+msgid "Select an available playback device."
+msgstr "利用可能な再生デバイスを選択します。"
+
+msgid "Select an existing playlist or create a new playlist."
+msgstr "既存のプレイリストを選択するか、新しいプレイリストを作成します。"
+
+msgid "Select an installed core and game content."
+msgstr "インストールされているコアとゲーム コンテンツを選択します。"
+
+msgid "Select an output format supported by the TV or AV amplifier (receiver) in use."
+msgstr "ご使用のテレビやAVアンプ（受信機）が対応している出力フォーマットを選択してください。"
+
+msgid "Select an update method."
+msgstr "更新方法を選択します。"
+
+msgid "Select the Bluetooth® device to register."
+msgstr "登録する Bluetooth® デバイスを選択します。"
+
+msgid "Select the access point to be used."
+msgstr "使用するアクセスポイントを選択します。"
+
+msgid "Select the connector on the TV or AV amplifier (receiver)."
+msgstr "テレビまたはAVアンプ（受信機）の接続端子を選択してください。"
+
+msgid "Select the connector on the TV."
+msgstr "テレビのコネクタを選択します。"
+
+msgid "Select the destination for the selected items."
+msgstr "選択した項目の宛先を選択します。"
+
+msgid "Select the keyboard type."
+msgstr "キーボードの種類を選択します。"
+
+msgid "Select the method for setting the output format."
+msgstr "出力形式の設定方法を選択します。"
+
+msgid "Select the operation mode of the network device."
+msgstr "ネットワークデバイスの動作モードを選択します。"
+
+msgid "Select the operation mode of the network device.\nIn most cases, select Auto-Detect."
+msgstr "ネットワークデバイスの動作モードを選択します。\nほとんどの場合、[自動検出] を選択します。"
+
+msgid "Select the system you are using."
+msgstr "使用しているシステムを選択してください。"
+
+msgid "Select the type of connector on your TV."
+msgstr "テレビのコネクタの種類を選択します。"
+
+msgid "Send a Message"
+msgstr "メッセージを送信する"
+
+msgid "Sent Items"
+msgstr "送信済みアイテム"
+
+msgid "Set"
+msgstr "セット"
+
+msgid "Set Audio Output Settings"
+msgstr "オーディオ出力設定を行う"
+
+msgid "Set Manually"
+msgstr "手動で設定する"
+
+msgid "Set as Wallpaper"
+msgstr "壁紙として設定"
+
+msgid "Set the Ad Hoc Mode channel for PSP® Remasters."
+msgstr "PSP® リマスターのアドホック モード チャンネルを設定します。"
+
+msgid "Set the BD audio output format."
+msgstr "BD オーディオ出力形式を設定します。"
+
+msgid "Set the DHCP host name.\nIn most cases this setting does not need to be changed."
+msgstr "DHCPホスト名を設定します。\nほとんどの場合、この設定を変更する必要はありません。"
+
+msgid "Set the default BD audio language."
+msgstr "デフォルトの BD オーディオ言語を設定します。"
+
+msgid "Set the default DVD audio language."
+msgstr "デフォルトの DVD オーディオ言語を設定します。"
+
+msgid "Set the default audio language for content on the HDD."
+msgstr "HDD 上のコンテンツのデフォルトの音声言語を設定します。"
+
+msgid "Set the time and date.\n\nUse the arrow keys to adjust each field, then press the X button to apply."
+msgstr "時刻と日付を設定します。\n\n 矢印キーを使用して各フィールドを調整し、X ボタンを押して適用します。"
+
+msgid "Set via Internet"
+msgstr "インターネット経由で設定する"
+
+msgid "Sets for daylight saving time."
+msgstr "サマータイムを設定します。"
+
+msgid "Sets for use of a preset combination of elements such as colour, background or icons."
+msgstr "色、背景、アイコンなどの要素のプリセットの組み合わせを使用するように設定します。"
+
+msgid "Sets the audio input and output devices for voice/video chat and other communication features."
+msgstr "音声/ビデオチャットやその他の通信機能用のオーディオ入出力デバイスを設定します。"
+
+msgid "Sets the audio input and output devices for voice/video chat and other communication features.\nSelect an audio device."
+msgstr "音声/ビデオチャットやその他の通信機能用のオーディオ入出力デバイスを設定します。\nオーディオ デバイスを選択します。"
+
+msgid "Sets the audio input and output devices.\nSelect an option."
+msgstr "オーディオ入力および出力デバイスを設定します。\nオプションを選択します。"
+
+msgid "Sets the audio output device for use during remote play. To output audio from a PS Vita system, a PSP™ system, a PC or a mobile phone, select [Remote Play Device]."
+msgstr "リモートプレイ時に使用する音声出力デバイスを設定します。 PS Vita、PSP™、PC、携帯電話から音声を出力するには、[リモートプレイデバイス]を選択します。"
+
+msgid "Sets the background of the XMB™ screen."
+msgstr "XMB™画面の背景を設定します。"
+
+msgid "Sets the colour of the background and options menu."
+msgstr "背景とオプションメニューの色を設定します。"
+
+msgid "Sets the date and time for this system."
+msgstr "このシステムの日付と時刻を設定します。"
+
+msgid "Sets the date and time for this system.\nSelect how to set the date and time."
+msgstr "このシステムの日付と時刻を設定します。\n日付と時刻の設定方法を選択します。"
+
+msgid "Sets the delay before key repeat starts."
+msgstr "キーリピートが始まるまでの遅延時間を設定します。"
+
+msgid "Sets the font displayed on the XMB™ screen."
+msgstr "XMB™画面に表示されるフォントを設定します。"
+
+msgid "Sets the method for connecting the system to the Internet.\nSelect a connection method."
+msgstr "システムをインターネットに接続する方法を設定します。\n接続方法を選択します。"
+
+msgid "Sets the method for connecting the system to the Internet. Select this option to connect to a wireless LAN or to change the settings."
+msgstr "システムをインターネットに接続する方法を設定します。無線LANに接続したり、設定を変更したりする場合に選択します。"
+
+msgid "Sets the mouse type. Set this option based on which hand you use to operate the mouse."
+msgstr "マウスの種類を設定します。どちらの手でマウスを操作するかに基づいてこのオプションを設定します。"
+
+msgid "Sets the order of display for year, month and day."
+msgstr "年、月、日の表示順序を設定します。"
+
+msgid "Sets the output format of video content recorded in a wide color range. Set this option as necessary for the TV in use."
+msgstr "広色域で記録されたビデオコンテンツの出力フォーマットを設定します。使用するテレビの必要に応じて設定してください。"
+
+msgid "Sets the output method for color signals when playing BDs or DVDs."
+msgstr "BDまたはDVD再生時のカラー信号の出力方法を設定します。"
+
+msgid "Sets the playback method for content items recorded at 24 Hz (frames/second)."
+msgstr "24Hz（フレーム/秒）で記録されたコンテンツの再生方法を設定します。"
+
+msgid "Sets the playback method for content recorded at 50 Hz. This setting is used when playing content saved on the system storage or storage media."
+msgstr "50Hzで記録されたコンテンツの再生方法を設定します。この設定は、本体ストレージまたは記録メディアに保存されたコンテンツを再生するときに使用されます。"
+
+msgid "Sets the range of RGB output signals for an HDMI connection."
+msgstr "HDMI 接続の RGB 出力信号の範囲を設定します。"
+
+msgid "Sets the rate at which a held key repeats."
+msgstr "押したキーを繰り返す速度を設定します。"
+
+msgid "Sets the speed at which the mouse pointer moves. The mouse pointer is displayed in the Internet browser and in games and other software that support use of a mouse."
+msgstr "マウスポインタの移動速度を設定します。マウス ポインタは、インターネット ブラウザ、ゲーム、およびマウスの使用をサポートするその他のソフトウェアに表示されます。"
+
+msgid "Sets the text entry method for a connected keyboard."
+msgstr "接続されたキーボードのテキスト入力方法を設定します。"
+
+msgid "Sets the time display to either a 12-hour or 24-hour clock."
+msgstr "時刻表示を 12 時間制または 24 時間制に設定します。"
+
+msgid "Sets the time-of-day lighting (day, dusk, night or automatic)."
+msgstr "照明の時刻を設定します (日中、夕暮れ、夜間、または自動)。"
+
+msgid "Sets the time-of-day lighting of the XMB™ screen."
+msgstr "XMB™ 画面の時間帯の照明を設定します。"
+
+msgid "Sets to output audio through multiple connectors simultaneously. Audio output to connectors that are not selected in [Audio Output Settings] is downscaled to 2 Ch."
+msgstr "複数のコネクタから同時に音声を出力するように設定します。 [音声出力設定]で選択されていない端子への音声出力は2chに縮小されます。"
+
+msgid "Sets whether or not to automatically turn off controllers. If you do not use a controller for a set amount of time, it will turn off automatically."
+msgstr "コントローラーの電源を自動的にオフにするかどうかを設定します。コントローラーを一定時間使用しないと、自動的に電源が切れます。"
+
+msgid "Sets whether or not to automatically turn off this system. If you do not operate the system for a set amount of time, the system will turn off automatically."
+msgstr "本システムの電源を自動的にオフにするかどうかを設定します。一定時間システムを操作しないと、システムは自動的にオフになります。"
+
+msgid "Sets whether or not to connect this system to the Internet. Select this option if you want to temporarily disable the Internet connection."
+msgstr "本機をインターネットに接続するかどうかを設定します。インターネット接続を一時的に無効にする場合は、このオプションを選択します。"
+
+msgid "Sets whether or not to connect to media servers."
+msgstr "メディアサーバーに接続するかどうかを設定します。"
+
+msgid "Sets whether or not to output all audio to the headset."
+msgstr "すべての音声をヘッドセットに出力するかどうかを設定します。"
+
+msgid "Sets whether or not to turn on this system automatically when a registered device is connected for remote play."
+msgstr "登録した機器をリモートプレイで接続したときに、自動的に本機の電源をオンにするかどうかを設定します。"
+
+msgid "Sets whether or not to use key tones on the XMB™ menu."
+msgstr "XMB™メニューでキー音を使用するかどうかを設定します。"
+
+msgid "Sets whether or not to use the vibration function. This setting will be applied to all controllers that support the vibration function."
+msgstr "振動機能を使用するかどうかを設定します。この設定は振動機能をサポートするすべてのコントローラーに適用されます。"
+
+msgid "Settings"
+msgstr "設定"
+
+msgid "Settings List"
+msgstr "設定一覧"
+
+msgid "Settings and Connection Status List"
+msgstr "設定と接続状態一覧"
+
+msgid "Short"
+msgstr "ショート"
+
+msgid "Show FPS"
+msgstr "FPS を表示"
+
+msgid "Show GPU Memory"
+msgstr "GPU メモリを表示"
+
+msgid "Show Seconds"
+msgstr "秒を表示"
+
+msgid "Show background particles."
+msgstr "背景のパーティクルを表示します。"
+
+msgid "Show seconds in the clock."
+msgstr "時計に秒を表示します。"
+
+msgid "Show the animated background ribbon."
+msgstr "アニメーション化された背景リボンを表示します。"
+
+msgid "Show the controller keyboard during text entry."
+msgstr "テキスト入力中にコントローラーのキーボードを表示します。"
+
+msgid "Show the dismissible startup warning."
+msgstr "無視可能な起動警告を表示します。"
+
+msgid "Shuffle"
+msgstr "シャッフル"
+
+msgid "Shuffle Slideshow"
+msgstr "シャッフルスライドショー"
+
+msgid "Shuffle tracks in the play queue."
+msgstr "再生キュー内のトラックをシャッフルします。"
+
+msgid "Sign Up"
+msgstr "サインアップ"
+
+msgid "Sign in to PlayStation®Network to add friends, exchange messages and join chat rooms."
+msgstr "PlayStation®Network にサインインして、友達を追加したり、メッセージを交換したり、チャット ルームに参加したりできます。"
+
+msgid "Sign in to use Friends features"
+msgstr "サインインして友達機能を使用する"
+
+msgid "Sign up for a PlayStation®Network account.\nA broadband Internet connection is required."
+msgstr "PlayStation®Network アカウントにサインアップします。\nブロードバンド インターネット接続が必要です。"
+
+msgid "Size"
+msgstr "サイズ"
+
+msgid "Slide"
+msgstr "スライド"
+
+msgid "Slideshow"
+msgstr "スライドショー"
+
+msgid "Slideshow Duration"
+msgstr "スライドショーの長さ"
+
+msgid "Slideshow Speed"
+msgstr "スライドショーの速度"
+
+msgid "Slideshow Style"
+msgstr "スライドショースタイル"
+
+msgid "Slideshow Transition"
+msgstr "スライドショーのトランジション"
+
+msgid "Slow"
+msgstr "遅い"
+
+msgid "Slow (Forward)"
+msgstr "ゆっくり（前進）"
+
+msgid "Slow (Reverse)"
+msgstr "スロー（リバース）"
+
+msgid "Smooth"
+msgstr "スムーズ"
+
+msgid "Smooth out the rough edges of images of PlayStation® and PlayStation®2 format software."
+msgstr "PlayStation® および PlayStation®2 形式のソフトウェアの画像の粗いエッジを滑らかにします。"
+
+msgid "So Long and Thanks for All the..."
+msgstr "So Long and Thanks for All the..."
+
+msgid "Software Instruction Manuals"
+msgstr "ソフトウェア取扱説明書"
+
+msgid "Songs"
+msgstr "歌"
+
+msgid "Sonic the Hedgehog and Knuckles"
+msgstr "Sonic the Hedgehog and Knuckles"
+
+msgid "Sort By"
+msgstr "並べ替え基準"
+
+msgid "Sort tracks in each folder."
+msgstr "フォルダーごとにトラックを並べ替えます。"
+
+msgid "Sound"
+msgstr "サウンド"
+
+msgid "Sound Set Folder"
+msgstr "サウンドセットフォルダー"
+
+msgid "Sound Settings"
+msgstr "サウンド設定"
+
+msgid "Sound folder not found."
+msgstr "サウンドフォルダーが見つかりません。"
+
+msgid "Sound set needs a playable "
+msgstr "サウンド セットには再生可能ファイルが必要です"
+
+msgid "Spanish"
+msgstr "スペイン語"
+
+msgid "Sparkle Colour"
+msgstr "スパークルカラー"
+
+msgid "Sparkles"
+msgstr "輝き"
+
+msgid "Speed and Duplex"
+msgstr "速度と二重通信"
+
+msgid "Standard Input"
+msgstr "標準入力"
+
+msgid "Start OpenXMB when you sign in."
+msgstr "サインイン時に OpenXMB を開始します。"
+
+msgid "Start a Chat"
+msgstr "チャットを開始する"
+
+msgid "Start a new text chat with a friend or a group."
+msgstr "友人またはグループと新しいテキスト チャットを開始します。"
+
+msgid "Starts the system automatically and downloads game patches, uploads new saved data to online storage and syncs trophy information with the server."
+msgstr "Starts the system automatically and downloads game patches, uploads new saved data to online storage and syncs trophy information with the server."
+
+msgid "Startup Intro"
+msgstr "起動アニメーション"
+
+msgid "Startup Sound"
+msgstr "起動音"
+
+msgid "Status of Registered Devices"
+msgstr "登録済みデバイスのステータス"
+
+msgid "Stereo Headset Audio Extension"
+msgstr "ステレオ ヘッドセット オーディオ拡張機能"
+
+msgid "Stop"
+msgstr "停止"
+
+msgid "Stranger to Closure"
+msgstr "Stranger to Closure"
+
+msgid "Subnet Mask"
+msgstr "サブネットマスク"
+
+msgid "Subscribe to PlayStation®Plus and get your hands on all the benefits that come with membership."
+msgstr "PlayStation®Plus に登録して、メンバーシップに伴うすべての特典を手に入れましょう。"
+
+msgid "Subtitle Language"
+msgstr "字幕言語"
+
+msgid "Subtitle Options"
+msgstr "字幕オプション"
+
+msgid "Subtitle Size"
+msgstr "字幕サイズ"
+
+msgid "Swedish"
+msgstr "スウェーデン語"
+
+msgid "Synchronise presentation to the display."
+msgstr "プレゼンテーションをディスプレイに同期します。"
+
+msgid "System"
+msgstr "システム"
+
+msgid "System Auto-Off"
+msgstr "システムの自動オフ"
+
+msgid "System Default"
+msgstr "システムのデフォルト"
+
+msgid "System Default Device"
+msgstr "システムのデフォルトデバイス"
+
+msgid "System Information"
+msgstr "システム情報"
+
+msgid "System Language"
+msgstr "システム言語"
+
+msgid "System Name"
+msgstr "システム名"
+
+msgid "System Settings"
+msgstr "システム設定"
+
+msgid "System Software\nVersion 4.91\n\nMAC Address (Wired)\n00:1F:A7:00:00:00\n\nMAC Address (Wi-Fi)\n00:1F:A7:00:00:01\n\nIP Address\n192.168.1.10\n\nSystem Storage\n466 GB free of 500 GB"
+msgstr "システム ソフトウェア\nバージョン 4.91\n\n MAC アドレス (有線)\n00:1F:A7:00:00:00\n\n MAC アドレス (Wi-Fi)\n00:1F:A7:00:00:01\n\n IP アドレス\n192.168.1.10\n\n システム ストレージ\n500 GB のうち 466 GB の空き"
+
+msgid "System Update"
+msgstr "システムアップデート"
+
+msgid "Teal"
+msgstr "ティール"
+
+msgid "Term"
+msgstr "期間"
+
+msgid "Tests the Internet connection and displays the results."
+msgstr "インターネット接続をテストし、結果を表示します。"
+
+msgid "Tests the Internet connection and displays the results.\n\nObtain IP Address    Succeeded\nInternet Connection  Succeeded\nPlayStation™Network  Succeeded\nNAT Type             Type 2\nUPnP                 Available\nConnection Speed (Download)  85.4 Mbps\nConnection Speed (Upload)    24.7 Mbps"
+msgstr "インターネット接続をテストし、結果を表示します。\n\n IP アドレスの取得に成功しました\nインターネット接続に成功しました\nPlayStation™Network 成功しました\nNAT タイプ タイプ 2\nUPnP 利用可能\n接続速度 (ダウンロード) 85.4 Mbps\n接続速度 (アップロード) 24.7 Mbps"
+
+msgid "Tests the image from a camera that is connected to the system using a USB cable. You can adjust settings to reduce flickering for some cameras."
+msgstr "USB ケーブルを使用してシステムに接続されているカメラからの画像をテストします。一部のカメラでは、設定を調整してちらつきを軽減できます。"
+
+msgid "Tests the image from a camera that is connected to the system using a USB cable. You can adjust settings to reduce flickering for some cameras.\n\nNo camera is currently connected."
+msgstr "USB ケーブルを使用してシステムに接続されているカメラからの画像をテストします。一部のカメラでは、設定を調整してちらつきを軽減できます。\n\n 現在接続されているカメラはありません。"
+
+msgid "Text Colour"
+msgstr "文字の色"
+
+msgid "That Freezing Feeling"
+msgstr "That Freezing Feeling"
+
+msgid "The Doomsday"
+msgstr "The Doomsday"
+
+msgid "The Secluded Stronghold"
+msgstr "The Secluded Stronghold"
+
+msgid "The Wait is Over!"
+msgstr "The Wait is Over!"
+
+msgid "The audio output settings have been updated."
+msgstr "音声出力設定が更新されました。"
+
+msgid "The date and time have been set."
+msgstr "日付と時刻が設定されました。"
+
+msgid "The image will be deleted.\nAre you sure you want to continue?"
+msgstr "画像は削除されます。\n続行してもよろしいですか?"
+
+msgid "The name displayed by OpenXMB."
+msgstr "OpenXMB によって表示される名前。"
+
+msgid "The other OpenXMB system was not found.\nCheck that both systems are connected to the same network."
+msgstr "他の OpenXMB システムが見つかりませんでした。\n両方のシステムが同じネットワークに接続されていることを確認してください。"
+
+msgid "The password has been changed."
+msgstr "パスワードが変更されました。"
+
+msgid "The passwords do not match.\nTry again."
+msgstr "パスワードが一致しません。\nもう一度試してください。"
+
+msgid "The selected items will be deleted.\nAre you sure you want to continue?"
+msgstr "選択した項目が削除されます。\n続行してもよろしいですか?"
+
+msgid "The system and devices connected via HDMI can operate each other."
+msgstr "HDMI 経由で接続されたシステムとデバイスは相互に動作できます。"
+
+msgid "The system has been restored to its default settings."
+msgstr "システムはデフォルト設定に復元されました。"
+
+msgid "The system software is up to date.\n\nThe latest version of the system software has already been installed."
+msgstr "システムソフトウェアは最新です。\n\n 最新バージョンのシステム ソフトウェアがすでにインストールされています。"
+
+msgid "The term has been added."
+msgstr "という用語が追加されました。"
+
+msgid "The title that is currently playing will be deleted.\nAre you sure you want to continue?"
+msgstr "再生中のタイトルが削除されます。\n続行してもよろしいですか?"
+
+msgid "The video output settings have been updated."
+msgstr "ビデオ出力設定が更新されました。"
+
+msgid "Theme"
+msgstr "テーマ"
+
+msgid "Theme Settings"
+msgstr "テーマの設定"
+
+msgid "Theme archive or folder"
+msgstr "テーマのアーカイブまたはフォルダー"
+
+msgid "There are no registered devices."
+msgstr "登録されているデバイスはありません。"
+
+msgid "There are no subtitle options available."
+msgstr "利用可能な字幕オプションはありません。"
+
+msgid "There is no audio."
+msgstr "音声はありません。"
+
+msgid "There is no backup data.\nConnect storage media that contains the backup data."
+msgstr "バックアップデータはありません。\nバックアップ データが含まれるストレージ メディアを接続します。"
+
+msgid "This feature is not available yet. This will be implemented in a future beta. Sorry!"
+msgstr "この機能はまだ利用できません。これは将来のベータ版で実装される予定です。ごめん！"
+
+msgid "This file is not a supported image or video."
+msgstr "このファイルはサポートされている画像またはビデオではありません。"
+
+msgid "This is the system to transfer data from"
+msgstr "データを転送するシステムです"
+
+msgid "This is the system to transfer data to"
+msgstr "データを転送するシステムです"
+
+msgid "This sample count is unavailable on the active GPU."
+msgstr "このサンプル数は、アクティブな GPU では使用できません。"
+
+msgid "This video cannot be opened."
+msgstr "このビデオは開けません。"
+
+msgid "Three Ring Nightfall"
+msgstr "Three Ring Nightfall"
+
+msgid "Time"
+msgstr "時間"
+
+msgid "Time (HH:MM)"
+msgstr "時間 (HH:MM)"
+
+msgid "Time Format"
+msgstr "時間の形式"
+
+msgid "Time Zone"
+msgstr "タイムゾーン"
+
+msgid "Time Zone Offset"
+msgstr "タイムゾーンオフセット"
+
+msgid "Title Repeat"
+msgstr "タイトルリピート"
+
+msgid "Title ▲"
+msgstr "タイトル▲"
+
+msgid "Title ▼"
+msgstr "タイトル ▼"
+
+msgid "To register (pair), you will need to prepare the Bluetooth® device.\nFor information on preparing the device, refer to the instructions supplied with the Bluetooth® device."
+msgstr "登録(ペアリング)するにはBluetooth®デバイスをご用意いただく必要があります。\nデバイスの準備については、Bluetooth® デバイスに付属の説明書を参照してください。"
+
+msgid "Transfers data from your current OpenXMB system to a new OpenXMB system over a network.\n\nConnect both systems to the same network, then follow the on-screen instructions on each system."
+msgstr "現在の OpenXMB システムから新しい OpenXMB システムにネットワーク経由でデータを転送します。\n\n 両方のシステムを同じネットワークに接続し、各システムの画面上の指示に従います。"
+
+msgid "Transfers data that is saved on one OpenXMB system to another OpenXMB system. You can use this feature when replacing the OpenXMB system that you usually use with another OpenXMB system."
+msgstr "ある OpenXMB システムに保存されているデータを別の OpenXMB システムに転送します。この機能は、通常使用している OpenXMB システムを別の OpenXMB システムに置き換えるときに使用できます。"
+
+msgid "Transition between photographs."
+msgstr "写真間の遷移。"
+
+msgid "Trimming"
+msgstr "トリミング"
+
+msgid "Trophy Collection"
+msgstr "トロフィーコレクション"
+
+msgid "Trophy Notifications"
+msgstr "トロフィーの通知"
+
+msgid "Turkish"
+msgstr "トルコ語"
+
+msgid "Turn Off System"
+msgstr "システムをオフにする"
+
+msgid "Turn Off System Automatically After Background Download"
+msgstr "バックグラウンドでのダウンロード後にシステムを自動的にオフにする"
+
+msgid "UPnP"
+msgstr "UPnP"
+
+msgid "USB Headset"
+msgstr "USB ヘッドセット"
+
+msgid "Unable to update launch at login."
+msgstr "ログイン時の起動を更新できません。"
+
+msgid "Unlimited"
+msgstr "無制限"
+
+msgid "Unregister All"
+msgstr "すべて登録解除"
+
+msgid "Up"
+msgstr "上へ"
+
+msgid "Update the OpenXMB system software."
+msgstr "OpenXMB システム ソフトウェアを更新します。"
+
+msgid "Update via Internet"
+msgstr "インターネット経由でアップデートする"
+
+msgid "Update via Storage Media"
+msgstr "記憶メディア経由でアップデートする"
+
+msgid "Upscale"
+msgstr "高級感のある"
+
+msgid "Use"
+msgstr "使用する"
+
+msgid "Use a folder containing ok.wav, confirm.wav, cancel.wav and back.wav."
+msgstr "ok.wav、confirm.wav、cancel.wav、back.wav が含まれるフォルダーを使用します。"
+
+msgid "Use a hexadecimal colour such as #ffeefc."
+msgstr "#ffeefc などの 16 進数の色を使用します。"
+
+msgid "Use a hexadecimal colour."
+msgstr "16 進数の色を使用します。"
+
+msgid "Use a six-digit hexadecimal colour such as #ffeefc."
+msgstr "#ffeefc などの 6 桁の 16 進数の色を使用します。"
+
+msgid "Use auto or a hexadecimal colour."
+msgstr "自動または 16 進数の色を使用します。"
+
+msgid "Use refractive icon materials."
+msgstr "屈折アイコン素材を使用します。"
+
+msgid "Use the selected Bluetooth® device to enter the pass key shown below and press the Enter key within 30 seconds.\\n\\nPass Key:  0000"
+msgstr "選択した Bluetooth® デバイスを使用して、以下に示すパス キーを入力し、30 秒以内に Enter キーを押します。\\n\\nパス キー: 0000"
+
+msgid "User Name"
+msgstr "ユーザー名"
+
+msgid "Users"
+msgstr "ユーザー"
+
+msgid "Using the device you want to register, select [Settings] > [Network Settings] > [Internet Connection], and then enter the numbers shown below.\n\nRegistration code:  2461-8053\n\nThe registration code is valid for 5 minutes."
+msgstr "登録したい機器の[設定]＞[ネットワーク設定]＞[インターネット接続]を選択し、以下の番号を入力します。\n\n 登録コード: 2461-8053\n\n 登録コードは 5 分間有効です。"
+
+msgid "VSync"
+msgstr "VSync"
+
+msgid "Video"
+msgstr "ビデオ"
+
+msgid "Video Decoding"
+msgstr "ビデオのデコード"
+
+msgid "Video Editor & Uploader"
+msgstr "ビデオエディターとアップローダー"
+
+msgid "Video Output Settings"
+msgstr "ビデオ出力設定"
+
+msgid "Video Settings"
+msgstr "ビデオ設定"
+
+msgid "Video Volume"
+msgstr "ビデオの音量"
+
+msgid "Videos Folder"
+msgstr "ビデオフォルダー"
+
+msgid "View"
+msgstr "見る"
+
+msgid "View Mode (PSP Remasters)"
+msgstr "ビューモード (PSP リマスター)"
+
+msgid "View Web pages on the Internet."
+msgstr "インターネット上の Web ページを表示します。"
+
+msgid "View active audio and video playback diagnostics."
+msgstr "アクティブなオーディオとビデオの再生診断を表示します。"
+
+msgid "View and join active chat rooms."
+msgstr "アクティブなチャット ルームを表示して参加します。"
+
+msgid "View messages you have received and sent."
+msgstr "受信および送信したメッセージを表示します。"
+
+msgid "View the list of players you have blocked. You will not receive messages from blocked players."
+msgstr "ブロックしたプレーヤーのリストを表示します。ブロックされたプレイヤーからのメッセージは受信されません。"
+
+msgid "View the list of players you have met during online play."
+msgstr "オンラインプレイ中に出会ったプレイヤーのリストを表示します。"
+
+msgid "View the online instruction manuals.\nThe latest version of the manual will be available."
+msgstr "オンライン取扱説明書をご覧ください。\nマニュアルの最新バージョンが入手可能になります。"
+
+msgid "View trophies that you have earned."
+msgstr "獲得したトロフィーを表示します。"
+
+msgid "Violet"
+msgstr "バイオレット"
+
+msgid "Visual Player"
+msgstr "ビジュアルプレーヤー"
+
+msgid "Voice Changer"
+msgstr "ボイスチェンジャー"
+
+msgid "Volume Control"
+msgstr "ボリュームコントロール"
+
+msgid "Volume for all OpenXMB audio."
+msgstr "すべての OpenXMB オーディオの音量。"
+
+msgid "Volume of navigation and confirmation sounds."
+msgstr "ナビゲーションと確認音の音量。"
+
+msgid "WEP"
+msgstr "WEP"
+
+msgid "WEP Key"
+msgstr "WEP キー"
+
+msgid "WLAN Security Setting"
+msgstr "無線LANセキュリティ設定"
+
+msgid "WLAN Settings"
+msgstr "無線LAN設定"
+
+msgid "WPA Key"
+msgstr "WPA キー"
+
+msgid "WPA-PSK (AES)"
+msgstr "WPA-PSK (AES)"
+
+msgid "WPA-PSK (TKIP)"
+msgstr "WPA-PSK (TKIP)"
+
+msgid "WPA-PSK / WPA2-PSK"
+msgstr "WPA-PSK / WPA2-PSK"
+
+msgid "WPA2-PSK (AES)"
+msgstr "WPA2-PSK (AES)"
+
+msgid "WPA2-PSK (TKIP)"
+msgstr "WPA2-PSK (TKIP)"
+
+msgid "Waiting for the device to connect..."
+msgstr "デバイスの接続を待機しています..."
+
+msgid "Walk on Water"
+msgstr "Walk on Water"
+
+msgid "Wallpaper"
+msgstr "壁紙"
+
+msgid "Water on the Dancefloor"
+msgstr "Water on the Dancefloor"
+
+msgid "Wave"
+msgstr "Wave"
+
+msgid "Wave visualiser"
+msgstr "Wave ビジュアライザー"
+
+
+
+msgid "Welcome Clip"
+msgstr "ウェルカムクリップ"
+
+msgid "Welcome to PlayStation®3.\nThe \"What's New\" screen is where to find all the latest PlayStation® news, updates, plus easy access to the games you've most recently played.\nTo access the \"What's New\" screen, connect to PSN* – it's free to join and it's your gateway to a world of entertainment, so sign up today!\n\n* Broadband Internet connection required."
+msgstr "PlayStation®3 へようこそ。\n「新着情報」画面では、PlayStation® の最新ニュース、アップデートをすべて見つけることができ、さらに最近プレイしたゲームに簡単にアクセスできます。\n「新着情報」画面にアクセスするには、PSN* に接続します。参加は無料で、エンターテイメントの世界への入り口ですので、今すぐサインアップしてください。\n\n * ブロードバンド インターネット接続が必要です。"
+
+msgid "Welcome to PlayStation®Network"
+msgstr "PlayStation®Network へようこそ"
+
+msgid "Western (Latin)"
+msgstr "西洋（ラテン語）"
+
+msgid "What's New"
+msgstr "新機能"
+
+msgid "White"
+msgstr "ホワイト"
+
+msgid "Window Mode"
+msgstr "ウィンドウモード"
+
+msgid "Windowed"
+msgstr "窓付き"
+
+msgid "Wired Connection"
+msgstr "有線接続"
+
+msgid "Wireless"
+msgstr "ワイヤレス"
+
+msgid "Wireless Headset 2.0"
+msgstr "ワイヤレスヘッドセット2.0"
+
+msgid "Wireless Stereo Headset Settings"
+msgstr "ワイヤレス ステレオ ヘッドセットの設定"
+
+msgid "XMB Waves"
+msgstr "XMB ウェーブ"
+
+msgid "Y Cb Cr"
+msgstr "Y Cb Cr"
+
+msgid "Y Pb/Cb Pr/Cr Super-White (HDMI)"
+msgstr "Y Pb/Cb Pr/Cr スーパーホワイト (HDMI)"
+
+msgid "YYYY/MM/DD"
+msgstr "YYYY/MM/DD"
+
+msgid "Yellow"
+msgstr "黄色"
+
+msgid "Yes"
+msgstr "はい"
+
+msgid "You can change the voice that is input using an audio input device."
+msgstr "音声入力デバイスを使用して入力される音声を変更できます。"
+
+msgid "You can edit a video that you like, upload it to a video sharing website, and then invite your friends to view the video."
+msgstr "気に入ったビデオを編集し、ビデオ共有 Web サイトにアップロードして、友人を招待してビデオを視聴することができます。"
+
+msgid "You cannot create an icon less than 15 seconds in length."
+msgstr "長さが 15 秒未満のアイコンは作成できません。"
+
+msgid "Zoom"
+msgstr "ズーム"
+
+msgid "Zoom In"
+msgstr "ズームイン"
+
+msgid "Zoom Out"
+msgstr "ズームアウト"
+
+msgid "auto"
+msgstr "自動"
+
+msgid "category.settings.accessory.settings"
+msgstr "カテゴリ.設定.アクセサリ.設定"
+
+msgid "category.settings.display.settings"
+msgstr "カテゴリ.設定.表示.設定"
+
+msgid "category.settings.music.settings"
+msgstr "カテゴリ.設定.音楽.設定"
+
+msgid "category.settings.network.settings"
+msgstr "カテゴリ.設定.ネットワーク設定"
+
+msgid "category.settings.power.save.settings"
+msgstr "カテゴリ.設定.電源.保存.設定"
+
+msgid "controller button"
+msgstr "コントローラーのボタン"
+
+msgid "corp-eap"
+msgstr "コープイープ"
+
+msgid "en"
+msgstr "jp"
+
+msgid "fr"
+msgstr "フランス"
+
+msgid "hi"
+msgstr "こんにちは。"
+
+msgid "http://s3k.ocremix.org - Project Chaos - Bonus Tracks"
+msgstr "http://s3k.ocremix.org - Project Chaos - Bonus Tracks"
+
+msgid "iMushroom"
+msgstr "iMushroom"
+
+msgid "keyboard key"
+msgstr "キーボードのキー"
+
+msgid "linksys"
+msgstr "リンクシス"
+
+msgid "Indonesian"
+msgstr "インドネシア語"
+
+msgid "Simplified Chinese"
+msgstr "中国語（簡体字）"
+
+msgid "Traditional Chinese"
+msgstr "中国語（繁体字）"
+
+msgid "\nThe original was preserved."
+msgstr "\nオリジナルは保存されました。"
+
+msgid "   Off"
+msgstr "   オフ"
+
+msgid "   On"
+msgstr "   オン"
+
+msgid "  Played "
+msgstr "  遊んだ "
+
+msgid "  Select to cycle"
+msgstr "  循環するように選択してください"
+
+msgid "  Select to remove scan root"
+msgstr "  スキャン ルートを削除する場合に選択します"
+
+msgid " (active)"
+msgstr " (アクティブ)"
+
+msgid " (away locally)"
+msgstr " （現地ではアウェー）"
+
+msgid " (present locally)"
+msgstr " (現地に存在)"
+
+msgid " Last error: "
+msgstr " 最後のエラー: "
+
+msgid " RPCS3 root(s)."
+msgstr " RPCS3 ルート。"
+
+msgid " Settings"
+msgstr " 設定"
+
+msgid " cores / "
+msgstr " コア / "
+
+msgid " cores found. Left/Right cycles the core field."
+msgstr " コアが見つかりました。左/右でコアフィールドを循環します。"
+
+msgid " game(s)."
+msgstr " ゲーム。"
+
+msgid " path"
+msgstr " パス"
+
+msgid " playable discs found."
+msgstr " 再生可能なディスクが見つかりました。"
+
+msgid " theme(s)."
+msgstr " テーマ。"
+
+msgid " threads"
+msgstr " スレッド"
+
+msgid " times"
+msgstr " 回"
+
+msgid " to the default printer?"
+msgstr " デフォルトのプリンターに?"
+
+msgid " tracks"
+msgstr " トラック"
+
+msgid " tracks added to "
+msgstr " に追加されたトラック "
+
+msgid " upload bytes"
+msgstr " バイトをアップロードする"
+
+msgid " will be moved to a recovery folder. It will not be permanently deleted."
+msgstr " 回復フォルダーに移動されます。完全に削除されることはありません。"
+
+msgid "& © 2025-2026. Syndromatic Limited Britannia. All rights reserved."
+msgstr "& © 2025-2026. Syndromatic Limited Britannia. すべての権利を保有します。"
+
+msgid ". Select it to apply."
+msgstr "。選択して適用します。"
+
+msgid "12-hour"
+msgstr "12時間"
+
+msgid "15 seconds"
+msgstr "15秒"
+
+msgid "1½ speed (muted)"
+msgstr "1 1/2 速度 (ミュート)"
+
+msgid "24-hour"
+msgstr "24時間対応"
+
+msgid "3 seconds"
+msgstr "3秒"
+
+msgid "? Music files are preserved."
+msgstr "?音楽ファイルは保存されます。"
+
+msgid "A core is already running. Return to its window or stop the session."
+msgstr "コアはすでに実行中です。ウィンドウに戻るか、セッションを停止します。"
+
+msgid "About"
+msgstr "について"
+
+msgid "Active local user changed. Settings and themes use this profile."
+msgstr "アクティブなローカル ユーザーが変更されました。設定とテーマはこのプロファイルを使用します。"
+
+msgid "Add Current Play Queue"
+msgstr "現在の再生キューを追加"
+
+msgid "Add Selected to Playlist..."
+msgstr "選択したものをプレイリストに追加..."
+
+msgid "Add Track / Folder / Playlist..."
+msgstr "トラック/フォルダー/プレイリストを追加..."
+
+msgid "Add custom section"
+msgstr "カスタムセクションを追加"
+
+msgid "Add detected RPCS3 game folders"
+msgstr "検出された RPCS3 ゲーム フォルダーを追加します"
+
+msgid "Add game folder"
+msgstr "ゲームフォルダーを追加"
+
+msgid "Add game manually"
+msgstr "ゲームを手動で追加"
+
+msgid "Add local friend"
+msgstr "地元の友達を追加"
+
+msgid "Add local trophy"
+msgstr "ローカルトロフィーを追加"
+
+msgid "Add to Queue"
+msgstr "キューに追加"
+
+msgid "Added to Playlist"
+msgstr "プレイリストに追加されました"
+
+msgid "Address: "
+msgstr "住所: "
+
+msgid "Adjust settings for the OpenXMB system."
+msgstr "OpenXMB システムの設定を調整します。"
+
+msgid "Album"
+msgstr "アルバム"
+
+msgid "Album art exceeds texture upload capacity"
+msgstr "アルバム アートがテクスチャのアップロード容量を超えています"
+
+msgid "Album: "
+msgstr "アルバム: "
+
+msgid "All videos"
+msgstr "すべてのビデオ"
+
+msgid "An artwork request is already in progress"
+msgstr "アートワークのリクエストはすでに進行中です"
+
+msgid "Animated Theme"
+msgstr "アニメーションテーマ"
+
+msgid "Anti-aliasing    "
+msgstr "アンチエイリアシング    "
+
+msgid "Apply a theme first, then use this action."
+msgstr "まずテーマを適用してから、このアクションを使用します。"
+
+msgid "Apply this change to local library data"
+msgstr "この変更をローカル ライブラリ データに適用します"
+
+msgid "Archive this user profile?"
+msgstr "このユーザープロファイルをアーカイブしますか?"
+
+msgid "Archives the user's data; at least one profile is retained"
+msgstr "ユーザーのデータをアーカイブします。少なくとも 1 つのプロファイルが保持されます"
+
+msgid "Arguments (quote values containing spaces)"
+msgstr "引数 (スペースを含む引用符の値)"
+
+msgid "Arrows + Z/X/A/S: play   Space: pause   F5/F8: save/load   F12: screenshot"
+msgstr "矢印 + Z/X/A/S: 再生 スペース: 一時停止 F5/F8: 保存/ロード F12: スクリーンショット"
+
+msgid "Artist"
+msgstr "アーティスト"
+
+msgid "Artist: "
+msgstr "アーティスト: "
+
+msgid "Artwork key environment variable (no key values)"
+msgstr "アートワークキー環境変数 (キー値なし)"
+
+msgid "Artwork provider disabled"
+msgstr "アートワークプロバイダーが無効になっています"
+
+msgid "Artwork saved: "
+msgstr "アートワークが保存されました: "
+
+msgid "Audio CDs, DVD and Blu-ray folders/devices. Playback uses an installed desktop player."
+msgstr "オーディオ CD、DVD および Blu-ray フォルダー/デバイス。再生には、インストールされているデスクトップ プレーヤーが使用されます。"
+
+msgid "Audio is muted during speed playback"
+msgstr "スピード再生中は音声がミュートされます"
+
+msgid "Audio output active"
+msgstr "オーディオ出力がアクティブです"
+
+msgid "Audio track"
+msgstr "オーディオトラック"
+
+msgid "Avatar"
+msgstr "アバター"
+
+msgid "Avatar image"
+msgstr "アバター画像"
+
+msgid "Avatar image path"
+msgstr "アバター画像のパス"
+
+msgid "Away locally"
+msgstr "地元を離れて"
+
+msgid "Background / animation"
+msgstr "背景・アニメーション"
+
+msgid "Background image"
+msgstr "背景画像"
+
+msgid "Binding saved"
+msgstr "バインディングが保存されました"
+
+msgid "Biography"
+msgstr "略歴"
+
+msgid "Browse in a separate system-browser window with your own keyboard and mouse."
+msgstr "独自のキーボードとマウスを使用して、別のシステム ブラウザ ウィンドウを参照します。"
+
+msgid "Browser address"
+msgstr "ブラウザアドレス"
+
+msgid "CPU Cores / Threads"
+msgstr "CPUコア/スレッド"
+
+msgid "CPU Threads"
+msgstr "CPUスレッド"
+
+msgid "Cannot Add Tracks"
+msgstr "トラックを追加できない"
+
+msgid "Cannot Create Playlist"
+msgstr "プレイリストを作成できません"
+
+msgid "Cannot open file"
+msgstr "ファイルを開けません"
+
+msgid "Cannot save video position: "
+msgstr "ビデオの位置を保存できません: "
+
+msgid "Capture your desktop or start OpenXMB automatically when you log in."
+msgstr "デスクトップをキャプチャするか、ログイン時に OpenXMB を自動的に起動します。"
+
+msgid "Channels"
+msgstr "チャンネル"
+
+msgid "Channels: "
+msgstr "チャンネル: "
+
+msgid "Choose Font File..."
+msgstr "フォント ファイルを選択..."
+
+msgid "Choose executable, arguments, artwork, preview video and music"
+msgstr "実行可能ファイル、引数、アートワーク、プレビュービデオと音楽を選択します"
+
+msgid "Close"
+msgstr "閉じる"
+
+msgid "Close dedicated browser session"
+msgstr "専用ブラウザセッションを閉じる"
+
+msgid "Close menu"
+msgstr "メニューを閉じる"
+
+msgid "Codec"
+msgstr "コーデック"
+
+msgid "Codec: "
+msgstr "コーデック: "
+
+msgid "Configure scan roots without moving your games"
+msgstr "ゲームを移動せずにスキャンルートを設定する"
+
+msgid "Confirm: play from track    Options: playlist    Extra: edit track    Back: close"
+msgstr "確認: トラックから再生 オプション: プレイリスト 追加: トラックを編集 戻る: 閉じる"
+
+msgid "Content: "
+msgstr "内容: "
+
+msgid "Control browser with gamepad"
+msgstr "ゲームパッドでブラウザを制御"
+
+msgid "Controller prompts    "
+msgstr "コントローラーのプロンプト    "
+
+msgid "Controller rumble    "
+msgstr "コントローラのランブル音    "
+
+msgid "Core started in its own window. Escape returns here; F5 saves and F8 loads."
+msgstr "コアは独自のウィンドウで開始されました。エスケープはここに戻ります。 F5 で保存、F8 でロードします。"
+
+msgid "Core: "
+msgstr "コア： "
+
+msgid "Could not save slideshow"
+msgstr "スライドショーを保存できませんでした"
+
+msgid "Create Custom Theme"
+msgstr "カスタムテーマの作成"
+
+msgid "Create Custom Theme..."
+msgstr "カスタムテーマを作成..."
+
+msgid "Create a named category backed by a local folder"
+msgstr "ローカルフォルダーを基にした名前付きカテゴリーを作成する"
+
+msgid "Create local user"
+msgstr "ローカルユーザーの作成"
+
+msgid "Creating custom theme..."
+msgstr "カスタムテーマを作成しています..."
+
+msgid "Custom Sections"
+msgstr "カスタムセクション"
+
+msgid "Custom category"
+msgstr "カスタムカテゴリ"
+
+msgid "Custom category name"
+msgstr "カスタムカテゴリ名"
+
+msgid "Custom section"
+msgstr "カスタムセクション"
+
+msgid "Custom section saved"
+msgstr "カスタムセクションが保存されました"
+
+msgid "Custom sections"
+msgstr "カスタムセクション"
+
+msgid "Custom theme created. Export it as a ZIP to share."
+msgstr "カスタムテーマが作成されました。共有するには ZIP 形式でエクスポートします。"
+
+msgid "Date: "
+msgstr "日付: "
+
+msgid "Dedicated Graphics Memory"
+msgstr "専用グラフィックスメモリ"
+
+msgid "Defaults restored"
+msgstr "デフォルトの復元"
+
+msgid "Delete "
+msgstr "削除 "
+
+msgid "Delete Playlist..."
+msgstr "プレイリストを削除..."
+
+msgid "Delete Playlist?"
+msgstr "プレイリストを削除しますか?"
+
+msgid "Delete local user"
+msgstr "ローカルユーザーを削除する"
+
+msgid "Delete preset? Type DELETE to confirm"
+msgstr "プリセットを削除しますか? 「DELETE」と入力して確認します"
+
+msgid "Description"
+msgstr "説明"
+
+msgid "Designed by Kavish Krishnakumar in Manchester."
+msgstr "マンチェスターのKavish Krishnakumarによってデザインされました。"
+
+msgid "Desktop Tools"
+msgstr "デスクトップツール"
+
+msgid "Developer"
+msgstr "開発者"
+
+msgid "Disable artwork provider"
+msgstr "アートワークプロバイダーを無効にする"
+
+msgid "Disabled or key absent; local artwork remains available"
+msgstr "無効またはキーがありません。地元のアートワークも引き続き入手可能"
+
+msgid "Disc Media"
+msgstr "ディスクメディア"
+
+msgid "Disc ready. Select it to play."
+msgstr "ディスクの準備ができました。選択して再生します。"
+
+msgid "Discard"
+msgstr "破棄"
+
+msgid "Discard unsaved edits and reload the saved track list?"
+msgstr "保存されていない編集を破棄して、保存されたトラックリストを再ロードしますか?"
+
+msgid "Display name"
+msgstr "表示名"
+
+msgid "Document information"
+msgstr "文書情報"
+
+msgid "Document page exceeds texture upload limit"
+msgstr "ドキュメント ページがテクスチャのアップロード制限を超えています"
+
+msgid "Done"
+msgstr "完了"
+
+msgid "Double speed (muted)"
+msgstr "倍速（ミュート）"
+
+msgid "Download artwork for this game"
+msgstr "このゲームのアートワークをダウンロードする"
+
+msgid "Edit Selected Track"
+msgstr "選択したトラックを編集する"
+
+msgid "Emulation"
+msgstr "エミュレーション"
+
+msgid "Emulation session finished. Save RAM is stored automatically."
+msgstr "エミュレーションセッションが終了しました。保存RAMは自動的に保存されます。"
+
+msgid "Enable the provider and configure its key first; no request was made"
+msgstr "最初にプロバイダーを有効にし、そのキーを構成します。リクエストは行われませんでした"
+
+msgid "Enabled and key is configured"
+msgstr "有効化されており、キーが設定されています"
+
+msgid "End of queue"
+msgstr "キューの終わり"
+
+msgid "Enter"
+msgstr "入力してください"
+
+msgid "Enter Address"
+msgstr "住所を入力してください"
+
+msgid "Enter Text"
+msgstr "テキストを入力してください"
+
+msgid "Executable"
+msgstr "実行可能ファイル"
+
+msgid "Executable path or command"
+msgstr "実行可能パスまたはコマンド"
+
+msgid "Exit"
+msgstr "終了"
+
+msgid "Export selected theme..."
+msgstr "選択したテーマをエクスポート..."
+
+msgid "Export theme ZIP (new filename)"
+msgstr "テーマ ZIP をエクスポート (新しいファイル名)"
+
+msgid "Exporting theme..."
+msgstr "テーマをエクスポートしています..."
+
+msgid "FPS: {:.2f}"
+msgstr "FPS: {:.2f}"
+
+msgid "Failed to get file size"
+msgstr "ファイルサイズの取得に失敗しました"
+
+msgid "Failed to map file"
+msgstr "ファイルのマップに失敗しました"
+
+msgid "Failed to open file"
+msgstr "ファイルを開けませんでした"
+
+msgid "Failed to open video"
+msgstr "ビデオを開けませんでした"
+
+msgid "Failed to read file"
+msgstr "ファイルの読み取りに失敗しました"
+
+msgid "Favorites are kept in your local profile"
+msgstr "お気に入りはローカル プロフィールに保存されます"
+
+msgid "First page"
+msgstr "最初のページ"
+
+msgid "Fit page"
+msgstr "ページに合わせる"
+
+msgid "Folder"
+msgstr "フォルダー"
+
+msgid "Folder does not exist"
+msgstr "フォルダーが存在しません"
+
+msgid "Font file"
+msgstr "フォントファイル"
+
+msgid "For more information, see the Licenses section."
+msgstr "詳細については、「ライセンス」セクションを参照してください。"
+
+msgid "Forward"
+msgstr "進む"
+
+msgid "Frame cap    "
+msgstr "フレームキャップ    "
+
+msgid "Friend display name"
+msgstr "友達の表示名"
+
+msgid "Friends - local simulation"
+msgstr "友達 - ローカル シミュレーション"
+
+msgid "Full screen (stretch)"
+msgstr "全画面（ストレッチ）"
+
+msgid "GPU Local Memory"
+msgstr "GPU ローカルメモリ"
+
+msgid "Game Library"
+msgstr "ゲームライブラリ"
+
+msgid "Game details"
+msgstr "ゲーム詳細"
+
+msgid "Game folder path"
+msgstr "ゲームフォルダーのパス"
+
+msgid "Game library"
+msgstr "ゲームライブラリ"
+
+msgid "Game library folders"
+msgstr "ゲームライブラリフォルダー"
+
+msgid "Game title"
+msgstr "ゲームタイトル"
+
+msgid "Game/content file (empty for no-content cores)"
+msgstr "ゲーム/コンテンツ ファイル (コンテンツのないコアの場合は空)"
+
+msgid "Genre"
+msgstr "ジャンル"
+
+msgid "Genre: "
+msgstr "ジャンル: "
+
+msgid "Glass icons    "
+msgstr "ガラスのアイコン    "
+
+msgid "Grade"
+msgstr "グレード"
+
+msgid "Graphics Driver"
+msgstr "グラフィックドライバー"
+
+msgid "Graphics Processor"
+msgstr "グラフィックプロセッサ"
+
+msgid "Home"
+msgstr "ホーム"
+
+msgid "IF YOU HAVE A HISTORY OF EPILEPSY OR SEIZURES, CONSULT A DOCTOR BEFORE USE. CERTAIN PATTERNS MAY TRIGGER SEIZURES WITH NO PRIOR HISTORY. BEFORE USING THIS PRODUCT, CAREFULLY READ THE INSTRUCTION MANUAL."
+msgstr "てんかんや発作の病歴がある場合は、使用前に医師に相談してください。特定のパターンでは、前歴がなくても発作を引き起こす場合があります。本製品をご使用になる前に、取扱説明書をよくお読みください。"
+
+msgid "Icon"
+msgstr "アイコン"
+
+msgid "Icon image"
+msgstr "アイコン画像"
+
+msgid "Icons"
+msgstr "アイコン"
+
+msgid "Image exceeds texture upload limit"
+msgstr "画像がテクスチャのアップロード制限を超えています"
+
+msgid "Import .p3t, .zip or theme folder"
+msgstr ".p3t、.zip、またはテーマフォルダーをインポートします"
+
+msgid "Import inbox ("
+msgstr "受信トレイをインポート ("
+
+msgid "Import theme or icon pack..."
+msgstr "テーマまたはアイコン パックをインポートします..."
+
+msgid "Imported "
+msgstr "輸入品 "
+
+msgid "Importing inbox..."
+msgstr "受信トレイをインポートしています..."
+
+msgid "Importing theme..."
+msgstr "テーマをインポートしています..."
+
+msgid "Imports game manifests, desktop entries and native executables"
+msgstr "ゲームマニフェスト、デスクトップエントリ、ネイティブ実行可能ファイルをインポートします"
+
+msgid "Install / manage themes..."
+msgstr "テーマのインストール/管理..."
+
+msgid "Install CUPS client tools (lp or lpr), configure a printer, and add the tools to PATH."
+msgstr "CUPS クライアント ツール (lp または lpr) をインストールし、プリンターを構成し、ツールを PATH に追加します。"
+
+msgid "Installed Memory"
+msgstr "搭載メモリ"
+
+msgid "Installed copy removed. Original import source was kept."
+msgstr "インストールされたコピーが削除されました。オリジナルの輸入元は維持されました。"
+
+msgid "InterfaceFX TEXT PROBE: The quick brown fox jumps over the lazy dog."
+msgstr "InterfaceFX テキストプローブ: 素早い茶色のキツネが怠惰な犬を飛び越えます。"
+
+msgid "Keep current data"
+msgstr "現在のデータを保持する"
+
+msgid "Keeps all game files"
+msgstr "すべてのゲームファイルを保持します"
+
+msgid "Keeps its folder and files"
+msgstr "フォルダーとファイルを保持します"
+
+msgid "Keeps the executable and source media"
+msgstr "実行可能ファイルとソースメディアを保持します"
+
+msgid "Keyboard Controls"
+msgstr "キーボードコントロール"
+
+msgid "Keyboard bindings"
+msgstr "キーボードバインディング"
+
+msgid "Last page"
+msgstr "最後のページ"
+
+msgid "Launch "
+msgstr "打ち上げ "
+
+msgid "Launch arguments"
+msgstr "起動引数"
+
+msgid "Left/Right page · Home/End first/last · Up/Down or wheel zoom · Drag to pan · P print · Tab options"
+msgstr "左/右ページ · ホーム/最初/最後まで · 上/下またはホイールズーム · ドラッグしてパン · P 印刷 · タブオプション"
+
+msgid "Library"
+msgstr "図書館"
+
+msgid "Libretro core library"
+msgstr "Libretro コア ライブラリ"
+
+msgid "Loading page…"
+msgstr "ページを読み込み中…"
+
+msgid "Loading…"
+msgstr "読み込み中…"
+
+msgid "Local Account"
+msgstr "ローカルアカウント"
+
+msgid "Local Friends"
+msgstr "地元の友達"
+
+msgid "Local Profiles"
+msgstr "ローカルプロファイル"
+
+msgid "Local account - no online sign-in"
+msgstr "ローカル アカウント - オンライン サインインなし"
+
+msgid "Local account display name"
+msgstr "ローカルアカウントの表示名"
+
+msgid "Local account status"
+msgstr "ローカルアカウントのステータス"
+
+msgid "Local biography"
+msgstr "地元の伝記"
+
+msgid "Local friend"
+msgstr "地元の友人"
+
+msgid "Local friend's name"
+msgstr "地元の友達の名前"
+
+msgid "Local friends"
+msgstr "地元の友達"
+
+msgid "Local library updated"
+msgstr "ローカルライブラリが更新されました"
+
+msgid "Local profile"
+msgstr "ローカルプロファイル"
+
+msgid "Local status"
+msgstr "現地の状況"
+
+msgid "Local status text"
+msgstr "ローカルステータステキスト"
+
+msgid "Local trophies"
+msgstr "地元のトロフィー"
+
+msgid "Local trophy"
+msgstr "地元のトロフィー"
+
+msgid "Local users"
+msgstr "ローカルユーザー"
+
+msgid "Locked: "
+msgstr "ロック中: "
+
+msgid "Looking up game artwork..."
+msgstr "ゲームのアートワークを調べています..."
+
+msgid "Makes HTTPS requests only when provider and key are configured"
+msgstr "プロバイダーとキーが構成されている場合にのみ HTTPS リクエストを作成します"
+
+msgid "Manage game folders"
+msgstr "ゲームフォルダーを管理する"
+
+msgid "Manage offline simulated friend records"
+msgstr "オフラインでシミュレートされた友人レコードを管理する"
+
+msgid "Manage offline trophy records"
+msgstr "オフラインのトロフィー記録を管理する"
+
+msgid "Mark favorite"
+msgstr "お気に入りにマークを付ける"
+
+msgid "Mark locked"
+msgstr "ロック済みのマークを付ける"
+
+msgid "Media folder"
+msgstr "メディアフォルダー"
+
+msgid "Memory Transfer Rate"
+msgstr "メモリ転送速度"
+
+msgid "Menu"
+msgstr "メニュー"
+
+msgid "Mounted optical-disc directory or device"
+msgstr "マウントされた光ディスクのディレクトリまたはデバイス"
+
+msgid "Move Down"
+msgstr "下に移動"
+
+msgid "Move Selected Down"
+msgstr "選択したものを下に移動"
+
+msgid "Move Selected Up"
+msgstr "選択したものを上に移動"
+
+msgid "Move Up"
+msgstr "上に移動"
+
+msgid "Move photo to OpenXMB Trash?"
+msgstr "写真をOpenXMB ゴミ箱に移動しますか?"
+
+msgid "Move to Trash"
+msgstr "ゴミ箱に移動"
+
+msgid "Music Player"
+msgstr "音楽プレーヤー"
+
+msgid "Music folder"
+msgstr "音楽フォルダー"
+
+msgid "My Section"
+msgstr "私のセクション"
+
+msgid "My Theme"
+msgstr "私のテーマ"
+
+msgid "Native YUV GPU conversion"
+msgstr "ネイティブ YUV GPU 変換"
+
+msgid "Native libretro software cores. Provide your own core, content and BIOS files."
+msgstr "ネイティブの libretro ソフトウェア コア。独自のコア、コンテンツ、BIOS ファイルを提供します。"
+
+msgid "New Game"
+msgstr "新しいゲーム"
+
+msgid "New Playlist"
+msgstr "新しいプレイリスト"
+
+msgid "New Playlist..."
+msgstr "新しいプレイリスト..."
+
+msgid "New User"
+msgstr "新規ユーザー"
+
+msgid "New user name"
+msgstr "新しいユーザー名"
+
+msgid "Next frame"
+msgstr "次のフレーム"
+
+msgid "Next page"
+msgstr "次のページ"
+
+msgid "Next video"
+msgstr "次のビデオ"
+
+msgid "No RPCS3 data folder detected. Add your disc or installed-game folder manually."
+msgstr "RPCS3 データ フォルダーが検出されませんでした。ディスクまたはインストールされたゲーム フォルダーを手動で追加します。"
+
+msgid "No audio CD, mounted DVD, or mounted Blu-ray was found."
+msgstr "オーディオ CD、マウントされた DVD、またはマウントされた Blu-ray が見つかりませんでした。"
+
+msgid "No audio tracks"
+msgstr "オーディオトラックがありません"
+
+msgid "No entries yet. Use the actions above to add one."
+msgstr "まだエントリーはありません。追加するには、上記のアクションを使用します。"
+
+msgid "No native viewer is registered for this file type"
+msgstr "このファイルタイプにはネイティブビューアが登録されていません"
+
+msgid "No playable disc structure was found at that path."
+msgstr "そのパスでは再生可能なディスク構造が見つかりませんでした。"
+
+msgid "No print service is available"
+msgstr "印刷サービスは利用できません"
+
+msgid "No viewer is available for "
+msgstr "利用できるビューアがありません "
+
+msgid "None (no-content core)"
+msgstr "なし (コンテンツコアなし)"
+
+msgid "Normal (fit)"
+msgstr "ノーマル（フィット）"
+
+msgid "Normal speed"
+msgstr "通常速度"
+
+msgid "Offline simulation; no messages or remote requests are sent"
+msgstr "オフラインシミュレーション。メッセージやリモートリクエストは送信されません"
+
+msgid "Offline tracking; does not connect to a console account"
+msgstr "オフライン追跡。コンソールアカウントに接続しません"
+
+msgid "Only this local profile is changed"
+msgstr "このローカル プロファイルのみが変更されます"
+
+msgid "Open "
+msgstr "開く "
+
+msgid "Open / Resume"
+msgstr "開く/再開する"
+
+msgid "Open Link"
+msgstr "リンクを開く"
+
+msgid "Open a dedicated browser window first."
+msgstr "まず専用のブラウザウィンドウを開きます。"
+
+msgid "Open browser window"
+msgstr "ブラウザウィンドウを開く"
+
+msgid "Open disc directory/device..."
+msgstr "ディスク ディレクトリ/デバイスを開きます..."
+
+msgid "Open in native viewer"
+msgstr "ネイティブビューアで開く"
+
+msgid "OpenXMB "
+msgstr "OpenXMB "
+
+msgid "OpenXMB Settings"
+msgstr "OpenXMB 設定"
+
+msgid "Opening Internet Browser…"
+msgstr "インターネットブラウザを開いています…"
+
+msgid "Opening video…"
+msgstr "オープニングビデオ…"
+
+msgid "Operating System"
+msgstr "オペレーティングシステム"
+
+msgid "Optical Media"
+msgstr "光メディア"
+
+msgid "Optional RAWG artwork provider"
+msgstr "オプションの RAWG アートワークプロバイダー"
+
+msgid "Options: save / add to playlist / reorder / remove"
+msgstr "オプション: 保存 / プレイリストに追加 / 並べ替え / 削除"
+
+msgid "Original appearance restored."
+msgstr "元の外観が復元されました。"
+
+msgid "Original size"
+msgstr "元のサイズ"
+
+msgid "Overlay layers"
+msgstr "オーバーレイレイヤー"
+
+msgid "PHOTOSENSITIVE EPILEPSY"
+msgstr "光過敏性てんかん"
+
+msgid "Page Information"
+msgstr "ページ情報"
+
+msgid "Page loaded"
+msgstr "ページが読み込まれました"
+
+msgid "Paused"
+msgstr "一時停止中"
+
+msgid "Photo Playlists"
+msgstr "写真のプレイリスト"
+
+msgid "Photo copy saved"
+msgstr "写真のコピーが保存されました"
+
+msgid "Photo information"
+msgstr "写真情報"
+
+msgid "Photo moved to OpenXMB Trash"
+msgstr "写真は OpenXMB ゴミ箱に移動されました"
+
+msgid "Photo operation failed"
+msgstr "写真操作に失敗しました"
+
+msgid "Photo sent to print service"
+msgstr "写真をプリントサービスに送信"
+
+msgid "Pictures folder"
+msgstr "写真フォルダー"
+
+msgid "Play Next"
+msgstr "次にプレイ"
+
+msgid "Play Now"
+msgstr "今すぐプレイ"
+
+msgid "Play Queue"
+msgstr "プレイキュー"
+
+msgid "Play from beginning"
+msgstr "最初からプレイする"
+
+msgid "Play preview music"
+msgstr "プレビュー音楽を再生する"
+
+msgid "Play video preview"
+msgstr "ビデオのプレビューを再生する"
+
+msgid "Playback error"
+msgstr "再生エラー"
+
+msgid "Playback speed"
+msgstr "再生速度"
+
+msgid "Playing"
+msgstr "遊ぶ"
+
+msgid "Playing "
+msgstr "遊ぶ "
+
+msgid "Playing game preview music"
+msgstr "ゲームのプレビュー音楽を再生する"
+
+msgid "Playing playlist"
+msgstr "プレイリストを再生中"
+
+msgid "Playlist"
+msgstr "プレイリスト"
+
+msgid "Playlist Created"
+msgstr "プレイリストが作成されました"
+
+msgid "Playlist renamed"
+msgstr "プレイリストの名前が変更されました"
+
+msgid "Playlist saved"
+msgstr "プレイリストを保存しました"
+
+msgid "Present locally"
+msgstr "ローカルでプレゼンする"
+
+msgid "Preset applied."
+msgstr "プリセットが適用されました。"
+
+msgid "Preset deleted."
+msgstr "プリセットが削除されました。"
+
+msgid "Preset kept."
+msgstr "プリセットが保持されました。"
+
+msgid "Preset saved."
+msgstr "プリセットが保存されました。"
+
+msgid "Preset: "
+msgstr "プリセット: "
+
+msgid "Preview music"
+msgstr "音楽をプレビューする"
+
+msgid "Preview video"
+msgstr "プレビュービデオ"
+
+msgid "Previous frame"
+msgstr "前のフレーム"
+
+msgid "Previous page"
+msgstr "前のページへ"
+
+msgid "Previous video"
+msgstr "前のビデオ"
+
+msgid "Print current page…"
+msgstr "現在のページを印刷…"
+
+msgid "Print document?"
+msgstr "文書を印刷しますか?"
+
+msgid "Print entire PDF…"
+msgstr "PDF全体を印刷…"
+
+msgid "Print job submitted"
+msgstr "印刷ジョブが送信されました"
+
+msgid "Printing failed"
+msgstr "印刷に失敗しました"
+
+msgid "Printing unavailable"
+msgstr "印刷不可"
+
+msgid "Processor"
+msgstr "プロセッサー"
+
+msgid "Profile: "
+msgstr "プロフィール: "
+
+msgid "Provider enabled. Supply the key securely in environment settings."
+msgstr "プロバイダーが有効になりました。環境設定でキーを安全に指定します。"
+
+msgid "Queue added; choose Save to keep changes"
+msgstr "キューが追加されました。変更を保存するには「保存」を選択します"
+
+msgid "RGBA upload"
+msgstr "RGBAアップロード"
+
+msgid "Refresh"
+msgstr "リフレッシュ"
+
+msgid "Refresh installed cores (Left/Right cycles core)"
+msgstr "インストールされているコアを更新します (左/右サイクル コア)"
+
+msgid "Refresh optical media"
+msgstr "光学メディアをリフレッシュする"
+
+msgid "Release year (0 if unknown)"
+msgstr "発売年 (不明の場合は 0)"
+
+msgid "Reload"
+msgstr "リロード"
+
+msgid "Reload Saved Playlist"
+msgstr "保存したプレイリストをリロードする"
+
+msgid "Reload Saved Playlist?"
+msgstr "保存したプレイリストをリロードしますか?"
+
+msgid "Reload this playlist before saving; its contents could not be read."
+msgstr "保存する前にこのプレイリストをリロードします。その内容を読み取ることができませんでした。"
+
+msgid "Remove Selected"
+msgstr "選択したものを削除"
+
+msgid "Remove favorite"
+msgstr "お気に入りを削除"
+
+msgid "Remove from Queue"
+msgstr "キューから削除"
+
+msgid "Remove from game library"
+msgstr "ゲームライブラリから削除"
+
+msgid "Remove installed theme..."
+msgstr "インストールされているテーマを削除します..."
+
+msgid "Remove installed theme? Type DELETE to confirm"
+msgstr "インストールされているテーマを削除しますか? 「DELETE」と入力して確認します"
+
+msgid "Remove local friend"
+msgstr "ローカルの友達を削除する"
+
+msgid "Remove local friend?"
+msgstr "ローカルの友達を削除しますか?"
+
+msgid "Remove local trophy"
+msgstr "ローカルトロフィーを削除する"
+
+msgid "Remove local trophy?"
+msgstr "ローカルトロフィーを削除しますか?"
+
+msgid "Remove section"
+msgstr "セクションを削除"
+
+msgid "Remove this custom section?"
+msgstr "このカスタム セクションを削除しますか?"
+
+msgid "Remove this game entry?"
+msgstr "このゲームエントリーを削除しますか?"
+
+msgid "Remove this scan root?"
+msgstr "このスキャン ルートを削除しますか?"
+
+msgid "Removes this offline record"
+msgstr "このオフライン レコードを削除します"
+
+msgid "Rename Playlist"
+msgstr "プレイリストの名前を変更する"
+
+msgid "Rename Playlist..."
+msgstr "プレイリストの名前を変更..."
+
+msgid "Rename section"
+msgstr "セクションの名前を変更"
+
+msgid "Rename user"
+msgstr "ユーザー名の変更"
+
+msgid "Repeat all"
+msgstr "すべて繰り返す"
+
+msgid "Repeat off"
+msgstr "リピートオフ"
+
+msgid "Repeat one"
+msgstr "1 つ繰り返します"
+
+msgid "Repeat: "
+msgstr "繰り返します: "
+
+msgid "Replay 10 seconds"
+msgstr "10秒再生"
+
+msgid "Reported CPU Clock"
+msgstr "報告された CPU クロック"
+
+msgid "Reset"
+msgstr "リセット"
+
+msgid "Reset current profile settings"
+msgstr "現在のプロファイル設定をリセットする"
+
+msgid "Reset settings?"
+msgstr "設定をリセットしますか?"
+
+msgid "Resize"
+msgstr "サイズ変更"
+
+msgid "Restore default bindings"
+msgstr "デフォルトのバインディングを復元する"
+
+msgid "Restore the current profile's default shell preferences? Media files and other profiles are preserved."
+msgstr "現在のプロファイルのデフォルトのシェル設定を復元しますか?メディア ファイルとその他のプロファイルは保存されます。"
+
+msgid "Restore the original appearance."
+msgstr "元の外観を復元します。"
+
+msgid "Return"
+msgstr "戻る"
+
+msgid "SDL scancode for "
+msgstr "SDL のスキャンコード "
+
+msgid "Save"
+msgstr "保存"
+
+msgid "Save Playlist Changes?"
+msgstr "プレイリストの変更を保存しますか?"
+
+msgid "Save Queue as Playlist..."
+msgstr "キューをプレイリストとして保存..."
+
+msgid "Save component preset"
+msgstr "コンポーネントのプリセットを保存する"
+
+msgid "Save component preset..."
+msgstr "コンポーネントのプリセットを保存..."
+
+msgid "Save crop"
+msgstr "クロップの保存"
+
+msgid "Saved"
+msgstr "保存されました"
+
+msgid "Saved playlist loaded"
+msgstr "保存したプレイリストをロードしました"
+
+msgid "Saving…"
+msgstr "保存中…"
+
+msgid "Scan configured folders"
+msgstr "設定されたフォルダーをスキャンする"
+
+msgid "Scan game folders"
+msgstr "ゲームフォルダーをスキャンする"
+
+msgid "Scene search"
+msgstr "シーンサーチ"
+
+msgid "Screen mode"
+msgstr "画面モード"
+
+msgid "Scroll Down"
+msgstr "下にスクロール"
+
+msgid "Scroll Up"
+msgstr "上にスクロール"
+
+msgid "Section folder path"
+msgstr "セクションフォルダーのパス"
+
+msgid "Section icon path"
+msgstr "セクションアイコンのパス"
+
+msgid "Section name"
+msgstr "セクション名"
+
+msgid "Select"
+msgstr "選択"
+
+msgid "Select / Edit"
+msgstr "選択/編集"
+
+msgid "Select a core library"
+msgstr "コアライブラリを選択してください"
+
+msgid "Separate settings, themes, game library and local social data"
+msgstr "個別の設定、テーマ、ゲーム ライブラリ、ローカル ソーシャル データ"
+
+msgid "Shift"
+msgstr "シフト"
+
+msgid "Show FPS    "
+msgstr "FPS を表示    "
+
+msgid "Show GPU memory    "
+msgstr "GPU メモリを表示    "
+
+msgid "Slideshow saved: "
+msgstr "スライドショーが保存されました: "
+
+msgid "Sound effects"
+msgstr "効果音"
+
+msgid "Space"
+msgstr "宇宙"
+
+msgid "Start OpenXMB at login: "
+msgstr "ログイン時に OpenXMB を開始します。 "
+
+msgid "Start emulation"
+msgstr "エミュレーションを開始する"
+
+msgid "Started "
+msgstr "開始しました "
+
+msgid "Status"
+msgstr "ステータス"
+
+msgid "Stick: pointer  A: click  X: Tab  Y: text  Start: address  Shoulder: Enter  B: return"
+msgstr "スティック: ポインタ A: クリック X: タブ Y: テキスト 開始: アドレス ショルダー: Enter B: 戻る"
+
+msgid "Stop emulation"
+msgstr "エミュレーションを停止する"
+
+msgid "Stopped"
+msgstr "停止しました"
+
+msgid "Stops optional provider lookups"
+msgstr "オプションのプロバイダー検索を停止します"
+
+msgid "Submit page "
+msgstr "送信ページ "
+
+msgid "Submit the entire PDF to the default printer?"
+msgstr "PDF 全体をデフォルトのプリンタに送信しますか?"
+
+msgid "Submitting print job…"
+msgstr "印刷ジョブを送信しています…"
+
+msgid "Subtitles"
+msgstr "字幕"
+
+msgid "Supported manifest: openxmb-game.json"
+msgstr "サポートされているマニフェスト: openxmb-game.json"
+
+msgid "Switch to "
+msgstr "に切り替えます "
+
+msgid "System Tools"
+msgstr "システムツール"
+
+msgid "Take screenshot"
+msgstr "スクリーンショットを撮る"
+
+msgid "Text"
+msgstr "テキスト"
+
+msgid "Text for the focused browser field"
+msgstr "フォーカスされているブラウザフィールドのテキスト"
+
+msgid "The GNU General Public License version 3 or later applies to OpenXMB. License files could not be found in this installation."
+msgstr "GNU General Public License バージョン 3 以降が OpenXMB に適用されます。このインストールではライセンス ファイルが見つかりませんでした。"
+
+msgid "The Syndromatic Open Xross Media Bar shell experience."
+msgstr "Syndromatic Open Xross Media Bar シェル エクスペリエンス。"
+
+msgid "The browser exited unexpectedly. Reopen Internet Browser; check the WebView2 Runtime if this continues."
+msgstr "ブラウザが予期せず終了しました。インターネットブラウザを再度開きます。これが続く場合は、WebView2 ランタイムを確認してください。"
+
+msgid "The core session could not continue. Check the selected core/content and its BIOS requirements."
+msgstr "コアセッションを続行できませんでした。選択したコア/コンテンツとその BIOS 要件を確認してください。"
+
+msgid "The document was accepted by the configured print command."
+msgstr "ドキュメントは、設定された印刷コマンドによって受け入れられました。"
+
+msgid "The original is recoverable at:\n"
+msgstr "オリジナルは\nで回復できます。\n"
+
+msgid "The play queue is empty"
+msgstr "再生キューが空です"
+
+msgid "The scanner reads files; it never launches discovered games"
+msgstr "スキャナーはファイルを読み取ります。検出されたゲームは決して起動しません"
+
+msgid "The selected local item no longer exists"
+msgstr "選択したローカル アイテムは存在しません"
+
+msgid "Theme Library"
+msgstr "テーマライブラリ"
+
+msgid "Theme applied. Your component choices were saved."
+msgstr "テーマが適用されました。コンポーネントの選択が保存されました。"
+
+msgid "Theme colors"
+msgstr "テーマカラー"
+
+msgid "Theme exported to "
+msgstr "テーマのエクスポート先 "
+
+msgid "Theme kept."
+msgstr "テーマはそのまま。"
+
+msgid "Theme library refreshed."
+msgstr "テーマライブラリが更新されました。"
+
+msgid "Theme manager is not attached to the shell yet"
+msgstr "テーママネージャーはまだシェルにアタッチされていません"
+
+msgid "Theme operation in progress. Originals remain unchanged."
+msgstr "テーマの操作が進行中です。オリジナルは変更されずに残ります。"
+
+msgid "This folder is empty."
+msgstr "このフォルダーは空です。"
+
+msgid "This playlist is empty. Open Options to add tracks or a folder."
+msgstr "このプレイリストは空です。 [オプション]を開いてトラックまたはフォルダーを追加します。"
+
+msgid "This program is licensed to you under the GNU General Public License version 3.0."
+msgstr "このプログラムは、GNU General Public License バージョン 3.0 に基づいてライセンス供与されています。"
+
+msgid "This setting is not supported by this build."
+msgstr "この設定はこのビルドではサポートされていません。"
+
+msgid "This video"
+msgstr "このビデオ"
+
+msgid "Title"
+msgstr "タイトル"
+
+msgid "Toggle simulated presence"
+msgstr "シミュレートされたプレゼンスの切り替え"
+
+msgid "Track"
+msgstr "トラック"
+
+msgid "Track added to queue"
+msgstr "トラックがキューに追加されました"
+
+msgid "Track will play next"
+msgstr "次にトラックが再生されます"
+
+msgid "Track, Folder or Playlist Path"
+msgstr "トラック、フォルダー、またはプレイリストのパス"
+
+msgid "Track: "
+msgstr "トラック: "
+
+msgid "Trophy description"
+msgstr "トロフィーの説明"
+
+msgid "Trophy title"
+msgstr "トロフィータイトル"
+
+msgid "Type into browser field..."
+msgstr "ブラウザのフィールドに入力..."
+
+msgid "Unavailable"
+msgstr "利用不可"
+
+msgid "Unlock local trophy"
+msgstr "ローカルトロフィーのロックを解除する"
+
+msgid "Unlocked: "
+msgstr "ロック解除済み: "
+
+msgid "Up/Down: select    Confirm: change    Cancel: back"
+msgstr "上/下：選択 確認：変更 キャンセル：戻る"
+
+msgid "Use an SDL scancode from 4 to 512"
+msgstr "4 ～ 512 の SDL スキャンコードを使用してください"
+
+msgid "User name"
+msgstr "ユーザー名"
+
+msgid "User profile"
+msgstr "ユーザープロフィール"
+
+msgid "Uses installed RPCS3 data roots; custom disc folders can be added normally"
+msgstr "インストールされた RPCS3 データ ルートを使用します。カスタムディスクフォルダーは通常通り追加できます"
+
+msgid "VSync    "
+msgstr "VSync    "
+
+msgid "Video Memory: {:.2f}/{:.2f} MB"
+msgstr "ビデオメモリ: {:.2f}/{:.2f} MB"
+
+msgid "Video could not be loaded"
+msgstr "ビデオをロードできませんでした"
+
+msgid "Video information"
+msgstr "ビデオ情報"
+
+msgid "Video list"
+msgstr "動画一覧"
+
+msgid "Video playback failed"
+msgstr "ビデオの再生に失敗しました"
+
+msgid "Video upload failed: "
+msgstr "ビデオのアップロードに失敗しました: "
+
+msgid "Videos folder"
+msgstr "ビデオフォルダー"
+
+msgid "View background artwork"
+msgstr "背景アートワークを見る"
+
+msgid "Volume"
+msgstr "ボリューム"
+
+msgid "Volume  "
+msgstr "ボリューム  "
+
+msgid "Volume +"
+msgstr "ボリューム+"
+
+msgid "Volume −"
+msgstr "ボリューム −"
+
+msgid "Wait for the photo to finish loading"
+msgstr "写真の読み込みが完了するまで待ちます"
+
+msgid "Wallpaper updated"
+msgstr "壁紙を更新しました"
+
+msgid "Web address"
+msgstr "ウェブアドレス"
+
+msgid "Working directory"
+msgstr "作業ディレクトリ"
+
+msgid "Year"
+msgstr "年"
+
+msgid "Year must be 0-9999"
+msgstr "年は 0 ～ 9999 である必要があります"
+
+msgid "Zoom in"
+msgstr "ズームイン"
+
+msgid "Zoom must be between 0.25 and 5.0"
+msgstr "ズームは 0.25 から 5.0 の間でなければなりません"
+
+msgid "Zoom out"
+msgstr "ズームアウト"
+
+msgid "open "
+msgstr "開く "
+
+msgid "version "
+msgstr "バージョン "
+
+msgid "¼ speed (muted)"
+msgstr "1/4 速度 (ミュート)"
+
+msgid "½ speed (muted)"
+msgstr "1/2 速度 (ミュート)"
+
+msgid "← More text →"
+msgstr "← 本文をもっと見る →"
+
+msgid "✓ Off"
+msgstr "✓ オフ"
+
+msgid "Vulkan"
+msgstr "Vulkan"
+
+msgid "OK"
+msgstr "確認"
+
+# Native player metadata labels; preserve dynamic metadata separately.
+
+msgid "Album:"
+msgstr "アルバム："
+
+msgid "Artist:"
+msgstr "アーティスト："
+
+msgid "Genre:"
+msgstr "ジャンル："
+
+msgid "Date:"
+msgstr "日付："
+
+msgid "Track:"
+msgstr "トラック："
+
+msgid "Codec:"
+msgstr "コーデック："
+
+msgid "Channels:"
+msgstr "チャンネル："
+
+msgid "Use system language"
+msgstr "システムの言語を使用"
+
+msgid "Import inbox"
+msgstr "取り込み用フォルダー"
+
+msgid "Preset:"
+msgstr "プリセット:"

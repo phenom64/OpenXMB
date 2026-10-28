@@ -17,6 +17,7 @@
  */
 
 module;
+#include "../localization/shell_locale.hpp"
 
 #include <algorithm>
 #include <array>
@@ -414,7 +415,7 @@ private:
             case menu_kind::main: return {
                 playback->playback_state() == video::state::playing ? "Pause"_() : "Play"_(),
                 "Replay 10 seconds"_(), "Play from beginning"_(), "Previous video"_(), "Next video"_(),
-                std::string("Repeat: ") + (repetition == repeat_mode::off ? "Off" : repetition == repeat_mode::file ? "This video" : "All videos"),
+                ::openxmb::localization::shell_locale::translate("Repeat")+": "+::openxmb::localization::shell_locale::translate(repetition == repeat_mode::off ? "Off" : repetition == repeat_mode::file ? "This video" : "All videos"),
                 "Screen mode"_(), "Audio track"_(), "Subtitles"_(), "Playback speed"_(), "Scene search"_(),
                 "Previous frame"_(), "Next frame"_(), "Volume −"_(), "Volume +"_(), "Video information"_(), "Video list"_()
             };
@@ -461,7 +462,7 @@ private:
         }
         c.rect(1100,0,770,1080,{0,0,0,0.6F});
         const auto title=menu==menu_kind::scenes?"Scene Search":menu==menu_kind::subtitles?"Subtitle Options":menu==menu_kind::audio?"Audio Options":"Video Settings";
-        c.text(title,1160,95,28);
+        c.text(::openxmb::localization::shell_locale::translate(title),1160,95,28);
         const auto first=selection>8?selection-8:0;
         for(std::size_t i=first;i<rows.size()&&i<first+16;++i)
             c.text(rows[i],1160,155+static_cast<float>(i-first)*50,26,{1,1,1,selection==i?1.0F:0.65F},selection==i?app::xmb_canvas::pulse():0);

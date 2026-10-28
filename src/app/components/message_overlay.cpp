@@ -19,6 +19,7 @@
 module;
 
 #include "dialog_text_layout.hpp"
+#include "../../localization/shell_locale.hpp"
 #include <algorithm>
 #include <array>
 #include <functional>
@@ -51,6 +52,9 @@ namespace app {
     ) : title(std::move(title)), message(std::move(message)), choices(std::move(choices)),
         confirm_callback(std::move(confirm_callback)), cancelable(cancelable), cancel_callback(std::move(cancel_callback))
     {
+        this->title=openxmb::localization::shell_locale::translate(this->title);
+        this->message=openxmb::localization::shell_locale::translate(this->message);
+        for(auto& label:this->choices) label=openxmb::localization::shell_locale::translate(label);
     }
 
     void message_overlay::render(auroreengine::gui_renderer& renderer, shell* xmb) {

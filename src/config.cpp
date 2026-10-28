@@ -35,6 +35,7 @@ module;
 #include <glm/vec3.hpp>
 #include <nlohmann/json.hpp>
 #include "openxmb/xmb/procedural_wave.hpp"
+#include "localization/shell_locale.hpp"
 #include <spdlog/spdlog.h>
 #include <cstdlib>
 
@@ -1081,7 +1082,7 @@ void config::setDateTimeOffset(double offset) {
 }
 
 void config::setLanguage(const std::string& lang) {
-    std::string resolved = lang.empty() ? "auto" : lang;
+    std::string resolved = openxmb::localization::shell_locale::normalize(lang);
     if(language == resolved) {
         return;
     }

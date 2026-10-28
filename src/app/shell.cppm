@@ -23,6 +23,7 @@
 
 module;
 #include "input_timing.hpp"
+#include "../localization/shell_locale.hpp"
 
 #include <array>
 #include <chrono>
@@ -130,7 +131,7 @@ namespace app
                 const float scale=std::min(fw/1920.0F,fh/1080.0F),height=34*scale,gap=12*scale,spacing=64*scale;
                 const float font=28*scale*static_cast<float>(config::CONFIG.textScale),key_font=19*scale;
                 const auto glyph_width=[&](action a){const auto& label=button_labels[std::to_underlying(a)];return label.empty()?height:std::max(height,renderer.text_width_pixels(label,key_font)+14*scale);};
-                float total=0;for(const auto& [a,text]:buttons)if(a!=action::none)total+=glyph_width(a)+gap+renderer.text_width_pixels(text,font)+spacing;
+                float total=0;for(const auto& [a,text]:buttons)if(a!=action::none)total+=glyph_width(a)+gap+renderer.text_width_pixels(::openxmb::localization::shell_locale::translate(text),font)+spacing;
                 if(total>0)total-=spacing;float current=x*fw-total*0.5F;
                 const auto metrics=renderer.text_line_metrics_pixels(font),key_metrics=renderer.text_line_metrics_pixels(key_font);
                 for(const auto& [a,text]:buttons) {
@@ -140,8 +141,8 @@ namespace app
                         renderer.draw_rect({(current+scale)/fw,y-height/(2*fh)+scale/fh},{(width-2*scale)/fw,(height-2*scale)/fh},{0.08F,0.08F,0.08F,1});
                         renderer.draw_text_pixels(button_labels[i],current+width*0.5F,y*fh+(key_metrics.x-key_metrics.y)*0.5F,key_font,{1,1,1,1},0.7F,0,true);
                     } else if(auto* icon=buttonTextures[i].get())renderer.draw_image(*icon,current/fw,y-height/(2*fh),height/fh,height/fh);
-                    renderer.draw_text_pixels(text,current+width+gap,y*fh+(metrics.x-metrics.y)*0.5F,font,{1,1,1,1},0.7F,0,false);
-                    current+=width+gap+renderer.text_width_pixels(text,font)+spacing;
+                    renderer.draw_text_pixels(::openxmb::localization::shell_locale::translate(text),current+width+gap,y*fh+(metrics.x-metrics.y)*0.5F,font,{1,1,1,1},0.7F,0,false);
+                    current+=width+gap+renderer.text_width_pixels(::openxmb::localization::shell_locale::translate(text),font)+spacing;
                 }
             }
 

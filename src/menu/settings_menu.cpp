@@ -551,11 +551,18 @@ namespace menu {
             std::array{
                 entry_enum(loader, xmb, "Language"_(), "Preferred language for the shell"_(), "re.jcm.xmbos.shell", "language", std::array{
                     std::pair{"auto", "Use system language"_()},
-                    std::pair{"en", "English"_()},
+                    std::pair{"en", "British English"_()},
                     std::pair{"de", "German"_()},
                     std::pair{"pl", "Polish"_()},
                     std::pair{"fr", "French"_()},
                     std::pair{"hi", "Hindi"_()},
+                    std::pair{"id", "Indonesian"_()},
+                    std::pair{"es", "Spanish"_()},
+                    std::pair{"ja", "Japanese"_()},
+                    std::pair{"zh_CN", "Simplified Chinese"_()},
+                    std::pair{"zh_TW", "Traditional Chinese"_()},
+                    std::pair{"ko", "Korean"_()},
+                    std::pair{"ru", "Russian"_()},
                 }),
                 entry_enum(loader, xmb, "Date/Time Format"_(), "Clock format shown by the shell"_(), "re.jcm.xmbos.shell", "date-time-format", std::array{
                     std::pair{"%a %d %b %H:%M", "%a %d %b %H:%M"},

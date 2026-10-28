@@ -21,7 +21,8 @@ FlowScene flowScene() {
     FlowScene s;
     s.close=flowWindow(t,148.0,383.0,14.0);
     s.mist=flowWindow(t,370.0,740.0,16.0);
-    s.wash=max(max(flowWindow(t,48.0,74.0,10.0),flowWindow(t,143.0,164.0,9.0)),flowWindow(t,723.0,740.0,7.0));
+    s.wash=max(max(flowWindow(t,48.0,74.0,10.0),flowWindow(t,143.0,164.0,9.0)),
+        max(flowWindow(t,365.0,390.0,10.0),flowWindow(t,723.0,740.0,7.0)));
     s.corridor=max(flowWindow(t,9.0,43.0,9.0),flowWindow(t,67.0,122.0,10.0));
     s.gold=flowWindow(t,112.0,144.0,10.0);
     s.green=1.0-smoothstep(7.0,18.0,t)+flowWindow(t,132.0,154.0,7.0)+smoothstep(730.0,740.0,t);
@@ -37,7 +38,10 @@ float flowBaseHeight(vec2 p,float seconds) {
     float warp=flowWarp(p,seconds);
     float broad=sin(p.y*0.54+sin(warp*0.44)*1.25+flowNoise(p*0.15)*1.8);
     float folds=pow(0.5+0.5*broad,3.0)*0.34;
-    float rolling=(flowFbm(p*0.23)-0.36)*1.7+folds;
+    float heightRange=0.85+0.95*(0.5+0.5*sin(pc.flow.y*0.12));
+    float rolling=((flowFbm(p*0.23)-0.36)*1.7+folds)*heightRange;
+    float waves=sin(p.y*0.63+sin(warp*0.34)*1.7)*0.30+sin(p.x*0.28-p.y*0.31)*0.12;
+    rolling=mix(rolling,waves,s.gold*0.65);
     float trough=(sqrt(warp*warp+0.7)-0.84)*0.20;
     float corridor=trough+broad*(0.38+min(abs(warp),12.0)*0.07)+sin(p.y*1.13+warp*0.32)*0.14;
     float close=sin(warp*0.38+p.y*0.28)*0.8+sin(warp*0.17-p.y*0.49)*0.55+folds*0.5;
@@ -54,7 +58,14 @@ float flowHeight(vec2 p,float seconds) {
     return anchor+(height-anchor)*(1.0+pc.audio.x*0.65+pc.audio.w*0.35)+
         sin(p.x*1.6+p.y*0.8)*pc.audio.y*0.045;
 }
+vec2 flowScreen(vec2 uv) {
+    vec2 p=uv-0.5;
+    float roll=pc.camera_motion.z;
+    p=mat2(cos(roll),-sin(roll),sin(roll),cos(roll))*p;
+    return p+0.5+pc.camera_motion.xy*0.45;
+}
 vec3 flowSky(vec2 uv) {
+    uv=flowScreen(uv);
     FlowScene s=flowScene();
     vec3 sky=mix(vec3(0.43,0.49,0.51),vec3(0.055,0.29,0.27),s.green);
     sky=mix(sky,vec3(0.001,0.007,0.018),s.corridor);
@@ -66,11 +77,11 @@ vec3 flowSky(vec2 uv) {
     float halo=exp(-dot((uv-light)*vec2(1.25,2.8),(uv-light)*vec2(1.25,2.8))*4.0);
     mist+=mix(vec3(0.12,0.16,0.21),vec3(0.37,0.29,0.04),s.motif)*halo;
     sky=mix(sky,mist,s.mist);
-    return mix(sky,vec3(0.26,0.51,0.49),s.wash);
+    return mix(sky,mix(vec3(0.26,0.51,0.49),vec3(0.48,0.46,0.63),s.mist),s.wash);
 }
 float flowCameraHeight(float seconds) {
     FlowScene s=flowScene();
-    return flowBaseHeight(pc.flow.zw,seconds)+mix(0.24,0.16,s.close)+s.mist*0.04;
+    return flowBaseHeight(pc.flow.zw,seconds)+mix(0.24,0.16,s.close)+s.mist*0.04+pc.camera_motion.w;
 }
 float flowHorizon() {
     FlowScene s=flowScene();
@@ -84,7 +95,8 @@ vec3 flowVeil(vec2 uv) {
     float t=pc.flow.y;
     float motif=(t-380.0)*0.0785398163;
     float roll=0.65*sin(motif-0.8)+0.28*sin(motif*0.5);
-    vec2 p=(uv-0.5)*vec2(pc.resolution_time_gain.x/pc.resolution_time_gain.y,1.0);
+    vec2 movingUV=flowScreen(uv);
+    vec2 p=(movingUV-0.5)*vec2(pc.resolution_time_gain.x/pc.resolution_time_gain.y,1.0);
     p=mat2(cos(roll),-sin(roll),sin(roll),cos(roll))*p;
     float depth=1.0+0.22*sin(motif*0.43);
     p*=depth;
@@ -115,8 +127,8 @@ vec3 flowVeil(vec2 uv) {
     rgb*=1.0-s.close*(1.0-smoothstep(0.25,0.52,opening))*0.95;
     float fan=pow(0.5+0.5*cos(motif+0.7),4.0)*s.mist;
     vec2 focus=vec2(0.40+0.12*sin(motif*0.5),0.04);
-    float viewDepth=1.0/(0.16+uv.y*0.84);
-    vec2 world=vec2((uv.x-focus.x)*viewDepth*2.6+pc.flow.z,viewDepth+pc.flow.w);
+    float viewDepth=1.0/(0.16+movingUV.y*0.84);
+    vec2 world=vec2((movingUV.x-focus.x)*viewDepth*2.6+pc.flow.z,viewDepth+pc.flow.w);
     vec3 fingers=flowSky(uv)*0.83;
     for(int i=0;i<6;++i) {
         float id=float(i);

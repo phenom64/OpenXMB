@@ -1,0 +1,5073 @@
+# OpenXMB translations.
+msgid ""
+msgstr ""
+"Project-Id-Version: OpenXMB 1.0\n"
+"Language: ko\n"
+"PO-Revision-Date: 2026-10-28 00:00+0000\n"
+"Last-Translator: Machine-assisted translation\n"
+"Language-Team: ko\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgid "\nSample rate: "
+msgstr "\n샘플 속도:"
+
+msgid "\nVideo decoder details are available in the video player's information display."
+msgstr "\n비디오 디코더 세부정보는 비디오 플레이어의 정보 표시에서 확인할 수 있습니다."
+
+msgid " Hz\nChannels: "
+msgstr "Hz\n채널:"
+
+msgid " for "
+msgstr "에 대한"
+
+msgid " games to the library."
+msgstr "도서관에 게임."
+
+msgid "(No registered devices)"
+msgstr "(등록된 기기 없음)"
+
+msgid "*User"
+msgstr "*사용자"
+
+msgid "+1"
+msgstr "+1"
+
+msgid "+2"
+msgstr "+2"
+
+msgid "+3"
+msgstr "+3"
+
+msgid "+4"
+msgstr "+4"
+
+msgid "-1"
+msgstr "-1"
+
+msgid "-2"
+msgstr "-2"
+
+msgid "-3"
+msgstr "-3"
+
+msgid "-4"
+msgstr "-4"
+
+msgid "1"
+msgstr "1"
+
+msgid "1 minute"
+msgstr "1분"
+
+msgid "1. Transfer data from this system to the other OpenXMB system."
+msgstr "1. 이 시스템에서 다른 OpenXMB 시스템으로 데이터를 전송합니다."
+
+msgid "10"
+msgstr "10"
+
+msgid "10 Images"
+msgstr "이미지 10개"
+
+msgid "10 minutes"
+msgstr "10분"
+
+msgid "10 seconds"
+msgstr "10초"
+
+msgid "1000BASE-T Full-Duplex"
+msgstr "1000BASE-T 전이중"
+
+msgid "1000BASE-T Half-Duplex"
+msgstr "1000BASE-T 반이중"
+
+msgid "100BASE-TX Full-Duplex"
+msgstr "100BASE-TX 전이중"
+
+msgid "100BASE-TX Half-Duplex"
+msgstr "100BASE-TX 반이중"
+
+msgid "106481"
+msgstr "106481"
+
+msgid "1080i"
+msgstr "1080i"
+
+msgid "1080p"
+msgstr "1080p"
+
+msgid "1080p 24 Hz Output (HDMI)"
+msgstr "1080p 24Hz 출력(HDMI)"
+
+msgid "10BASE-T Full-Duplex"
+msgstr "10BASE-T 전이중"
+
+msgid "10BASE-T Half-Duplex"
+msgstr "10BASE-T 반이중"
+
+msgid "11"
+msgstr "11"
+
+msgid "12-Hour Clock"
+msgstr "12시간제 시계"
+
+msgid "1245403"
+msgstr "1245403"
+
+msgid "1308922"
+msgstr "1308922"
+
+msgid "15 minutes"
+msgstr "15분"
+
+msgid "15 seconds of video starting from this scene will be set as the icon.\nIf an icon has already been set, it will be overwritten.\nDo you want to continue?"
+msgstr "이 장면부터 시작하는 15초 분량의 영상이 아이콘으로 설정됩니다.\n아이콘이 이미 설정되어 있으면 덮어쓰게 됩니다.\n계속하시겠습니까?"
+
+msgid "2"
+msgstr "2"
+
+msgid "2 minutes"
+msgstr "2분"
+
+msgid "2. Transfer data from the other OpenXMB system to this system."
+msgstr "2. 다른 OpenXMB 시스템의 데이터를 이 시스템으로 전송합니다."
+
+msgid "24-Hour Clock"
+msgstr "24시간제 시계"
+
+msgid "3"
+msgstr "3"
+
+msgid "30 minutes"
+msgstr "30분"
+
+msgid "35 Tracks  28:00"
+msgstr "35트랙 28:00"
+
+msgid "358972"
+msgstr "358972"
+
+msgid "3D Display (PSP Remasters)"
+msgstr "3D 디스플레이(PSP 리마스터)"
+
+msgid "4"
+msgstr "4"
+
+msgid "44.1 kHz"
+msgstr "44.1kHz"
+
+msgid "48 kHz"
+msgstr "48kHz"
+
+msgid "480p"
+msgstr "480p"
+
+msgid "5"
+msgstr "5"
+
+msgid "5 minutes"
+msgstr "5분"
+
+msgid "5 seconds"
+msgstr "5초"
+
+msgid "50 Hz Video Output"
+msgstr "50Hz 비디오 출력"
+
+msgid "509987"
+msgstr "509987"
+
+msgid "551537"
+msgstr "551537"
+
+msgid "576p"
+msgstr "576p"
+
+msgid "586388"
+msgstr "586388"
+
+msgid "6"
+msgstr "6"
+
+msgid "677357"
+msgstr "677357"
+
+msgid "7"
+msgstr "7"
+
+msgid "720p"
+msgstr "720p"
+
+msgid "8"
+msgstr "8"
+
+msgid "88.2 kHz"
+msgstr "88.2kHz"
+
+msgid "893848"
+msgstr "893848"
+
+msgid "9"
+msgstr "9"
+
+msgid "96 kHz"
+msgstr "96kHz"
+
+msgid "976156"
+msgstr "976156"
+
+msgid "A-B Repeat"
+msgstr "A-B 반복"
+
+msgid "AAC"
+msgstr "AAC"
+
+msgid "AOSS"
+msgstr "AOSS"
+
+msgid "ATERM-5F3C2A-G"
+msgstr "ATERM-5F3C2A-G"
+
+msgid "AV MULTI / S Video"
+msgstr "AV 멀티/S 비디오"
+
+msgid "AV MULTI / SCART"
+msgstr "AV 멀티/스카트"
+
+msgid "AV Settings"
+msgstr "AV 설정"
+
+msgid "AVC  640x360"
+msgstr "AVC 640x360"
+
+msgid "Accessory"
+msgstr "액세서리"
+
+msgid "Accessory Settings"
+msgstr "액세서리 설정"
+
+msgid "Ad Hoc Channel (PSP Remasters)"
+msgstr "임시 채널(PSP 리마스터)"
+
+msgid "Ad Hoc Mode (PSP Remasters)"
+msgstr "임시 모드(PSP 리마스터)"
+
+msgid "Add Term"
+msgstr "용어 추가"
+
+msgid "Add a Friend"
+msgstr "친구 추가"
+
+msgid "Add a player to your Friends list using their PlayStation®Network ID."
+msgstr "PlayStation®Network ID를 사용하여 친구 목록에 플레이어를 추가하세요."
+
+msgid "Add to Playlist"
+msgstr "재생목록에 추가"
+
+msgid "Add words to be displayed as options for predictive text entry when using the on-screen keyboard.\nSelect an option."
+msgstr "화면 키보드를 사용할 때 예상 텍스트 입력 옵션으로 표시할 단어를 추가합니다.\n옵션을 선택하세요."
+
+msgid "Add words to be displayed as options for predictive text entry.\nSelect an option."
+msgstr "자동 완성 텍스트 입력 옵션으로 표시할 단어를 추가합니다.\n옵션을 선택하세요."
+
+msgid "Add/Edit Term"
+msgstr "용어 추가/수정"
+
+msgid "Added "
+msgstr "추가됨"
+
+msgid "Address"
+msgstr "주소"
+
+msgid "Adjust settings for connection to the Internet.\nIf making a wired connection, you must have an Ethernet cable connected."
+msgstr "인터넷 연결 설정을 조정합니다.\n유선으로 연결하는 경우 이더넷 케이블이 연결되어 있어야 합니다."
+
+msgid "Adjust the OpenXMB scene brightness."
+msgstr "OpenXMB 장면 밝기를 조정합니다."
+
+msgid "Adjusts date and time settings."
+msgstr "날짜 및 시간 설정을 조정합니다."
+
+msgid "Adjusts parental control settings."
+msgstr "자녀 보호 설정을 조정합니다."
+
+msgid "Adjusts settings for accessories that are connected to this system."
+msgstr "이 시스템에 연결된 액세서리의 설정을 조정합니다."
+
+msgid "Adjusts settings for audio output."
+msgstr "오디오 출력 설정을 조정합니다."
+
+msgid "Adjusts settings for chat."
+msgstr "채팅 설정을 조정합니다."
+
+msgid "Adjusts settings for games."
+msgstr "게임 설정을 조정합니다."
+
+msgid "Adjusts settings for music."
+msgstr "음악 설정을 조정합니다."
+
+msgid "Adjusts settings for printers that are connected to this system."
+msgstr "이 시스템에 연결된 프린터의 설정을 조정합니다."
+
+msgid "Adjusts settings for printers that are connected to this system.\n\nNo printer is connected to the system."
+msgstr "이 시스템에 연결된 프린터의 설정을 조정합니다.\n\n 시스템에 연결된 프린터가 없습니다."
+
+msgid "Adjusts settings for remote play. Remote play enables you to use a device that supports the remote play feature (such as a PSP™ system) to operate this system over a network."
+msgstr "원격 플레이에 대한 설정을 조정합니다. 원격 재생을 사용하면 원격 재생 기능을 지원하는 장치(예: PSP™ 시스템)를 사용하여 네트워크를 통해 이 시스템을 작동할 수 있습니다."
+
+msgid "Adjusts settings for the Internet connection."
+msgstr "인터넷 연결 설정을 조정합니다."
+
+msgid "Adjusts settings for this OpenXMB system."
+msgstr "이 OpenXMB 시스템에 대한 설정을 조정합니다."
+
+msgid "Adjusts settings for video output."
+msgstr "비디오 출력 설정을 조정합니다."
+
+msgid "Adjusts settings for video."
+msgstr "비디오 설정을 조정합니다."
+
+msgid "Adjusts settings related to the appearance of the XMB™ screen."
+msgstr "XMB™ 화면의 모양과 관련된 설정을 조정합니다."
+
+msgid "Adjusts settings to reduce power usage by this system."
+msgstr "이 시스템의 전력 사용량을 줄이기 위해 설정을 조정합니다."
+
+msgid "Advanced"
+msgstr "고급"
+
+msgid "After 1 hour"
+msgstr "1시간 후"
+
+msgid "After 10 Minutes"
+msgstr "10분 후"
+
+msgid "After 10 min."
+msgstr "10분 후."
+
+msgid "After 2 hours"
+msgstr "2시간 후"
+
+msgid "After 20 Minutes"
+msgstr "20분 후"
+
+msgid "After 3 hours"
+msgstr "3시간 후"
+
+msgid "After 30 Minutes"
+msgstr "30분 후"
+
+msgid "After 30 min."
+msgstr "30분 후"
+
+msgid "After 5 Minutes"
+msgstr "5분 후"
+
+msgid "After 5 hours"
+msgstr "5시간 후"
+
+msgid "After 60 min."
+msgstr "60분 후"
+
+msgid "After Launching a Game"
+msgstr "게임을 시작한 후"
+
+msgid "Album Artwork"
+msgstr "앨범 아트워크"
+
+msgid "Albums"
+msgstr "앨범"
+
+msgid "All"
+msgstr "모두"
+
+msgid "All data on the system storage will be erased.\nAre you sure you want to continue?"
+msgstr "본체 스토리지의 모든 데이터가 삭제됩니다.\n계속하시겠습니까?"
+
+msgid "All terms that were added will be deleted.\nAre you sure you want to continue?"
+msgstr "추가된 모든 용어가 삭제됩니다.\n계속하시겠습니까?"
+
+msgid "Analog Navigation"
+msgstr "아날로그 내비게이션"
+
+msgid "Anti-aliasing"
+msgstr "앤티앨리어싱"
+
+msgid "Apply a saved appearance preset."
+msgstr "저장된 모양 사전 설정을 적용합니다."
+
+msgid "Apply upscaling to PlayStation® format software."
+msgstr "PlayStation® 형식 소프트웨어에 업스케일링을 적용합니다."
+
+msgid "Are you sure you want to delete the track?"
+msgstr "트랙을 삭제하시겠습니까?"
+
+msgid "Artist ▲"
+msgstr "아티스트 ▲"
+
+msgid "Artist ▼"
+msgstr "아티스트 ▼"
+
+msgid "Artists"
+msgstr "아티스트"
+
+msgid "Audio Device Settings"
+msgstr "오디오 장치 설정"
+
+msgid "Audio Input Connector / SCART / AV MULTI"
+msgstr "오디오 입력 커넥터/SCART/AV MULTI"
+
+msgid "Audio Language"
+msgstr "오디오 언어"
+
+msgid "Audio Multi-Output"
+msgstr "오디오 다중 출력"
+
+msgid "Audio Options"
+msgstr "오디오 옵션"
+
+msgid "Audio Output Device"
+msgstr "오디오 출력 장치"
+
+msgid "Audio Output Settings"
+msgstr "오디오 출력 설정"
+
+msgid "Authentication"
+msgstr "인증"
+
+msgid "Authentication Setting"
+msgstr "인증 설정"
+
+msgid "Auto"
+msgstr "자동"
+
+msgid "Auto (Time of Day)"
+msgstr "자동(시간)"
+
+msgid "Auto-Detect"
+msgstr "자동 감지"
+
+msgid "Automatic"
+msgstr "자동"
+
+msgid "Automatic Update"
+msgstr "자동 업데이트"
+
+msgid "Automatic detection or a preferred button style."
+msgstr "자동 감지 또는 선호하는 버튼 스타일."
+
+msgid "Automatic setup by access point type."
+msgstr "액세스 포인트 유형에 따라 자동 설정됩니다."
+
+msgid "Automatically use hardware decoding when available."
+msgstr "가능한 경우 자동으로 하드웨어 디코딩을 사용합니다."
+
+msgid "BD Audio Language"
+msgstr "BD 오디오 언어"
+
+msgid "BD Audio Output Format (HDMI)"
+msgstr "BD 오디오 출력 형식(HDMI)"
+
+msgid "BD Data Utility"
+msgstr "BD 데이터 유틸리티"
+
+msgid "BD Parental Control"
+msgstr "BD 자녀 보호"
+
+msgid "BD Remote Control Registration"
+msgstr "BD 리모콘 등록"
+
+msgid "BD/DVD - Video Output Format (HDMI)"
+msgstr "BD/DVD - 비디오 출력 형식(HDMI)"
+
+msgid "BD/DVD Auto-start"
+msgstr "BD/DVD 자동 시작"
+
+msgid "BT Stereo Headphones"
+msgstr "BT 스테레오 헤드폰"
+
+msgid "Back"
+msgstr "뒤로"
+
+msgid "Back Up"
+msgstr "백업"
+
+msgid "Back up completed."
+msgstr "백업이 완료되었습니다."
+
+msgid "Back up or restore data on the system storage.\nSelect the operation you want to perform."
+msgstr "시스템 스토리지의 데이터를 백업하거나 복원하세요.\n수행하려는 작업을 선택합니다."
+
+msgid "Background"
+msgstr "배경"
+
+msgid "Background Audio"
+msgstr "배경 오디오"
+
+msgid "Background File"
+msgstr "배경 파일"
+
+msgid "Background Frame Limit"
+msgstr "배경 프레임 제한"
+
+msgid "Background Music"
+msgstr "배경음악"
+
+msgid "Background file not found."
+msgstr "배경 파일을 찾을 수 없습니다."
+
+msgid "Backing up...\nDo not remove the storage media."
+msgstr "백업 중...\n저장 미디어를 제거하지 마세요."
+
+msgid "Backs up data saved on the system storage to storage media, or restores data that has been backed up.\nSelect an option."
+msgstr "시스템 스토리지에 저장된 데이터를 저장 미디어에 백업하거나, 백업된 데이터를 복원합니다.\n옵션을 선택하세요."
+
+msgid "Backup Utility"
+msgstr "백업 유틸리티"
+
+msgid "Baltic"
+msgstr "발트해"
+
+msgid "Before the Storm"
+msgstr "Before the Storm"
+
+msgid "Beneath the Ashes"
+msgstr "Beneath the Ashes"
+
+msgid "Bing"
+msgstr "Bing"
+
+msgid "Bitstream"
+msgstr "비트스트림"
+
+msgid "Black"
+msgstr "블랙"
+
+msgid "Block Noise Reduction"
+msgstr "블록 소음 감소"
+
+msgid "Blue"
+msgstr "블루"
+
+msgid "Bluetooth Keyboard"
+msgstr "Bluetooth 키보드"
+
+msgid "Bluetooth Mouse"
+msgstr "Bluetooth 마우스"
+
+msgid "Bluetooth® Headset"
+msgstr "Bluetooth® 헤드셋"
+
+msgid "Borderless"
+msgstr "경계선 없음"
+
+msgid "Breathtaking Vision"
+msgstr "Breathtaking Vision"
+
+msgid "Bright"
+msgstr "브라이트"
+
+msgid "Brightness"
+msgstr "밝기"
+
+msgid "British English"
+msgstr "영국식 영어"
+
+msgid "Brown"
+msgstr "브라운"
+
+msgid "Browse and purchase games, add-ons, movies, and more for your OpenXMB system.\n\nDownload demos, full games, themes, wallpapers, and exclusive content.\n\nA broadband Internet connection and a PlayStation®Network account are required to use PlayStation®Store."
+msgstr "OpenXMB 시스템을 위한 게임, 추가 기능, 영화 등을 찾아보고 구매하세요.\n\n 데모, 정식 게임, 테마, 배경화면 및 독점 콘텐츠를 다운로드하세요.\n\n PlayStation®Store을(를) 사용하려면 광대역 인터넷 연결과 PlayStation®Network 계정이 필요합니다."
+
+msgid "Browse folders, songs, albums, artists or saved playlists."
+msgstr "폴더, 노래, 앨범, 아티스트 또는 저장된 재생 목록을 찾아보세요."
+
+msgid "Browser"
+msgstr "브라우저"
+
+msgid "Buffalo-A1B2C3"
+msgstr "버팔로-A1B2C3"
+
+msgid "By Album"
+msgstr "앨범별"
+
+msgid "By Artist"
+msgstr "아티스트별"
+
+msgid "By Genre"
+msgstr "장르별"
+
+msgid "By Month"
+msgstr "월별"
+
+msgid "By Release Year"
+msgstr "출시 연도별"
+
+msgid "By Track"
+msgstr "트랙별"
+
+msgid "By Year"
+msgstr "연도별"
+
+msgid "Calibrate Motion Controller"
+msgstr "모션 컨트롤러 교정"
+
+msgid "Calibrates the magnetic sensor of a motion controller. Use this setting when the motion controller does not control on-screen movement as expected."
+msgstr "모션 컨트롤러의 자기 센서를 교정합니다. 모션 컨트롤러가 예상대로 화면 이동을 제어하지 않는 경우 이 설정을 사용합니다."
+
+msgid "Calibrates the magnetic sensor of a motion controller. Use this setting when the motion controller does not control on-screen movement as expected.\n\nPlace the controller on a flat surface, then press the X button."
+msgstr "모션 컨트롤러의 자기 센서를 교정합니다. 모션 컨트롤러가 예상대로 화면 이동을 제어하지 않는 경우 이 설정을 사용합니다.\n\n 컨트롤러를 평평한 표면에 놓은 다음 X 버튼을 누릅니다."
+
+msgid "Camera Device Settings"
+msgstr "카메라 장치 설정"
+
+msgid "Can you read this screen?\nSelect [Yes] if you can.\n\nIf you do not press any buttons, the system will automatically go back to the previous setting."
+msgstr "이 화면을 읽을 수 있나요?\n가능하다면 [예]를 선택하세요.\n\n 아무 버튼도 누르지 않으면 시스템은 자동으로 이전 설정으로 돌아갑니다."
+
+msgid "Cancel"
+msgstr "취소"
+
+msgid "Canyon"
+msgstr "협곡"
+
+msgid "Caution-Echidnas May Eat Your Brain"
+msgstr "Caution-Echidnas May Eat Your Brain"
+
+msgid "Central European"
+msgstr "중앙 유럽"
+
+msgid "Change Binding"
+msgstr "바인딩 변경"
+
+msgid "Change Effect"
+msgstr "변경 효과"
+
+msgid "Change Icon"
+msgstr "아이콘 변경"
+
+msgid "Change Password"
+msgstr "비밀번호 변경"
+
+msgid "Change the number assigned to the controller that is currently in use."
+msgstr "현재 사용 중인 컨트롤러에 할당된 번호를 변경합니다."
+
+msgid "Change the number assigned to the controller that is currently in use.\n\nPress the PS button on the controller you want to reassign."
+msgstr "현재 사용 중인 컨트롤러에 할당된 번호를 변경합니다.\n\n 재할당하려는 컨트롤러의 PS 버튼을 누르세요."
+
+msgid "Change the password required to play games or videos, or to use the Internet browser.\n\nEnter your current password."
+msgstr "게임이나 동영상을 플레이하거나 인터넷 브라우저를 사용하는 데 필요한 비밀번호를 변경하세요.\n\n 현재 비밀번호를 입력하세요."
+
+msgid "Channel 1"
+msgstr "채널 1"
+
+msgid "Channel 11"
+msgstr "채널 11"
+
+msgid "Channel 6"
+msgstr "채널 6"
+
+msgid "Chapters"
+msgstr "장"
+
+msgid "Character Set"
+msgstr "문자 세트"
+
+msgid "Chat Rooms"
+msgstr "채팅방"
+
+msgid "Chat Settings"
+msgstr "채팅 설정"
+
+msgid "Checking for the latest version of the system software..."
+msgstr "시스템 소프트웨어의 최신 버전을 확인하는 중..."
+
+msgid "Checking network configuration...\nPlease wait."
+msgstr "네트워크 구성을 확인하는 중입니다...\n잠시 기다려 주십시오."
+
+msgid "Chinese"
+msgstr "중국어"
+
+msgid "Chinese (simplified)"
+msgstr "중국어(간체)"
+
+msgid "Chinese (traditional)"
+msgstr "중국어(번체)"
+
+msgid "Choose a 12-hour or 24-hour clock."
+msgstr "12시간제 또는 24시간제를 선택하세요."
+
+msgid "Choose a TrueType or OpenType font file."
+msgstr "TrueType 또는 OpenType 글꼴 파일을 선택하세요."
+
+msgid "Choose a photo or video background."
+msgstr "사진이나 비디오 배경을 선택하세요."
+
+msgid "Choose an action, then press its controller button."
+msgstr "동작을 선택한 다음 해당 컨트롤러 버튼을 누르세요."
+
+msgid "Choose an action, then press its keyboard key."
+msgstr "동작을 선택한 다음 해당 키보드 키를 누르십시오."
+
+msgid "Choose an existing folder."
+msgstr "기존 폴더를 선택합니다."
+
+msgid "Choose how OpenXMB uses the display."
+msgstr "OpenXMB이(가) 디스플레이를 사용하는 방법을 선택하세요."
+
+msgid "Choose how the shell behaves while a game runs."
+msgstr "게임이 실행되는 동안 셸의 동작 방식을 선택합니다."
+
+msgid "Choose the folder scanned for games."
+msgstr "게임을 검색한 폴더를 선택하세요."
+
+msgid "Choose the full-screen music presentation."
+msgstr "전체 화면 음악 프레젠테이션을 선택합니다."
+
+msgid "Choose the fullscreen display resolution."
+msgstr "전체 화면 디스플레이 해상도를 선택합니다."
+
+msgid "Choose the icon material."
+msgstr "아이콘 재질을 선택하세요."
+
+msgid "Choose the root folder for music and playlists."
+msgstr "음악 및 재생 목록의 루트 폴더를 선택합니다."
+
+msgid "Choose the root folder for photos."
+msgstr "사진의 루트 폴더를 선택합니다."
+
+msgid "Choose the root folder for videos."
+msgstr "비디오의 루트 폴더를 선택하십시오."
+
+msgid "Classic"
+msgstr "클래식"
+
+msgid "Clear Browsing Data"
+msgstr "인터넷 사용 기록 삭제"
+
+msgid "Clear Browsing Data?"
+msgstr "인터넷 사용 기록을 삭제하시겠습니까?"
+
+msgid "Clear Thumbnail Cache?"
+msgstr "썸네일 캐시를 지우시겠습니까?"
+
+msgid "Colour"
+msgstr "색상"
+
+msgid "Component / D-Terminal"
+msgstr "컴포넌트 / D-단자"
+
+msgid "Compose and send a new message."
+msgstr "새 메시지를 작성하고 보냅니다."
+
+msgid "Composite / S Video"
+msgstr "컴포지트 / S 비디오"
+
+msgid "Configure Ad Hoc Mode settings for PSP® Remasters."
+msgstr "PSP® 리마스터에 대한 임시 모드 설정을 구성합니다."
+
+msgid "Configure BD/DVD auto-start settings."
+msgstr "BD/DVD 자동 시작 설정을 구성합니다."
+
+msgid "Configure audio output settings."
+msgstr "오디오 출력 설정을 구성합니다."
+
+msgid "Configure the screen saver settings."
+msgstr "화면 보호기 설정을 구성합니다."
+
+msgid "Configure the screen size for PSP® Remasters."
+msgstr "PSP® 리마스터의 화면 크기를 구성합니다."
+
+msgid "Configure video output settings according to your TV."
+msgstr "TV에 따라 비디오 출력 설정을 구성합니다."
+
+msgid "Confirm"
+msgstr "확인"
+
+msgid "Connect"
+msgstr "연결하다"
+
+msgid "Connect PS Vita System Using Network"
+msgstr "네트워크를 사용하여 PS Vita 시스템 연결"
+
+msgid "Connecting...\nPlease wait."
+msgstr "연결 중...\n잠시 기다려 주세요."
+
+msgid "Connection test completed."
+msgstr "연결 테스트가 완료되었습니다."
+
+msgid "Continue after the last photograph."
+msgstr "마지막 사진 이후 계속됩니다."
+
+msgid "Continue audio when OpenXMB loses focus."
+msgstr "OpenXMB이 초점을 잃으면 오디오를 계속합니다."
+
+msgid "Continue music after closing the player."
+msgstr "플레이어를 닫은 후 음악을 계속하세요."
+
+msgid "Control for HDMI"
+msgstr "HDMI에 대한 제어"
+
+msgid "Controller Auto-Off"
+msgstr "컨트롤러 자동 꺼짐"
+
+msgid "Controller Bindings"
+msgstr "컨트롤러 바인딩"
+
+msgid "Controller Prompts"
+msgstr "컨트롤러 프롬프트"
+
+msgid "Controller Vibration"
+msgstr "컨트롤러 진동"
+
+msgid "Controller Vibration Function"
+msgstr "컨트롤러 진동 기능"
+
+msgid "Copy"
+msgstr "복사"
+
+msgid "Copy Multiple"
+msgstr "여러 개 복사"
+
+msgid "Corrupted Data"
+msgstr "손상된 데이터"
+
+msgid "Create New Internal Memory Card"
+msgstr "새 내부 메모리 카드 만들기"
+
+msgid "Create New User"
+msgstr "새 사용자 생성"
+
+msgid "Create a new internal memory card."
+msgstr "새로운 내장 메모리 카드를 생성하세요."
+
+msgid "Crimson"
+msgstr "크림슨"
+
+msgid "Cross Color Reduction Filter"
+msgstr "교차 색상 감소 필터"
+
+msgid "Crossfade"
+msgstr "크로스페이드"
+
+msgid "Custom"
+msgstr "맞춤"
+
+msgid "Cyan"
+msgstr "청록색"
+
+msgid "Cyrillic"
+msgstr "키릴 문자"
+
+msgid "DD/MM/YYYY"
+msgstr "DD/MM/YYYY"
+
+msgid "DHCP Host Name"
+msgstr "DHCP 호스트 이름"
+
+msgid "DNS Setting"
+msgstr "DNS 설정"
+
+msgid "DNS Setting\nIn most cases, select [Automatic]."
+msgstr "DNS 설정\n대부분의 경우 [자동]을 선택합니다."
+
+msgid "DTS 5.1 Ch."
+msgstr "DTS 5.1 채널."
+
+msgid "DVD Audio Language"
+msgstr "DVD 오디오 언어"
+
+msgid "DVD Parental Control"
+msgstr "DVD 자녀 보호"
+
+msgid "Danish"
+msgstr "덴마크어"
+
+msgid "Dark Blue"
+msgstr "진한 파란색"
+
+msgid "Dark Green"
+msgstr "진한 녹색"
+
+msgid "Data Transfer Utility"
+msgstr "데이터 전송 유틸리티"
+
+msgid "Date"
+msgstr "날짜"
+
+msgid "Date (YYYY/MM/DD)"
+msgstr "날짜(YYYY/MM/DD)"
+
+msgid "Date Format"
+msgstr "날짜 형식"
+
+msgid "Date and Time"
+msgstr "날짜 및 시간"
+
+msgid "Date and Time Settings"
+msgstr "날짜 및 시간 설정"
+
+msgid "Day"
+msgstr "일"
+
+msgid "Day/Night"
+msgstr "낮/밤"
+
+msgid "Daylight Saving"
+msgstr "일광 절약 시간제"
+
+msgid "Dead Batteries"
+msgstr "Dead Batteries"
+
+msgid "Decoder Information"
+msgstr "디코더 정보"
+
+msgid "Deep Color Output (HDMI)"
+msgstr "딥 컬러 출력(HDMI)"
+
+msgid "Default"
+msgstr "기본값"
+
+msgid "Default Repeat"
+msgstr "기본 반복"
+
+msgid "Default Router"
+msgstr "기본 라우터"
+
+msgid "Default Screen Fit"
+msgstr "기본 화면 맞춤"
+
+msgid "Default Shuffle"
+msgstr "기본 셔플"
+
+msgid "Default Sort"
+msgstr "기본 정렬"
+
+msgid "Default browser page scale."
+msgstr "기본 브라우저 페이지 규모."
+
+msgid "Default volume for music playback."
+msgstr "음악 재생을 위한 기본 볼륨입니다."
+
+msgid "Default volume for video playback."
+msgstr "비디오 재생을 위한 기본 볼륨입니다."
+
+msgid "Delay between held directional inputs in milliseconds."
+msgstr "유지된 방향 입력 사이의 지연(밀리초)입니다."
+
+msgid "Delete"
+msgstr "삭제"
+
+msgid "Delete All"
+msgstr "모두 삭제"
+
+msgid "Delete BD data saved on the system storage."
+msgstr "시스템 스토리지에 저장된 BD 데이터를 삭제합니다."
+
+msgid "Delete Backup Data"
+msgstr "백업 데이터 삭제"
+
+msgid "Delete Multiple"
+msgstr "여러 개 삭제"
+
+msgid "Delete PS Vita System's Backup Files"
+msgstr "PS Vita 시스템의 백업 파일 삭제"
+
+msgid "Delete Predictive Text Dictionary"
+msgstr "예측 텍스트 사전 삭제"
+
+msgid "Delete Registered Device"
+msgstr "등록된 기기 삭제"
+
+msgid "Delete Term"
+msgstr "용어 삭제"
+
+msgid "Deletes backup files for the PS Vita system saved on this system."
+msgstr "본 시스템에 저장된 PS Vita 시스템의 백업 파일을 삭제합니다."
+
+msgid "Deletes backup files for the PS Vita system saved on this system.\n\nThe backup files for the PS Vita system will be deleted.\nYou can only delete the backup files for your account.\n\nDo you want to delete the backup files?"
+msgstr "본 시스템에 저장된 PS Vita 시스템의 백업 파일을 삭제합니다.\n\n PS Vita 시스템의 백업 파일이 삭제됩니다.\n귀하의 계정에 대한 백업 파일만 삭제할 수 있습니다.\n\n 백업 파일을 삭제하시겠습니까?"
+
+msgid "Deletes registered remote play devices from this system.\nSelect a device to delete."
+msgstr "이 시스템에서 등록된 원격 재생 장치를 삭제합니다.\n삭제할 장치를 선택하세요."
+
+msgid "Deletes words that were added automatically to the dictionary when using the on-screen keyboard."
+msgstr "화면 키보드를 사용할 때 사전에 자동으로 추가된 단어를 삭제합니다."
+
+msgid "Deletes words that were added automatically to the dictionary when using the on-screen keyboard.\n\nThe predictive text dictionary will be deleted.\nAre you sure you want to continue?"
+msgstr "화면 키보드를 사용할 때 사전에 자동으로 추가된 단어를 삭제합니다.\n\n 예측 텍스트 사전이 삭제됩니다.\n계속하시겠습니까?"
+
+msgid "Deletion completed."
+msgstr "삭제가 완료되었습니다."
+
+msgid "Device List"
+msgstr "장치 목록"
+
+msgid "Dictionary Type"
+msgstr "사전 유형"
+
+msgid "Dim"
+msgstr "희미한"
+
+msgid "Dim the scene after inactivity."
+msgstr "활동이 없으면 장면을 어둡게 합니다."
+
+msgid "Directory for browser downloads."
+msgstr "브라우저 다운로드용 디렉토리."
+
+msgid "Disable"
+msgstr "비활성화"
+
+msgid "Disabled"
+msgstr "장애인"
+
+msgid "Disc Auto-Start"
+msgstr "디스크 자동 시작"
+
+msgid "Disconnect"
+msgstr "연결 끊기"
+
+msgid "Disconnect All"
+msgstr "모두 연결 해제"
+
+msgid "Display"
+msgstr "디스플레이"
+
+msgid "Display GPU memory use."
+msgstr "GPU 메모리 사용량을 표시합니다."
+
+msgid "Display Mode"
+msgstr "디스플레이 모드"
+
+msgid "Display PSP® Remasters in 3D."
+msgstr "PSP® 리마스터를 3D로 표시합니다."
+
+msgid "Display Settings"
+msgstr "디스플레이 설정"
+
+msgid "Display [What's New]"
+msgstr "디스플레이 [새로운 소식]"
+
+msgid "Display available cover artwork."
+msgstr "사용 가능한 표지 삽화를 표시합니다."
+
+msgid "Display information about the selected content."
+msgstr "선택한 콘텐츠에 대한 정보를 표시합니다."
+
+msgid "Display the shell frame rate."
+msgstr "쉘 프레임 속도를 표시합니다."
+
+msgid "Displays a list of PS Vita systems registered with this system.\n\nNo PS Vita systems are currently registered."
+msgstr "이 시스템에 등록된 PS Vita 시스템의 목록을 표시합니다.\n\n 현재 등록된 PS Vita 시스템이 없습니다."
+
+msgid "Displays a list of devices registered with this system.\n\nNo devices are currently registered for remote play."
+msgstr "이 시스템에 등록된 장치 목록을 표시합니다.\n\n 현재 원격 플레이에 등록된 장치가 없습니다."
+
+msgid "Displays current network settings and connection status."
+msgstr "현재 네트워크 설정 및 연결 상태를 표시합니다."
+
+msgid "Displays current network settings and the Internet connection status.\n\nConnection Name    Default\nConnection Type    Wired\nIP Address         192.168.1.10\nSubnet Mask        255.255.255.0\nDefault Gateway    192.168.1.1\nPrimary DNS        8.8.8.8\nSecondary DNS      8.8.4.4"
+msgstr "현재 네트워크 설정과 인터넷 연결 상태를 표시합니다.\n\n 연결 이름 기본값\n연결 유형 유선\nIP 주소 192.168.1.10\n서브넷 마스크 255.255.255.0\n기본 게이트웨이 192.168.1.1\n기본 DNS 8.8.8.8\n보조 DNS 8.8.4.4"
+
+msgid "Displays manuals for the software installed on the OpenXMB system."
+msgstr "OpenXMB 시스템에 설치된 소프트웨어에 대한 설명서를 표시합니다."
+
+msgid "Displays the messages you have received."
+msgstr "받은 메시지를 표시합니다."
+
+msgid "Displays the messages you have sent."
+msgstr "보낸 메시지를 표시합니다."
+
+msgid "Displays the registration code that is required to play DivX® VOD content."
+msgstr "DivX® VOD 콘텐츠를 재생하는 데 필요한 등록 코드를 표시합니다."
+
+msgid "Displays the registration code that is required to play DivX® VOD content.\n\nRegistration Code:\n\n8C9D7E1F\n\nVisit http://www.divx.com/vod/ for instructions on how to register the code."
+msgstr "DivX® VOD 콘텐츠를 재생하는 데 필요한 등록 코드를 표시합니다.\n\n 등록 코드:\n\n 8C9D7E1F\n\n 코드 등록 방법에 대한 지침을 보려면 http://www.divx.com/vod/을 방문하세요."
+
+msgid "DivX® VOD Registration Code"
+msgstr "DivX® VOD 등록 코드"
+
+msgid "Divided from Grace"
+msgstr "Divided from Grace"
+
+msgid "Do Not Display"
+msgstr "표시하지 않음"
+
+msgid "Do Not Set"
+msgstr "설정하지 않음"
+
+msgid "Do Not Use"
+msgstr "사용하지 마십시오"
+
+msgid "Do you want to back up data on the system storage to other storage media?\n\nLimitations may apply when backing up certain copyright-protected content."
+msgstr "본체 스토리지의 데이터를 다른 저장 미디어에 백업하시겠습니까?\n\n 저작권으로 보호되는 특정 콘텐츠를 백업할 때 제한 사항이 적용될 수 있습니다."
+
+msgid "Do you want to cancel?\nThe settings you have made so far will not be saved if you cancel."
+msgstr "취소하시겠습니까?\n취소하면 지금까지 설정한 내용이 저장되지 않습니다."
+
+msgid "Do you want to overwrite the wallpaper?\nIf you do, the current wallpaper will be lost.\nOnly one wallpaper image can be saved."
+msgstr "배경화면을 덮어쓰시겠습니까?\n그렇게 하면 현재 배경화면이 손실됩니다.\n배경화면 이미지는 하나만 저장할 수 있습니다."
+
+msgid "Do you want to perform advanced settings?"
+msgstr "고급 설정을 수행하시겠습니까?"
+
+msgid "Dolby Digital 5.1 Ch."
+msgstr "돌비 디지털 5.1 채널."
+
+msgid "Double Scale"
+msgstr "더블 스케일"
+
+msgid "Down"
+msgstr "아래로"
+
+msgid "Downloads Folder"
+msgstr "다운로드 폴더"
+
+msgid "DuckDuckGo"
+msgstr "DuckDuckGo"
+
+msgid "Dusk"
+msgstr "황혼"
+
+msgid "Dutch"
+msgstr "네덜란드어"
+
+msgid "EAP Authentication"
+msgstr "EAP 인증"
+
+msgid "EAP-MD5"
+msgstr "EAP-MD5"
+
+msgid "Easy"
+msgstr "쉬움"
+
+msgid "Echo Cancellation"
+msgstr "에코 제거"
+
+msgid "Edit"
+msgstr "편집"
+
+msgid "Edit Term"
+msgstr "용어 편집"
+
+msgid "Elevator Music"
+msgstr "Elevator Music"
+
+msgid "Emulation Configuration"
+msgstr "에뮬레이션 구성"
+
+msgid "Enable"
+msgstr "활성화"
+
+msgid "Enable ATRAC"
+msgstr "ATRAC 활성화"
+
+msgid "Enable WMA Playback"
+msgstr "WMA 재생 활성화"
+
+msgid "Enable analog controller navigation."
+msgstr "아날로그 컨트롤러 탐색을 활성화합니다."
+
+msgid "Enable controller feedback."
+msgstr "컨트롤러 피드백을 활성화합니다."
+
+msgid "Enabled"
+msgstr "활성화됨"
+
+msgid "English"
+msgstr "영어"
+
+msgid "English (UK)"
+msgstr "영어(영국)"
+
+msgid "English (US)"
+msgstr "영어(미국)"
+
+msgid "English (United Kingdom)"
+msgstr "영어(영국)"
+
+msgid "English (United States)"
+msgstr "영어(미국)"
+
+msgid "Enter Manually"
+msgstr "수동으로 입력"
+
+msgid "Enter a new 4-digit password."
+msgstr "새로운 4자리 비밀번호를 입력하세요."
+
+msgid "Enter the new password again to confirm."
+msgstr "확인을 위해 새 비밀번호를 다시 입력하세요."
+
+msgid "Eternal Excavation"
+msgstr "Eternal Excavation"
+
+msgid "Evening"
+msgstr "저녁"
+
+msgid "External Subtitle"
+msgstr "외부 자막"
+
+msgid "Extra"
+msgstr "엑스트라"
+
+msgid "FON_FREE_INTERNET"
+msgstr "FON_FREE_INTERNET"
+
+msgid "FREE* to access, PlayStation®Store is the only place to download new and exclusive PS3™ games, FREE playable demos, add-on packs, and high-definition videos.\n\nGet more for your PS3™ and visit PlayStation®Store today.\n\n* Broadband Internet connection required."
+msgstr "무료*로 액세스할 수 있는 PlayStation®Store은 새롭고 독점적인 PS3™ 게임, 무료로 플레이 가능한 데모, 추가 기능 팩 및 고화질 비디오를 다운로드할 수 있는 유일한 장소입니다.\n\n PS3™에 대해 더 알아보고 지금 PlayStation®Store을 방문하세요.\n\n * 광대역 인터넷 연결이 필요합니다."
+
+msgid "Fade"
+msgstr "페이드"
+
+msgid "Fast"
+msgstr "빠르게"
+
+msgid "Fast Forward"
+msgstr "빨리 감기"
+
+msgid "Fast Reverse"
+msgstr "빨리 되감기"
+
+msgid "File logging is unavailable on this platform."
+msgstr "이 플랫폼에서는 파일 로깅을 사용할 수 없습니다."
+
+msgid "Fill"
+msgstr "채우기"
+
+msgid "Film Date ▲"
+msgstr "촬영일 ▲"
+
+msgid "Film Date ▼"
+msgstr "촬영일 ▼"
+
+msgid "Finish"
+msgstr "마침"
+
+msgid "Finnish"
+msgstr "핀란드어"
+
+msgid "Fit"
+msgstr "핏"
+
+msgid "Flow"
+msgstr "Flow"
+
+msgid "Flow visualiser"
+msgstr "Flow 시각화"
+
+
+
+msgid "Folder Repeat"
+msgstr "폴더 반복"
+
+msgid "Folders"
+msgstr "폴더"
+
+msgid "Follow the on-screen instructions on your PlayStation®Vita system."
+msgstr "PlayStation®Vita 시스템에서 화면의 지시를 따르십시오."
+
+msgid "Font"
+msgstr "글꼴"
+
+msgid "Font File"
+msgstr "글꼴 파일"
+
+msgid "Font file not found."
+msgstr "글꼴 파일을 찾을 수 없습니다."
+
+msgid "Format Hard Disk"
+msgstr "하드 디스크 포맷"
+
+msgid "Format System Storage"
+msgstr "시스템 저장소 포맷"
+
+msgid "Format Utility"
+msgstr "포맷 유틸리티"
+
+msgid "Format completed."
+msgstr "포맷이 완료되었습니다."
+
+msgid "Formats the system storage and restores the system software to its default settings.\n\nAll data on the hard disk will be deleted, and the system software will be reinstalled.\nDo you want to continue?"
+msgstr "시스템 저장소를 포맷하고 시스템 소프트웨어를 기본 설정으로 복원합니다.\n\n 하드 디스크의 모든 데이터가 삭제되고 시스템 소프트웨어가 다시 설치됩니다.\n계속하시겠습니까?"
+
+msgid "Formats the system storage and restores the system software to its default settings.\nAre you sure you want to continue?"
+msgstr "시스템 저장소를 포맷하고 시스템 소프트웨어를 기본 설정으로 복원합니다.\n계속하시겠습니까?"
+
+msgid "Formats the system storage. All data on the system storage will be deleted during formatting."
+msgstr "시스템 저장소를 포맷합니다. 포맷 중에는 본체 스토리지의 모든 데이터가 삭제됩니다."
+
+msgid "Formats the system storage. All data on the system storage will be deleted during formatting.\nSelect an option."
+msgstr "시스템 저장소를 포맷합니다. 포맷 중에는 본체 스토리지의 모든 데이터가 삭제됩니다.\n옵션을 선택하세요."
+
+msgid "Formatting...\nDo not remove the storage media."
+msgstr "포맷 중...\n저장 미디어를 제거하지 마세요."
+
+msgid "Formatting...\nDo not turn off the system."
+msgstr "포맷 중...\n시스템을 끄지 마십시오."
+
+msgid "Fractal Dive"
+msgstr "Fractal Dive"
+
+msgid "Frame Advance"
+msgstr "프레임 어드밴스"
+
+msgid "Frame Limit"
+msgstr "프레임 제한"
+
+msgid "Frame Noise Reduction"
+msgstr "프레임 노이즈 감소"
+
+msgid "Frame Reverse"
+msgstr "프레임 반전"
+
+msgid "French"
+msgstr "프랑스어"
+
+msgid "Friends"
+msgstr "친구"
+
+msgid "Full"
+msgstr "전체"
+
+msgid "Full Format"
+msgstr "전체 형식"
+
+msgid "Full Screen"
+msgstr "전체 화면"
+
+msgid "Fullscreen"
+msgstr "전체 화면"
+
+msgid "GMT"
+msgstr "그리니치 표준시"
+
+msgid "GMT+00:00 Casablanca"
+msgstr "GMT+00:00 카사블랑카"
+
+msgid "GMT+00:00 Dublin"
+msgstr "GMT+00:00 더블린"
+
+msgid "GMT+00:00 Lisbon"
+msgstr "GMT+00:00 리스본"
+
+msgid "GMT+00:00 London"
+msgstr "GMT+00:00 런던"
+
+msgid "GMT+00:00 Reykjavik"
+msgstr "GMT+00:00 레이캬비크"
+
+msgid "GMT+01:00"
+msgstr "GMT+01:00"
+
+msgid "GMT+01:00 Amsterdam"
+msgstr "GMT+01:00 암스테르담"
+
+msgid "GMT+01:00 Berlin"
+msgstr "GMT+01:00 베를린"
+
+msgid "GMT+01:00 Madrid"
+msgstr "GMT+01:00 마드리드"
+
+msgid "GMT+01:00 Paris"
+msgstr "GMT+01:00 파리"
+
+msgid "GMT+01:00 Rome"
+msgstr "GMT+01:00 로마"
+
+msgid "GMT+01:00 Stockholm"
+msgstr "GMT+01:00 스톡홀름"
+
+msgid "GMT+02:00"
+msgstr "GMT+02:00"
+
+msgid "GMT+02:00 Athens"
+msgstr "GMT+02:00 아테네"
+
+msgid "GMT+02:00 Cairo"
+msgstr "GMT+02:00 카이로"
+
+msgid "GMT+02:00 Helsinki"
+msgstr "GMT+02:00 헬싱키"
+
+msgid "GMT+02:00 Johannesburg"
+msgstr "GMT+02:00 요하네스버그"
+
+msgid "GMT+03:00"
+msgstr "GMT+03:00"
+
+msgid "GMT+03:00 Istanbul"
+msgstr "GMT+03:00 이스탄불"
+
+msgid "GMT+03:00 Moscow"
+msgstr "GMT+03:00 모스크바"
+
+msgid "GMT+03:00 Nairobi"
+msgstr "GMT+03:00 나이로비"
+
+msgid "GMT+03:30 Tehran"
+msgstr "GMT+03:30 테헤란"
+
+msgid "GMT+04:00"
+msgstr "그리니치 표준시+04:00"
+
+msgid "GMT+04:00 Dubai"
+msgstr "GMT+04:00 두바이"
+
+msgid "GMT+04:30 Kabul"
+msgstr "GMT+04:30 카불"
+
+msgid "GMT+05:00"
+msgstr "그리니치 표준시+05:00"
+
+msgid "GMT+05:00 Karachi"
+msgstr "GMT+05:00 카라치"
+
+msgid "GMT+05:30"
+msgstr "그리니치 표준시+05:30"
+
+msgid "GMT+05:30 New Delhi"
+msgstr "GMT+05:30 뉴델리"
+
+msgid "GMT+05:45 Kathmandu"
+msgstr "GMT+05:45 카트만두"
+
+msgid "GMT+06:00"
+msgstr "그리니치 표준시+06:00"
+
+msgid "GMT+06:00 Dhaka"
+msgstr "GMT+06:00 다카"
+
+msgid "GMT+07:00"
+msgstr "그리니치 표준시+07:00"
+
+msgid "GMT+07:00 Bangkok"
+msgstr "GMT+07:00 방콕"
+
+msgid "GMT+07:00 Jakarta"
+msgstr "GMT+07:00 자카르타"
+
+msgid "GMT+08:00"
+msgstr "그리니치 표준시+08:00"
+
+msgid "GMT+08:00 Beijing"
+msgstr "GMT+08:00 베이징"
+
+msgid "GMT+08:00 Hong Kong"
+msgstr "GMT+08:00 홍콩"
+
+msgid "GMT+08:00 Singapore"
+msgstr "GMT+08:00 싱가포르"
+
+msgid "GMT+09:00"
+msgstr "그리니치 표준시+09:00"
+
+msgid "GMT+09:00 Seoul"
+msgstr "GMT+09:00 서울"
+
+msgid "GMT+09:00 Tokyo"
+msgstr "GMT+09:00 도쿄"
+
+msgid "GMT+09:30 Adelaide"
+msgstr "GMT+09:30 애들레이드"
+
+msgid "GMT+10:00"
+msgstr "그리니치 표준시+10:00"
+
+msgid "GMT+10:00 Guam"
+msgstr "GMT+10:00 괌"
+
+msgid "GMT+10:00 Sydney"
+msgstr "GMT+10:00 시드니"
+
+msgid "GMT+11:00"
+msgstr "그리니치 표준시+11:00"
+
+msgid "GMT+11:00 Solomon Islands"
+msgstr "GMT+11:00 솔로몬 제도"
+
+msgid "GMT+12:00"
+msgstr "그리니치 표준시+12:00"
+
+msgid "GMT+12:00 Auckland"
+msgstr "GMT+12:00 오클랜드"
+
+msgid "GMT+13:00 Samoa"
+msgstr "GMT+13:00 사모아"
+
+msgid "GMT-01:00"
+msgstr "GMT-01:00"
+
+msgid "GMT-01:00 Azores"
+msgstr "GMT-01:00 아조레스"
+
+msgid "GMT-02:00"
+msgstr "GMT-02:00"
+
+msgid "GMT-03:00"
+msgstr "GMT-03:00"
+
+msgid "GMT-03:00 Buenos Aires"
+msgstr "GMT-03:00 부에노스 아이레스"
+
+msgid "GMT-03:00 Sao Paulo"
+msgstr "GMT-03:00 상파울루"
+
+msgid "GMT-03:30 Newfoundland"
+msgstr "GMT-03:30 뉴펀들랜드"
+
+msgid "GMT-04:00"
+msgstr "GMT-04:00"
+
+msgid "GMT-04:00 Atlantic (Canada)"
+msgstr "GMT-04:00 대서양(캐나다)"
+
+msgid "GMT-04:00 Caracas"
+msgstr "GMT-04:00 카라카스"
+
+msgid "GMT-04:00 Santiago"
+msgstr "GMT-04:00 산티아고"
+
+msgid "GMT-05:00"
+msgstr "GMT-05:00"
+
+msgid "GMT-05:00 Bogota"
+msgstr "GMT-05:00 보고타"
+
+msgid "GMT-05:00 Eastern Time (US & Canada)"
+msgstr "GMT-05:00 동부 표준시(미국 및 캐나다)"
+
+msgid "GMT-05:00 Lima"
+msgstr "GMT-05:00 리마"
+
+msgid "GMT-06:00"
+msgstr "GMT-06:00"
+
+msgid "GMT-06:00 Central Time (US & Canada)"
+msgstr "GMT-06:00 중부 표준시(미국 및 캐나다)"
+
+msgid "GMT-06:00 Mexico City"
+msgstr "GMT-06:00 멕시코시티"
+
+msgid "GMT-07:00"
+msgstr "GMT-07:00"
+
+msgid "GMT-07:00 Chihuahua"
+msgstr "GMT-07:00 치와와"
+
+msgid "GMT-07:00 Mountain Time (US & Canada)"
+msgstr "GMT-07:00 산지 표준시(미국 및 캐나다)"
+
+msgid "GMT-08:00"
+msgstr "GMT-08:00"
+
+msgid "GMT-08:00 Pacific Time (US & Canada)"
+msgstr "GMT-08:00 태평양 표준시(미국 및 캐나다)"
+
+msgid "GMT-08:00 Tijuana"
+msgstr "GMT-08:00 티후아나"
+
+msgid "GMT-09:00"
+msgstr "GMT-09:00"
+
+msgid "GMT-09:00 Alaska"
+msgstr "GMT-09:00 알래스카"
+
+msgid "GMT-10:00"
+msgstr "GMT-10:00"
+
+msgid "GMT-10:00 Hawaii"
+msgstr "GMT-10:00 하와이"
+
+msgid "GMT-11:00"
+msgstr "GMT-11:00"
+
+msgid "GMT-11:00 Samoa"
+msgstr "GMT-11:00 사모아"
+
+msgid "GMT-12:00"
+msgstr "GMT-12:00"
+
+msgid "Game"
+msgstr "게임"
+
+msgid "Game Data Utility"
+msgstr "게임 데이터 유틸리티"
+
+msgid "Game Library Folder"
+msgstr "게임 라이브러리 폴더"
+
+msgid "Game Settings"
+msgstr "게임 설정"
+
+msgid "Generated thumbnails will be recreated when needed. Original media is preserved."
+msgstr "생성된 썸네일은 필요할 때 다시 생성됩니다. 원본 미디어는 보존됩니다."
+
+msgid "Genre ▲"
+msgstr "장르 ▲"
+
+msgid "Genre ▼"
+msgstr "장르 ▼"
+
+msgid "German"
+msgstr "독일어"
+
+msgid "Glass Icons"
+msgstr "유리 아이콘"
+
+msgid "Globe"
+msgstr "지구본"
+
+msgid "Go To"
+msgstr "이동"
+
+msgid "Gold"
+msgstr "골드"
+
+msgid "Google"
+msgstr "Google"
+
+msgid "Gray"
+msgstr "그레이"
+
+msgid "Greek"
+msgstr "그리스어"
+
+msgid "Green"
+msgstr "녹색"
+
+msgid "Groove Basin"
+msgstr "Groove Basin"
+
+msgid "Group Content"
+msgstr "그룹 콘텐츠"
+
+msgid "HDD Audio Language"
+msgstr "HDD 오디오 언어"
+
+msgid "HDMI"
+msgstr "HDMI"
+
+msgid "Heads Up for Tails"
+msgstr "Heads Up for Tails"
+
+msgid "Heat Blur"
+msgstr "Heat Blur"
+
+msgid "Helium Stairways"
+msgstr "Helium Stairways"
+
+msgid "High"
+msgstr "높음"
+
+msgid "High Pitch"
+msgstr "높은 피치"
+
+msgid "Hindi"
+msgstr "힌디어"
+
+msgid "Home directory unavailable."
+msgstr "홈 디렉터리를 사용할 수 없습니다."
+
+msgid "Homepage"
+msgstr "홈페이지"
+
+msgid "Hours added to local system time for display."
+msgstr "표시를 위해 로컬 시스템 시간에 시간이 추가되었습니다."
+
+msgid "How photographs fit on screen."
+msgstr "사진이 화면에 어떻게 나타나는지."
+
+msgid "How video fits on the screen."
+msgstr "비디오가 화면에 표시되는 방식."
+
+msgid "Hydrochill"
+msgstr "Hydrochill"
+
+msgid "IP Address"
+msgstr "IP 주소"
+
+msgid "IP Address Setting"
+msgstr "IP 주소 설정"
+
+msgid "Ice Cap 4 Life"
+msgstr "Ice Cap 4 Life"
+
+msgid "Icon Colour"
+msgstr "아이콘 색상"
+
+msgid "Icon Style"
+msgstr "아이콘 스타일"
+
+msgid "Idle Dimming"
+msgstr "유휴 디밍"
+
+msgid "If you format, all data on the system storage will be deleted.\nThis data cannot be restored.\nAre you sure you want to continue?"
+msgstr "포맷하면 본체 스토리지의 모든 데이터가 삭제됩니다.\n이 데이터는 복원할 수 없습니다.\n계속하시겠습니까?"
+
+msgid "If you perform a connection test, the current connection will be terminated and the system will be disconnected.\nDo you want to continue?"
+msgstr "연결 테스트를 수행하면 현재 연결이 종료되고 시스템 연결이 끊어집니다.\n계속하시겠습니까?"
+
+msgid "Image Name"
+msgstr "이미지 이름"
+
+msgid "Import Date ▲"
+msgstr "수입일자 ▲"
+
+msgid "Import Date ▼"
+msgstr "수입일자 ▼"
+
+msgid "Import a theme archive or theme folder."
+msgstr "테마 아카이브 또는 테마 폴더를 가져옵니다."
+
+msgid "Inbox"
+msgstr "받은편지함"
+
+msgid "Information"
+msgstr "정보"
+
+msgid "Input Device"
+msgstr "입력 장치"
+
+msgid "Install"
+msgstr "설치"
+
+msgid "Install Theme"
+msgstr "테마 설치"
+
+msgid "Instant Advance"
+msgstr "즉시진행"
+
+msgid "Instant Replay"
+msgstr "즉시 재생"
+
+msgid "Interface Text Size"
+msgstr "인터페이스 텍스트 크기"
+
+msgid "Interface Volume"
+msgstr "인터페이스 볼륨"
+
+msgid "Internal Memory Card"
+msgstr "내부 메모리 카드"
+
+msgid "Internal memory card for PS/PS2 saved data."
+msgstr "PS/PS2 저장 데이터용 내부 메모리 카드입니다."
+
+msgid "Internet Browser"
+msgstr "인터넷 브라우저"
+
+msgid "Internet Browser Start Control"
+msgstr "인터넷 브라우저 시작 제어"
+
+msgid "Internet Connection"
+msgstr "인터넷 연결"
+
+msgid "Internet Connection Settings"
+msgstr "인터넷 연결 설정"
+
+msgid "Internet Connection Test"
+msgstr "인터넷 연결 테스트"
+
+msgid "Internet Search"
+msgstr "인터넷 검색"
+
+msgid "Internet connection settings have been completed.\n\nSave completed."
+msgstr "인터넷 연결 설정이 완료되었습니다.\n\n 저장이 완료되었습니다."
+
+msgid "It will take about 10 seconds for the access point to be ready.\nPlease wait..."
+msgstr "액세스 포인트가 준비되는 데 약 10초 정도 걸립니다.\n잠시만 기다려주세요..."
+
+msgid "Italian"
+msgstr "이탈리아어"
+
+msgid "Ivory Gadget"
+msgstr "Ivory Gadget"
+
+msgid "Japanese"
+msgstr "일본어"
+
+msgid "Keep Running"
+msgstr "계속 달리다"
+
+msgid "Keep this computer awake while media plays."
+msgstr "미디어가 재생되는 동안 이 컴퓨터를 작동 상태로 유지하십시오."
+
+msgid "Key Repeat Delay"
+msgstr "키 반복 지연"
+
+msgid "Key Repeat Rate"
+msgstr "키 반복률"
+
+msgid "Key Tone"
+msgstr "키톤"
+
+msgid "Keyboard Bindings"
+msgstr "키보드 바인딩"
+
+msgid "Keyboard Entry Method"
+msgstr "키보드 입력 방법"
+
+msgid "Keyboard Type"
+msgstr "키보드 유형"
+
+msgid "Knuckleduster"
+msgstr "Knuckleduster"
+
+msgid "Korean"
+msgstr "한국어"
+
+msgid "Language"
+msgstr "언어"
+
+msgid "Language 1"
+msgstr "언어 1"
+
+msgid "Launch at Login"
+msgstr "로그인 시 실행"
+
+msgid "Lava Passion"
+msgstr "Lava Passion"
+
+msgid "Left"
+msgstr "왼쪽"
+
+msgid "Left + Right"
+msgstr "왼쪽 + 오른쪽"
+
+msgid "Left-handed"
+msgstr "왼손잡이"
+
+msgid "Level 1"
+msgstr "레벨 1"
+
+msgid "Level 2"
+msgstr "레벨 2"
+
+msgid "Level 3"
+msgstr "레벨 3"
+
+msgid "Level 4"
+msgstr "레벨 4"
+
+msgid "Level 5"
+msgstr "레벨 5"
+
+msgid "Level 6"
+msgstr "레벨 6"
+
+msgid "Level 7"
+msgstr "레벨 7"
+
+msgid "Level 8"
+msgstr "레벨 8"
+
+msgid "Library View"
+msgstr "라이브러리 보기"
+
+msgid "Licenses"
+msgstr "라이센스"
+
+msgid "Light Purple"
+msgstr "라이트 퍼플"
+
+msgid "Lime"
+msgstr "라임"
+
+msgid "Limited"
+msgstr "제한적"
+
+msgid "Linear PCM"
+msgstr "선형 PCM"
+
+msgid "Linear PCM 2 Ch. 44.1 kHz"
+msgstr "리니어 PCM 2채널 44.1kHz"
+
+msgid "Linear PCM 5.1 Ch."
+msgstr "리니어 PCM 5.1채널"
+
+msgid "Linear PCM 7.1 Ch."
+msgstr "리니어 PCM 7.1채널"
+
+msgid "List of Registered PS Vita Systems"
+msgstr "등록된 PS Vita 시스템 목록"
+
+msgid "Live at the Sandopolis"
+msgstr "Live at the Sandopolis"
+
+msgid "Long"
+msgstr "롱"
+
+msgid "Low"
+msgstr "낮음"
+
+msgid "Low Pitch"
+msgstr "낮은 피치"
+
+msgid "MM/DD/YYYY"
+msgstr "월/일/년"
+
+msgid "MTU"
+msgstr "MTU"
+
+msgid "Magenta"
+msgstr "마젠타"
+
+msgid "Malicious Fingers"
+msgstr "Malicious Fingers"
+
+msgid "Manage Bluetooth® Devices"
+msgstr "Bluetooth® 장치 관리"
+
+msgid "Manage Bluetooth® devices."
+msgstr "Bluetooth® 장치를 관리합니다."
+
+msgid "Manage your PlayStation®Network account."
+msgstr "PlayStation®Network 계정을 관리하세요."
+
+msgid "Manages game data installed on the OpenXMB system. To delete a game data item, select it and then press the @T button."
+msgstr "OpenXMB 시스템에 설치된 게임 데이터를 관리합니다. 게임 데이터 항목을 삭제하려면 해당 항목을 선택한 후 @T 버튼을 누르세요."
+
+msgid "Manages internal memory cards for use with PlayStation® and PlayStation®2 format software."
+msgstr "PlayStation® 및 PlayStation®2 형식 소프트웨어와 함께 사용할 내부 메모리 카드를 관리합니다."
+
+msgid "Manual"
+msgstr "매뉴얼"
+
+msgid "Master Volume"
+msgstr "마스터 볼륨"
+
+msgid "Maximum shell rendering rate."
+msgstr "최대 쉘 렌더링 속도."
+
+msgid "Media Server Connection"
+msgstr "미디어 서버 연결"
+
+msgid "Memory Card Utility (PS/PS2)"
+msgstr "메모리 카드 유틸리티(PS/PS2)"
+
+msgid "Message Box"
+msgstr "메시지 상자"
+
+msgid "Microphone Level"
+msgstr "마이크 레벨"
+
+msgid "Microphone Volume"
+msgstr "마이크 볼륨"
+
+msgid "Minimise"
+msgstr "최소화"
+
+msgid "Momentary Standstill"
+msgstr "Momentary Standstill"
+
+msgid "Morning"
+msgstr "아침"
+
+msgid "Mosquito Noise Reduction"
+msgstr "모기 소음 감소"
+
+msgid "Mouse Type"
+msgstr "마우스 유형"
+
+msgid "Move OpenXMB to a connected display."
+msgstr "OpenXMB을(를) 연결된 디스플레이로 이동하세요."
+
+msgid "Multisample anti-aliasing for supported graphics hardware."
+msgstr "지원되는 그래픽 하드웨어에 대한 멀티샘플 앤티앨리어싱."
+
+msgid "Music"
+msgstr "음악"
+
+msgid "Music Folder"
+msgstr "음악 폴더"
+
+msgid "Music Settings"
+msgstr "음악 설정"
+
+msgid "Music Visualiser"
+msgstr "음악 시각화 장치"
+
+msgid "Music Volume"
+msgstr "음악 볼륨"
+
+msgid "Music codec: "
+msgstr "음악 코덱:"
+
+msgid "My PlayStation®Network Account"
+msgstr "내 PlayStation®Network 계정"
+
+msgid "MyHome_5GHz (Private Networks Only)"
+msgstr "MyHome_5GHz(개인 네트워크만 해당)"
+
+msgid "NETGEAR-Guest"
+msgstr "NETGEAR-게스트"
+
+msgid "Name"
+msgstr "이름"
+
+msgid "Navigation Repeat"
+msgstr "탐색 반복"
+
+msgid "Network"
+msgstr "네트워크"
+
+msgid "Network Settings"
+msgstr "네트워크 설정"
+
+msgid "Next"
+msgstr "다음"
+
+msgid "Night"
+msgstr "밤"
+
+msgid "No"
+msgstr "아니요"
+
+msgid "No saved theme presets."
+msgstr "저장된 테마 사전 설정이 없습니다."
+
+msgid "No wireless stereo headset is connected."
+msgstr "무선 스테레오 헤드셋이 연결되어 있지 않습니다."
+
+msgid "None"
+msgstr "없음"
+
+msgid "Normal"
+msgstr "보통"
+
+msgid "Norwegian"
+msgstr "노르웨이어"
+
+msgid "Notification Messages"
+msgstr "알림 메시지"
+
+msgid "Obtaining the date and time via the Internet..."
+msgstr "인터넷을 통해 날짜와 시간을 얻는 중..."
+
+msgid "Obtains the correct date and time automatically via the Internet when you sign in to PSN, and sets them on your system."
+msgstr "PSN에 로그인하면 인터넷을 통해 자동으로 정확한 날짜와 시간을 얻어 시스템에 설정합니다."
+
+msgid "Obtains the correct date and time automatically via the Internet when you sign in to PSN, and sets them on your system.\n\nA network connection is required for this feature."
+msgstr "PSN에 로그인하면 인터넷을 통해 자동으로 정확한 날짜와 시간을 얻어 시스템에 설정합니다.\n\n 이 기능을 사용하려면 네트워크 연결이 필요합니다."
+
+msgid "Off"
+msgstr "끄기"
+
+msgid "On"
+msgstr "켜짐"
+
+msgid "On-Screen Keyboard"
+msgstr "화상 키보드"
+
+msgid "One"
+msgstr "하나"
+
+msgid "Online Instruction Manuals"
+msgstr "온라인 사용 설명서"
+
+msgid "Open Log Folder"
+msgstr "로그 폴더 열기"
+
+msgid "Open the location of diagnostic logs."
+msgstr "진단 로그의 위치를 엽니다."
+
+msgid "OpenXMB system"
+msgstr "OpenXMB 시스템"
+
+msgid "OpenXMB version and information about this computer."
+msgstr "OpenXMB 버전 및 이 컴퓨터에 대한 정보입니다."
+
+msgid "Operate other devices on the network from this system."
+msgstr "이 시스템에서 네트워크의 다른 장치를 작동하십시오."
+
+msgid "Optical Digital"
+msgstr "광학 디지털"
+
+msgid "Options"
+msgstr "옵션"
+
+msgid "Orange"
+msgstr "오렌지"
+
+msgid "Order of year, month and day."
+msgstr "연도, 월, 일 순서입니다."
+
+msgid "Original"
+msgstr "원본"
+
+msgid "Output Device"
+msgstr "출력 장치"
+
+msgid "Output Frequency"
+msgstr "출력 주파수"
+
+msgid "Outputs Deep Color video signal. If the video output is not clean or the colors do not look right, set this option to [Off]."
+msgstr "Deep Color 비디오 신호를 출력합니다. 영상 출력이 깨끗하지 않거나 색상이 제대로 보이지 않으면 이 항목을 [끄기]로 설정하세요."
+
+msgid "PLAYSTATION(R)3 Headset"
+msgstr "PlayStation(R)3 헤드셋"
+
+msgid "PPPoE"
+msgstr "PPPoE"
+
+msgid "PPPoE Password"
+msgstr "PPPoE 비밀번호"
+
+msgid "PPPoE User Name"
+msgstr "PPPoE 사용자 이름"
+
+msgid "PS Upscaler"
+msgstr "PS 업스케일러"
+
+msgid "PS Vita System Application Utility"
+msgstr "PS Vita 시스템 애플리케이션 유틸리티"
+
+msgid "PS/PS2 Smoothing"
+msgstr "PS/PS2 스무딩"
+
+msgid "PS3-HOME-NET"
+msgstr "PS3-홈-넷"
+
+msgid "PSN is all about entertainment and interaction.\nEnjoy FREE* online gaming, download amazing new games, game expansion packs for a host of top titles, watch trailers and get your hands on exclusive content, chat with friends, and compare Trophies.\n\nSign up today – it's easy and it's FREE!\n\n* Broadband Internet connection required."
+msgstr "PSN은 엔터테인먼트와 상호작용에 관한 것입니다.\n무료* 온라인 게임을 즐기고, 놀라운 새 게임을 다운로드하고, 수많은 인기 타이틀의 게임 확장 팩을 다운로드하고, 예고편을 시청하고, 독점 콘텐츠를 접하고, 친구들과 채팅하고, 트로피를 비교하세요.\n\n 지금 가입하세요 – 쉽고 무료입니다!\n\n * 광대역 인터넷 연결이 필요합니다."
+
+msgid "Page Zoom"
+msgstr "페이지 확대"
+
+msgid "Page opened when launching the browser."
+msgstr "브라우저를 시작할 때 페이지가 열립니다."
+
+msgid "Parental Control"
+msgstr "자녀 보호"
+
+msgid "Password"
+msgstr "비밀번호"
+
+msgid "Pause"
+msgstr "일시중지"
+
+msgid "Photo"
+msgstr "사진"
+
+msgid "Photo Album"
+msgstr "사진앨범"
+
+msgid "Photo Album 2"
+msgstr "사진앨범 2"
+
+msgid "Photo Gallery"
+msgstr "포토갤러리"
+
+msgid "Photos"
+msgstr "사진"
+
+msgid "Photosensitivity Warning"
+msgstr "감광성 경고"
+
+msgid "Pictures Folder"
+msgstr "사진 폴더"
+
+msgid "Pink"
+msgstr "핑크"
+
+msgid "Play"
+msgstr "플레이"
+
+msgid "Play Remote Devices"
+msgstr "원격 장치 재생"
+
+msgid "Play from Beginning"
+msgstr "처음부터 재생"
+
+msgid "Play the startup cue in full."
+msgstr "시작 신호를 완전히 재생합니다."
+
+msgid "Play the startup sequence."
+msgstr "시작 시퀀스를 재생합니다."
+
+msgid "PlayStation®Network"
+msgstr "PlayStation®Network"
+
+msgid "PlayStation®Plus"
+msgstr "PlayStation®플러스"
+
+msgid "PlayStation®Store"
+msgstr "PlayStation®Store"
+
+msgid "Players Blocked"
+msgstr "차단된 플레이어"
+
+msgid "Players Met"
+msgstr "만난 플레이어"
+
+msgid "Playlists"
+msgstr "재생목록"
+
+msgid "Please wait..."
+msgstr "기다려 주세요..."
+
+msgid "Pointer Speed"
+msgstr "포인터 속도"
+
+msgid "Polish"
+msgstr "폴란드어"
+
+msgid "Pop"
+msgstr "팝"
+
+msgid "Port Number"
+msgstr "포트 번호"
+
+msgid "Portrait"
+msgstr "초상화"
+
+msgid "Portuguese"
+msgstr "포르투갈어"
+
+msgid "Portuguese (Brazil)"
+msgstr "포르투갈어(브라질)"
+
+msgid "Portuguese (Portugal)"
+msgstr "포르투갈어(포르투갈)"
+
+msgid "Power Indicator"
+msgstr "전원 표시기"
+
+msgid "Power Save"
+msgstr "절전"
+
+msgid "Power Save Settings"
+msgstr "절전 설정"
+
+msgid "Predictive Input"
+msgstr "예측 입력"
+
+msgid "Preferred audio track language."
+msgstr "기본 오디오 트랙 언어."
+
+msgid "Preferred interface language."
+msgstr "선호하는 인터페이스 언어."
+
+msgid "Preferred subtitle track language."
+msgstr "기본 자막 트랙 언어입니다."
+
+msgid "Preparing...\nPlease wait."
+msgstr "준비 중...\n잠시 기다려 주세요."
+
+msgid "Preset name"
+msgstr "프리셋 이름"
+
+msgid "Press and hold the \"AOSS Button\" of the access point until the AOSS indicator starts blinking.\nIf you don't press the button within 2 minutes, the operation will be canceled."
+msgstr "AOSS 표시기가 깜박이기 시작할 때까지 액세스 포인트의 \"AOSS 버튼\"을 길게 누릅니다.\n2분 이내에 버튼을 누르지 않으면 작업이 취소됩니다."
+
+msgid "Press and hold the \"Rakuraku Start Button\" of the access point until the \"POWER\" LED blinks in [Green].\nIf you don't press the button within 1 minute, the operation will be canceled."
+msgstr "\"POWER\" LED가 [녹색]으로 깜박일 때까지 액세스 포인트의 \"Rakuraku 시작 버튼\"을 길게 누릅니다.\n1분 이내에 버튼을 누르지 않으면 작업이 취소됩니다."
+
+msgid "Press the \"Rakuraku Start Button\" again. Press and hold until the \"POWER\" LED turns [Orange].\nIf you don't press the button within 30 seconds, the operation will be canceled."
+msgstr "\"Rakuraku 시작 버튼\"을 다시 누르십시오. \"POWER\" LED가 [주황색]으로 바뀔 때까지 길게 누릅니다.\n30초 이내에 버튼을 누르지 않으면 작업이 취소됩니다."
+
+msgid "Press the START button and ENTER button of the BD remote control you want to register at the same time, and hold down until the screen changes."
+msgstr "등록하려는 BD 리모컨의 START 버튼과 ENTER 버튼을 동시에 누르고, 화면이 바뀔 때까지 길게 누르세요."
+
+msgid "Prevent Sleep During Playback"
+msgstr "재생 중 절전 방지"
+
+msgid "Previous"
+msgstr "이전"
+
+msgid "Primary DNS"
+msgstr "기본 DNS"
+
+msgid "Print"
+msgstr "인쇄"
+
+msgid "Printer Settings"
+msgstr "프린터 설정"
+
+msgid "Proxy Server"
+msgstr "프록시 서버"
+
+msgid "Quick Format"
+msgstr "빠른 포맷"
+
+msgid "Quiet Interface During Music"
+msgstr "음악을 듣는 동안 조용한 인터페이스"
+
+msgid "RGB"
+msgstr "RGB"
+
+msgid "RGB Full Range (HDMI)"
+msgstr "RGB 전체 범위(HDMI)"
+
+msgid "Rakuraku WLAN Start"
+msgstr "라쿠라쿠 WLAN 시작"
+
+msgid "Randomise slideshow order."
+msgstr "슬라이드쇼 순서를 무작위로 지정합니다."
+
+msgid "Read the program and third-party license notices."
+msgstr "프로그램 및 타사 라이센스 고지 사항을 읽어보십시오."
+
+msgid "Reading"
+msgstr "독서"
+
+msgid "Reassign Controllers"
+msgstr "컨트롤러 재할당"
+
+msgid "Red"
+msgstr "빨간색"
+
+msgid "Red Sphere, Blue Sphere"
+msgstr "Red Sphere, Blue Sphere"
+
+msgid "Reduce background movement and sparkles."
+msgstr "배경의 움직임과 반짝임을 줄입니다."
+
+msgid "Reduce navigation sound volume while music is playing."
+msgstr "음악이 재생되는 동안 내비게이션 소리 볼륨을 줄입니다."
+
+msgid "Reduce rendering while unfocused."
+msgstr "초점이 맞지 않는 동안 렌더링을 줄입니다."
+
+msgid "Reduced Motion"
+msgstr "움직임 감소"
+
+msgid "Reduces rainbow-effect artifacts. This setting is used when the system outputs composite signal to a VIDEO IN or SCART connector."
+msgstr "무지개 효과 아티팩트를 줄입니다. 이 설정은 시스템이 VIDEO IN 또는 SCART 커넥터로 복합 신호를 출력할 때 사용됩니다."
+
+msgid "Refresh folders and metadata from your music location."
+msgstr "음악 위치에서 폴더와 메타데이터를 새로 고칩니다."
+
+msgid "Refresh the configured game library."
+msgstr "구성된 게임 라이브러리를 새로 고칩니다."
+
+msgid "Register BD Remote Control"
+msgstr "BD 리모콘 등록"
+
+msgid "Register Bluetooth® Device"
+msgstr "Bluetooth® 장치 등록"
+
+msgid "Register Device"
+msgstr "장치 등록"
+
+msgid "Register New Device"
+msgstr "새 장치 등록"
+
+msgid "Register PlayStation®Vita"
+msgstr "PlayStation®Vita 등록"
+
+msgid "Register a BD remote control for use with the OpenXMB system.\n\nPress the START button and ENTER button of the BD remote control you want to register at the same time, and hold down until the screen changes."
+msgstr "OpenXMB 시스템에서 사용할 수 있도록 BD 리모콘을 등록하세요.\n\n 등록하려는 BD 리모컨의 START 버튼과 ENTER 버튼을 동시에 누르고 화면이 바뀔 때까지 길게 누르세요."
+
+msgid "Register a device (such as a PS Vita or a PSP™ system) to be used for remote play with this system. Select this option to register a device for remote play if using it for the first time.\n\nEnter the following number on the remote device:\n\n12345678"
+msgstr "이 시스템에 원격 플레이에 사용할 장치(예: PS Vita 또는 PSP™ 시스템)를 등록하십시오. 장치를 처음 사용할 경우 원격 재생을 위해 장치를 등록하려면 이 옵션을 선택하세요.\n\n 원격 장치에 다음 번호를 입력하십시오:\n\n 12345678"
+
+msgid "Register a remote play device with this system."
+msgstr "이 시스템에 원격 재생 장치를 등록하십시오."
+
+msgid "Register completed."
+msgstr "등록이 완료되었습니다."
+
+msgid "Register or manage Bluetooth® devices such as headsets, keyboards and mouse devices.\nSelect an option."
+msgstr "헤드셋, 키보드, 마우스 장치 등 Bluetooth® 장치를 등록하거나 관리합니다.\n옵션을 선택하세요."
+
+msgid "Register the BD Remote Control."
+msgstr "BD 리모컨을 등록하세요."
+
+msgid "Registered Device:  "
+msgstr "등록된 장치:"
+
+msgid "Registering...\nPlease wait."
+msgstr "등록 중...\n잠시 기다려 주세요."
+
+msgid "Registration completed."
+msgstr "등록이 완료되었습니다."
+
+msgid "Registration with the selected device will be deleted.\nAre you sure you want to continue?"
+msgstr "선택한 장치에 대한 등록이 삭제됩니다.\n계속하시겠습니까?"
+
+msgid "Release Year ▲"
+msgstr "출시 연도 ▲"
+
+msgid "Release Year ▼"
+msgstr "출시 연도 ▼"
+
+msgid "Release the controls, then press a "
+msgstr "컨트롤을 놓은 다음 a를 누르십시오."
+
+msgid "Remember the last playback position."
+msgstr "마지막 재생 위치를 기억하세요."
+
+msgid "Remote Play Device"
+msgstr "원격 플레이 장치"
+
+msgid "Remote Play Settings"
+msgstr "리모트 플레이 설정"
+
+msgid "Remote Start"
+msgstr "원격 시작"
+
+msgid "Remove browser cookies and cached site data."
+msgstr "브라우저 쿠키와 캐시된 사이트 데이터를 제거합니다."
+
+msgid "Remove browser cookies, site storage and cached pages?"
+msgstr "브라우저 쿠키, 사이트 저장소, 캐시된 페이지를 삭제하시겠습니까?"
+
+msgid "Remove from Playlist"
+msgstr "재생목록에서 제거"
+
+msgid "Repeat"
+msgstr "반복"
+
+msgid "Repeat All"
+msgstr "모두 반복"
+
+msgid "Repeat Off"
+msgstr "반복 끄기"
+
+msgid "Repeat On"
+msgstr "반복 켜기"
+
+msgid "Repeat One"
+msgstr "한 번 반복"
+
+msgid "Repeat Slideshow"
+msgstr "슬라이드쇼 반복"
+
+msgid "Repeat setting when opening the player."
+msgstr "플레이어를 열 때 설정을 반복하십시오."
+
+msgid "Rescan Game Library"
+msgstr "게임 라이브러리 다시 스캔"
+
+msgid "Rescan Music Library"
+msgstr "음악 라이브러리 재검색"
+
+msgid "Resolution"
+msgstr "해상도"
+
+msgid "Restore"
+msgstr "복원"
+
+msgid "Restore Default Settings"
+msgstr "기본 설정 복원"
+
+msgid "Restore Default Settings?"
+msgstr "기본 설정을 복원하시겠습니까?"
+
+msgid "Restore Defaults"
+msgstr "기본값 복원"
+
+msgid "Restore OpenXMB System"
+msgstr "OpenXMB 시스템 복원"
+
+msgid "Restore Original Theme"
+msgstr "원본 테마 복원"
+
+msgid "Restore Original Theme?"
+msgstr "원래 테마를 복원하시겠습니까?"
+
+msgid "Restore completed.\nThe default settings have been restored."
+msgstr "복원이 완료되었습니다.\n기본 설정이 복원되었습니다."
+
+msgid "Restore the original OpenXMB appearance."
+msgstr "원래의 OpenXMB 모양을 복원합니다."
+
+msgid "Restore the original theme appearance?"
+msgstr "원래 테마 모양을 복원하시겠습니까?"
+
+msgid "Restore this profile's preferences? Your media files will be preserved."
+msgstr "이 프로필의 환경설정을 복원하시겠습니까? 미디어 파일은 보존됩니다."
+
+msgid "Restore this profile's shell settings; preserve media."
+msgstr "이 프로필의 셸 설정을 복원합니다. 미디어를 보존하세요."
+
+msgid "Restores the system software to its default settings.\n\nAll system settings will be restored to their default values.\nDo you want to continue?"
+msgstr "시스템 소프트웨어를 기본 설정으로 복원합니다.\n\n 모든 시스템 설정이 기본값으로 복원됩니다.\n계속하시겠습니까?"
+
+msgid "Restores the system software to its default settings.\nAre you sure you want to continue?"
+msgstr "시스템 소프트웨어를 기본 설정으로 복원합니다.\n계속하시겠습니까?"
+
+msgid "Resume"
+msgstr "이력서"
+
+msgid "Resume Playback"
+msgstr "재생 재개"
+
+msgid "Return to Beginning"
+msgstr "처음으로 돌아가기"
+
+msgid "Right"
+msgstr "오른쪽"
+
+msgid "Right-handed"
+msgstr "오른손잡이"
+
+msgid "Robotnik Radio"
+msgstr "Robotnik Radio"
+
+msgid "Rotate Left"
+msgstr "왼쪽으로 회전"
+
+msgid "Rotate Right"
+msgstr "오른쪽으로 회전"
+
+msgid "Rounded"
+msgstr "둥근"
+
+msgid "Russian"
+msgstr "러시아어"
+
+msgid "SSID"
+msgstr "SSID"
+
+msgid "Save Theme Preset"
+msgstr "테마 사전 설정 저장"
+
+msgid "Save completed.\nIt may take 1 minute or longer to restart the access point."
+msgstr "저장이 완료되었습니다.\n액세스 포인트를 다시 시작하는 데 1분 이상 걸릴 수 있습니다."
+
+msgid "Save the current appearance with a name."
+msgstr "현재 모양을 이름으로 저장합니다."
+
+msgid "Saved Data Utility (PS2)"
+msgstr "저장 데이터 유틸리티(PS2)"
+
+msgid "Saved Data Utility (PS3™)"
+msgstr "저장된 데이터 유틸리티(PS3™)"
+
+msgid "Saved Data Utility (minis/PSP™)"
+msgstr "저장된 데이터 유틸리티(minis/PSP™)"
+
+msgid "Saved Theme Presets"
+msgstr "저장된 테마 사전 설정"
+
+msgid "Scale subtitle text."
+msgstr "자막 텍스트 크기를 조절하세요."
+
+msgid "Scale text throughout OpenXMB."
+msgstr "OpenXMB 전체에서 텍스트 크기를 조정합니다."
+
+msgid "Scan"
+msgstr "스캔"
+
+msgid "Scanning...\nPlease wait."
+msgstr "스캔 중...\n잠시 기다려 주세요."
+
+msgid "Scans the network and connects to a media server. To use this function, a media server must be set up to allow connections from the OpenXMB system."
+msgstr "네트워크를 스캔하고 미디어 서버에 연결합니다. 이 기능을 사용하려면 OpenXMB 시스템에서 연결을 허용하도록 미디어 서버를 설정해야 합니다."
+
+msgid "Scene Search"
+msgstr "장면 검색"
+
+msgid "Schumacher Bar"
+msgstr "Schumacher Bar"
+
+msgid "Scrambled Eggman"
+msgstr "Scrambled Eggman"
+
+msgid "Screen Mode"
+msgstr "화면 모드"
+
+msgid "Screen Saver"
+msgstr "화면 보호기"
+
+msgid "Search Engine"
+msgstr "검색 엔진"
+
+msgid "Search for Media Servers"
+msgstr "미디어 서버 검색"
+
+msgid "Search provider used for non-address text."
+msgstr "주소가 아닌 텍스트에 사용되는 검색 공급자입니다."
+
+msgid "Search the Internet."
+msgstr "인터넷을 검색해 보세요."
+
+msgid "Searching for the other OpenXMB system..."
+msgstr "다른 OpenXMB 시스템을 검색하는 중..."
+
+msgid "Secondary DNS"
+msgstr "보조 DNS"
+
+msgid "Seconds each photograph remains visible."
+msgstr "각 사진은 몇 초 동안 계속 표시됩니다."
+
+msgid "Security"
+msgstr "보안"
+
+msgid "Security Settings"
+msgstr "보안 설정"
+
+msgid "Select a connection method."
+msgstr "연결 방법을 선택하세요."
+
+msgid "Select a setting method."
+msgstr "설정 방법을 선택하세요."
+
+msgid "Select a theme."
+msgstr "테마를 선택하세요."
+
+msgid "Select all resolutions that are supported by your TV."
+msgstr "TV에서 지원하는 해상도를 모두 선택하세요."
+
+msgid "Select an available playback device."
+msgstr "사용 가능한 재생 장치를 선택하세요."
+
+msgid "Select an existing playlist or create a new playlist."
+msgstr "기존 재생목록을 선택하거나 새 재생목록을 만듭니다."
+
+msgid "Select an installed core and game content."
+msgstr "설치된 코어와 게임 콘텐츠를 선택하세요."
+
+msgid "Select an output format supported by the TV or AV amplifier (receiver) in use."
+msgstr "사용 중인 TV 또는 AV 앰프(리시버)에서 지원하는 출력 형식을 선택합니다."
+
+msgid "Select an update method."
+msgstr "업데이트 방법을 선택하세요."
+
+msgid "Select the Bluetooth® device to register."
+msgstr "등록할 Bluetooth® 장치를 선택하세요."
+
+msgid "Select the access point to be used."
+msgstr "사용할 액세스 포인트를 선택합니다."
+
+msgid "Select the connector on the TV or AV amplifier (receiver)."
+msgstr "TV 또는 AV 앰프(리시버)의 커넥터를 선택합니다."
+
+msgid "Select the connector on the TV."
+msgstr "TV의 커넥터를 선택하세요."
+
+msgid "Select the destination for the selected items."
+msgstr "선택한 항목의 대상을 선택합니다."
+
+msgid "Select the keyboard type."
+msgstr "키보드 종류를 선택하세요."
+
+msgid "Select the method for setting the output format."
+msgstr "출력 형식 설정 방법을 선택합니다."
+
+msgid "Select the operation mode of the network device."
+msgstr "네트워크 장치의 작동 모드를 선택합니다."
+
+msgid "Select the operation mode of the network device.\nIn most cases, select Auto-Detect."
+msgstr "네트워크 장치의 작동 모드를 선택합니다.\n대부분의 경우 자동 감지를 선택합니다."
+
+msgid "Select the system you are using."
+msgstr "사용 중인 시스템을 선택하세요."
+
+msgid "Select the type of connector on your TV."
+msgstr "TV의 커넥터 유형을 선택하세요."
+
+msgid "Send a Message"
+msgstr "메시지 보내기"
+
+msgid "Sent Items"
+msgstr "보낸 항목"
+
+msgid "Set"
+msgstr "세트"
+
+msgid "Set Audio Output Settings"
+msgstr "오디오 출력 설정 지정"
+
+msgid "Set Manually"
+msgstr "수동으로 설정"
+
+msgid "Set as Wallpaper"
+msgstr "배경화면으로 설정"
+
+msgid "Set the Ad Hoc Mode channel for PSP® Remasters."
+msgstr "PSP® 리마스터에 대한 임시 모드 채널을 설정합니다."
+
+msgid "Set the BD audio output format."
+msgstr "BD 오디오 출력 형식을 설정합니다."
+
+msgid "Set the DHCP host name.\nIn most cases this setting does not need to be changed."
+msgstr "DHCP 호스트 이름을 설정합니다.\n대부분의 경우 이 설정은 변경할 필요가 없습니다."
+
+msgid "Set the default BD audio language."
+msgstr "기본 BD 오디오 언어를 설정합니다."
+
+msgid "Set the default DVD audio language."
+msgstr "기본 DVD 오디오 언어를 설정합니다."
+
+msgid "Set the default audio language for content on the HDD."
+msgstr "HDD 콘텐츠의 기본 오디오 언어를 설정합니다."
+
+msgid "Set the time and date.\n\nUse the arrow keys to adjust each field, then press the X button to apply."
+msgstr "시간과 날짜를 설정하세요.\n\n 화살표 키를 사용하여 각 필드를 조정한 다음 X 버튼을 눌러 적용합니다."
+
+msgid "Set via Internet"
+msgstr "인터넷을 통해 설정"
+
+msgid "Sets for daylight saving time."
+msgstr "일광 절약 시간을 설정합니다."
+
+msgid "Sets for use of a preset combination of elements such as colour, background or icons."
+msgstr "색상, 배경, 아이콘 등 사전 설정된 요소 조합을 사용하도록 설정합니다."
+
+msgid "Sets the audio input and output devices for voice/video chat and other communication features."
+msgstr "음성/영상 채팅 및 기타 통신 기능을 위한 오디오 입력 및 출력 장치를 설정합니다."
+
+msgid "Sets the audio input and output devices for voice/video chat and other communication features.\nSelect an audio device."
+msgstr "음성/영상 채팅 및 기타 통신 기능을 위한 오디오 입력 및 출력 장치를 설정합니다.\n오디오 장치를 선택합니다."
+
+msgid "Sets the audio input and output devices.\nSelect an option."
+msgstr "오디오 입력 및 출력 장치를 설정합니다.\n옵션을 선택하세요."
+
+msgid "Sets the audio output device for use during remote play. To output audio from a PS Vita system, a PSP™ system, a PC or a mobile phone, select [Remote Play Device]."
+msgstr "원격 재생 중에 사용할 오디오 출력 장치를 설정합니다. PS Vita 시스템, PSP™ 시스템, PC 또는 휴대폰에서 오디오를 출력하려면 [리모트 플레이 장치]를 선택하십시오."
+
+msgid "Sets the background of the XMB™ screen."
+msgstr "XMB™ 화면의 배경을 설정합니다."
+
+msgid "Sets the colour of the background and options menu."
+msgstr "배경색과 옵션 메뉴의 색상을 설정합니다."
+
+msgid "Sets the date and time for this system."
+msgstr "이 시스템의 날짜와 시간을 설정합니다."
+
+msgid "Sets the date and time for this system.\nSelect how to set the date and time."
+msgstr "이 시스템의 날짜와 시간을 설정합니다.\n날짜 및 시간 설정 방법을 선택합니다."
+
+msgid "Sets the delay before key repeat starts."
+msgstr "키 반복이 시작되기 전의 지연 시간을 설정합니다."
+
+msgid "Sets the font displayed on the XMB™ screen."
+msgstr "XMB™ 화면에 표시되는 글꼴을 설정합니다."
+
+msgid "Sets the method for connecting the system to the Internet.\nSelect a connection method."
+msgstr "시스템을 인터넷에 연결하는 방법을 설정합니다.\n연결 방법을 선택합니다."
+
+msgid "Sets the method for connecting the system to the Internet. Select this option to connect to a wireless LAN or to change the settings."
+msgstr "시스템을 인터넷에 연결하는 방법을 설정합니다. 무선 LAN에 연결하거나 설정을 변경하려면 이 옵션을 선택하세요."
+
+msgid "Sets the mouse type. Set this option based on which hand you use to operate the mouse."
+msgstr "마우스 유형을 설정합니다. 마우스를 조작하는 데 사용하는 손에 따라 이 옵션을 설정하십시오."
+
+msgid "Sets the order of display for year, month and day."
+msgstr "연, 월, 일 표시 순서를 설정합니다."
+
+msgid "Sets the output format of video content recorded in a wide color range. Set this option as necessary for the TV in use."
+msgstr "넓은 색상 범위로 녹화된 비디오 콘텐츠의 출력 형식을 설정합니다. 사용 중인 TV에 따라 필요에 따라 이 옵션을 설정하세요."
+
+msgid "Sets the output method for color signals when playing BDs or DVDs."
+msgstr "BD 또는 DVD를 재생할 때 컬러 신호의 출력 방법을 설정합니다."
+
+msgid "Sets the playback method for content items recorded at 24 Hz (frames/second)."
+msgstr "24Hz(프레임/초)로 녹화된 콘텐츠의 재생 방법을 설정합니다."
+
+msgid "Sets the playback method for content recorded at 50 Hz. This setting is used when playing content saved on the system storage or storage media."
+msgstr "50Hz로 녹화된 콘텐츠의 재생 방법을 설정합니다. 본 설정은 본체 저장소나 저장 미디어에 저장된 콘텐츠를 재생할 때 사용됩니다."
+
+msgid "Sets the range of RGB output signals for an HDMI connection."
+msgstr "HDMI 연결에 대한 RGB 출력 신호 범위를 설정합니다."
+
+msgid "Sets the rate at which a held key repeats."
+msgstr "누른 키가 반복되는 속도를 설정합니다."
+
+msgid "Sets the speed at which the mouse pointer moves. The mouse pointer is displayed in the Internet browser and in games and other software that support use of a mouse."
+msgstr "마우스 포인터가 움직이는 속도를 설정합니다. 마우스 포인터는 인터넷 브라우저, 게임 및 마우스 사용을 지원하는 기타 소프트웨어에 표시됩니다."
+
+msgid "Sets the text entry method for a connected keyboard."
+msgstr "연결된 키보드의 텍스트 입력 방법을 설정합니다."
+
+msgid "Sets the time display to either a 12-hour or 24-hour clock."
+msgstr "시간 표시를 12시간제 또는 24시간제로 설정합니다."
+
+msgid "Sets the time-of-day lighting (day, dusk, night or automatic)."
+msgstr "주간 조명(낮, 황혼, 밤 또는 자동)을 설정합니다."
+
+msgid "Sets the time-of-day lighting of the XMB™ screen."
+msgstr "XMB™ 화면의 시간별 조명을 설정합니다."
+
+msgid "Sets to output audio through multiple connectors simultaneously. Audio output to connectors that are not selected in [Audio Output Settings] is downscaled to 2 Ch."
+msgstr "여러 커넥터를 통해 동시에 오디오를 출력하도록 설정합니다. [오디오 출력 설정]에서 선택되지 않은 커넥터에 대한 오디오 출력은 2채널로 축소됩니다."
+
+msgid "Sets whether or not to automatically turn off controllers. If you do not use a controller for a set amount of time, it will turn off automatically."
+msgstr "컨트롤러를 자동으로 끌지 여부를 설정합니다. 컨트롤러를 일정 시간 동안 사용하지 않으면 자동으로 꺼집니다."
+
+msgid "Sets whether or not to automatically turn off this system. If you do not operate the system for a set amount of time, the system will turn off automatically."
+msgstr "이 시스템을 자동으로 끌지 여부를 설정합니다. 일정 시간 동안 시스템을 작동하지 않으면 시스템이 자동으로 꺼집니다."
+
+msgid "Sets whether or not to connect this system to the Internet. Select this option if you want to temporarily disable the Internet connection."
+msgstr "본 시스템을 인터넷에 연결할지 여부를 설정합니다. 인터넷 연결을 일시적으로 비활성화하려면 이 옵션을 선택하십시오."
+
+msgid "Sets whether or not to connect to media servers."
+msgstr "미디어 서버에 연결할지 여부를 설정합니다."
+
+msgid "Sets whether or not to output all audio to the headset."
+msgstr "모든 오디오를 헤드셋으로 출력할지 여부를 설정합니다."
+
+msgid "Sets whether or not to turn on this system automatically when a registered device is connected for remote play."
+msgstr "원격 플레이를 위해 등록된 장치가 연결된 경우 이 시스템을 자동으로 켤지 여부를 설정합니다."
+
+msgid "Sets whether or not to use key tones on the XMB™ menu."
+msgstr "XMB™ 메뉴에서 키 톤을 사용할지 여부를 설정합니다."
+
+msgid "Sets whether or not to use the vibration function. This setting will be applied to all controllers that support the vibration function."
+msgstr "진동 기능 사용 여부를 설정합니다. 이 설정은 진동 기능을 지원하는 모든 컨트롤러에 적용됩니다."
+
+msgid "Settings"
+msgstr "설정"
+
+msgid "Settings List"
+msgstr "설정 목록"
+
+msgid "Settings and Connection Status List"
+msgstr "설정 및 연결 상태 목록"
+
+msgid "Short"
+msgstr "짧은"
+
+msgid "Show FPS"
+msgstr "FPS 표시"
+
+msgid "Show GPU Memory"
+msgstr "GPU 메모리 표시"
+
+msgid "Show Seconds"
+msgstr "초 표시"
+
+msgid "Show background particles."
+msgstr "배경 입자를 표시합니다."
+
+msgid "Show seconds in the clock."
+msgstr "시계에 초를 표시합니다."
+
+msgid "Show the animated background ribbon."
+msgstr "애니메이션 배경 리본을 표시합니다."
+
+msgid "Show the controller keyboard during text entry."
+msgstr "텍스트 입력 중에 컨트롤러 키보드를 표시합니다."
+
+msgid "Show the dismissible startup warning."
+msgstr "해제할 수 있는 시작 경고를 표시합니다."
+
+msgid "Shuffle"
+msgstr "셔플"
+
+msgid "Shuffle Slideshow"
+msgstr "슬라이드쇼 섞기"
+
+msgid "Shuffle tracks in the play queue."
+msgstr "재생 대기열에서 트랙을 섞습니다."
+
+msgid "Sign Up"
+msgstr "가입"
+
+msgid "Sign in to PlayStation®Network to add friends, exchange messages and join chat rooms."
+msgstr "PlayStation®Network에 로그인하여 친구를 추가하고, 메시지를 교환하고, 채팅방에 참여하세요."
+
+msgid "Sign in to use Friends features"
+msgstr "친구 기능을 사용하려면 로그인하세요."
+
+msgid "Sign up for a PlayStation®Network account.\nA broadband Internet connection is required."
+msgstr "PlayStation®Network 계정에 가입하세요.\n광대역 인터넷 연결이 필요합니다."
+
+msgid "Size"
+msgstr "크기"
+
+msgid "Slide"
+msgstr "슬라이드"
+
+msgid "Slideshow"
+msgstr "슬라이드쇼"
+
+msgid "Slideshow Duration"
+msgstr "슬라이드쇼 기간"
+
+msgid "Slideshow Speed"
+msgstr "슬라이드쇼 속도"
+
+msgid "Slideshow Style"
+msgstr "슬라이드쇼 스타일"
+
+msgid "Slideshow Transition"
+msgstr "슬라이드쇼 전환"
+
+msgid "Slow"
+msgstr "느림"
+
+msgid "Slow (Forward)"
+msgstr "느리게(앞으로)"
+
+msgid "Slow (Reverse)"
+msgstr "느림(역방향)"
+
+msgid "Smooth"
+msgstr "부드러운"
+
+msgid "Smooth out the rough edges of images of PlayStation® and PlayStation®2 format software."
+msgstr "PlayStation® 및 PlayStation®2 형식 소프트웨어 이미지의 거친 가장자리를 부드럽게 만듭니다."
+
+msgid "So Long and Thanks for All the..."
+msgstr "So Long and Thanks for All the..."
+
+msgid "Software Instruction Manuals"
+msgstr "소프트웨어 사용 설명서"
+
+msgid "Songs"
+msgstr "노래"
+
+msgid "Sonic the Hedgehog and Knuckles"
+msgstr "Sonic the Hedgehog and Knuckles"
+
+msgid "Sort By"
+msgstr "정렬 기준"
+
+msgid "Sort tracks in each folder."
+msgstr "각 폴더의 트랙을 정렬합니다."
+
+msgid "Sound"
+msgstr "소리"
+
+msgid "Sound Set Folder"
+msgstr "사운드 설정 폴더"
+
+msgid "Sound Settings"
+msgstr "사운드 설정"
+
+msgid "Sound folder not found."
+msgstr "사운드 폴더를 찾을 수 없습니다."
+
+msgid "Sound set needs a playable "
+msgstr "사운드 세트에는 재생 가능한 파일이 필요합니다."
+
+msgid "Spanish"
+msgstr "스페인어"
+
+msgid "Sparkle Colour"
+msgstr "스파클 컬러"
+
+msgid "Sparkles"
+msgstr "반짝임"
+
+msgid "Speed and Duplex"
+msgstr "속도 및 이중"
+
+msgid "Standard Input"
+msgstr "표준 입력"
+
+msgid "Start OpenXMB when you sign in."
+msgstr "로그인할 때 OpenXMB을(를) 시작하세요."
+
+msgid "Start a Chat"
+msgstr "채팅 시작"
+
+msgid "Start a new text chat with a friend or a group."
+msgstr "친구나 그룹과 새로운 문자 채팅을 시작하세요."
+
+msgid "Starts the system automatically and downloads game patches, uploads new saved data to online storage and syncs trophy information with the server."
+msgstr "시스템을 자동으로 시작하고 게임 패치를 다운로드하고, 새로운 저장 데이터를 온라인 저장소에 업로드하고, 트로피 정보를 서버와 동기화합니다."
+
+msgid "Startup Intro"
+msgstr "시작 애니메이션"
+
+msgid "Startup Sound"
+msgstr "시작음"
+
+msgid "Status of Registered Devices"
+msgstr "등록된 장치 상태"
+
+msgid "Stereo Headset Audio Extension"
+msgstr "스테레오 헤드셋 오디오 확장"
+
+msgid "Stop"
+msgstr "중지"
+
+msgid "Stranger to Closure"
+msgstr "Stranger to Closure"
+
+msgid "Subnet Mask"
+msgstr "서브넷 마스크"
+
+msgid "Subscribe to PlayStation®Plus and get your hands on all the benefits that come with membership."
+msgstr "PlayStation®Plus를 구독하고 멤버십으로 제공되는 모든 혜택을 누려보세요."
+
+msgid "Subtitle Language"
+msgstr "자막 언어"
+
+msgid "Subtitle Options"
+msgstr "자막 옵션"
+
+msgid "Subtitle Size"
+msgstr "자막 크기"
+
+msgid "Swedish"
+msgstr "스웨덴어"
+
+msgid "Synchronise presentation to the display."
+msgstr "프레젠테이션을 디스플레이에 동기화합니다."
+
+msgid "System"
+msgstr "시스템"
+
+msgid "System Auto-Off"
+msgstr "시스템 자동 꺼짐"
+
+msgid "System Default"
+msgstr "시스템 기본값"
+
+msgid "System Default Device"
+msgstr "시스템 기본 장치"
+
+msgid "System Information"
+msgstr "시스템 정보"
+
+msgid "System Language"
+msgstr "시스템 언어"
+
+msgid "System Name"
+msgstr "시스템 이름"
+
+msgid "System Settings"
+msgstr "시스템 설정"
+
+msgid "System Software\nVersion 4.91\n\nMAC Address (Wired)\n00:1F:A7:00:00:00\n\nMAC Address (Wi-Fi)\n00:1F:A7:00:00:01\n\nIP Address\n192.168.1.10\n\nSystem Storage\n466 GB free of 500 GB"
+msgstr "시스템 소프트웨어\n버전 4.91\n\n MAC 주소(유선)\n00:1F:A7:00:00:00\n\n MAC 주소(Wi-Fi)\n00:1F:A7:00:00:01\n\n IP 주소\n192.168.1.10\n\n 시스템 스토리지\n500GB 중 여유 공간이 있는 466GB"
+
+msgid "System Update"
+msgstr "시스템 업데이트"
+
+msgid "Teal"
+msgstr "청록색"
+
+msgid "Term"
+msgstr "기간"
+
+msgid "Tests the Internet connection and displays the results."
+msgstr "인터넷 연결을 테스트하고 결과를 표시합니다."
+
+msgid "Tests the Internet connection and displays the results.\n\nObtain IP Address    Succeeded\nInternet Connection  Succeeded\nPlayStation™Network  Succeeded\nNAT Type             Type 2\nUPnP                 Available\nConnection Speed (Download)  85.4 Mbps\nConnection Speed (Upload)    24.7 Mbps"
+msgstr "인터넷 연결을 테스트하고 결과를 표시합니다.\n\n 획득 IP 주소 성공\n인터넷 연결 성공\nPlayStation™Network 성공\nNAT 유형 유형 2\nUPnP 사용 가능\n연결 속도(다운로드) 85.4Mbps\n연결 속도(업로드) 24.7Mbps"
+
+msgid "Tests the image from a camera that is connected to the system using a USB cable. You can adjust settings to reduce flickering for some cameras."
+msgstr "USB 케이블을 사용하여 시스템에 연결된 카메라의 이미지를 테스트합니다. 일부 카메라에서는 설정을 조정하여 깜박임을 줄일 수 있습니다."
+
+msgid "Tests the image from a camera that is connected to the system using a USB cable. You can adjust settings to reduce flickering for some cameras.\n\nNo camera is currently connected."
+msgstr "USB 케이블을 사용하여 시스템에 연결된 카메라의 이미지를 테스트합니다. 일부 카메라에서는 설정을 조정하여 깜박임을 줄일 수 있습니다.\n\n 현재 연결된 카메라가 없습니다."
+
+msgid "Text Colour"
+msgstr "텍스트 색상"
+
+msgid "That Freezing Feeling"
+msgstr "That Freezing Feeling"
+
+msgid "The Doomsday"
+msgstr "The Doomsday"
+
+msgid "The Secluded Stronghold"
+msgstr "The Secluded Stronghold"
+
+msgid "The Wait is Over!"
+msgstr "The Wait is Over!"
+
+msgid "The audio output settings have been updated."
+msgstr "오디오 출력 설정이 업데이트되었습니다."
+
+msgid "The date and time have been set."
+msgstr "날짜와 시간이 설정되었습니다."
+
+msgid "The image will be deleted.\nAre you sure you want to continue?"
+msgstr "이미지가 삭제됩니다.\n계속하시겠습니까?"
+
+msgid "The name displayed by OpenXMB."
+msgstr "OpenXMB에 의해 표시되는 이름입니다."
+
+msgid "The other OpenXMB system was not found.\nCheck that both systems are connected to the same network."
+msgstr "다른 OpenXMB 시스템을 찾을 수 없습니다.\n두 시스템이 동일한 네트워크에 연결되어 있는지 확인하십시오."
+
+msgid "The password has been changed."
+msgstr "비밀번호가 변경되었습니다."
+
+msgid "The passwords do not match.\nTry again."
+msgstr "비밀번호가 일치하지 않습니다.\n다시 시도하세요."
+
+msgid "The selected items will be deleted.\nAre you sure you want to continue?"
+msgstr "선택한 항목이 삭제됩니다.\n계속하시겠습니까?"
+
+msgid "The system and devices connected via HDMI can operate each other."
+msgstr "HDMI을 통해 연결된 시스템과 장치는 서로 작동할 수 있습니다."
+
+msgid "The system has been restored to its default settings."
+msgstr "시스템이 기본 설정으로 복원되었습니다."
+
+msgid "The system software is up to date.\n\nThe latest version of the system software has already been installed."
+msgstr "시스템 소프트웨어가 최신 상태입니다.\n\n 최신 버전의 시스템 소프트웨어가 이미 설치되어 있습니다."
+
+msgid "The term has been added."
+msgstr "용어가 추가되었습니다."
+
+msgid "The title that is currently playing will be deleted.\nAre you sure you want to continue?"
+msgstr "현재 재생 중인 타이틀이 삭제됩니다.\n계속하시겠습니까?"
+
+msgid "The video output settings have been updated."
+msgstr "비디오 출력 설정이 업데이트되었습니다."
+
+msgid "Theme"
+msgstr "테마"
+
+msgid "Theme Settings"
+msgstr "테마 설정"
+
+msgid "Theme archive or folder"
+msgstr "테마 아카이브 또는 폴더"
+
+msgid "There are no registered devices."
+msgstr "등록된 기기가 없습니다."
+
+msgid "There are no subtitle options available."
+msgstr "사용할 수 있는 자막 옵션이 없습니다."
+
+msgid "There is no audio."
+msgstr "오디오가 없습니다."
+
+msgid "There is no backup data.\nConnect storage media that contains the backup data."
+msgstr "백업 데이터가 없습니다.\n백업 데이터가 포함된 저장 미디어를 연결합니다."
+
+msgid "This feature is not available yet. This will be implemented in a future beta. Sorry!"
+msgstr "이 기능은 아직 사용할 수 없습니다. 이는 향후 베타 버전에서 구현될 예정입니다. 죄송합니다!"
+
+msgid "This file is not a supported image or video."
+msgstr "이 파일은 지원되는 이미지 또는 비디오가 아닙니다."
+
+msgid "This is the system to transfer data from"
+msgstr "데이터를 전송하는 시스템입니다."
+
+msgid "This is the system to transfer data to"
+msgstr "데이터를 전송하는 시스템입니다."
+
+msgid "This sample count is unavailable on the active GPU."
+msgstr "이 샘플 수는 활성 GPU에서 사용할 수 없습니다."
+
+msgid "This video cannot be opened."
+msgstr "이 동영상을 열 수 없습니다."
+
+msgid "Three Ring Nightfall"
+msgstr "Three Ring Nightfall"
+
+msgid "Time"
+msgstr "시간"
+
+msgid "Time (HH:MM)"
+msgstr "시간(HH:MM)"
+
+msgid "Time Format"
+msgstr "시간 형식"
+
+msgid "Time Zone"
+msgstr "시간대"
+
+msgid "Time Zone Offset"
+msgstr "시간대 오프셋"
+
+msgid "Title Repeat"
+msgstr "제목 반복"
+
+msgid "Title ▲"
+msgstr "제목 ▲"
+
+msgid "Title ▼"
+msgstr "제목 ▼"
+
+msgid "To register (pair), you will need to prepare the Bluetooth® device.\nFor information on preparing the device, refer to the instructions supplied with the Bluetooth® device."
+msgstr "등록(페어링)하려면 Bluetooth® 장치를 준비해야 합니다.\n장치 준비에 대한 자세한 내용은 Bluetooth® 장치와 함께 제공된 지침을 참조하십시오."
+
+msgid "Transfers data from your current OpenXMB system to a new OpenXMB system over a network.\n\nConnect both systems to the same network, then follow the on-screen instructions on each system."
+msgstr "네트워크를 통해 현재 OpenXMB 시스템에서 새로운 OpenXMB 시스템으로 데이터를 전송합니다.\n\n 두 시스템을 동일한 네트워크에 연결한 다음 각 시스템에서 화면 지침을 따릅니다."
+
+msgid "Transfers data that is saved on one OpenXMB system to another OpenXMB system. You can use this feature when replacing the OpenXMB system that you usually use with another OpenXMB system."
+msgstr "하나의 OpenXMB 시스템에 저장된 데이터를 다른 OpenXMB 시스템으로 전송합니다. 일반적으로 사용하는 OpenXMB 시스템을 다른 OpenXMB 시스템으로 교체할 때 이 기능을 사용할 수 있습니다."
+
+msgid "Transition between photographs."
+msgstr "사진 간 전환."
+
+msgid "Trimming"
+msgstr "트리밍"
+
+msgid "Trophy Collection"
+msgstr "트로피 컬렉션"
+
+msgid "Trophy Notifications"
+msgstr "트로피 알림"
+
+msgid "Turkish"
+msgstr "터키어"
+
+msgid "Turn Off System"
+msgstr "시스템 끄기"
+
+msgid "Turn Off System Automatically After Background Download"
+msgstr "백그라운드 다운로드 후 자동으로 시스템 끄기"
+
+msgid "UPnP"
+msgstr "UPnP"
+
+msgid "USB Headset"
+msgstr "USB 헤드셋"
+
+msgid "Unable to update launch at login."
+msgstr "로그인 시 실행을 업데이트할 수 없습니다."
+
+msgid "Unlimited"
+msgstr "무제한"
+
+msgid "Unregister All"
+msgstr "모두 등록 취소"
+
+msgid "Up"
+msgstr "위로"
+
+msgid "Update the OpenXMB system software."
+msgstr "OpenXMB 시스템 소프트웨어를 업데이트하세요."
+
+msgid "Update via Internet"
+msgstr "인터넷을 통한 업데이트"
+
+msgid "Update via Storage Media"
+msgstr "저장 매체를 통한 업데이트"
+
+msgid "Upscale"
+msgstr "고급"
+
+msgid "Use"
+msgstr "사용"
+
+msgid "Use a folder containing ok.wav, confirm.wav, cancel.wav and back.wav."
+msgstr "ok.wav, verify.wav, cancel.wav 및 back.wav가 포함된 폴더를 사용하세요."
+
+msgid "Use a hexadecimal colour such as #ffeefc."
+msgstr "#ffeefc와 같은 16진수 색상을 사용하세요."
+
+msgid "Use a hexadecimal colour."
+msgstr "16진수 색상을 사용하세요."
+
+msgid "Use a six-digit hexadecimal colour such as #ffeefc."
+msgstr "#ffeefc와 같은 6자리 16진수 색상을 사용하세요."
+
+msgid "Use auto or a hexadecimal colour."
+msgstr "자동 또는 16진수 색상을 사용하세요."
+
+msgid "Use refractive icon materials."
+msgstr "굴절 아이콘 자료를 사용합니다."
+
+msgid "Use the selected Bluetooth® device to enter the pass key shown below and press the Enter key within 30 seconds.\\n\\nPass Key:  0000"
+msgstr "선택한 Bluetooth® 장치를 사용하여 아래 표시된 패스 키를 입력하고 30초 이내에 Enter 키를 누르십시오.\\n\\n패스 키: 0000"
+
+msgid "User Name"
+msgstr "사용자 이름"
+
+msgid "Users"
+msgstr "사용자"
+
+msgid "Using the device you want to register, select [Settings] > [Network Settings] > [Internet Connection], and then enter the numbers shown below.\n\nRegistration code:  2461-8053\n\nThe registration code is valid for 5 minutes."
+msgstr "등록하려는 장치를 사용하여 [설정] > [네트워크 설정] > [인터넷 연결]을 선택한 후 아래 표시된 번호를 입력하세요.\n\n 등록 코드: 2461-8053\n\n 등록 코드는 5분간 유효합니다."
+
+msgid "VSync"
+msgstr "VSync"
+
+msgid "Video"
+msgstr "비디오"
+
+msgid "Video Decoding"
+msgstr "비디오 디코딩"
+
+msgid "Video Editor & Uploader"
+msgstr "비디오 편집기 및 업로더"
+
+msgid "Video Output Settings"
+msgstr "비디오 출력 설정"
+
+msgid "Video Settings"
+msgstr "비디오 설정"
+
+msgid "Video Volume"
+msgstr "비디오 볼륨"
+
+msgid "Videos Folder"
+msgstr "비디오 폴더"
+
+msgid "View"
+msgstr "보기"
+
+msgid "View Mode (PSP Remasters)"
+msgstr "보기 모드(PSP 리마스터)"
+
+msgid "View Web pages on the Internet."
+msgstr "인터넷에서 웹 페이지를 봅니다."
+
+msgid "View active audio and video playback diagnostics."
+msgstr "활성 오디오 및 비디오 재생 진단을 봅니다."
+
+msgid "View and join active chat rooms."
+msgstr "활성 채팅방을 보고 참여하세요."
+
+msgid "View messages you have received and sent."
+msgstr "받은 메시지와 보낸 메시지를 확인하세요."
+
+msgid "View the list of players you have blocked. You will not receive messages from blocked players."
+msgstr "차단한 플레이어 목록을 확인하세요. 차단된 플레이어로부터 메시지를 받지 않습니다."
+
+msgid "View the list of players you have met during online play."
+msgstr "온라인 플레이 중 만난 플레이어 목록을 확인하세요."
+
+msgid "View the online instruction manuals.\nThe latest version of the manual will be available."
+msgstr "온라인 사용 설명서를 확인하세요.\n최신 버전의 매뉴얼이 제공될 예정입니다."
+
+msgid "View trophies that you have earned."
+msgstr "획득한 트로피를 확인하세요."
+
+msgid "Violet"
+msgstr "보라색"
+
+msgid "Visual Player"
+msgstr "비주얼 플레이어"
+
+msgid "Voice Changer"
+msgstr "보이스 체인저"
+
+msgid "Volume Control"
+msgstr "볼륨 조절"
+
+msgid "Volume for all OpenXMB audio."
+msgstr "모든 OpenXMB 오디오의 볼륨입니다."
+
+msgid "Volume of navigation and confirmation sounds."
+msgstr "탐색 및 확인 소리의 볼륨입니다."
+
+msgid "WEP"
+msgstr "WEP"
+
+msgid "WEP Key"
+msgstr "WEP 키"
+
+msgid "WLAN Security Setting"
+msgstr "WLAN 보안 설정"
+
+msgid "WLAN Settings"
+msgstr "WLAN 설정"
+
+msgid "WPA Key"
+msgstr "WPA 키"
+
+msgid "WPA-PSK (AES)"
+msgstr "WPA-PSK(AES)"
+
+msgid "WPA-PSK (TKIP)"
+msgstr "WPA-PSK(TKIP)"
+
+msgid "WPA-PSK / WPA2-PSK"
+msgstr "WPA-PSK / WPA2-PSK"
+
+msgid "WPA2-PSK (AES)"
+msgstr "WPA2-PSK(AES)"
+
+msgid "WPA2-PSK (TKIP)"
+msgstr "WPA2-PSK(TKIP)"
+
+msgid "Waiting for the device to connect..."
+msgstr "기기가 연결되기를 기다리는 중..."
+
+msgid "Walk on Water"
+msgstr "Walk on Water"
+
+msgid "Wallpaper"
+msgstr "바탕화면"
+
+msgid "Water on the Dancefloor"
+msgstr "Water on the Dancefloor"
+
+msgid "Wave"
+msgstr "Wave"
+
+msgid "Wave visualiser"
+msgstr "Wave 시각화"
+
+
+
+msgid "Welcome Clip"
+msgstr "환영 클립"
+
+msgid "Welcome to PlayStation®3.\nThe \"What's New\" screen is where to find all the latest PlayStation® news, updates, plus easy access to the games you've most recently played.\nTo access the \"What's New\" screen, connect to PSN* – it's free to join and it's your gateway to a world of entertainment, so sign up today!\n\n* Broadband Internet connection required."
+msgstr "PlayStation®3에 오신 것을 환영합니다.\n\"새로운 소식\" 화면에서는 모든 최신 PlayStation® 뉴스, 업데이트를 찾을 수 있을 뿐만 아니라 가장 최근에 플레이한 게임에 쉽게 액세스할 수 있습니다.\n\"새 소식\" 화면에 액세스하려면 PSN*에 연결하세요. 무료로 가입할 수 있으며 엔터테인먼트 세계로 향하는 관문이므로 지금 가입하세요!\n\n * 광대역 인터넷 연결이 필요합니다."
+
+msgid "Welcome to PlayStation®Network"
+msgstr "PlayStation®Network에 오신 것을 환영합니다"
+
+msgid "Western (Latin)"
+msgstr "서부(라틴어)"
+
+msgid "What's New"
+msgstr "새로운 소식"
+
+msgid "White"
+msgstr "화이트"
+
+msgid "Window Mode"
+msgstr "창 모드"
+
+msgid "Windowed"
+msgstr "창가"
+
+msgid "Wired Connection"
+msgstr "유선 연결"
+
+msgid "Wireless"
+msgstr "무선"
+
+msgid "Wireless Headset 2.0"
+msgstr "무선 헤드셋 2.0"
+
+msgid "Wireless Stereo Headset Settings"
+msgstr "무선 스테레오 헤드셋 설정"
+
+msgid "XMB Waves"
+msgstr "XMB 웨이브"
+
+msgid "Y Cb Cr"
+msgstr "Y Cb Cr"
+
+msgid "Y Pb/Cb Pr/Cr Super-White (HDMI)"
+msgstr "Y Pb/Cb Pr/Cr 슈퍼화이트(HDMI)"
+
+msgid "YYYY/MM/DD"
+msgstr "YYYY/MM/DD"
+
+msgid "Yellow"
+msgstr "노란색"
+
+msgid "Yes"
+msgstr "예"
+
+msgid "You can change the voice that is input using an audio input device."
+msgstr "오디오 입력 장치를 사용하여 입력되는 음성을 변경할 수 있습니다."
+
+msgid "You can edit a video that you like, upload it to a video sharing website, and then invite your friends to view the video."
+msgstr "마음에 드는 동영상을 편집하여 동영상 공유 웹사이트에 업로드한 후 친구를 초대하여 동영상을 볼 수 있습니다."
+
+msgid "You cannot create an icon less than 15 seconds in length."
+msgstr "길이가 15초 미만인 아이콘은 만들 수 없습니다."
+
+msgid "Zoom"
+msgstr "줌"
+
+msgid "Zoom In"
+msgstr "확대"
+
+msgid "Zoom Out"
+msgstr "축소"
+
+msgid "auto"
+msgstr "자동"
+
+msgid "category.settings.accessory.settings"
+msgstr "카테고리.설정.액세서리.설정"
+
+msgid "category.settings.display.settings"
+msgstr "카테고리.설정.디스플레이.설정"
+
+msgid "category.settings.music.settings"
+msgstr "카테고리.설정.음악.설정"
+
+msgid "category.settings.network.settings"
+msgstr "카테고리.설정.네트워크.설정"
+
+msgid "category.settings.power.save.settings"
+msgstr "카테고리.설정.전원.저장.설정"
+
+msgid "controller button"
+msgstr "컨트롤러 버튼"
+
+msgid "corp-eap"
+msgstr "기업-eap"
+
+msgid "en"
+msgstr "ko"
+
+msgid "fr"
+msgstr "프랑스"
+
+msgid "hi"
+msgstr "안녕"
+
+msgid "http://s3k.ocremix.org - Project Chaos - Bonus Tracks"
+msgstr "http://s3k.ocremix.org - Project Chaos - Bonus Tracks"
+
+msgid "iMushroom"
+msgstr "iMushroom"
+
+msgid "keyboard key"
+msgstr "키보드 키"
+
+msgid "linksys"
+msgstr "링크시스"
+
+msgid "Indonesian"
+msgstr "인도네시아어"
+
+msgid "Simplified Chinese"
+msgstr "중국어 간체"
+
+msgid "Traditional Chinese"
+msgstr "중국어 번체"
+
+msgid "\nThe original was preserved."
+msgstr "\n원본이 보존되었습니다."
+
+msgid "   Off"
+msgstr "   끄기"
+
+msgid "   On"
+msgstr "   켜짐"
+
+msgid "  Played "
+msgstr "  플레이함 "
+
+msgid "  Select to cycle"
+msgstr "  순환하려면 선택하세요."
+
+msgid "  Select to remove scan root"
+msgstr "  스캔 루트를 제거하려면 선택하세요."
+
+msgid " (active)"
+msgstr " (활성)"
+
+msgid " (away locally)"
+msgstr " (현지에서 멀리 떨어져 있음)"
+
+msgid " (present locally)"
+msgstr " (현지에 있음)"
+
+msgid " Last error: "
+msgstr " 마지막 오류: "
+
+msgid " RPCS3 root(s)."
+msgstr " RPCS3 루트."
+
+msgid " Settings"
+msgstr " 설정"
+
+msgid " cores / "
+msgstr " 코어 / "
+
+msgid " cores found. Left/Right cycles the core field."
+msgstr " 코어가 발견되었습니다. 왼쪽/오른쪽은 코어 필드를 순환합니다."
+
+msgid " game(s)."
+msgstr " 계략)."
+
+msgid " path"
+msgstr " 경로"
+
+msgid " playable discs found."
+msgstr " 재생 가능한 디스크를 찾았습니다."
+
+msgid " theme(s)."
+msgstr " 테마."
+
+msgid " threads"
+msgstr " 스레드"
+
+msgid " times"
+msgstr " 배"
+
+msgid " to the default printer?"
+msgstr " 기본 프린터로?"
+
+msgid " tracks"
+msgstr " 트랙"
+
+msgid " tracks added to "
+msgstr " 추가된 트랙 "
+
+msgid " upload bytes"
+msgstr " 업로드 바이트"
+
+msgid " will be moved to a recovery folder. It will not be permanently deleted."
+msgstr " 복구 폴더로 이동됩니다. 영구적으로 삭제되지는 않습니다."
+
+msgid "& © 2025-2026. Syndromatic Limited Britannia. All rights reserved."
+msgstr "& © 2025-2026. Syndromatic Limited Britannia. 모든 권리 보유."
+
+msgid ". Select it to apply."
+msgstr ". 선택하여 적용하세요."
+
+msgid "12-hour"
+msgstr "12시간"
+
+msgid "15 seconds"
+msgstr "15초"
+
+msgid "1½ speed (muted)"
+msgstr "1½ 속도(음소거)"
+
+msgid "24-hour"
+msgstr "24시간"
+
+msgid "3 seconds"
+msgstr "3초"
+
+msgid "? Music files are preserved."
+msgstr "? 음악 파일은 보존됩니다."
+
+msgid "A core is already running. Return to its window or stop the session."
+msgstr "코어가 이미 실행 중입니다. 해당 창으로 돌아가거나 세션을 중지합니다."
+
+msgid "About"
+msgstr "소개"
+
+msgid "Active local user changed. Settings and themes use this profile."
+msgstr "활성 로컬 사용자가 변경되었습니다. 설정과 테마는 이 프로필을 사용합니다."
+
+msgid "Add Current Play Queue"
+msgstr "현재 재생 대기열 추가"
+
+msgid "Add Selected to Playlist..."
+msgstr "재생목록에 선택 항목 추가..."
+
+msgid "Add Track / Folder / Playlist..."
+msgstr "트랙/폴더/재생 목록 추가..."
+
+msgid "Add custom section"
+msgstr "맞춤 섹션 추가"
+
+msgid "Add detected RPCS3 game folders"
+msgstr "감지된 RPCS3 게임 폴더 추가"
+
+msgid "Add game folder"
+msgstr "게임 폴더 추가"
+
+msgid "Add game manually"
+msgstr "수동으로 게임 추가"
+
+msgid "Add local friend"
+msgstr "현지 친구 추가"
+
+msgid "Add local trophy"
+msgstr "지역 트로피 추가"
+
+msgid "Add to Queue"
+msgstr "대기열에 추가"
+
+msgid "Added to Playlist"
+msgstr "재생목록에 추가됨"
+
+msgid "Address: "
+msgstr "주소: "
+
+msgid "Adjust settings for the OpenXMB system."
+msgstr "OpenXMB 시스템에 대한 설정을 조정합니다."
+
+msgid "Album"
+msgstr "앨범"
+
+msgid "Album art exceeds texture upload capacity"
+msgstr "앨범 아트가 텍스처 업로드 용량을 초과합니다."
+
+msgid "Album: "
+msgstr "앨범: "
+
+msgid "All videos"
+msgstr "모든 동영상"
+
+msgid "An artwork request is already in progress"
+msgstr "작품 요청이 이미 진행 중입니다."
+
+msgid "Animated Theme"
+msgstr "애니메이션 테마"
+
+msgid "Anti-aliasing    "
+msgstr "앤티앨리어싱    "
+
+msgid "Apply a theme first, then use this action."
+msgstr "먼저 테마를 적용한 다음 이 작업을 사용하세요."
+
+msgid "Apply this change to local library data"
+msgstr "이 변경 사항을 로컬 라이브러리 데이터에 적용"
+
+msgid "Archive this user profile?"
+msgstr "이 사용자 프로필을 보관하시겠습니까?"
+
+msgid "Archives the user's data; at least one profile is retained"
+msgstr "사용자의 데이터를 보관합니다. 하나 이상의 프로필이 유지됩니다"
+
+msgid "Arguments (quote values containing spaces)"
+msgstr "인수(공백이 포함된 따옴표 값)"
+
+msgid "Arrows + Z/X/A/S: play   Space: pause   F5/F8: save/load   F12: screenshot"
+msgstr "화살표 + Z/X/A/S: 재생 Space: 일시 정지 F5/F8: 저장/로드 F12: 스크린샷"
+
+msgid "Artist"
+msgstr "아티스트"
+
+msgid "Artist: "
+msgstr "아티스트: "
+
+msgid "Artwork key environment variable (no key values)"
+msgstr "작품 키 환경 변수(키 값 없음)"
+
+msgid "Artwork provider disabled"
+msgstr "예술작품 제공업체가 비활성화되었습니다."
+
+msgid "Artwork saved: "
+msgstr "저장된 작품: "
+
+msgid "Audio CDs, DVD and Blu-ray folders/devices. Playback uses an installed desktop player."
+msgstr "오디오 CD, DVD 및 Blu-ray 폴더/장치. 재생은 설치된 데스크톱 플레이어를 사용합니다."
+
+msgid "Audio is muted during speed playback"
+msgstr "고속 재생 중에는 오디오가 음소거됩니다."
+
+msgid "Audio output active"
+msgstr "오디오 출력 활성화"
+
+msgid "Audio track"
+msgstr "오디오 트랙"
+
+msgid "Avatar"
+msgstr "아바타"
+
+msgid "Avatar image"
+msgstr "아바타 이미지"
+
+msgid "Avatar image path"
+msgstr "아바타 이미지 경로"
+
+msgid "Away locally"
+msgstr "로컬에서 멀리"
+
+msgid "Background / animation"
+msgstr "배경 / 애니메이션"
+
+msgid "Background image"
+msgstr "배경 이미지"
+
+msgid "Binding saved"
+msgstr "바인딩이 저장되었습니다."
+
+msgid "Biography"
+msgstr "약력"
+
+msgid "Browse in a separate system-browser window with your own keyboard and mouse."
+msgstr "자신의 키보드와 마우스를 사용하여 별도의 시스템 브라우저 창에서 탐색하세요."
+
+msgid "Browser address"
+msgstr "브라우저 주소"
+
+msgid "CPU Cores / Threads"
+msgstr "CPU 코어/스레드"
+
+msgid "CPU Threads"
+msgstr "CPU 스레드"
+
+msgid "Cannot Add Tracks"
+msgstr "트랙을 추가할 수 없습니다"
+
+msgid "Cannot Create Playlist"
+msgstr "재생목록을 생성할 수 없습니다"
+
+msgid "Cannot open file"
+msgstr "파일을 열 수 없습니다"
+
+msgid "Cannot save video position: "
+msgstr "비디오 위치를 저장할 수 없습니다: "
+
+msgid "Capture your desktop or start OpenXMB automatically when you log in."
+msgstr "데스크탑을 캡처하거나 로그인할 때 자동으로 OpenXMB을 시작하세요."
+
+msgid "Channels"
+msgstr "채널"
+
+msgid "Channels: "
+msgstr "채널: "
+
+msgid "Choose Font File..."
+msgstr "글꼴 파일 선택..."
+
+msgid "Choose executable, arguments, artwork, preview video and music"
+msgstr "실행 파일, 인수, 아트워크, 미리보기 비디오 및 음악 선택"
+
+msgid "Close"
+msgstr "닫기"
+
+msgid "Close dedicated browser session"
+msgstr "전용 브라우저 세션 닫기"
+
+msgid "Close menu"
+msgstr "메뉴 닫기"
+
+msgid "Codec"
+msgstr "코덱"
+
+msgid "Codec: "
+msgstr "코덱: "
+
+msgid "Configure scan roots without moving your games"
+msgstr "게임을 이동하지 않고도 스캔 루트를 구성할 수 있습니다."
+
+msgid "Confirm: play from track    Options: playlist    Extra: edit track    Back: close"
+msgstr "확인: 트랙에서 재생 옵션: 재생 목록 추가: 트랙 편집 뒤로: 닫기"
+
+msgid "Content: "
+msgstr "내용: "
+
+msgid "Control browser with gamepad"
+msgstr "게임패드로 브라우저 제어"
+
+msgid "Controller prompts    "
+msgstr "컨트롤러 프롬프트    "
+
+msgid "Controller rumble    "
+msgstr "컨트롤러 럼블    "
+
+msgid "Core started in its own window. Escape returns here; F5 saves and F8 loads."
+msgstr "Core는 자체 창에서 시작되었습니다. 탈출은 여기로 돌아옵니다. F5는 저장하고 F8은 로드합니다."
+
+msgid "Core: "
+msgstr "핵심: "
+
+msgid "Could not save slideshow"
+msgstr "슬라이드쇼를 저장할 수 없습니다."
+
+msgid "Create Custom Theme"
+msgstr "맞춤 테마 만들기"
+
+msgid "Create Custom Theme..."
+msgstr "맞춤 테마 만들기..."
+
+msgid "Create a named category backed by a local folder"
+msgstr "로컬 폴더가 지원하는 명명된 카테고리 생성"
+
+msgid "Create local user"
+msgstr "로컬 사용자 생성"
+
+msgid "Creating custom theme..."
+msgstr "맞춤 테마를 만드는 중..."
+
+msgid "Custom Sections"
+msgstr "맞춤 섹션"
+
+msgid "Custom category"
+msgstr "맞춤 카테고리"
+
+msgid "Custom category name"
+msgstr "맞춤 카테고리 이름"
+
+msgid "Custom section"
+msgstr "맞춤 섹션"
+
+msgid "Custom section saved"
+msgstr "맞춤 섹션이 저장되었습니다."
+
+msgid "Custom sections"
+msgstr "맞춤 섹션"
+
+msgid "Custom theme created. Export it as a ZIP to share."
+msgstr "맞춤 테마가 생성되었습니다. 공유하려면 ZIP으로 내보내세요."
+
+msgid "Date: "
+msgstr "날짜: "
+
+msgid "Dedicated Graphics Memory"
+msgstr "전용 그래픽 메모리"
+
+msgid "Defaults restored"
+msgstr "기본값이 복원되었습니다."
+
+msgid "Delete "
+msgstr "삭제 "
+
+msgid "Delete Playlist..."
+msgstr "재생목록 삭제..."
+
+msgid "Delete Playlist?"
+msgstr "재생목록을 삭제하시겠습니까?"
+
+msgid "Delete local user"
+msgstr "로컬 사용자 삭제"
+
+msgid "Delete preset? Type DELETE to confirm"
+msgstr "사전 설정을 삭제하시겠습니까? 확인하려면 DELETE를 입력하세요."
+
+msgid "Description"
+msgstr "설명"
+
+msgid "Designed by Kavish Krishnakumar in Manchester."
+msgstr "맨체스터의 Kavish Krishnakumar이 디자인했습니다."
+
+msgid "Desktop Tools"
+msgstr "데스크탑 도구"
+
+msgid "Developer"
+msgstr "개발자"
+
+msgid "Disable artwork provider"
+msgstr "아트워크 제공자 비활성화"
+
+msgid "Disabled or key absent; local artwork remains available"
+msgstr "비활성화되었거나 키가 없습니다. 지역 예술 작품은 계속 이용 가능합니다"
+
+msgid "Disc Media"
+msgstr "디스크 미디어"
+
+msgid "Disc ready. Select it to play."
+msgstr "디스크가 준비되었습니다. 재생하려면 선택하세요."
+
+msgid "Discard"
+msgstr "버리다"
+
+msgid "Discard unsaved edits and reload the saved track list?"
+msgstr "저장되지 않은 수정사항을 삭제하고 저장된 트랙 목록을 다시 로드하시겠습니까?"
+
+msgid "Display name"
+msgstr "표시 이름"
+
+msgid "Document information"
+msgstr "문서정보"
+
+msgid "Document page exceeds texture upload limit"
+msgstr "문서 페이지가 텍스처 업로드 제한을 초과했습니다."
+
+msgid "Done"
+msgstr "완료"
+
+msgid "Double speed (muted)"
+msgstr "2배속(음소거)"
+
+msgid "Download artwork for this game"
+msgstr "이 게임의 아트워크 다운로드"
+
+msgid "Edit Selected Track"
+msgstr "선택한 트랙 편집"
+
+msgid "Emulation"
+msgstr "에뮬레이션"
+
+msgid "Emulation session finished. Save RAM is stored automatically."
+msgstr "에뮬레이션 세션이 완료되었습니다. RAM 저장은 자동으로 저장됩니다."
+
+msgid "Enable the provider and configure its key first; no request was made"
+msgstr "공급자를 활성화하고 먼저 해당 키를 구성하십시오. 요청이 이루어지지 않았습니다"
+
+msgid "Enabled and key is configured"
+msgstr "활성화되었으며 키가 구성되었습니다."
+
+msgid "End of queue"
+msgstr "대기열 끝"
+
+msgid "Enter"
+msgstr "입력"
+
+msgid "Enter Address"
+msgstr "주소 입력"
+
+msgid "Enter Text"
+msgstr "텍스트 입력"
+
+msgid "Executable"
+msgstr "실행 가능"
+
+msgid "Executable path or command"
+msgstr "실행 가능한 경로 또는 명령"
+
+msgid "Exit"
+msgstr "종료"
+
+msgid "Export selected theme..."
+msgstr "선택한 테마 내보내기..."
+
+msgid "Export theme ZIP (new filename)"
+msgstr "테마 ZIP 내보내기(새 파일 이름)"
+
+msgid "Exporting theme..."
+msgstr "테마를 내보내는 중..."
+
+msgid "FPS: {:.2f}"
+msgstr "FPS: {:.2f}"
+
+msgid "Failed to get file size"
+msgstr "파일 크기를 가져오지 못했습니다."
+
+msgid "Failed to map file"
+msgstr "파일을 매핑하지 못했습니다."
+
+msgid "Failed to open file"
+msgstr "파일을 열지 못했습니다."
+
+msgid "Failed to open video"
+msgstr "동영상을 열지 못했습니다."
+
+msgid "Failed to read file"
+msgstr "파일을 읽지 못했습니다."
+
+msgid "Favorites are kept in your local profile"
+msgstr "즐겨찾기는 로컬 프로필에 보관됩니다."
+
+msgid "First page"
+msgstr "첫 페이지"
+
+msgid "Fit page"
+msgstr "페이지에 맞추기"
+
+msgid "Folder"
+msgstr "폴더"
+
+msgid "Folder does not exist"
+msgstr "폴더가 존재하지 않습니다"
+
+msgid "Font file"
+msgstr "글꼴 파일"
+
+msgid "For more information, see the Licenses section."
+msgstr "자세한 내용은 라이선스 섹션을 참조하세요."
+
+msgid "Forward"
+msgstr "앞으로"
+
+msgid "Frame cap    "
+msgstr "프레임 캡    "
+
+msgid "Friend display name"
+msgstr "친구 표시 이름"
+
+msgid "Friends - local simulation"
+msgstr "프렌즈 - 로컬 시뮬레이션"
+
+msgid "Full screen (stretch)"
+msgstr "전체 화면(늘이기)"
+
+msgid "GPU Local Memory"
+msgstr "GPU 로컬 메모리"
+
+msgid "Game Library"
+msgstr "게임 라이브러리"
+
+msgid "Game details"
+msgstr "게임 세부정보"
+
+msgid "Game folder path"
+msgstr "게임 폴더 경로"
+
+msgid "Game library"
+msgstr "게임 라이브러리"
+
+msgid "Game library folders"
+msgstr "게임 라이브러리 폴더"
+
+msgid "Game title"
+msgstr "게임 제목"
+
+msgid "Game/content file (empty for no-content cores)"
+msgstr "게임/콘텐츠 파일(콘텐츠가 없는 코어의 경우 비어 있음)"
+
+msgid "Genre"
+msgstr "장르"
+
+msgid "Genre: "
+msgstr "장르: "
+
+msgid "Glass icons    "
+msgstr "유리 아이콘    "
+
+msgid "Grade"
+msgstr "등급"
+
+msgid "Graphics Driver"
+msgstr "그래픽 드라이버"
+
+msgid "Graphics Processor"
+msgstr "그래픽 프로세서"
+
+msgid "Home"
+msgstr "홈"
+
+msgid "IF YOU HAVE A HISTORY OF EPILEPSY OR SEIZURES, CONSULT A DOCTOR BEFORE USE. CERTAIN PATTERNS MAY TRIGGER SEIZURES WITH NO PRIOR HISTORY. BEFORE USING THIS PRODUCT, CAREFULLY READ THE INSTRUCTION MANUAL."
+msgstr "간질이나 발작 병력이 있는 경우 사용하기 전에 의사와 상담하세요. 특정 패턴은 이전 기록 없이 발작을 유발할 수 있습니다. 본 제품을 사용하기 전에 사용 설명서를 주의 깊게 읽으십시오."
+
+msgid "Icon"
+msgstr "아이콘"
+
+msgid "Icon image"
+msgstr "아이콘 이미지"
+
+msgid "Icons"
+msgstr "아이콘"
+
+msgid "Image exceeds texture upload limit"
+msgstr "이미지가 텍스처 업로드 제한을 초과했습니다."
+
+msgid "Import .p3t, .zip or theme folder"
+msgstr ".p3t, .zip 또는 테마 폴더 가져오기"
+
+msgid "Import inbox ("
+msgstr "받은편지함 가져오기("
+
+msgid "Import theme or icon pack..."
+msgstr "테마 또는 아이콘 팩 가져오기..."
+
+msgid "Imported "
+msgstr "수입됨 "
+
+msgid "Importing inbox..."
+msgstr "받은편지함을 가져오는 중..."
+
+msgid "Importing theme..."
+msgstr "테마 가져오는 중..."
+
+msgid "Imports game manifests, desktop entries and native executables"
+msgstr "게임 매니페스트, 데스크톱 항목 및 기본 실행 파일을 가져옵니다."
+
+msgid "Install / manage themes..."
+msgstr "테마 설치/관리..."
+
+msgid "Install CUPS client tools (lp or lpr), configure a printer, and add the tools to PATH."
+msgstr "CUPS 클라이언트 도구(lp 또는 lpr)를 설치하고, 프린터를 구성하고, 도구를 PATH에 추가합니다."
+
+msgid "Installed Memory"
+msgstr "설치된 메모리"
+
+msgid "Installed copy removed. Original import source was kept."
+msgstr "설치된 복사본이 제거되었습니다. 원본 가져오기 소스가 유지되었습니다."
+
+msgid "InterfaceFX TEXT PROBE: The quick brown fox jumps over the lazy dog."
+msgstr "InterfaceFX 텍스트 조사: 날렵한 갈색 여우가 게으른 개를 뛰어넘습니다."
+
+msgid "Keep current data"
+msgstr "현재 데이터 유지"
+
+msgid "Keeps all game files"
+msgstr "모든 게임 파일을 유지합니다"
+
+msgid "Keeps its folder and files"
+msgstr "폴더와 파일을 유지합니다."
+
+msgid "Keeps the executable and source media"
+msgstr "실행 파일과 소스 미디어를 유지합니다."
+
+msgid "Keyboard Controls"
+msgstr "키보드 컨트롤"
+
+msgid "Keyboard bindings"
+msgstr "키보드 바인딩"
+
+msgid "Last page"
+msgstr "마지막 페이지"
+
+msgid "Launch "
+msgstr "발사 "
+
+msgid "Launch arguments"
+msgstr "인수 실행"
+
+msgid "Left/Right page · Home/End first/last · Up/Down or wheel zoom · Drag to pan · P print · Tab options"
+msgstr "왼쪽/오른쪽 페이지 · 홈/처음/마지막 끝 · 위/아래 또는 휠 줌 · 드래그하여 팬하기 · P 인쇄 · 탭 옵션"
+
+msgid "Library"
+msgstr "도서관"
+
+msgid "Libretro core library"
+msgstr "Libretro 코어 라이브러리"
+
+msgid "Loading page…"
+msgstr "페이지 로드 중…"
+
+msgid "Loading…"
+msgstr "로드 중…"
+
+msgid "Local Account"
+msgstr "로컬 계정"
+
+msgid "Local Friends"
+msgstr "지역 친구"
+
+msgid "Local Profiles"
+msgstr "지역 프로필"
+
+msgid "Local account - no online sign-in"
+msgstr "로컬 계정 - 온라인 로그인 불가"
+
+msgid "Local account display name"
+msgstr "로컬 계정 표시 이름"
+
+msgid "Local account status"
+msgstr "로컬 계정 상태"
+
+msgid "Local biography"
+msgstr "지역 전기"
+
+msgid "Local friend"
+msgstr "현지 친구"
+
+msgid "Local friend's name"
+msgstr "동네 친구 이름"
+
+msgid "Local friends"
+msgstr "현지 친구들"
+
+msgid "Local library updated"
+msgstr "로컬 라이브러리가 업데이트되었습니다."
+
+msgid "Local profile"
+msgstr "지역 프로필"
+
+msgid "Local status"
+msgstr "현지현황"
+
+msgid "Local status text"
+msgstr "로컬 상태 텍스트"
+
+msgid "Local trophies"
+msgstr "지역 트로피"
+
+msgid "Local trophy"
+msgstr "지역 트로피"
+
+msgid "Local users"
+msgstr "로컬 사용자"
+
+msgid "Locked: "
+msgstr "잠김: "
+
+msgid "Looking up game artwork..."
+msgstr "게임 아트워크를 찾는 중..."
+
+msgid "Makes HTTPS requests only when provider and key are configured"
+msgstr "공급자와 키가 구성된 경우에만 HTTPS 요청을 합니다."
+
+msgid "Manage game folders"
+msgstr "게임 폴더 관리"
+
+msgid "Manage offline simulated friend records"
+msgstr "오프라인 시뮬레이션 친구 기록 관리"
+
+msgid "Manage offline trophy records"
+msgstr "오프라인 트로피 기록 관리"
+
+msgid "Mark favorite"
+msgstr "즐겨찾기로 표시"
+
+msgid "Mark locked"
+msgstr "잠김으로 표시"
+
+msgid "Media folder"
+msgstr "미디어 폴더"
+
+msgid "Memory Transfer Rate"
+msgstr "메모리 전송률"
+
+msgid "Menu"
+msgstr "메뉴"
+
+msgid "Mounted optical-disc directory or device"
+msgstr "마운트된 광 디스크 디렉터리 또는 장치"
+
+msgid "Move Down"
+msgstr "아래로 이동"
+
+msgid "Move Selected Down"
+msgstr "선택한 항목을 아래로 이동"
+
+msgid "Move Selected Up"
+msgstr "선택한 항목을 위로 이동"
+
+msgid "Move Up"
+msgstr "위로 이동"
+
+msgid "Move photo to OpenXMB Trash?"
+msgstr "사진을 OpenXMB 휴지통으로 이동하시겠습니까?"
+
+msgid "Move to Trash"
+msgstr "휴지통으로 이동"
+
+msgid "Music Player"
+msgstr "뮤직 플레이어"
+
+msgid "Music folder"
+msgstr "음악 폴더"
+
+msgid "My Section"
+msgstr "내 섹션"
+
+msgid "My Theme"
+msgstr "내 테마"
+
+msgid "Native YUV GPU conversion"
+msgstr "네이티브 YUV GPU 변환"
+
+msgid "Native libretro software cores. Provide your own core, content and BIOS files."
+msgstr "기본 libretro 소프트웨어 코어. 자신만의 코어, 콘텐츠, BIOS 파일을 제공하세요."
+
+msgid "New Game"
+msgstr "새로운 게임"
+
+msgid "New Playlist"
+msgstr "새 재생목록"
+
+msgid "New Playlist..."
+msgstr "새 재생목록..."
+
+msgid "New User"
+msgstr "신규 사용자"
+
+msgid "New user name"
+msgstr "새 사용자 이름"
+
+msgid "Next frame"
+msgstr "다음 프레임"
+
+msgid "Next page"
+msgstr "다음 페이지"
+
+msgid "Next video"
+msgstr "다음 영상"
+
+msgid "No RPCS3 data folder detected. Add your disc or installed-game folder manually."
+msgstr "RPCS3 데이터 폴더가 감지되지 않았습니다. 디스크나 설치된 게임 폴더를 수동으로 추가하세요."
+
+msgid "No audio CD, mounted DVD, or mounted Blu-ray was found."
+msgstr "오디오 CD, 마운트된 DVD 또는 마운트된 Blu-ray을(를) 찾을 수 없습니다."
+
+msgid "No audio tracks"
+msgstr "오디오 트랙 없음"
+
+msgid "No entries yet. Use the actions above to add one."
+msgstr "아직 항목이 없습니다. 위의 작업을 사용하여 추가하세요."
+
+msgid "No native viewer is registered for this file type"
+msgstr "이 파일 형식에 등록된 기본 뷰어가 없습니다."
+
+msgid "No playable disc structure was found at that path."
+msgstr "해당 경로에서 재생 가능한 디스크 구조를 찾을 수 없습니다."
+
+msgid "No print service is available"
+msgstr "인쇄 서비스를 이용할 수 없습니다."
+
+msgid "No viewer is available for "
+msgstr "에 사용할 수 있는 뷰어가 없습니다. "
+
+msgid "None (no-content core)"
+msgstr "없음(무콘텐츠 코어)"
+
+msgid "Normal (fit)"
+msgstr "보통 (적합)"
+
+msgid "Normal speed"
+msgstr "정상 속도"
+
+msgid "Offline simulation; no messages or remote requests are sent"
+msgstr "오프라인 시뮬레이션; 메시지나 원격 요청이 전송되지 않습니다."
+
+msgid "Offline tracking; does not connect to a console account"
+msgstr "오프라인 추적; 콘솔 계정에 연결되지 않습니다"
+
+msgid "Only this local profile is changed"
+msgstr "이 로컬 프로필만 변경되었습니다."
+
+msgid "Open "
+msgstr "열기 "
+
+msgid "Open / Resume"
+msgstr "열기 / 재개"
+
+msgid "Open Link"
+msgstr "링크 열기"
+
+msgid "Open a dedicated browser window first."
+msgstr "먼저 전용 브라우저 창을 엽니다."
+
+msgid "Open browser window"
+msgstr "브라우저 창 열기"
+
+msgid "Open disc directory/device..."
+msgstr "디스크 디렉터리/장치 열기..."
+
+msgid "Open in native viewer"
+msgstr "기본 뷰어에서 열기"
+
+msgid "OpenXMB "
+msgstr "OpenXMB "
+
+msgid "OpenXMB Settings"
+msgstr "OpenXMB 설정"
+
+msgid "Opening Internet Browser…"
+msgstr "인터넷 브라우저 여는 중…"
+
+msgid "Opening video…"
+msgstr "오프닝 영상…"
+
+msgid "Operating System"
+msgstr "운영 체제"
+
+msgid "Optical Media"
+msgstr "광학 미디어"
+
+msgid "Optional RAWG artwork provider"
+msgstr "선택적 RAWG 아트워크 제공자"
+
+msgid "Options: save / add to playlist / reorder / remove"
+msgstr "옵션: 저장 / 재생 목록에 추가 / 재정렬 / 제거"
+
+msgid "Original appearance restored."
+msgstr "원래 모습이 복원되었습니다."
+
+msgid "Original size"
+msgstr "원본 크기"
+
+msgid "Overlay layers"
+msgstr "오버레이 레이어"
+
+msgid "PHOTOSENSITIVE EPILEPSY"
+msgstr "감광성 간질"
+
+msgid "Page Information"
+msgstr "페이지 정보"
+
+msgid "Page loaded"
+msgstr "페이지가 로드되었습니다."
+
+msgid "Paused"
+msgstr "일시중지됨"
+
+msgid "Photo Playlists"
+msgstr "사진 재생 목록"
+
+msgid "Photo copy saved"
+msgstr "사진 사본이 저장되었습니다."
+
+msgid "Photo information"
+msgstr "사진 정보"
+
+msgid "Photo moved to OpenXMB Trash"
+msgstr "사진이 OpenXMB 휴지통으로 이동되었습니다."
+
+msgid "Photo operation failed"
+msgstr "사진 작업 실패"
+
+msgid "Photo sent to print service"
+msgstr "사진이 인쇄 서비스로 전송됨"
+
+msgid "Pictures folder"
+msgstr "사진 폴더"
+
+msgid "Play Next"
+msgstr "다음 플레이"
+
+msgid "Play Now"
+msgstr "지금 플레이"
+
+msgid "Play Queue"
+msgstr "재생 대기열"
+
+msgid "Play from beginning"
+msgstr "처음부터 재생"
+
+msgid "Play preview music"
+msgstr "미리보기 음악 재생"
+
+msgid "Play video preview"
+msgstr "비디오 미리보기 재생"
+
+msgid "Playback error"
+msgstr "재생 오류"
+
+msgid "Playback speed"
+msgstr "재생 속도"
+
+msgid "Playing"
+msgstr "재생"
+
+msgid "Playing "
+msgstr "재생 "
+
+msgid "Playing game preview music"
+msgstr "게임 미리보기 음악 재생"
+
+msgid "Playing playlist"
+msgstr "재생목록 재생 중"
+
+msgid "Playlist"
+msgstr "재생목록"
+
+msgid "Playlist Created"
+msgstr "재생목록이 생성되었습니다."
+
+msgid "Playlist renamed"
+msgstr "재생목록 이름이 변경됨"
+
+msgid "Playlist saved"
+msgstr "재생목록이 저장되었습니다"
+
+msgid "Present locally"
+msgstr "로컬로 발표"
+
+msgid "Preset applied."
+msgstr "사전 설정이 적용되었습니다."
+
+msgid "Preset deleted."
+msgstr "사전 설정이 삭제되었습니다."
+
+msgid "Preset kept."
+msgstr "프리셋이 유지되었습니다."
+
+msgid "Preset saved."
+msgstr "사전 설정이 저장되었습니다."
+
+msgid "Preset: "
+msgstr "사전 설정: "
+
+msgid "Preview music"
+msgstr "음악 미리보기"
+
+msgid "Preview video"
+msgstr "비디오 미리보기"
+
+msgid "Previous frame"
+msgstr "이전 프레임"
+
+msgid "Previous page"
+msgstr "이전 페이지"
+
+msgid "Previous video"
+msgstr "이전 영상"
+
+msgid "Print current page…"
+msgstr "현재 페이지 인쇄…"
+
+msgid "Print document?"
+msgstr "문서를 인쇄하시겠습니까?"
+
+msgid "Print entire PDF…"
+msgstr "전체 PDF 인쇄…"
+
+msgid "Print job submitted"
+msgstr "인쇄 작업이 제출되었습니다."
+
+msgid "Printing failed"
+msgstr "인쇄 실패"
+
+msgid "Printing unavailable"
+msgstr "인쇄할 수 없음"
+
+msgid "Processor"
+msgstr "프로세서"
+
+msgid "Profile: "
+msgstr "프로필: "
+
+msgid "Provider enabled. Supply the key securely in environment settings."
+msgstr "제공업체가 활성화되었습니다. 환경 설정에서 안전하게 키를 제공하세요."
+
+msgid "Queue added; choose Save to keep changes"
+msgstr "대기열이 추가되었습니다. 변경 사항을 유지하려면 저장을 선택하세요."
+
+msgid "RGBA upload"
+msgstr "RGBA 업로드"
+
+msgid "Refresh"
+msgstr "새로고침"
+
+msgid "Refresh installed cores (Left/Right cycles core)"
+msgstr "설치된 코어 새로 고침(왼쪽/오른쪽 사이클 코어)"
+
+msgid "Refresh optical media"
+msgstr "광 미디어 새로 고침"
+
+msgid "Release year (0 if unknown)"
+msgstr "출시 연도(알 수 없는 경우 0)"
+
+msgid "Reload"
+msgstr "새로고침"
+
+msgid "Reload Saved Playlist"
+msgstr "저장된 재생목록 다시 로드"
+
+msgid "Reload Saved Playlist?"
+msgstr "저장된 재생목록을 다시 로드하시겠습니까?"
+
+msgid "Reload this playlist before saving; its contents could not be read."
+msgstr "저장하기 전에 이 재생목록을 새로고침하세요. 내용을 읽을 수 없습니다."
+
+msgid "Remove Selected"
+msgstr "선택 항목 제거"
+
+msgid "Remove favorite"
+msgstr "즐겨찾기 삭제"
+
+msgid "Remove from Queue"
+msgstr "대기열에서 제거"
+
+msgid "Remove from game library"
+msgstr "게임 라이브러리에서 제거"
+
+msgid "Remove installed theme..."
+msgstr "설치된 테마 삭제..."
+
+msgid "Remove installed theme? Type DELETE to confirm"
+msgstr "설치된 테마를 삭제하시겠습니까? 확인하려면 DELETE를 입력하세요."
+
+msgid "Remove local friend"
+msgstr "지역 친구 삭제"
+
+msgid "Remove local friend?"
+msgstr "현지 친구를 삭제하시겠습니까?"
+
+msgid "Remove local trophy"
+msgstr "지역 트로피 제거"
+
+msgid "Remove local trophy?"
+msgstr "지역 트로피를 삭제하시겠습니까?"
+
+msgid "Remove section"
+msgstr "섹션 삭제"
+
+msgid "Remove this custom section?"
+msgstr "이 맞춤 섹션을 삭제하시겠습니까?"
+
+msgid "Remove this game entry?"
+msgstr "이 게임 항목을 삭제하시겠습니까?"
+
+msgid "Remove this scan root?"
+msgstr "이 스캔 루트를 삭제하시겠습니까?"
+
+msgid "Removes this offline record"
+msgstr "이 오프라인 기록을 제거합니다."
+
+msgid "Rename Playlist"
+msgstr "재생목록 이름 바꾸기"
+
+msgid "Rename Playlist..."
+msgstr "재생목록 이름 바꾸기..."
+
+msgid "Rename section"
+msgstr "섹션 이름 바꾸기"
+
+msgid "Rename user"
+msgstr "사용자 이름 바꾸기"
+
+msgid "Repeat all"
+msgstr "모두 반복"
+
+msgid "Repeat off"
+msgstr "반복 안함"
+
+msgid "Repeat one"
+msgstr "한 번 반복"
+
+msgid "Repeat: "
+msgstr "반복: "
+
+msgid "Replay 10 seconds"
+msgstr "10초 재생"
+
+msgid "Reported CPU Clock"
+msgstr "보고된 CPU 클럭"
+
+msgid "Reset"
+msgstr "재설정"
+
+msgid "Reset current profile settings"
+msgstr "현재 프로필 설정 재설정"
+
+msgid "Reset settings?"
+msgstr "설정을 재설정하시겠습니까?"
+
+msgid "Resize"
+msgstr "크기 조정"
+
+msgid "Restore default bindings"
+msgstr "기본 바인딩 복원"
+
+msgid "Restore the current profile's default shell preferences? Media files and other profiles are preserved."
+msgstr "현재 프로필의 기본 셸 기본 설정을 복원하시겠습니까? 미디어 파일 및 기타 프로필은 보존됩니다."
+
+msgid "Restore the original appearance."
+msgstr "원래 모습을 복원합니다."
+
+msgid "Return"
+msgstr "반환"
+
+msgid "SDL scancode for "
+msgstr "SDL 스캔코드 "
+
+msgid "Save"
+msgstr "저장"
+
+msgid "Save Playlist Changes?"
+msgstr "재생목록 변경사항을 저장하시겠습니까?"
+
+msgid "Save Queue as Playlist..."
+msgstr "대기열을 재생목록으로 저장..."
+
+msgid "Save component preset"
+msgstr "구성요소 사전 설정 저장"
+
+msgid "Save component preset..."
+msgstr "구성요소 사전 설정 저장..."
+
+msgid "Save crop"
+msgstr "자르기 저장"
+
+msgid "Saved"
+msgstr "저장됨"
+
+msgid "Saved playlist loaded"
+msgstr "저장된 재생목록 로드됨"
+
+msgid "Saving…"
+msgstr "저장 중…"
+
+msgid "Scan configured folders"
+msgstr "구성된 폴더 검색"
+
+msgid "Scan game folders"
+msgstr "게임 폴더 스캔"
+
+msgid "Scene search"
+msgstr "장면 검색"
+
+msgid "Screen mode"
+msgstr "화면 모드"
+
+msgid "Scroll Down"
+msgstr "아래로 스크롤"
+
+msgid "Scroll Up"
+msgstr "위로 스크롤"
+
+msgid "Section folder path"
+msgstr "섹션 폴더 경로"
+
+msgid "Section icon path"
+msgstr "섹션 아이콘 경로"
+
+msgid "Section name"
+msgstr "섹션 이름"
+
+msgid "Select"
+msgstr "선택"
+
+msgid "Select / Edit"
+msgstr "선택 / 편집"
+
+msgid "Select a core library"
+msgstr "핵심 라이브러리 선택"
+
+msgid "Separate settings, themes, game library and local social data"
+msgstr "별도의 설정, 테마, 게임 라이브러리 및 로컬 소셜 데이터"
+
+msgid "Shift"
+msgstr "교대"
+
+msgid "Show FPS    "
+msgstr "FPS 표시    "
+
+msgid "Show GPU memory    "
+msgstr "GPU 메모리 표시    "
+
+msgid "Slideshow saved: "
+msgstr "슬라이드쇼가 저장되었습니다: "
+
+msgid "Sound effects"
+msgstr "음향 효과"
+
+msgid "Space"
+msgstr "공간"
+
+msgid "Start OpenXMB at login: "
+msgstr "로그인 시 OpenXMB 시작: "
+
+msgid "Start emulation"
+msgstr "에뮬레이션 시작"
+
+msgid "Started "
+msgstr "시작됨 "
+
+msgid "Status"
+msgstr "상태"
+
+msgid "Stick: pointer  A: click  X: Tab  Y: text  Start: address  Shoulder: Enter  B: return"
+msgstr "스틱: 포인터 A: 클릭 X: 탭 Y: 텍스트 시작: 주소 어깨: Enter B: 돌아가기"
+
+msgid "Stop emulation"
+msgstr "에뮬레이션 중지"
+
+msgid "Stopped"
+msgstr "중지됨"
+
+msgid "Stops optional provider lookups"
+msgstr "선택적 공급자 조회를 중지합니다."
+
+msgid "Submit page "
+msgstr "제출 페이지 "
+
+msgid "Submit the entire PDF to the default printer?"
+msgstr "전체 PDF를 기본 프린터로 제출하시겠습니까?"
+
+msgid "Submitting print job…"
+msgstr "인쇄 작업 제출 중…"
+
+msgid "Subtitles"
+msgstr "자막"
+
+msgid "Supported manifest: openxmb-game.json"
+msgstr "지원되는 매니페스트: openxmb-game.json"
+
+msgid "Switch to "
+msgstr "다음으로 전환 "
+
+msgid "System Tools"
+msgstr "시스템 도구"
+
+msgid "Take screenshot"
+msgstr "스크린샷 찍기"
+
+msgid "Text"
+msgstr "텍스트"
+
+msgid "Text for the focused browser field"
+msgstr "초점이 맞춰진 브라우저 필드에 대한 텍스트"
+
+msgid "The GNU General Public License version 3 or later applies to OpenXMB. License files could not be found in this installation."
+msgstr "GNU General Public License 버전 3 이상이 OpenXMB에 적용됩니다. 이 설치에서는 라이센스 파일을 찾을 수 없습니다."
+
+msgid "The Syndromatic Open Xross Media Bar shell experience."
+msgstr "Syndromatic Open Xross Media Bar 쉘 경험."
+
+msgid "The browser exited unexpectedly. Reopen Internet Browser; check the WebView2 Runtime if this continues."
+msgstr "브라우저가 예기치 않게 종료되었습니다. 인터넷 브라우저를 다시 엽니다. 계속되면 WebView2 런타임을 확인하세요."
+
+msgid "The core session could not continue. Check the selected core/content and its BIOS requirements."
+msgstr "핵심 세션을 계속할 수 없습니다. 선택한 코어/컨텐츠와 해당 BIOS 요구 사항을 확인하세요."
+
+msgid "The document was accepted by the configured print command."
+msgstr "문서가 구성된 인쇄 명령에 의해 승인되었습니다."
+
+msgid "The original is recoverable at:\n"
+msgstr "원본은 다음 위치에서 복구할 수 있습니다:\n"
+
+msgid "The play queue is empty"
+msgstr "재생 대기열이 비어 있습니다."
+
+msgid "The scanner reads files; it never launches discovered games"
+msgstr "스캐너는 파일을 읽습니다. 검색된 게임을 실행하지 않습니다."
+
+msgid "The selected local item no longer exists"
+msgstr "선택한 지역 항목이 더 이상 존재하지 않습니다."
+
+msgid "Theme Library"
+msgstr "테마 라이브러리"
+
+msgid "Theme applied. Your component choices were saved."
+msgstr "테마가 적용되었습니다. 구성 요소 선택이 저장되었습니다."
+
+msgid "Theme colors"
+msgstr "테마 색상"
+
+msgid "Theme exported to "
+msgstr "테마를 다음으로 내보냈습니다. "
+
+msgid "Theme kept."
+msgstr "테마가 유지되었습니다."
+
+msgid "Theme library refreshed."
+msgstr "테마 라이브러리가 새로 고쳐졌습니다."
+
+msgid "Theme manager is not attached to the shell yet"
+msgstr "테마 관리자가 아직 셸에 연결되지 않았습니다."
+
+msgid "Theme operation in progress. Originals remain unchanged."
+msgstr "테마 작업이 진행 중입니다. 원본은 변경되지 않습니다."
+
+msgid "This folder is empty."
+msgstr "이 폴더는 비어 있습니다."
+
+msgid "This playlist is empty. Open Options to add tracks or a folder."
+msgstr "이 재생목록은 비어 있습니다. 옵션을 열어 트랙이나 폴더를 추가하세요."
+
+msgid "This program is licensed to you under the GNU General Public License version 3.0."
+msgstr "이 프로그램은 GNU General Public License 버전 3.0에 따라 귀하에게 라이센스가 부여되었습니다."
+
+msgid "This setting is not supported by this build."
+msgstr "이 설정은 이 빌드에서 지원되지 않습니다."
+
+msgid "This video"
+msgstr "이 영상"
+
+msgid "Title"
+msgstr "제목"
+
+msgid "Toggle simulated presence"
+msgstr "시뮬레이션된 현재 상태 전환"
+
+msgid "Track"
+msgstr "트랙"
+
+msgid "Track added to queue"
+msgstr "대기열에 트랙이 추가되었습니다."
+
+msgid "Track will play next"
+msgstr "다음 트랙이 재생됩니다."
+
+msgid "Track, Folder or Playlist Path"
+msgstr "트랙, 폴더 또는 재생 목록 경로"
+
+msgid "Track: "
+msgstr "트랙: "
+
+msgid "Trophy description"
+msgstr "트로피 설명"
+
+msgid "Trophy title"
+msgstr "트로피 제목"
+
+msgid "Type into browser field..."
+msgstr "브라우저 필드에 입력하세요..."
+
+msgid "Unavailable"
+msgstr "이용 불가"
+
+msgid "Unlock local trophy"
+msgstr "지역 트로피 잠금 해제"
+
+msgid "Unlocked: "
+msgstr "잠금 해제됨: "
+
+msgid "Up/Down: select    Confirm: change    Cancel: back"
+msgstr "위/아래: 선택 확인: 변경 취소: 뒤로"
+
+msgid "Use an SDL scancode from 4 to 512"
+msgstr "4에서 512까지의 SDL 스캔코드를 사용하세요."
+
+msgid "User name"
+msgstr "사용자 이름"
+
+msgid "User profile"
+msgstr "사용자 프로필"
+
+msgid "Uses installed RPCS3 data roots; custom disc folders can be added normally"
+msgstr "설치된 RPCS3 데이터 루트를 사용합니다. 사용자 정의 디스크 폴더는 정상적으로 추가될 수 있습니다"
+
+msgid "VSync    "
+msgstr "VSync    "
+
+msgid "Video Memory: {:.2f}/{:.2f} MB"
+msgstr "비디오 메모리: {:.2f}/{:.2f}MB"
+
+msgid "Video could not be loaded"
+msgstr "동영상을 로드할 수 없습니다."
+
+msgid "Video information"
+msgstr "영상정보"
+
+msgid "Video list"
+msgstr "비디오 목록"
+
+msgid "Video playback failed"
+msgstr "비디오 재생 실패"
+
+msgid "Video upload failed: "
+msgstr "동영상 업로드 실패: "
+
+msgid "Videos folder"
+msgstr "비디오 폴더"
+
+msgid "View background artwork"
+msgstr "배경 아트워크 보기"
+
+msgid "Volume"
+msgstr "볼륨"
+
+msgid "Volume  "
+msgstr "볼륨  "
+
+msgid "Volume +"
+msgstr "볼륨 +"
+
+msgid "Volume −"
+msgstr "볼륨 -"
+
+msgid "Wait for the photo to finish loading"
+msgstr "사진 로딩이 완료될 때까지 기다리세요"
+
+msgid "Wallpaper updated"
+msgstr "배경화면이 업데이트되었습니다."
+
+msgid "Web address"
+msgstr "웹 주소"
+
+msgid "Working directory"
+msgstr "작업 디렉토리"
+
+msgid "Year"
+msgstr "연도"
+
+msgid "Year must be 0-9999"
+msgstr "연도는 0-9999여야 합니다."
+
+msgid "Zoom in"
+msgstr "확대"
+
+msgid "Zoom must be between 0.25 and 5.0"
+msgstr "확대/축소는 0.25에서 5.0 사이여야 합니다."
+
+msgid "Zoom out"
+msgstr "축소"
+
+msgid "open "
+msgstr "열다 "
+
+msgid "version "
+msgstr "버전 "
+
+msgid "¼ speed (muted)"
+msgstr "¼ 속도(음소거)"
+
+msgid "½ speed (muted)"
+msgstr "½ 속도(음소거)"
+
+msgid "← More text →"
+msgstr "← 추가 텍스트 →"
+
+msgid "✓ Off"
+msgstr "✓ 끄기"
+
+msgid "Vulkan"
+msgstr "Vulkan"
+
+msgid "OK"
+msgstr "확인"
+
+# Native player metadata labels; preserve dynamic metadata separately.
+
+msgid "Album:"
+msgstr "앨범:"
+
+msgid "Artist:"
+msgstr "아티스트:"
+
+msgid "Genre:"
+msgstr "장르:"
+
+msgid "Date:"
+msgstr "날짜:"
+
+msgid "Track:"
+msgstr "트랙:"
+
+msgid "Codec:"
+msgstr "코덱:"
+
+msgid "Channels:"
+msgstr "채널:"
+
+msgid "Use system language"
+msgstr "시스템 언어 사용"
+
+msgid "Import inbox"
+msgstr "가져오기 폴더"
+
+msgid "Preset:"
+msgstr "사전 설정:"

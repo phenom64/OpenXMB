@@ -1,10 +1,13 @@
 module;
+#include "../localization/ui_literal_text.hpp"
 
 #include "openxmb/music/player.hpp"
 #include "openxmb/music/library.hpp"
 #include "music_reentry.hpp"
 #include "../app/input_bindings.hpp"
 #include "../menu/media_preview_queue.hpp"
+#include "transient_notice.hpp"
+#include "../localization/shell_locale.hpp"
 #include <cstring>
 #include <SDL2/SDL_keyboard.h>
 #include <SDL2/SDL_gamecontroller.h>
@@ -30,6 +33,7 @@ import auroreengine;
 import glm;
 import openxmb.utils;
 import openxmb.config;
+import i18n;
 import :main;
 import :choice_overlay;
 import :message_overlay;
@@ -40,6 +44,7 @@ import :xmb_presentation;
 
 namespace programs {
 using namespace app;
+using namespace mfk::i18n::literals;
 namespace music = openxmb::music;
 
 export void create_music_playlist(shell* xmb, std::vector<music::QueueEntry> tracks = {}, std::function<void()> changed = {}) {
@@ -54,7 +59,7 @@ export void create_music_playlist(shell* xmb, std::vector<music::QueueEntry> tra
 
 export void add_to_music_playlist(shell* xmb, std::vector<music::QueueEntry> tracks) {
   const auto paths = music::PlaylistStore(config::CONFIG.music_path()).list();
-  std::vector<std::string> choices{"New Playlist..."};
+  std::vector<std::string> choices{"New Playlist..."_()};
   for(const auto& path : paths) choices.push_back(path.stem().string());
   xmb->emplace_overlay<choice_overlay>(choices, 0, [xmb, paths, tracks=std::move(tracks)](unsigned index) {
     if(index == 0) { create_music_playlist(xmb, tracks); return; }
@@ -117,7 +122,7 @@ private:
   }
   void track_options() {
     if(tracks_.empty()) { options(); return; }
-    xmb_->emplace_overlay<choice_overlay>(std::vector<std::string>{"Play Now", "Play Next", "Add to Queue", "Move Up", "Move Down", "Remove from Playlist"}, 0, [this](unsigned choice) {
+    xmb_->emplace_overlay<choice_overlay>(::app::detail::localize_ui_choices(std::vector<std::string>{"Play Now", "Play Next", "Add to Queue", "Move Up", "Move Down", "Remove from Playlist"}), 0, [this](unsigned choice) {
       if(selected_ >= tracks_.size()) return;
       if(choice == 0) { music::service().set_queue(tracks_, selected_); notice_="Playing playlist"; }
       else if(choice == 1 || choice == 2) { music::service().enqueue({tracks_[selected_]}, choice == 1); notice_=choice==1?"Track will play next":"Track added to queue"; }
@@ -127,7 +132,7 @@ private:
     });
   }
   void options() {
-    xmb_->emplace_overlay<choice_overlay>(std::vector<std::string>{"Save", "Add Track / Folder / Playlist...", "Add Current Play Queue", "Rename Playlist...", "Delete Playlist...", "Reload Saved Playlist", "Edit Selected Track"}, 0, [this](unsigned choice) {
+    xmb_->emplace_overlay<choice_overlay>(::app::detail::localize_ui_choices(std::vector<std::string>{"Save", "Add Track / Folder / Playlist...", "Add Current Play Queue", "Rename Playlist...", "Delete Playlist...", "Reload Saved Playlist", "Edit Selected Track"}), 0, [this](unsigned choice) {
       if(choice == 0) save();
       else if(choice == 1) xmb_->emplace_overlay<text_entry_overlay>("Track, Folder or Playlist Path", config::CONFIG.music_path().string(), [this](std::string value) {
         try { auto added=music::collect_tracks(std::filesystem::path(value)); if(added.empty()) throw std::runtime_error("No supported music tracks were found"); tracks_.insert(tracks_.end(), added.begin(), added.end()); dirty_=true; }
@@ -240,9 +245,9 @@ public:
     else if(panel_==Panel::queue) draw_queue(renderer);
     else if(panel_==Panel::information) {
       c.rect(1090,230,660,500,{0,0,0,0.7f});
-      const std::array lines{"Album: "+metadata.album,"Artist: "+metadata.artist,"Genre: "+metadata.genre,
-        "Date: "+metadata.date,"Track: "+metadata.track,"Codec: "+metadata.codec+"  "+std::to_string(metadata.sample_rate)+" Hz",
-        "Channels: "+std::to_string(metadata.channels)+"  "+std::to_string(metadata.bit_rate/1000)+" kb/s"};
+      const std::array lines{std::string("Album:"_())+" "+metadata.album,std::string("Artist:"_())+" "+metadata.artist,std::string("Genre:"_())+" "+metadata.genre,
+        std::string("Date:"_())+" "+metadata.date,std::string("Track:"_())+" "+metadata.track,std::string("Codec:"_())+" "+metadata.codec+"  "+std::to_string(metadata.sample_rate)+" Hz",
+        std::string("Channels:"_())+" "+std::to_string(metadata.channels)+"  "+std::to_string(metadata.bit_rate/1000)+" kb/s"};
       float y=285;for(const auto& line:lines) {c.text(elide(line,52),1130,y,23);y+=48;}
     }
     if(display_on_) {
@@ -266,11 +271,15 @@ public:
     }
     if(artwork_&&artwork_->loaded) c.image(*artwork_,123,897,88,88);
     else icons_.draw(c,"theme/icon_music_default",167,941,88,0.85f);
-    c.text(elide(metadata.title.empty()?"Music":metadata.title,58),243,941,34);
+    c.text(elide(metadata.title.empty()?std::string("Music"_()):metadata.title,58),243,941,34);
     c.text(elide(metadata.artist+(metadata.album.empty()?"":"  /  "+metadata.album),90),243,981,25);
     if(!state.error.empty()) c.text(elide(state.error,100),123,785,24,{1,0.7f,0.5f,1});
     else if(!notice_.empty()) c.text(elide(notice_,100),123,785,24);
-    if(volume_open_) c.text("Volume  "+std::to_string(static_cast<int>(state.volume*100))+"%",524,682,25,{1,1,1,1},0,true);
+    else if(visualizer_notice_at_.time_since_epoch().count()!=0) {
+      const auto alpha=detail::notice_alpha(std::chrono::duration<double>(std::chrono::steady_clock::now()-visualizer_notice_at_).count());
+      if(alpha>0)c.text(config::CONFIG.preference("music.visualizer","Wave")=="Flow"?"Flow visualiser"_():"Wave visualiser"_(),123,785,24,{1,1,1,alpha});
+    }
+    if(volume_open_) c.text(std::string("Volume"_())+"  "+std::to_string(static_cast<int>(state.volume*100))+"%",524,682,25,{1,1,1,1},0,true);
 
   }
   result on_action(action value) override {
@@ -384,11 +393,11 @@ private:
     config::CONFIG.preferences["music.visualizer"]=flow?"Flow":"Wave";
     config::CONFIG.save_config();
     music::service().set_visualizer(flow?music::Visualizer::spectrum:music::Visualizer::waves);
-    notice_=flow?"Flow visualizer":"Wave visualizer";
+    visualizer_notice_at_=std::chrono::steady_clock::now();
   }
   void queue_options() {
     if(!xmb_) return;
-    xmb_->emplace_overlay<choice_overlay>(std::vector<std::string>{"Save Queue as Playlist...","Add Selected to Playlist...","Move Selected Up","Move Selected Down","Remove Selected"},0,[this](unsigned choice) {
+    xmb_->emplace_overlay<choice_overlay>(::app::detail::localize_ui_choices(std::vector<std::string>{"Save Queue as Playlist...","Add Selected to Playlist...","Move Selected Up","Move Selected Down","Remove Selected"}),0,[this](unsigned choice) {
       auto& player=music::service();
       if(choice==0) { create_music_playlist(xmb_,player.queue().entries()); return; }
       if(queue_row_>=player.queue().entries().size()) return;
@@ -453,13 +462,14 @@ private:
     constexpr float size=25,height=29.16F,gap=9.6F,center=616;
     const float pixels=size*c.scale*config::CONFIG.textScale;
     const auto metrics=renderer.text_line_metrics_pixels(pixels)/c.scale;
-    const float width=renderer.text_width_pixels(labels[selected],pixels)/c.scale;
+    const auto label=openxmb::localization::shell_locale::translate(labels[selected]);
+    const float width=renderer.text_width_pixels(label,pixels)/c.scale;
     float hint_width=0;
     if(direct)hint_width=height*direct->width/std::max(1,direct->height);
     else if(!hint_asset.empty())hint_width=icons_.scaled_width(hint_asset,height);
     else if(!hint_text.empty())hint_width=std::max(height,renderer.text_width_pixels(hint_text,18*c.scale)/c.scale+14);
     const float left=524-(width+(hint_width?gap+hint_width:0))*0.5F;
-    c.text(labels[selected],left,center+(metrics.x-metrics.y)*0.5F,size,{1,1,1,1},app::xmb_canvas::pulse());
+    c.text(label,left,center+(metrics.x-metrics.y)*0.5F,size,{1,1,1,1},app::xmb_canvas::pulse());
     const auto hint_x=left+width+gap;
     if(direct)c.image(*direct,hint_x,center-height*0.5F,hint_width,height);
     else if(!hint_asset.empty())icons_.draw(c,hint_asset,hint_x+hint_width*0.5F,center,height,0.95F);
@@ -475,7 +485,7 @@ private:
       const auto prefix = queue.current_index() == row ? "> " : "  ";
       renderer.draw_text(prefix + elide(entries[row].title, 46), 0.42f, y, 0.026f);
     }
-    renderer.draw_text("Options: save / add to playlist / reorder / remove", 0.42f, 0.73f, 0.020f);
+    renderer.draw_text("Options: save / add to playlist / reorder / remove"_(), 0.42f, 0.73f, 0.020f);
   }
   auroreengine::resource_loader &loader_;
   Panel panel_{Panel::none};
@@ -489,6 +499,7 @@ private:
   openxmb::menu_preview::Queue artwork_decoder_;
   std::shared_ptr<openxmb::menu_preview::Request> artwork_request_;
   std::future<void> artwork_ready_;
+  std::chrono::steady_clock::time_point visualizer_notice_at_{};
   std::string notice_;
 };
 

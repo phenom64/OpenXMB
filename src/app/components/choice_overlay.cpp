@@ -19,6 +19,7 @@
 module;
 
 #include "dialog_text_layout.hpp"
+#include "../../localization/shell_locale.hpp"
 #include <algorithm>
 #include <array>
 #include <chrono>

@@ -11,6 +11,17 @@ int main() try {
     require(loud.motion>calm.motion*1.99,"audio still modulates continuous motion");
     const auto first=flow_camera(0),later=flow_camera(4);
     require(later.z<first.z,"camera retreats along negative world Z");
+    for(int i=0;i<60000;++i) {
+        const auto camera=flow_camera(i/60.0);
+        require(std::isfinite(camera.x)&&std::isfinite(camera.z),"finite camera path");
+        require(std::abs(camera.yaw)<.026F&&std::abs(camera.pitch)<.013F&&std::abs(camera.roll)<.031F,"small bounded flight rotations");
+        require(std::abs(camera.heave)<.013F,"gentle vertical flight sway");
+        if(i) {
+            const auto previous=flow_camera((i-1)/60.0);
+            require(camera.z<previous.z,"no reversal during retreat");
+            require(std::abs(camera.roll-previous.roll)<.001F,"no camera angle snapping");
+        }
+    }
     const float initial_projection=2/(8-first.z),later_projection=2/(8-later.z);
     require(later_projection<initial_projection,"frozen landmark contracts towards vanishing point during retreat");
     const auto before=loud.scene;loud.advance(0,1,1);

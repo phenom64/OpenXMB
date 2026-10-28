@@ -1,4 +1,5 @@
 module;
+#include "../localization/shell_locale.hpp"
 
 #include "openxmb/integrations/desktop.hpp"
 #include "openxmb/integrations/disc.hpp"
@@ -264,22 +265,22 @@ public:
                 c.text("Title",44,245,20,{1,1,1,0.55F});c.text(page_.title.substr(0,26),44,280,22);
                 c.text("Address",44,335,20,{1,1,1,0.55F});
                 for(std::size_t line=0;line<7&&line*27<page_.url.size();++line) c.text(page_.url.substr(line*27,27),44,370+line*30,19);
-                c.text(page_.loading?"Loading page…":"Page loaded",44,650,22,{1,1,1,0.75F});
+                c.text(::openxmb::localization::shell_locale::translate(page_.loading?"Loading page…":"Page loaded"),44,650,22,{1,1,1,0.75F});
             }
             if(!browser_.embedded_view) {
-                c.text(message_.empty()?"Opening Internet Browser…":message_,960,450,26,{1,1,1,1},0,true);
+                c.text(message_.empty()?::openxmb::localization::shell_locale::translate("Opening Internet Browser…"):message_,960,450,26,{1,1,1,1},0,true);
                 render_controller_buttons(shell,renderer,0.5F,0.9F,std::array{std::pair{action::ok,std::string_view{"Open / Resume"}},std::pair{action::options,std::string_view{"Address"}},std::pair{action::cancel,std::string_view{"Back"}}});
             }
             return;
         }
         const std::string title = section_ == "browser" ? "Internet Browser" : section_ == "emulation" ? "Emulation" : section_ == "discs" ? "Optical Media" : "Desktop Tools";
         renderer.draw_rect({0.08F, 0.13F}, {0.84F, 0.74F}, {0.025F, 0.035F, 0.055F, 0.94F});
-        renderer.draw_text(title, 0.12F, 0.20F, 0.055F);
+        renderer.draw_text(::openxmb::localization::shell_locale::translate(title), 0.12F, 0.20F, 0.055F);
         const auto description = section_ == "browser" ? "Browse in a separate system-browser window with your own keyboard and mouse."
             : section_ == "emulation" ? "Native libretro software cores. Provide your own core, content and BIOS files."
             : section_ == "discs" ? "Audio CDs, DVD and Blu-ray folders/devices. Playback uses an installed desktop player."
             : "Capture your desktop or start OpenXMB automatically when you log in.";
-        renderer.draw_text(description, 0.12F, 0.27F, 0.026F, {0.75F, 0.81F, 0.89F, 1.0F});
+        renderer.draw_text(::openxmb::localization::shell_locale::translate(description), 0.12F, 0.27F, 0.026F, {0.75F, 0.81F, 0.89F, 1.0F});
         const auto first = selected_ > 5 ? selected_ - 5 : 0;
         for (std::size_t index = first; index < rows_.size() && index < first + 6; ++index) {
             const float y = 0.37F + static_cast<float>(index - first) * 0.061F;
@@ -357,7 +358,7 @@ private:
             const float y=245+static_cast<float>(i)*68;
             const bool focused=i==browser_option_;
             const bool unavailable=(i==0&&!page_.back)||(i==1&&!page_.forward);
-            c.text(labels[i],1570,y,focused?29:26,{1,1,1,unavailable?0.3F:focused?1.0F:0.65F},focused&&!unavailable?app::xmb_canvas::pulse():0);
+            c.text(::openxmb::localization::shell_locale::translate(labels[i]),1570,y,focused?29:26,{1,1,1,unavailable?0.3F:focused?1.0F:0.65F},focused&&!unavailable?app::xmb_canvas::pulse():0);
             if(focused) {c.text("›",1536,y,30,{1,1,1,0.95F},app::xmb_canvas::pulse());c.gradient(1550,y+12,305,2,{1,1,1,0.35F},{1,1,1,0});}
         }
     }

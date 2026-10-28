@@ -11,6 +11,7 @@ module;
 #include <string_view>
 #include <vector>
 #include "openxmb/xmb/background.hpp"
+#include "../localization/ui_literal_text.hpp"
 export module openxmb.app:xmb_presentation;
 import auroreengine;
 import glm;
@@ -28,6 +29,12 @@ struct xmb_canvas {
     }
     void text(std::string_view text,float x,float baseline,float size=28,glm::vec4 color=glm::vec4(1),float glow=0,bool centered=false) const {
         renderer.draw_text_pixels(text,ox+x*scale,oy+baseline*scale,size*scale*config::CONFIG.textScale,color,0.7f,glow,centered);
+    }
+    template<class Character, std::size_t N>
+        requires std::is_same_v<Character, const char>
+    void text(Character (&literal)[N],float x,float baseline,float size=28,glm::vec4 color=glm::vec4(1),float glow=0,bool centered=false) const {
+        const auto localized=detail::localize_ui_literal(literal);
+        text(std::string_view(localized),x,baseline,size,color,glow,centered);
     }
     void rect(float x,float y,float w,float h,glm::vec4 color,float radius=0) const {
         auroreengine::simple_params parameters{};

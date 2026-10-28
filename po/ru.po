@@ -1,0 +1,5073 @@
+# OpenXMB translations.
+msgid ""
+msgstr ""
+"Project-Id-Version: OpenXMB 1.0\n"
+"Language: ru\n"
+"PO-Revision-Date: 2026-10-28 00:00+0000\n"
+"Last-Translator: Machine-assisted translation\n"
+"Language-Team: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
+
+msgid "\nSample rate: "
+msgstr "\nЧастота выборки:"
+
+msgid "\nVideo decoder details are available in the video player's information display."
+msgstr "\nПодробности видеодекодера доступны на информационном дисплее видеоплеера."
+
+msgid " Hz\nChannels: "
+msgstr "Гц\nКаналы:"
+
+msgid " for "
+msgstr "для"
+
+msgid " games to the library."
+msgstr "игры в библиотеку."
+
+msgid "(No registered devices)"
+msgstr "(Нет зарегистрированных устройств)"
+
+msgid "*User"
+msgstr "*Пользователь"
+
+msgid "+1"
+msgstr "+1"
+
+msgid "+2"
+msgstr "+2"
+
+msgid "+3"
+msgstr "+3"
+
+msgid "+4"
+msgstr "+4"
+
+msgid "-1"
+msgstr "-1"
+
+msgid "-2"
+msgstr "-2"
+
+msgid "-3"
+msgstr "-3"
+
+msgid "-4"
+msgstr "-4"
+
+msgid "1"
+msgstr "1"
+
+msgid "1 minute"
+msgstr "1 минута"
+
+msgid "1. Transfer data from this system to the other OpenXMB system."
+msgstr "1. Перенесите данные из этой системы в другую систему OpenXMB."
+
+msgid "10"
+msgstr "10"
+
+msgid "10 Images"
+msgstr "10 изображений"
+
+msgid "10 minutes"
+msgstr "10 минут"
+
+msgid "10 seconds"
+msgstr "10 секунд"
+
+msgid "1000BASE-T Full-Duplex"
+msgstr "1000BASE-T полнодуплексный"
+
+msgid "1000BASE-T Half-Duplex"
+msgstr "1000BASE-T полудуплекс"
+
+msgid "100BASE-TX Full-Duplex"
+msgstr "100BASE-TX полнодуплексный"
+
+msgid "100BASE-TX Half-Duplex"
+msgstr "Полудуплекс 100BASE-TX"
+
+msgid "106481"
+msgstr "106481"
+
+msgid "1080i"
+msgstr "1080i"
+
+msgid "1080p"
+msgstr "1080p"
+
+msgid "1080p 24 Hz Output (HDMI)"
+msgstr "Выход 1080p, 24 Гц (HDMI)"
+
+msgid "10BASE-T Full-Duplex"
+msgstr "10BASE-T полнодуплексный"
+
+msgid "10BASE-T Half-Duplex"
+msgstr "10BASE-T полудуплекс"
+
+msgid "11"
+msgstr "11"
+
+msgid "12-Hour Clock"
+msgstr "12-часовой формат"
+
+msgid "1245403"
+msgstr "1245403"
+
+msgid "1308922"
+msgstr "1308922"
+
+msgid "15 minutes"
+msgstr "15 минут"
+
+msgid "15 seconds of video starting from this scene will be set as the icon.\nIf an icon has already been set, it will be overwritten.\nDo you want to continue?"
+msgstr "В качестве значка будет установлено 15 секунд видео, начиная с этой сцены.\nЕсли значок уже установлен, он будет перезаписан.\nХотите продолжить?"
+
+msgid "2"
+msgstr "2"
+
+msgid "2 minutes"
+msgstr "2 минуты"
+
+msgid "2. Transfer data from the other OpenXMB system to this system."
+msgstr "2. Перенесите данные из другой системы OpenXMB в эту систему."
+
+msgid "24-Hour Clock"
+msgstr "24-часовой формат"
+
+msgid "3"
+msgstr "3"
+
+msgid "30 minutes"
+msgstr "30 минут"
+
+msgid "35 Tracks  28:00"
+msgstr "35 Треков 28:00"
+
+msgid "358972"
+msgstr "358972"
+
+msgid "3D Display (PSP Remasters)"
+msgstr "3D-дисплей (PSP ремастеры)"
+
+msgid "4"
+msgstr "4"
+
+msgid "44.1 kHz"
+msgstr "44,1 кГц"
+
+msgid "48 kHz"
+msgstr "48 кГц"
+
+msgid "480p"
+msgstr "480p"
+
+msgid "5"
+msgstr "5"
+
+msgid "5 minutes"
+msgstr "5 минут"
+
+msgid "5 seconds"
+msgstr "5 секунд"
+
+msgid "50 Hz Video Output"
+msgstr "Видеовыход 50 Гц"
+
+msgid "509987"
+msgstr "509987"
+
+msgid "551537"
+msgstr "551537"
+
+msgid "576p"
+msgstr "576p"
+
+msgid "586388"
+msgstr "586388"
+
+msgid "6"
+msgstr "6"
+
+msgid "677357"
+msgstr "677357"
+
+msgid "7"
+msgstr "7"
+
+msgid "720p"
+msgstr "720p"
+
+msgid "8"
+msgstr "8"
+
+msgid "88.2 kHz"
+msgstr "88,2 кГц"
+
+msgid "893848"
+msgstr "893848"
+
+msgid "9"
+msgstr "9"
+
+msgid "96 kHz"
+msgstr "96 кГц"
+
+msgid "976156"
+msgstr "976156"
+
+msgid "A-B Repeat"
+msgstr "Повтор A-B"
+
+msgid "AAC"
+msgstr "AAC"
+
+msgid "AOSS"
+msgstr "АОСС"
+
+msgid "ATERM-5F3C2A-G"
+msgstr "АТЕРМ-5F3C2A-G"
+
+msgid "AV MULTI / S Video"
+msgstr "AV MULTI/S Видео"
+
+msgid "AV MULTI / SCART"
+msgstr "AV МУЛЬТИ/СКАРТ"
+
+msgid "AV Settings"
+msgstr "Настройки AV"
+
+msgid "AVC  640x360"
+msgstr "АВК 640x360"
+
+msgid "Accessory"
+msgstr "Аксессуар"
+
+msgid "Accessory Settings"
+msgstr "Настройки аксессуаров"
+
+msgid "Ad Hoc Channel (PSP Remasters)"
+msgstr "Специальный канал (PSP ремастеры)"
+
+msgid "Ad Hoc Mode (PSP Remasters)"
+msgstr "Специальный режим (PSP ремастеры)"
+
+msgid "Add Term"
+msgstr "Добавить термин"
+
+msgid "Add a Friend"
+msgstr "Добавить друга"
+
+msgid "Add a player to your Friends list using their PlayStation®Network ID."
+msgstr "Добавьте игрока в список друзей, используя его идентификатор PlayStation®Network."
+
+msgid "Add to Playlist"
+msgstr "Добавить в плейлист"
+
+msgid "Add words to be displayed as options for predictive text entry when using the on-screen keyboard.\nSelect an option."
+msgstr "Добавьте слова, которые будут отображаться в качестве параметров интеллектуального ввода текста при использовании экранной клавиатуры.\nВыберите вариант."
+
+msgid "Add words to be displayed as options for predictive text entry.\nSelect an option."
+msgstr "Добавьте слова, которые будут отображаться в качестве вариантов интеллектуального ввода текста.\nВыберите вариант."
+
+msgid "Add/Edit Term"
+msgstr "Добавить/изменить термин"
+
+msgid "Added "
+msgstr "Добавлено"
+
+msgid "Address"
+msgstr "Адрес"
+
+msgid "Adjust settings for connection to the Internet.\nIf making a wired connection, you must have an Ethernet cable connected."
+msgstr "Настройте параметры подключения к Интернету.\nПри проводном подключении необходимо подключить кабель Ethernet."
+
+msgid "Adjust the OpenXMB scene brightness."
+msgstr "Отрегулируйте яркость сцены OpenXMB."
+
+msgid "Adjusts date and time settings."
+msgstr "Регулирует настройки даты и времени."
+
+msgid "Adjusts parental control settings."
+msgstr "Регулирует настройки родительского контроля."
+
+msgid "Adjusts settings for accessories that are connected to this system."
+msgstr "Регулирует настройки аксессуаров, подключенных к этой системе."
+
+msgid "Adjusts settings for audio output."
+msgstr "Регулирует настройки вывода звука."
+
+msgid "Adjusts settings for chat."
+msgstr "Регулирует настройки чата."
+
+msgid "Adjusts settings for games."
+msgstr "Регулирует настройки для игр."
+
+msgid "Adjusts settings for music."
+msgstr "Регулирует настройки музыки."
+
+msgid "Adjusts settings for printers that are connected to this system."
+msgstr "Регулирует настройки принтеров, подключенных к этой системе."
+
+msgid "Adjusts settings for printers that are connected to this system.\n\nNo printer is connected to the system."
+msgstr "Регулирует настройки принтеров, подключенных к этой системе.\n\n К системе не подключен принтер."
+
+msgid "Adjusts settings for remote play. Remote play enables you to use a device that supports the remote play feature (such as a PSP™ system) to operate this system over a network."
+msgstr "Регулирует настройки для дистанционного воспроизведения. Дистанционное воспроизведение позволяет использовать устройство, поддерживающее функцию удаленного воспроизведения (например, систему PSP™), для управления этой системой по сети."
+
+msgid "Adjusts settings for the Internet connection."
+msgstr "Регулирует настройки подключения к Интернету."
+
+msgid "Adjusts settings for this OpenXMB system."
+msgstr "Регулирует настройки для этой системы OpenXMB."
+
+msgid "Adjusts settings for video output."
+msgstr "Регулирует настройки видеовыхода."
+
+msgid "Adjusts settings for video."
+msgstr "Регулирует настройки видео."
+
+msgid "Adjusts settings related to the appearance of the XMB™ screen."
+msgstr "Регулирует настройки, связанные с внешним видом экрана XMB™."
+
+msgid "Adjusts settings to reduce power usage by this system."
+msgstr "Регулирует настройки для снижения энергопотребления этой системы."
+
+msgid "Advanced"
+msgstr "Расширенный"
+
+msgid "After 1 hour"
+msgstr "Через 1 час"
+
+msgid "After 10 Minutes"
+msgstr "Через 10 минут"
+
+msgid "After 10 min."
+msgstr "Через 10 мин."
+
+msgid "After 2 hours"
+msgstr "Через 2 часа"
+
+msgid "After 20 Minutes"
+msgstr "Через 20 минут"
+
+msgid "After 3 hours"
+msgstr "Через 3 часа"
+
+msgid "After 30 Minutes"
+msgstr "Через 30 минут"
+
+msgid "After 30 min."
+msgstr "Через 30 мин."
+
+msgid "After 5 Minutes"
+msgstr "Через 5 минут"
+
+msgid "After 5 hours"
+msgstr "Через 5 часов"
+
+msgid "After 60 min."
+msgstr "Через 60 мин."
+
+msgid "After Launching a Game"
+msgstr "После запуска игры"
+
+msgid "Album Artwork"
+msgstr "Обложка альбома"
+
+msgid "Albums"
+msgstr "Альбомы"
+
+msgid "All"
+msgstr "Все"
+
+msgid "All data on the system storage will be erased.\nAre you sure you want to continue?"
+msgstr "Все данные в системном хранилище будут удалены.\nВы уверены, что хотите продолжить?"
+
+msgid "All terms that were added will be deleted.\nAre you sure you want to continue?"
+msgstr "Все добавленные термины будут удалены.\nВы уверены, что хотите продолжить?"
+
+msgid "Analog Navigation"
+msgstr "Аналоговая навигация"
+
+msgid "Anti-aliasing"
+msgstr "Сглаживание"
+
+msgid "Apply a saved appearance preset."
+msgstr "Примените сохраненный набор настроек внешнего вида."
+
+msgid "Apply upscaling to PlayStation® format software."
+msgstr "Примените масштабирование к программному обеспечению формата PlayStation®."
+
+msgid "Are you sure you want to delete the track?"
+msgstr "Вы уверены, что хотите удалить трек?"
+
+msgid "Artist ▲"
+msgstr "Художник ▲"
+
+msgid "Artist ▼"
+msgstr "Художник ▼"
+
+msgid "Artists"
+msgstr "Художники"
+
+msgid "Audio Device Settings"
+msgstr "Настройки аудиоустройства"
+
+msgid "Audio Input Connector / SCART / AV MULTI"
+msgstr "Разъем аудиовхода / SCART / AV MULTI"
+
+msgid "Audio Language"
+msgstr "Язык аудио"
+
+msgid "Audio Multi-Output"
+msgstr "Аудио мульти-выход"
+
+msgid "Audio Options"
+msgstr "Параметры аудио"
+
+msgid "Audio Output Device"
+msgstr "Устройство вывода звука"
+
+msgid "Audio Output Settings"
+msgstr "Настройки аудиовыхода"
+
+msgid "Authentication"
+msgstr "Аутентификация"
+
+msgid "Authentication Setting"
+msgstr "Настройка аутентификации"
+
+msgid "Auto"
+msgstr "Авто"
+
+msgid "Auto (Time of Day)"
+msgstr "Авто (время суток)"
+
+msgid "Auto-Detect"
+msgstr "Автоопределение"
+
+msgid "Automatic"
+msgstr "Автоматический"
+
+msgid "Automatic Update"
+msgstr "Автоматическое обновление"
+
+msgid "Automatic detection or a preferred button style."
+msgstr "Автоматическое обнаружение или предпочтительный стиль кнопок."
+
+msgid "Automatic setup by access point type."
+msgstr "Автоматическая настройка по типу точки доступа."
+
+msgid "Automatically use hardware decoding when available."
+msgstr "Автоматически использовать аппаратное декодирование, если оно доступно."
+
+msgid "BD Audio Language"
+msgstr "BD Язык аудио"
+
+msgid "BD Audio Output Format (HDMI)"
+msgstr "BD Формат аудиовыхода (HDMI)"
+
+msgid "BD Data Utility"
+msgstr "BD Утилита обработки данных"
+
+msgid "BD Parental Control"
+msgstr "BD Родительский контроль"
+
+msgid "BD Remote Control Registration"
+msgstr "BD Регистрация удаленного управления"
+
+msgid "BD/DVD - Video Output Format (HDMI)"
+msgstr "BD/DVD — формат вывода видео (HDMI)"
+
+msgid "BD/DVD Auto-start"
+msgstr "BD/DVD Автозапуск"
+
+msgid "BT Stereo Headphones"
+msgstr "Стереонаушники BT"
+
+msgid "Back"
+msgstr "Назад"
+
+msgid "Back Up"
+msgstr "Резервное копирование"
+
+msgid "Back up completed."
+msgstr "Резервное копирование завершено."
+
+msgid "Back up or restore data on the system storage.\nSelect the operation you want to perform."
+msgstr "Резервное копирование или восстановление данных в системном хранилище.\nВыберите операцию, которую хотите выполнить."
+
+msgid "Background"
+msgstr "Фон"
+
+msgid "Background Audio"
+msgstr "Фоновый звук"
+
+msgid "Background File"
+msgstr "Фоновый файл"
+
+msgid "Background Frame Limit"
+msgstr "Предел фонового кадра"
+
+msgid "Background Music"
+msgstr "Фоновая музыка"
+
+msgid "Background file not found."
+msgstr "Фоновый файл не найден."
+
+msgid "Backing up...\nDo not remove the storage media."
+msgstr "Резервное копирование...\nНе извлекайте носитель."
+
+msgid "Backs up data saved on the system storage to storage media, or restores data that has been backed up.\nSelect an option."
+msgstr "Выполняет резервное копирование данных, сохраненных в системном хранилище, на носитель или восстанавливает данные, для которых была создана резервная копия.\nВыберите вариант."
+
+msgid "Backup Utility"
+msgstr "Утилита резервного копирования"
+
+msgid "Baltic"
+msgstr "Балтика"
+
+msgid "Before the Storm"
+msgstr "Before the Storm"
+
+msgid "Beneath the Ashes"
+msgstr "Beneath the Ashes"
+
+msgid "Bing"
+msgstr "Bing"
+
+msgid "Bitstream"
+msgstr "Битстрим"
+
+msgid "Black"
+msgstr "Черный"
+
+msgid "Block Noise Reduction"
+msgstr "Блок шумоподавления"
+
+msgid "Blue"
+msgstr "Синий"
+
+msgid "Bluetooth Keyboard"
+msgstr "Bluetooth Клавиатура"
+
+msgid "Bluetooth Mouse"
+msgstr "Bluetooth Мышь"
+
+msgid "Bluetooth® Headset"
+msgstr "Bluetooth® Гарнитура"
+
+msgid "Borderless"
+msgstr "Без границ"
+
+msgid "Breathtaking Vision"
+msgstr "Breathtaking Vision"
+
+msgid "Bright"
+msgstr "Яркий"
+
+msgid "Brightness"
+msgstr "Яркость"
+
+msgid "British English"
+msgstr "Британский английский"
+
+msgid "Brown"
+msgstr "Браун"
+
+msgid "Browse and purchase games, add-ons, movies, and more for your OpenXMB system.\n\nDownload demos, full games, themes, wallpapers, and exclusive content.\n\nA broadband Internet connection and a PlayStation®Network account are required to use PlayStation®Store."
+msgstr "Найдите и приобретите игры, дополнения, фильмы и многое другое для вашей системы OpenXMB.\n\n Загрузите демоверсии, полные версии игр, темы, обои и эксклюзивный контент.\n\n Для использования PlayStation®Store требуется широкополосное подключение к Интернету и учетная запись PlayStation®Network."
+
+msgid "Browse folders, songs, albums, artists or saved playlists."
+msgstr "Просматривайте папки, песни, альбомы, исполнителей или сохраненные плейлисты."
+
+msgid "Browser"
+msgstr "Браузер"
+
+msgid "Buffalo-A1B2C3"
+msgstr "Буффало-A1B2C3"
+
+msgid "By Album"
+msgstr "По альбому"
+
+msgid "By Artist"
+msgstr "Автор: Художник"
+
+msgid "By Genre"
+msgstr "По жанру"
+
+msgid "By Month"
+msgstr "По месяцам"
+
+msgid "By Release Year"
+msgstr "По году выпуска"
+
+msgid "By Track"
+msgstr "По треку"
+
+msgid "By Year"
+msgstr "По годам"
+
+msgid "Calibrate Motion Controller"
+msgstr "Калибровка контроллера движения"
+
+msgid "Calibrates the magnetic sensor of a motion controller. Use this setting when the motion controller does not control on-screen movement as expected."
+msgstr "Калибровка магнитного датчика контроллера движения. Используйте этот параметр, если контроллер движений не управляет движением на экране должным образом."
+
+msgid "Calibrates the magnetic sensor of a motion controller. Use this setting when the motion controller does not control on-screen movement as expected.\n\nPlace the controller on a flat surface, then press the X button."
+msgstr "Калибровка магнитного датчика контроллера движения. Используйте этот параметр, если контроллер движений не управляет движением на экране должным образом.\n\n Поместите контроллер на плоскую поверхность и нажмите кнопку X."
+
+msgid "Camera Device Settings"
+msgstr "Настройки устройства камеры"
+
+msgid "Can you read this screen?\nSelect [Yes] if you can.\n\nIf you do not press any buttons, the system will automatically go back to the previous setting."
+msgstr "Вы можете прочитать этот экран?\nЕсли можете, выберите [Да].\n\n Если вы не нажмете ни одну кнопку, система автоматически вернется к предыдущим настройкам."
+
+msgid "Cancel"
+msgstr "Отмена"
+
+msgid "Canyon"
+msgstr "Каньон"
+
+msgid "Caution-Echidnas May Eat Your Brain"
+msgstr "Caution-Echidnas May Eat Your Brain"
+
+msgid "Central European"
+msgstr "Центральноевропейский"
+
+msgid "Change Binding"
+msgstr "Изменить привязку"
+
+msgid "Change Effect"
+msgstr "Изменить эффект"
+
+msgid "Change Icon"
+msgstr "Изменить значок"
+
+msgid "Change Password"
+msgstr "Изменить пароль"
+
+msgid "Change the number assigned to the controller that is currently in use."
+msgstr "Измените номер, присвоенный контроллеру, который используется в данный момент."
+
+msgid "Change the number assigned to the controller that is currently in use.\n\nPress the PS button on the controller you want to reassign."
+msgstr "Измените номер, присвоенный контроллеру, который используется в данный момент.\n\n Нажмите кнопку PS на контроллере, который вы хотите переназначить."
+
+msgid "Change the password required to play games or videos, or to use the Internet browser.\n\nEnter your current password."
+msgstr "Измените пароль, необходимый для воспроизведения игр или видео, а также для использования интернет-браузера.\n\n Введите текущий пароль."
+
+msgid "Channel 1"
+msgstr "Канал 1"
+
+msgid "Channel 11"
+msgstr "11 канал"
+
+msgid "Channel 6"
+msgstr "Канал 6"
+
+msgid "Chapters"
+msgstr "Главы"
+
+msgid "Character Set"
+msgstr "Набор символов"
+
+msgid "Chat Rooms"
+msgstr "Чаты"
+
+msgid "Chat Settings"
+msgstr "Настройки чата"
+
+msgid "Checking for the latest version of the system software..."
+msgstr "Проверка наличия последней версии системного программного обеспечения..."
+
+msgid "Checking network configuration...\nPlease wait."
+msgstr "Проверка конфигурации сети...\nПожалуйста, подождите."
+
+msgid "Chinese"
+msgstr "китайский"
+
+msgid "Chinese (simplified)"
+msgstr "Китайский (упрощенный)"
+
+msgid "Chinese (traditional)"
+msgstr "Китайский (традиционный)"
+
+msgid "Choose a 12-hour or 24-hour clock."
+msgstr "Выберите 12-часовой или 24-часовой формат времени."
+
+msgid "Choose a TrueType or OpenType font file."
+msgstr "Выберите файл шрифта TrueType или OpenType."
+
+msgid "Choose a photo or video background."
+msgstr "Выберите фото или видео фон."
+
+msgid "Choose an action, then press its controller button."
+msgstr "Выберите действие, затем нажмите кнопку его контроллера."
+
+msgid "Choose an action, then press its keyboard key."
+msgstr "Выберите действие, затем нажмите соответствующую клавишу на клавиатуре."
+
+msgid "Choose an existing folder."
+msgstr "Выберите существующую папку."
+
+msgid "Choose how OpenXMB uses the display."
+msgstr "Выберите, как OpenXMB будет использовать дисплей."
+
+msgid "Choose how the shell behaves while a game runs."
+msgstr "Выберите, как будет вести себя оболочка во время работы игры."
+
+msgid "Choose the folder scanned for games."
+msgstr "Выберите папку, отсканированную на наличие игр."
+
+msgid "Choose the full-screen music presentation."
+msgstr "Выберите полноэкранную музыкальную презентацию."
+
+msgid "Choose the fullscreen display resolution."
+msgstr "Выберите разрешение полноэкранного дисплея."
+
+msgid "Choose the icon material."
+msgstr "Выберите материал значка."
+
+msgid "Choose the root folder for music and playlists."
+msgstr "Выберите корневую папку для музыки и плейлистов."
+
+msgid "Choose the root folder for photos."
+msgstr "Выберите корневую папку для фотографий."
+
+msgid "Choose the root folder for videos."
+msgstr "Выберите корневую папку для видео."
+
+msgid "Classic"
+msgstr "Классический"
+
+msgid "Clear Browsing Data"
+msgstr "Очистить данные просмотра"
+
+msgid "Clear Browsing Data?"
+msgstr "Очистить данные просмотра?"
+
+msgid "Clear Thumbnail Cache?"
+msgstr "Очистить кэш миниатюр?"
+
+msgid "Colour"
+msgstr "Цвет"
+
+msgid "Component / D-Terminal"
+msgstr "Компонент / D-терминал"
+
+msgid "Compose and send a new message."
+msgstr "Напишите и отправьте новое сообщение."
+
+msgid "Composite / S Video"
+msgstr "Композитное/S-видео"
+
+msgid "Configure Ad Hoc Mode settings for PSP® Remasters."
+msgstr "Настройте параметры режима Ad Hoc для ремастеров PSP®."
+
+msgid "Configure BD/DVD auto-start settings."
+msgstr "Настройте параметры автозапуска BD/DVD."
+
+msgid "Configure audio output settings."
+msgstr "Настройте параметры вывода звука."
+
+msgid "Configure the screen saver settings."
+msgstr "Настройте параметры заставки."
+
+msgid "Configure the screen size for PSP® Remasters."
+msgstr "Настройте размер экрана для PSP® Remasters."
+
+msgid "Configure video output settings according to your TV."
+msgstr "Настройте параметры видеовыхода в соответствии с вашим телевизором."
+
+msgid "Confirm"
+msgstr "Подтвердить"
+
+msgid "Connect"
+msgstr "Подключиться"
+
+msgid "Connect PS Vita System Using Network"
+msgstr "Подключите систему PS Vita по сети"
+
+msgid "Connecting...\nPlease wait."
+msgstr "Подключение...\nПожалуйста, подождите."
+
+msgid "Connection test completed."
+msgstr "Проверка подключения завершена."
+
+msgid "Continue after the last photograph."
+msgstr "Продолжайте после последней фотографии."
+
+msgid "Continue audio when OpenXMB loses focus."
+msgstr "Продолжить воспроизведение звука, когда OpenXMB теряет фокус."
+
+msgid "Continue music after closing the player."
+msgstr "Продолжить воспроизведение музыки после закрытия плеера."
+
+msgid "Control for HDMI"
+msgstr "Управление для HDMI"
+
+msgid "Controller Auto-Off"
+msgstr "Автоматическое выключение контроллера"
+
+msgid "Controller Bindings"
+msgstr "Привязки контроллера"
+
+msgid "Controller Prompts"
+msgstr "Подсказки контроллера"
+
+msgid "Controller Vibration"
+msgstr "Контроллер вибрации"
+
+msgid "Controller Vibration Function"
+msgstr "Функция вибрации контроллера"
+
+msgid "Copy"
+msgstr "Копировать"
+
+msgid "Copy Multiple"
+msgstr "Копировать несколько"
+
+msgid "Corrupted Data"
+msgstr "Поврежденные данные"
+
+msgid "Create New Internal Memory Card"
+msgstr "Создать новую внутреннюю карту памяти"
+
+msgid "Create New User"
+msgstr "Создать нового пользователя"
+
+msgid "Create a new internal memory card."
+msgstr "Создайте новую внутреннюю карту памяти."
+
+msgid "Crimson"
+msgstr "малиновый"
+
+msgid "Cross Color Reduction Filter"
+msgstr "Перекрестный фильтр уменьшения цвета"
+
+msgid "Crossfade"
+msgstr "Кроссфейд"
+
+msgid "Custom"
+msgstr "Пользовательский"
+
+msgid "Cyan"
+msgstr "Голубой"
+
+msgid "Cyrillic"
+msgstr "кириллица"
+
+msgid "DD/MM/YYYY"
+msgstr "ДД/ММ/ГГГГ"
+
+msgid "DHCP Host Name"
+msgstr "Имя хоста DHCP"
+
+msgid "DNS Setting"
+msgstr "DNS Настройка"
+
+msgid "DNS Setting\nIn most cases, select [Automatic]."
+msgstr "DNS Настройка\nВ большинстве случаев выберите [Автоматически]."
+
+msgid "DTS 5.1 Ch."
+msgstr "ДТС 5.1 гл."
+
+msgid "DVD Audio Language"
+msgstr "DVD Язык аудио"
+
+msgid "DVD Parental Control"
+msgstr "DVD Родительский контроль"
+
+msgid "Danish"
+msgstr "датский"
+
+msgid "Dark Blue"
+msgstr "Темно-синий"
+
+msgid "Dark Green"
+msgstr "Темно-зеленый"
+
+msgid "Data Transfer Utility"
+msgstr "Утилита передачи данных"
+
+msgid "Date"
+msgstr "Дата"
+
+msgid "Date (YYYY/MM/DD)"
+msgstr "Дата (ГГГГ/ММ/ДД)"
+
+msgid "Date Format"
+msgstr "Формат даты"
+
+msgid "Date and Time"
+msgstr "Дата и время"
+
+msgid "Date and Time Settings"
+msgstr "Настройки даты и времени"
+
+msgid "Day"
+msgstr "День"
+
+msgid "Day/Night"
+msgstr "День/Ночь"
+
+msgid "Daylight Saving"
+msgstr "Летнее время"
+
+msgid "Dead Batteries"
+msgstr "Dead Batteries"
+
+msgid "Decoder Information"
+msgstr "Информация о декодере"
+
+msgid "Deep Color Output (HDMI)"
+msgstr "Вывод глубоких цветов (HDMI)"
+
+msgid "Default"
+msgstr "По умолчанию"
+
+msgid "Default Repeat"
+msgstr "Повтор по умолчанию"
+
+msgid "Default Router"
+msgstr "Маршрутизатор по умолчанию"
+
+msgid "Default Screen Fit"
+msgstr "Экран по умолчанию"
+
+msgid "Default Shuffle"
+msgstr "Перемешать по умолчанию"
+
+msgid "Default Sort"
+msgstr "Сортировка по умолчанию"
+
+msgid "Default browser page scale."
+msgstr "Масштаб страницы браузера по умолчанию."
+
+msgid "Default volume for music playback."
+msgstr "Громкость по умолчанию для воспроизведения музыки."
+
+msgid "Default volume for video playback."
+msgstr "Громкость по умолчанию для воспроизведения видео."
+
+msgid "Delay between held directional inputs in milliseconds."
+msgstr "Задержка между удержанием направленных входов в миллисекундах."
+
+msgid "Delete"
+msgstr "Удалить"
+
+msgid "Delete All"
+msgstr "Удалить все"
+
+msgid "Delete BD data saved on the system storage."
+msgstr "Удалите данные BD, сохраненные в системной памяти."
+
+msgid "Delete Backup Data"
+msgstr "Удалить данные резервной копии"
+
+msgid "Delete Multiple"
+msgstr "Удалить несколько"
+
+msgid "Delete PS Vita System's Backup Files"
+msgstr "Удалите файлы резервных копий системы PS Vita."
+
+msgid "Delete Predictive Text Dictionary"
+msgstr "Удалить интеллектуальный текстовый словарь"
+
+msgid "Delete Registered Device"
+msgstr "Удалить зарегистрированное устройство"
+
+msgid "Delete Term"
+msgstr "Удалить термин"
+
+msgid "Deletes backup files for the PS Vita system saved on this system."
+msgstr "Удаляет файлы резервных копий системы PS Vita, сохраненные в этой системе."
+
+msgid "Deletes backup files for the PS Vita system saved on this system.\n\nThe backup files for the PS Vita system will be deleted.\nYou can only delete the backup files for your account.\n\nDo you want to delete the backup files?"
+msgstr "Удаляет файлы резервных копий системы PS Vita, сохраненные в этой системе.\n\n Файлы резервных копий системы PS Vita будут удалены.\nВы можете удалить только файлы резервных копий своей учетной записи.\n\n Вы хотите удалить файлы резервной копии?"
+
+msgid "Deletes registered remote play devices from this system.\nSelect a device to delete."
+msgstr "Удаляет зарегистрированные устройства дистанционного воспроизведения из этой системы.\nВыберите устройство для удаления."
+
+msgid "Deletes words that were added automatically to the dictionary when using the on-screen keyboard."
+msgstr "Удаляет слова, автоматически добавленные в словарь при использовании экранной клавиатуры."
+
+msgid "Deletes words that were added automatically to the dictionary when using the on-screen keyboard.\n\nThe predictive text dictionary will be deleted.\nAre you sure you want to continue?"
+msgstr "Удаляет слова, автоматически добавленные в словарь при использовании экранной клавиатуры.\n\n Словарь интеллектуального ввода текста будет удален.\nВы уверены, что хотите продолжить?"
+
+msgid "Deletion completed."
+msgstr "Удаление завершено."
+
+msgid "Device List"
+msgstr "Список устройств"
+
+msgid "Dictionary Type"
+msgstr "Тип словаря"
+
+msgid "Dim"
+msgstr "Дим"
+
+msgid "Dim the scene after inactivity."
+msgstr "Затемните сцену после бездействия."
+
+msgid "Directory for browser downloads."
+msgstr "Каталог для загрузок браузера."
+
+msgid "Disable"
+msgstr "Отключить"
+
+msgid "Disabled"
+msgstr "Отключено"
+
+msgid "Disc Auto-Start"
+msgstr "Автозапуск диска"
+
+msgid "Disconnect"
+msgstr "Отключить"
+
+msgid "Disconnect All"
+msgstr "Отключить все"
+
+msgid "Display"
+msgstr "Дисплей"
+
+msgid "Display GPU memory use."
+msgstr "Отобразить использование памяти GPU."
+
+msgid "Display Mode"
+msgstr "Режим отображения"
+
+msgid "Display PSP® Remasters in 3D."
+msgstr "Отобразите ремастеры PSP® в 3D."
+
+msgid "Display Settings"
+msgstr "Настройки дисплея"
+
+msgid "Display [What's New]"
+msgstr "Дисплей [Что нового]"
+
+msgid "Display available cover artwork."
+msgstr "Отобразить доступные обложки."
+
+msgid "Display information about the selected content."
+msgstr "Отобразить информацию о выбранном контенте."
+
+msgid "Display the shell frame rate."
+msgstr "Отображение частоты кадров оболочки."
+
+msgid "Displays a list of PS Vita systems registered with this system.\n\nNo PS Vita systems are currently registered."
+msgstr "Отображает список систем PS Vita, зарегистрированных в этой системе.\n\n В настоящее время не зарегистрировано ни одной системы PS Vita."
+
+msgid "Displays a list of devices registered with this system.\n\nNo devices are currently registered for remote play."
+msgstr "Отображает список устройств, зарегистрированных в этой системе.\n\n В настоящее время не зарегистрировано ни одного устройства для удаленного воспроизведения."
+
+msgid "Displays current network settings and connection status."
+msgstr "Отображает текущие настройки сети и состояние подключения."
+
+msgid "Displays current network settings and the Internet connection status.\n\nConnection Name    Default\nConnection Type    Wired\nIP Address         192.168.1.10\nSubnet Mask        255.255.255.0\nDefault Gateway    192.168.1.1\nPrimary DNS        8.8.8.8\nSecondary DNS      8.8.4.4"
+msgstr "Отображает текущие настройки сети и состояние подключения к Интернету.\n\n Имя соединения По умолчанию\nТип соединения Проводное\nIP Адрес 192.168.1.10\nМаска подсети 255.255.255.0\nШлюз по умолчанию 192.168.1.1\nПервичный DNS 8.8.8.8\nВторичный DNS 8.8.4.4"
+
+msgid "Displays manuals for the software installed on the OpenXMB system."
+msgstr "Отображает руководства для программного обеспечения, установленного в системе OpenXMB."
+
+msgid "Displays the messages you have received."
+msgstr "Отображает полученные сообщения."
+
+msgid "Displays the messages you have sent."
+msgstr "Отображает отправленные вами сообщения."
+
+msgid "Displays the registration code that is required to play DivX® VOD content."
+msgstr "Отображает регистрационный код, необходимый для воспроизведения контента DivX® VOD."
+
+msgid "Displays the registration code that is required to play DivX® VOD content.\n\nRegistration Code:\n\n8C9D7E1F\n\nVisit http://www.divx.com/vod/ for instructions on how to register the code."
+msgstr "Отображает регистрационный код, необходимый для воспроизведения контента DivX® VOD.\n\n Регистрационный код:\n\n 8C9D7E1F\n\n Посетите http://www.divx.com/vod/ для получения инструкций по регистрации кода."
+
+msgid "DivX® VOD Registration Code"
+msgstr "DivX® Регистрационный код VOD"
+
+msgid "Divided from Grace"
+msgstr "Divided from Grace"
+
+msgid "Do Not Display"
+msgstr "Не отображать"
+
+msgid "Do Not Set"
+msgstr "Не устанавливать"
+
+msgid "Do Not Use"
+msgstr "Не использовать"
+
+msgid "Do you want to back up data on the system storage to other storage media?\n\nLimitations may apply when backing up certain copyright-protected content."
+msgstr "Хотите выполнить резервное копирование данных из системного хранилища на другие носители?\n\n При резервном копировании определенного контента, защищенного авторскими правами, могут применяться ограничения."
+
+msgid "Do you want to cancel?\nThe settings you have made so far will not be saved if you cancel."
+msgstr "Вы хотите отменить?\nСделанные вами настройки не будут сохранены в случае отмены."
+
+msgid "Do you want to overwrite the wallpaper?\nIf you do, the current wallpaper will be lost.\nOnly one wallpaper image can be saved."
+msgstr "Хотите перезаписать обои?\nЕсли вы это сделаете, текущие обои будут потеряны.\nМожно сохранить только одно изображение обоев."
+
+msgid "Do you want to perform advanced settings?"
+msgstr "Вы хотите выполнить расширенные настройки?"
+
+msgid "Dolby Digital 5.1 Ch."
+msgstr "Dolby Digital 5.1-кан."
+
+msgid "Double Scale"
+msgstr "Двойная шкала"
+
+msgid "Down"
+msgstr "Вниз"
+
+msgid "Downloads Folder"
+msgstr "Папка загрузок"
+
+msgid "DuckDuckGo"
+msgstr "DuckDuckGo"
+
+msgid "Dusk"
+msgstr "Сумерки"
+
+msgid "Dutch"
+msgstr "голландский"
+
+msgid "EAP Authentication"
+msgstr "EAP-аутентификация"
+
+msgid "EAP-MD5"
+msgstr "EAP-MD5"
+
+msgid "Easy"
+msgstr "Легко"
+
+msgid "Echo Cancellation"
+msgstr "Эхоподавление"
+
+msgid "Edit"
+msgstr "Редактировать"
+
+msgid "Edit Term"
+msgstr "Изменить термин"
+
+msgid "Elevator Music"
+msgstr "Elevator Music"
+
+msgid "Emulation Configuration"
+msgstr "Конфигурация эмуляции"
+
+msgid "Enable"
+msgstr "Включить"
+
+msgid "Enable ATRAC"
+msgstr "Включить ATRAC"
+
+msgid "Enable WMA Playback"
+msgstr "Включить воспроизведение WMA"
+
+msgid "Enable analog controller navigation."
+msgstr "Включите навигацию аналогового контроллера."
+
+msgid "Enable controller feedback."
+msgstr "Включите обратную связь контроллера."
+
+msgid "Enabled"
+msgstr "Включено"
+
+msgid "English"
+msgstr "английский"
+
+msgid "English (UK)"
+msgstr "английский (Великобритания)"
+
+msgid "English (US)"
+msgstr "английский (США)"
+
+msgid "English (United Kingdom)"
+msgstr "Английский (Великобритания)"
+
+msgid "English (United States)"
+msgstr "Английский (США)"
+
+msgid "Enter Manually"
+msgstr "Введите вручную"
+
+msgid "Enter a new 4-digit password."
+msgstr "Введите новый 4-значный пароль."
+
+msgid "Enter the new password again to confirm."
+msgstr "Введите новый пароль еще раз для подтверждения."
+
+msgid "Eternal Excavation"
+msgstr "Eternal Excavation"
+
+msgid "Evening"
+msgstr "Вечер"
+
+msgid "External Subtitle"
+msgstr "Внешний субтитр"
+
+msgid "Extra"
+msgstr "Экстра"
+
+msgid "FON_FREE_INTERNET"
+msgstr "FON_FREE_INTERNET"
+
+msgid "FREE* to access, PlayStation®Store is the only place to download new and exclusive PS3™ games, FREE playable demos, add-on packs, and high-definition videos.\n\nGet more for your PS3™ and visit PlayStation®Store today.\n\n* Broadband Internet connection required."
+msgstr "БЕСПЛАТНЫЙ* доступ, PlayStation®Store — единственное место, где можно загрузить новые и эксклюзивные игры PS3™, БЕСПЛАТНЫЕ демо-версии, дополнительные пакеты и видео высокой четкости.\n\n Получите больше от своего PS3™ и посетите PlayStation®Store сегодня.\n\n * Требуется широкополосное подключение к Интернету."
+
+msgid "Fade"
+msgstr "Затухание"
+
+msgid "Fast"
+msgstr "Быстро"
+
+msgid "Fast Forward"
+msgstr "Быстрая перемотка вперед"
+
+msgid "Fast Reverse"
+msgstr "Быстрый реверс"
+
+msgid "File logging is unavailable on this platform."
+msgstr "На этой платформе ведение журнала файлов недоступно."
+
+msgid "Fill"
+msgstr "Заполнить"
+
+msgid "Film Date ▲"
+msgstr "Дата фильма ▲"
+
+msgid "Film Date ▼"
+msgstr "Дата фильма ▼"
+
+msgid "Finish"
+msgstr "Готово"
+
+msgid "Finnish"
+msgstr "финский"
+
+msgid "Fit"
+msgstr "Подходит"
+
+msgid "Flow"
+msgstr "Flow"
+
+msgid "Flow visualiser"
+msgstr "Визуализация Flow"
+
+
+
+msgid "Folder Repeat"
+msgstr "Повтор папки"
+
+msgid "Folders"
+msgstr "Папки"
+
+msgid "Follow the on-screen instructions on your PlayStation®Vita system."
+msgstr "Следуйте инструкциям на экране вашей системы PlayStation®Vita."
+
+msgid "Font"
+msgstr "Шрифт"
+
+msgid "Font File"
+msgstr "Файл шрифта"
+
+msgid "Font file not found."
+msgstr "Файл шрифта не найден."
+
+msgid "Format Hard Disk"
+msgstr "Форматировать жесткий диск"
+
+msgid "Format System Storage"
+msgstr "Форматирование системного хранилища"
+
+msgid "Format Utility"
+msgstr "Утилита форматирования"
+
+msgid "Format completed."
+msgstr "Форматирование завершено."
+
+msgid "Formats the system storage and restores the system software to its default settings.\n\nAll data on the hard disk will be deleted, and the system software will be reinstalled.\nDo you want to continue?"
+msgstr "Форматирует системное хранилище и восстанавливает системное программное обеспечение к настройкам по умолчанию.\n\n Все данные на жестком диске будут удалены, а системное программное обеспечение будет переустановлено.\nХотите продолжить?"
+
+msgid "Formats the system storage and restores the system software to its default settings.\nAre you sure you want to continue?"
+msgstr "Форматирует системное хранилище и восстанавливает системное программное обеспечение к настройкам по умолчанию.\nВы уверены, что хотите продолжить?"
+
+msgid "Formats the system storage. All data on the system storage will be deleted during formatting."
+msgstr "Форматирует системную память. При форматировании все данные на системном хранилище будут удалены."
+
+msgid "Formats the system storage. All data on the system storage will be deleted during formatting.\nSelect an option."
+msgstr "Форматирует системную память. При форматировании все данные на системном хранилище будут удалены.\nВыберите вариант."
+
+msgid "Formatting...\nDo not remove the storage media."
+msgstr "Форматирование...\nНе извлекайте носитель информации."
+
+msgid "Formatting...\nDo not turn off the system."
+msgstr "Форматирование...\nНе выключайте систему."
+
+msgid "Fractal Dive"
+msgstr "Fractal Dive"
+
+msgid "Frame Advance"
+msgstr "Продвижение кадров"
+
+msgid "Frame Limit"
+msgstr "Ограничение кадров"
+
+msgid "Frame Noise Reduction"
+msgstr "Снижение шума кадра"
+
+msgid "Frame Reverse"
+msgstr "Реверс кадра"
+
+msgid "French"
+msgstr "французский"
+
+msgid "Friends"
+msgstr "Друзья"
+
+msgid "Full"
+msgstr "Полный"
+
+msgid "Full Format"
+msgstr "Полный формат"
+
+msgid "Full Screen"
+msgstr "Полный экран"
+
+msgid "Fullscreen"
+msgstr "Полноэкранный режим"
+
+msgid "GMT"
+msgstr "время по Гринвичу"
+
+msgid "GMT+00:00 Casablanca"
+msgstr "GMT+00:00 Касабланка"
+
+msgid "GMT+00:00 Dublin"
+msgstr "GMT+00:00 Дублин"
+
+msgid "GMT+00:00 Lisbon"
+msgstr "GMT+00:00 Лиссабон"
+
+msgid "GMT+00:00 London"
+msgstr "Время по Гринвичу+00:00 Лондон"
+
+msgid "GMT+00:00 Reykjavik"
+msgstr "GMT+00:00 Рейкьявик"
+
+msgid "GMT+01:00"
+msgstr "Время по Гринвичу+01:00"
+
+msgid "GMT+01:00 Amsterdam"
+msgstr "GMT+01:00 Амстердам"
+
+msgid "GMT+01:00 Berlin"
+msgstr "Время по Гринвичу+01:00 Берлин"
+
+msgid "GMT+01:00 Madrid"
+msgstr "GMT+01:00 Мадрид"
+
+msgid "GMT+01:00 Paris"
+msgstr "Время по Гринвичу+01:00 Париж"
+
+msgid "GMT+01:00 Rome"
+msgstr "GMT+01:00 Рим"
+
+msgid "GMT+01:00 Stockholm"
+msgstr "GMT+01:00 Стокгольм"
+
+msgid "GMT+02:00"
+msgstr "Время по Гринвичу+02:00"
+
+msgid "GMT+02:00 Athens"
+msgstr "GMT+02:00 Афины"
+
+msgid "GMT+02:00 Cairo"
+msgstr "GMT+02:00 Каир"
+
+msgid "GMT+02:00 Helsinki"
+msgstr "GMT+02:00 Хельсинки"
+
+msgid "GMT+02:00 Johannesburg"
+msgstr "GMT+02:00 Йоханнесбург"
+
+msgid "GMT+03:00"
+msgstr "Время по Гринвичу+03:00"
+
+msgid "GMT+03:00 Istanbul"
+msgstr "GMT+03:00 Стамбул"
+
+msgid "GMT+03:00 Moscow"
+msgstr "Время по Гринвичу+03:00 Москва"
+
+msgid "GMT+03:00 Nairobi"
+msgstr "GMT+03:00 Найроби"
+
+msgid "GMT+03:30 Tehran"
+msgstr "GMT+03:30 Тегеран"
+
+msgid "GMT+04:00"
+msgstr "Время по Гринвичу+04:00"
+
+msgid "GMT+04:00 Dubai"
+msgstr "Время по Гринвичу+04:00 Дубай"
+
+msgid "GMT+04:30 Kabul"
+msgstr "GMT+04:30 Кабул"
+
+msgid "GMT+05:00"
+msgstr "Время по Гринвичу+05:00"
+
+msgid "GMT+05:00 Karachi"
+msgstr "GMT+05:00 Карачи"
+
+msgid "GMT+05:30"
+msgstr "Время по Гринвичу+05:30"
+
+msgid "GMT+05:30 New Delhi"
+msgstr "GMT+05:30 Нью-Дели"
+
+msgid "GMT+05:45 Kathmandu"
+msgstr "GMT+05:45 Катманду"
+
+msgid "GMT+06:00"
+msgstr "Время по Гринвичу+06:00"
+
+msgid "GMT+06:00 Dhaka"
+msgstr "GMT+06:00 Дакка"
+
+msgid "GMT+07:00"
+msgstr "Время по Гринвичу+07:00"
+
+msgid "GMT+07:00 Bangkok"
+msgstr "GMT+07:00 Бангкок"
+
+msgid "GMT+07:00 Jakarta"
+msgstr "GMT+07:00 Джакарта"
+
+msgid "GMT+08:00"
+msgstr "Время по Гринвичу+08:00"
+
+msgid "GMT+08:00 Beijing"
+msgstr "Время по Гринвичу+08:00 Пекин"
+
+msgid "GMT+08:00 Hong Kong"
+msgstr "Время по Гринвичу+08:00 Гонконг"
+
+msgid "GMT+08:00 Singapore"
+msgstr "GMT+08:00 Сингапур"
+
+msgid "GMT+09:00"
+msgstr "Время по Гринвичу+09:00"
+
+msgid "GMT+09:00 Seoul"
+msgstr "Время по Гринвичу+09:00 Сеул"
+
+msgid "GMT+09:00 Tokyo"
+msgstr "Время по Гринвичу+09:00 Токио"
+
+msgid "GMT+09:30 Adelaide"
+msgstr "GMT+09:30 Аделаида"
+
+msgid "GMT+10:00"
+msgstr "Время по Гринвичу+10:00"
+
+msgid "GMT+10:00 Guam"
+msgstr "GMT+10:00 Гуам"
+
+msgid "GMT+10:00 Sydney"
+msgstr "GMT+10:00 Сидней"
+
+msgid "GMT+11:00"
+msgstr "Время по Гринвичу+11:00"
+
+msgid "GMT+11:00 Solomon Islands"
+msgstr "GMT+11:00 Соломоновы Острова"
+
+msgid "GMT+12:00"
+msgstr "Время по Гринвичу+12:00"
+
+msgid "GMT+12:00 Auckland"
+msgstr "GMT+12:00 Окленд"
+
+msgid "GMT+13:00 Samoa"
+msgstr "GMT+13:00 Самоа"
+
+msgid "GMT-01:00"
+msgstr "Время по Гринвичу-01:00"
+
+msgid "GMT-01:00 Azores"
+msgstr "GMT-01:00 Азорские острова"
+
+msgid "GMT-02:00"
+msgstr "Время по Гринвичу-02:00"
+
+msgid "GMT-03:00"
+msgstr "Время по Гринвичу-03:00"
+
+msgid "GMT-03:00 Buenos Aires"
+msgstr "GMT-03:00 Буэнос-Айрес"
+
+msgid "GMT-03:00 Sao Paulo"
+msgstr "GMT-03:00 Сан-Паулу"
+
+msgid "GMT-03:30 Newfoundland"
+msgstr "GMT-03:30 Ньюфаундленд"
+
+msgid "GMT-04:00"
+msgstr "Время по Гринвичу-04:00"
+
+msgid "GMT-04:00 Atlantic (Canada)"
+msgstr "GMT-04:00 Атлантика (Канада)"
+
+msgid "GMT-04:00 Caracas"
+msgstr "GMT-04:00 Каракас"
+
+msgid "GMT-04:00 Santiago"
+msgstr "GMT-04:00 Сантьяго"
+
+msgid "GMT-05:00"
+msgstr "GMT-05:00"
+
+msgid "GMT-05:00 Bogota"
+msgstr "GMT-05:00 Богота"
+
+msgid "GMT-05:00 Eastern Time (US & Canada)"
+msgstr "GMT-05:00 по восточному времени (США и Канада)"
+
+msgid "GMT-05:00 Lima"
+msgstr "GMT-05:00 Лима"
+
+msgid "GMT-06:00"
+msgstr "Время по Гринвичу-06:00"
+
+msgid "GMT-06:00 Central Time (US & Canada)"
+msgstr "GMT-06:00 Центральное время (США и Канада)"
+
+msgid "GMT-06:00 Mexico City"
+msgstr "GMT-06:00 Мехико"
+
+msgid "GMT-07:00"
+msgstr "Время по Гринвичу-07:00"
+
+msgid "GMT-07:00 Chihuahua"
+msgstr "GMT-07:00 Чиуауа"
+
+msgid "GMT-07:00 Mountain Time (US & Canada)"
+msgstr "GMT-07:00 по горному времени (США и Канада)"
+
+msgid "GMT-08:00"
+msgstr "Время по Гринвичу-08:00"
+
+msgid "GMT-08:00 Pacific Time (US & Canada)"
+msgstr "GMT-08:00 по тихоокеанскому времени (США и Канада)"
+
+msgid "GMT-08:00 Tijuana"
+msgstr "GMT-08:00 Тихуана"
+
+msgid "GMT-09:00"
+msgstr "GMT-09:00"
+
+msgid "GMT-09:00 Alaska"
+msgstr "GMT-09:00 Аляска"
+
+msgid "GMT-10:00"
+msgstr "Время по Гринвичу-10:00"
+
+msgid "GMT-10:00 Hawaii"
+msgstr "GMT-10:00 Гавайи"
+
+msgid "GMT-11:00"
+msgstr "Время по Гринвичу-11:00"
+
+msgid "GMT-11:00 Samoa"
+msgstr "GMT-11:00 Самоа"
+
+msgid "GMT-12:00"
+msgstr "Время по Гринвичу-12:00"
+
+msgid "Game"
+msgstr "Игра"
+
+msgid "Game Data Utility"
+msgstr "Утилита игровых данных"
+
+msgid "Game Library Folder"
+msgstr "Папка библиотеки игр"
+
+msgid "Game Settings"
+msgstr "Настройки игры"
+
+msgid "Generated thumbnails will be recreated when needed. Original media is preserved."
+msgstr "Сгенерированные миниатюры будут воссозданы при необходимости. Оригинальный носитель сохранен."
+
+msgid "Genre ▲"
+msgstr "Жанр ▲"
+
+msgid "Genre ▼"
+msgstr "Жанр ▼"
+
+msgid "German"
+msgstr "немецкий"
+
+msgid "Glass Icons"
+msgstr "Стеклянные иконы"
+
+msgid "Globe"
+msgstr "Глобус"
+
+msgid "Go To"
+msgstr "Перейти к"
+
+msgid "Gold"
+msgstr "Золото"
+
+msgid "Google"
+msgstr "Google"
+
+msgid "Gray"
+msgstr "Серый"
+
+msgid "Greek"
+msgstr "Греческий"
+
+msgid "Green"
+msgstr "Зеленый"
+
+msgid "Groove Basin"
+msgstr "Groove Basin"
+
+msgid "Group Content"
+msgstr "Групповой контент"
+
+msgid "HDD Audio Language"
+msgstr "Язык звука жесткого диска"
+
+msgid "HDMI"
+msgstr "HDMI"
+
+msgid "Heads Up for Tails"
+msgstr "Heads Up for Tails"
+
+msgid "Heat Blur"
+msgstr "Heat Blur"
+
+msgid "Helium Stairways"
+msgstr "Helium Stairways"
+
+msgid "High"
+msgstr "Высокий"
+
+msgid "High Pitch"
+msgstr "Высокий тон"
+
+msgid "Hindi"
+msgstr "Хинди"
+
+msgid "Home directory unavailable."
+msgstr "Домашний каталог недоступен."
+
+msgid "Homepage"
+msgstr "Домашняя страница"
+
+msgid "Hours added to local system time for display."
+msgstr "Часы добавлены к локальному системному времени для отображения."
+
+msgid "How photographs fit on screen."
+msgstr "Как фотографии помещаются на экране."
+
+msgid "How video fits on the screen."
+msgstr "Как видео помещается на экране."
+
+msgid "Hydrochill"
+msgstr "Hydrochill"
+
+msgid "IP Address"
+msgstr "IP Адрес"
+
+msgid "IP Address Setting"
+msgstr "IP Настройка адреса"
+
+msgid "Ice Cap 4 Life"
+msgstr "Ice Cap 4 Life"
+
+msgid "Icon Colour"
+msgstr "Цвет значка"
+
+msgid "Icon Style"
+msgstr "Стиль значка"
+
+msgid "Idle Dimming"
+msgstr "Простое затемнение"
+
+msgid "If you format, all data on the system storage will be deleted.\nThis data cannot be restored.\nAre you sure you want to continue?"
+msgstr "При форматировании все данные на системном хранилище будут удалены.\nЭти данные невозможно восстановить.\nВы уверены, что хотите продолжить?"
+
+msgid "If you perform a connection test, the current connection will be terminated and the system will be disconnected.\nDo you want to continue?"
+msgstr "Если вы выполните проверку соединения, текущее соединение будет разорвано и система отключится.\nХотите продолжить?"
+
+msgid "Image Name"
+msgstr "Имя изображения"
+
+msgid "Import Date ▲"
+msgstr "Дата импорта ▲"
+
+msgid "Import Date ▼"
+msgstr "Дата импорта ▼"
+
+msgid "Import a theme archive or theme folder."
+msgstr "Импортируйте архив темы или папку темы."
+
+msgid "Inbox"
+msgstr "Входящие"
+
+msgid "Information"
+msgstr "Информация"
+
+msgid "Input Device"
+msgstr "Устройство ввода"
+
+msgid "Install"
+msgstr "Установить"
+
+msgid "Install Theme"
+msgstr "Установить тему"
+
+msgid "Instant Advance"
+msgstr "Мгновенный аванс"
+
+msgid "Instant Replay"
+msgstr "Мгновенный повтор"
+
+msgid "Interface Text Size"
+msgstr "Размер текста интерфейса"
+
+msgid "Interface Volume"
+msgstr "Громкость интерфейса"
+
+msgid "Internal Memory Card"
+msgstr "Внутренняя карта памяти"
+
+msgid "Internal memory card for PS/PS2 saved data."
+msgstr "Внутренняя карта памяти для сохраненных данных PS/PS2."
+
+msgid "Internet Browser"
+msgstr "Интернет-браузер"
+
+msgid "Internet Browser Start Control"
+msgstr "Контроль запуска интернет-браузера"
+
+msgid "Internet Connection"
+msgstr "Подключение к Интернету"
+
+msgid "Internet Connection Settings"
+msgstr "Настройки подключения к Интернету"
+
+msgid "Internet Connection Test"
+msgstr "Тест подключения к Интернету"
+
+msgid "Internet Search"
+msgstr "Интернет-поиск"
+
+msgid "Internet connection settings have been completed.\n\nSave completed."
+msgstr "Настройка подключения к Интернету завершена.\n\n Сохранение завершено."
+
+msgid "It will take about 10 seconds for the access point to be ready.\nPlease wait..."
+msgstr "Для готовности точки доступа потребуется около 10 секунд.\nПожалуйста, подождите..."
+
+msgid "Italian"
+msgstr "итальянский"
+
+msgid "Ivory Gadget"
+msgstr "Ivory Gadget"
+
+msgid "Japanese"
+msgstr "японский"
+
+msgid "Keep Running"
+msgstr "Продолжайте бежать"
+
+msgid "Keep this computer awake while media plays."
+msgstr "Не позволяйте этому компьютеру спать во время воспроизведения мультимедиа."
+
+msgid "Key Repeat Delay"
+msgstr "Задержка повтора клавиши"
+
+msgid "Key Repeat Rate"
+msgstr "Ключевая частота повторения"
+
+msgid "Key Tone"
+msgstr "Ключевой тон"
+
+msgid "Keyboard Bindings"
+msgstr "Привязки клавиатуры"
+
+msgid "Keyboard Entry Method"
+msgstr "Метод ввода с клавиатуры"
+
+msgid "Keyboard Type"
+msgstr "Тип клавиатуры"
+
+msgid "Knuckleduster"
+msgstr "Knuckleduster"
+
+msgid "Korean"
+msgstr "Корейский"
+
+msgid "Language"
+msgstr "Язык"
+
+msgid "Language 1"
+msgstr "Язык 1"
+
+msgid "Launch at Login"
+msgstr "Запуск при входе в систему"
+
+msgid "Lava Passion"
+msgstr "Lava Passion"
+
+msgid "Left"
+msgstr "Левый"
+
+msgid "Left + Right"
+msgstr "Левый + Правый"
+
+msgid "Left-handed"
+msgstr "Левша"
+
+msgid "Level 1"
+msgstr "Уровень 1"
+
+msgid "Level 2"
+msgstr "Уровень 2"
+
+msgid "Level 3"
+msgstr "Уровень 3"
+
+msgid "Level 4"
+msgstr "Уровень 4"
+
+msgid "Level 5"
+msgstr "Уровень 5"
+
+msgid "Level 6"
+msgstr "Уровень 6"
+
+msgid "Level 7"
+msgstr "Уровень 7"
+
+msgid "Level 8"
+msgstr "Уровень 8"
+
+msgid "Library View"
+msgstr "Просмотр библиотеки"
+
+msgid "Licenses"
+msgstr "Лицензии"
+
+msgid "Light Purple"
+msgstr "Светло-фиолетовый"
+
+msgid "Lime"
+msgstr "Лайм"
+
+msgid "Limited"
+msgstr "Ограниченный"
+
+msgid "Linear PCM"
+msgstr "Линейный ПКМ"
+
+msgid "Linear PCM 2 Ch. 44.1 kHz"
+msgstr "Линейный ПКМ 2 гл. 44,1 кГц"
+
+msgid "Linear PCM 5.1 Ch."
+msgstr "Линейный PCM 5.1 Ch."
+
+msgid "Linear PCM 7.1 Ch."
+msgstr "Линейный PCM 7.1 Ch."
+
+msgid "List of Registered PS Vita Systems"
+msgstr "Список зарегистрированных систем PS Vita"
+
+msgid "Live at the Sandopolis"
+msgstr "Live at the Sandopolis"
+
+msgid "Long"
+msgstr "Длинный"
+
+msgid "Low"
+msgstr "Низкий"
+
+msgid "Low Pitch"
+msgstr "Низкий тон"
+
+msgid "MM/DD/YYYY"
+msgstr "ММ/ДД/ГГГГ"
+
+msgid "MTU"
+msgstr "МТУ"
+
+msgid "Magenta"
+msgstr "Пурпурный"
+
+msgid "Malicious Fingers"
+msgstr "Malicious Fingers"
+
+msgid "Manage Bluetooth® Devices"
+msgstr "Управление устройствами Bluetooth®"
+
+msgid "Manage Bluetooth® devices."
+msgstr "Управляйте устройствами Bluetooth®."
+
+msgid "Manage your PlayStation®Network account."
+msgstr "Управляйте своей учетной записью PlayStation®Network."
+
+msgid "Manages game data installed on the OpenXMB system. To delete a game data item, select it and then press the @T button."
+msgstr "Управляет игровыми данными, установленными в системе OpenXMB. Чтобы удалить элемент игровых данных, выберите его и нажмите кнопку @T."
+
+msgid "Manages internal memory cards for use with PlayStation® and PlayStation®2 format software."
+msgstr "Управляет внутренними картами памяти для использования с программным обеспечением формата PlayStation® и PlayStation®2."
+
+msgid "Manual"
+msgstr "Руководство"
+
+msgid "Master Volume"
+msgstr "Основной объем"
+
+msgid "Maximum shell rendering rate."
+msgstr "Максимальная скорость рендеринга оболочки."
+
+msgid "Media Server Connection"
+msgstr "Подключение медиа-сервера"
+
+msgid "Memory Card Utility (PS/PS2)"
+msgstr "Утилита карты памяти (PS/PS2)"
+
+msgid "Message Box"
+msgstr "Окно сообщения"
+
+msgid "Microphone Level"
+msgstr "Уровень микрофона"
+
+msgid "Microphone Volume"
+msgstr "Громкость микрофона"
+
+msgid "Minimise"
+msgstr "Свернуть"
+
+msgid "Momentary Standstill"
+msgstr "Momentary Standstill"
+
+msgid "Morning"
+msgstr "Утро"
+
+msgid "Mosquito Noise Reduction"
+msgstr "Снижение шума от комаров"
+
+msgid "Mouse Type"
+msgstr "Тип мыши"
+
+msgid "Move OpenXMB to a connected display."
+msgstr "Переместите OpenXMB на подключенный дисплей."
+
+msgid "Multisample anti-aliasing for supported graphics hardware."
+msgstr "Мультисэмпловое сглаживание для поддерживаемого графического оборудования."
+
+msgid "Music"
+msgstr "Музыка"
+
+msgid "Music Folder"
+msgstr "Музыкальная папка"
+
+msgid "Music Settings"
+msgstr "Настройки музыки"
+
+msgid "Music Visualiser"
+msgstr "Музыкальный визуализатор"
+
+msgid "Music Volume"
+msgstr "Громкость музыки"
+
+msgid "Music codec: "
+msgstr "Музыкальный кодек:"
+
+msgid "My PlayStation®Network Account"
+msgstr "Мой аккаунт PlayStation®Network"
+
+msgid "MyHome_5GHz (Private Networks Only)"
+msgstr "MyHome_5 ГГц (только частные сети)"
+
+msgid "NETGEAR-Guest"
+msgstr "NETGEAR-Гость"
+
+msgid "Name"
+msgstr "Имя"
+
+msgid "Navigation Repeat"
+msgstr "Повтор навигации"
+
+msgid "Network"
+msgstr "Сеть"
+
+msgid "Network Settings"
+msgstr "Настройки сети"
+
+msgid "Next"
+msgstr "Далее"
+
+msgid "Night"
+msgstr "Ночь"
+
+msgid "No"
+msgstr "Нет"
+
+msgid "No saved theme presets."
+msgstr "Нет сохраненных пресетов тем."
+
+msgid "No wireless stereo headset is connected."
+msgstr "Беспроводная стереогарнитура не подключена."
+
+msgid "None"
+msgstr "Нет"
+
+msgid "Normal"
+msgstr "Нормальный"
+
+msgid "Norwegian"
+msgstr "Норвежский"
+
+msgid "Notification Messages"
+msgstr "Уведомления"
+
+msgid "Obtaining the date and time via the Internet..."
+msgstr "Получение даты и времени через Интернет..."
+
+msgid "Obtains the correct date and time automatically via the Internet when you sign in to PSN, and sets them on your system."
+msgstr "Автоматически получает правильную дату и время через Интернет при входе в PSN и устанавливает их в вашей системе."
+
+msgid "Obtains the correct date and time automatically via the Internet when you sign in to PSN, and sets them on your system.\n\nA network connection is required for this feature."
+msgstr "Автоматически получает правильную дату и время через Интернет при входе в PSN и устанавливает их в вашей системе.\n\n Для этой функции требуется сетевое подключение."
+
+msgid "Off"
+msgstr "Выкл."
+
+msgid "On"
+msgstr "Вкл."
+
+msgid "On-Screen Keyboard"
+msgstr "Экранная клавиатура"
+
+msgid "One"
+msgstr "Один"
+
+msgid "Online Instruction Manuals"
+msgstr "Интернет-руководства по эксплуатации"
+
+msgid "Open Log Folder"
+msgstr "Открыть папку журнала"
+
+msgid "Open the location of diagnostic logs."
+msgstr "Откройте расположение журналов диагностики."
+
+msgid "OpenXMB system"
+msgstr "OpenXMB система"
+
+msgid "OpenXMB version and information about this computer."
+msgstr "OpenXMB версия и информация об этом компьютере."
+
+msgid "Operate other devices on the network from this system."
+msgstr "Управляйте другими устройствами в сети из этой системы."
+
+msgid "Optical Digital"
+msgstr "Оптический цифровой"
+
+msgid "Options"
+msgstr "Опции"
+
+msgid "Orange"
+msgstr "Оранжевый"
+
+msgid "Order of year, month and day."
+msgstr "Порядок года, месяца и дня."
+
+msgid "Original"
+msgstr "Оригинал"
+
+msgid "Output Device"
+msgstr "Устройство вывода"
+
+msgid "Output Frequency"
+msgstr "Выходная частота"
+
+msgid "Outputs Deep Color video signal. If the video output is not clean or the colors do not look right, set this option to [Off]."
+msgstr "Выводит видеосигнал Deep Color. Если видеовыход нечеткий или цвета выглядят неправильно, установите для этого параметра значение [Выкл.]."
+
+msgid "PLAYSTATION(R)3 Headset"
+msgstr "PLAYSTATION(R)3 Гарнитура"
+
+msgid "PPPoE"
+msgstr "PPPoE"
+
+msgid "PPPoE Password"
+msgstr "Пароль PPPoE"
+
+msgid "PPPoE User Name"
+msgstr "Имя пользователя PPPoE"
+
+msgid "PS Upscaler"
+msgstr "PS Апскейлер"
+
+msgid "PS Vita System Application Utility"
+msgstr "Утилита системного приложения PS Vita"
+
+msgid "PS/PS2 Smoothing"
+msgstr "Сглаживание PS/PS2"
+
+msgid "PS3-HOME-NET"
+msgstr "PS3-HOME-NET"
+
+msgid "PSN is all about entertainment and interaction.\nEnjoy FREE* online gaming, download amazing new games, game expansion packs for a host of top titles, watch trailers and get your hands on exclusive content, chat with friends, and compare Trophies.\n\nSign up today – it's easy and it's FREE!\n\n* Broadband Internet connection required."
+msgstr "PSN — это развлечение и взаимодействие.\nНаслаждайтесь БЕСПЛАТНЫМИ* онлайн-играми, загружайте потрясающие новые игры, пакеты расширения для множества лучших игр, смотрите трейлеры и получайте в свои руки эксклюзивный контент, общайтесь с друзьями и сравнивайте призы.\n\n Зарегистрируйтесь сегодня – это просто и БЕСПЛАТНО!\n\n * Требуется широкополосное подключение к Интернету."
+
+msgid "Page Zoom"
+msgstr "Масштаб страницы"
+
+msgid "Page opened when launching the browser."
+msgstr "Страница открывается при запуске браузера."
+
+msgid "Parental Control"
+msgstr "Родительский контроль"
+
+msgid "Password"
+msgstr "Пароль"
+
+msgid "Pause"
+msgstr "Пауза"
+
+msgid "Photo"
+msgstr "Фото"
+
+msgid "Photo Album"
+msgstr "Фотоальбом"
+
+msgid "Photo Album 2"
+msgstr "Фотоальбом 2"
+
+msgid "Photo Gallery"
+msgstr "Фотогалерея"
+
+msgid "Photos"
+msgstr "Фотографии"
+
+msgid "Photosensitivity Warning"
+msgstr "Предупреждение о фоточувствительности"
+
+msgid "Pictures Folder"
+msgstr "Папка с изображениями"
+
+msgid "Pink"
+msgstr "Розовый"
+
+msgid "Play"
+msgstr "Играть"
+
+msgid "Play Remote Devices"
+msgstr "Играть на удаленных устройствах"
+
+msgid "Play from Beginning"
+msgstr "Играть с начала"
+
+msgid "Play the startup cue in full."
+msgstr "Воспроизведите стартовую реплику полностью."
+
+msgid "Play the startup sequence."
+msgstr "Воспроизведите последовательность запуска."
+
+msgid "PlayStation®Network"
+msgstr "PlayStation®Network"
+
+msgid "PlayStation®Plus"
+msgstr "PlayStation®Плюс"
+
+msgid "PlayStation®Store"
+msgstr "PlayStation®Store"
+
+msgid "Players Blocked"
+msgstr "Игроки заблокированы"
+
+msgid "Players Met"
+msgstr "Игроки встретились"
+
+msgid "Playlists"
+msgstr "Плейлисты"
+
+msgid "Please wait..."
+msgstr "Пожалуйста, подождите..."
+
+msgid "Pointer Speed"
+msgstr "Скорость указателя"
+
+msgid "Polish"
+msgstr "Польский"
+
+msgid "Pop"
+msgstr "Поп"
+
+msgid "Port Number"
+msgstr "Номер порта"
+
+msgid "Portrait"
+msgstr "Портрет"
+
+msgid "Portuguese"
+msgstr "португальский"
+
+msgid "Portuguese (Brazil)"
+msgstr "Португальский (Бразилия)"
+
+msgid "Portuguese (Portugal)"
+msgstr "Португальский (Португалия)"
+
+msgid "Power Indicator"
+msgstr "Индикатор питания"
+
+msgid "Power Save"
+msgstr "Экономия энергии"
+
+msgid "Power Save Settings"
+msgstr "Настройки энергосбережения"
+
+msgid "Predictive Input"
+msgstr "Прогнозирующий ввод"
+
+msgid "Preferred audio track language."
+msgstr "Предпочитаемый язык звуковой дорожки."
+
+msgid "Preferred interface language."
+msgstr "Предпочтительный язык интерфейса."
+
+msgid "Preferred subtitle track language."
+msgstr "Предпочитаемый язык дорожки субтитров."
+
+msgid "Preparing...\nPlease wait."
+msgstr "Подготовка...\nПожалуйста, подождите."
+
+msgid "Preset name"
+msgstr "Имя предустановки"
+
+msgid "Press and hold the \"AOSS Button\" of the access point until the AOSS indicator starts blinking.\nIf you don't press the button within 2 minutes, the operation will be canceled."
+msgstr "Нажмите и удерживайте кнопку AOSS точки доступа, пока индикатор AOSS не начнет мигать.\nЕсли вы не нажмете кнопку в течение 2 минут, операция будет отменена."
+
+msgid "Press and hold the \"Rakuraku Start Button\" of the access point until the \"POWER\" LED blinks in [Green].\nIf you don't press the button within 1 minute, the operation will be canceled."
+msgstr "Нажмите и удерживайте кнопку «Пуск Rakuraku» точки доступа, пока светодиод «ПИТАНИЕ» не начнет мигать зеленым.\nЕсли вы не нажмете кнопку в течение 1 минуты, операция будет отменена."
+
+msgid "Press the \"Rakuraku Start Button\" again. Press and hold until the \"POWER\" LED turns [Orange].\nIf you don't press the button within 30 seconds, the operation will be canceled."
+msgstr "Нажмите кнопку «Пуск Ракураку» еще раз. Нажмите и удерживайте, пока светодиод «ПИТАНИЕ» не станет [оранжевым].\nЕсли вы не нажмете кнопку в течение 30 секунд, операция будет отменена."
+
+msgid "Press the START button and ENTER button of the BD remote control you want to register at the same time, and hold down until the screen changes."
+msgstr "Одновременно нажмите кнопку START и кнопку ENTER на пульте BD, который вы хотите зарегистрировать, и удерживайте нажатой, пока экран не изменится."
+
+msgid "Prevent Sleep During Playback"
+msgstr "Предотвращение сна во время воспроизведения"
+
+msgid "Previous"
+msgstr "Предыдущий"
+
+msgid "Primary DNS"
+msgstr "Первичный DNS"
+
+msgid "Print"
+msgstr "Распечатать"
+
+msgid "Printer Settings"
+msgstr "Настройки принтера"
+
+msgid "Proxy Server"
+msgstr "Прокси-сервер"
+
+msgid "Quick Format"
+msgstr "Быстрое форматирование"
+
+msgid "Quiet Interface During Music"
+msgstr "Тихий интерфейс во время музыки"
+
+msgid "RGB"
+msgstr "RGB"
+
+msgid "RGB Full Range (HDMI)"
+msgstr "Полный диапазон RGB (HDMI)"
+
+msgid "Rakuraku WLAN Start"
+msgstr "Ракураку WLAN Запуск"
+
+msgid "Randomise slideshow order."
+msgstr "Случайный порядок слайд-шоу."
+
+msgid "Read the program and third-party license notices."
+msgstr "Прочтите информацию о программе и сторонних лицензиях."
+
+msgid "Reading"
+msgstr "Чтение"
+
+msgid "Reassign Controllers"
+msgstr "Переназначить контроллеры"
+
+msgid "Red"
+msgstr "Красный"
+
+msgid "Red Sphere, Blue Sphere"
+msgstr "Red Sphere, Blue Sphere"
+
+msgid "Reduce background movement and sparkles."
+msgstr "Уменьшите фоновое движение и блестки."
+
+msgid "Reduce navigation sound volume while music is playing."
+msgstr "Уменьшите громкость звука навигации во время воспроизведения музыки."
+
+msgid "Reduce rendering while unfocused."
+msgstr "Уменьшите рендеринг, пока вы не в фокусе."
+
+msgid "Reduced Motion"
+msgstr "Уменьшенное движение"
+
+msgid "Reduces rainbow-effect artifacts. This setting is used when the system outputs composite signal to a VIDEO IN or SCART connector."
+msgstr "Уменьшает артефакты с эффектом радуги. Эта настройка используется, когда система выводит композитный сигнал на разъем VIDEO IN или SCART."
+
+msgid "Refresh folders and metadata from your music location."
+msgstr "Обновите папки и метаданные из вашего музыкального хранилища."
+
+msgid "Refresh the configured game library."
+msgstr "Обновите настроенную библиотеку игр."
+
+msgid "Register BD Remote Control"
+msgstr "Зарегистрируйте BD Пульт дистанционного управления"
+
+msgid "Register Bluetooth® Device"
+msgstr "Зарегистрируйте устройство Bluetooth®"
+
+msgid "Register Device"
+msgstr "Зарегистрировать устройство"
+
+msgid "Register New Device"
+msgstr "Зарегистрировать новое устройство"
+
+msgid "Register PlayStation®Vita"
+msgstr "Зарегистрируйтесь PlayStation®Vita"
+
+msgid "Register a BD remote control for use with the OpenXMB system.\n\nPress the START button and ENTER button of the BD remote control you want to register at the same time, and hold down until the screen changes."
+msgstr "Зарегистрируйте пульт дистанционного управления BD для использования с системой OpenXMB.\n\n Одновременно нажмите кнопку START и кнопку ENTER на пульте BD, который вы хотите зарегистрировать, и удерживайте нажатой, пока экран не изменится."
+
+msgid "Register a device (such as a PS Vita or a PSP™ system) to be used for remote play with this system. Select this option to register a device for remote play if using it for the first time.\n\nEnter the following number on the remote device:\n\n12345678"
+msgstr "Зарегистрируйте устройство (например, PS Vita или систему PSP™), которое будет использоваться для удаленной игры с этой системой. Выберите этот параметр, чтобы зарегистрировать устройство для удаленного воспроизведения при его первом использовании.\n\n Введите на удаленном устройстве следующий номер:\n\n 12345678"
+
+msgid "Register a remote play device with this system."
+msgstr "Зарегистрируйте устройство дистанционного воспроизведения в этой системе."
+
+msgid "Register completed."
+msgstr "Регистрация завершена."
+
+msgid "Register or manage Bluetooth® devices such as headsets, keyboards and mouse devices.\nSelect an option."
+msgstr "Зарегистрируйте или управляйте устройствами Bluetooth®, такими как гарнитуры, клавиатуры и мыши.\nВыберите вариант."
+
+msgid "Register the BD Remote Control."
+msgstr "Зарегистрируйте пульт дистанционного управления BD."
+
+msgid "Registered Device:  "
+msgstr "Зарегистрированное устройство:"
+
+msgid "Registering...\nPlease wait."
+msgstr "Регистрация...\nПожалуйста, подождите."
+
+msgid "Registration completed."
+msgstr "Регистрация завершена."
+
+msgid "Registration with the selected device will be deleted.\nAre you sure you want to continue?"
+msgstr "Регистрация на выбранном устройстве будет удалена.\nВы уверены, что хотите продолжить?"
+
+msgid "Release Year ▲"
+msgstr "Год выпуска ▲"
+
+msgid "Release Year ▼"
+msgstr "Год выпуска ▼"
+
+msgid "Release the controls, then press a "
+msgstr "Отпустите элементы управления, затем нажмите кнопку"
+
+msgid "Remember the last playback position."
+msgstr "Запомните последнюю позицию воспроизведения."
+
+msgid "Remote Play Device"
+msgstr "Устройство дистанционного воспроизведения"
+
+msgid "Remote Play Settings"
+msgstr "Настройки удаленного воспроизведения"
+
+msgid "Remote Start"
+msgstr "Удаленный запуск"
+
+msgid "Remove browser cookies and cached site data."
+msgstr "Удалите файлы cookie браузера и кэшированные данные сайта."
+
+msgid "Remove browser cookies, site storage and cached pages?"
+msgstr "Удалить файлы cookie браузера, хранилище сайта и кэшированные страницы?"
+
+msgid "Remove from Playlist"
+msgstr "Удалить из плейлиста"
+
+msgid "Repeat"
+msgstr "Повторить"
+
+msgid "Repeat All"
+msgstr "Повторить все"
+
+msgid "Repeat Off"
+msgstr "Повтор выкл."
+
+msgid "Repeat On"
+msgstr "Повторить вкл."
+
+msgid "Repeat One"
+msgstr "Повторить один"
+
+msgid "Repeat Slideshow"
+msgstr "Повтор слайд-шоу"
+
+msgid "Repeat setting when opening the player."
+msgstr "Повторите настройку при открытии плеера."
+
+msgid "Rescan Game Library"
+msgstr "Повторное сканирование библиотеки игр"
+
+msgid "Rescan Music Library"
+msgstr "Повторное сканирование музыкальной библиотеки"
+
+msgid "Resolution"
+msgstr "Разрешение"
+
+msgid "Restore"
+msgstr "Восстановить"
+
+msgid "Restore Default Settings"
+msgstr "Восстановить настройки по умолчанию"
+
+msgid "Restore Default Settings?"
+msgstr "Восстановить настройки по умолчанию?"
+
+msgid "Restore Defaults"
+msgstr "Восстановить настройки по умолчанию"
+
+msgid "Restore OpenXMB System"
+msgstr "Восстановить систему OpenXMB"
+
+msgid "Restore Original Theme"
+msgstr "Восстановить исходную тему"
+
+msgid "Restore Original Theme?"
+msgstr "Восстановить исходную тему?"
+
+msgid "Restore completed.\nThe default settings have been restored."
+msgstr "Восстановление завершено.\nНастройки по умолчанию восстановлены."
+
+msgid "Restore the original OpenXMB appearance."
+msgstr "Восстановите исходный внешний вид OpenXMB."
+
+msgid "Restore the original theme appearance?"
+msgstr "Восстановить исходный вид темы?"
+
+msgid "Restore this profile's preferences? Your media files will be preserved."
+msgstr "Восстановить настройки этого профиля? Ваши медиафайлы будут сохранены."
+
+msgid "Restore this profile's shell settings; preserve media."
+msgstr "Восстановите настройки оболочки этого профиля; сохранить средства массовой информации."
+
+msgid "Restores the system software to its default settings.\n\nAll system settings will be restored to their default values.\nDo you want to continue?"
+msgstr "Восстанавливает системное программное обеспечение к настройкам по умолчанию.\n\n Все системные настройки будут восстановлены до значений по умолчанию.\nХотите продолжить?"
+
+msgid "Restores the system software to its default settings.\nAre you sure you want to continue?"
+msgstr "Восстанавливает системное программное обеспечение к настройкам по умолчанию.\nВы уверены, что хотите продолжить?"
+
+msgid "Resume"
+msgstr "Резюме"
+
+msgid "Resume Playback"
+msgstr "Возобновить воспроизведение"
+
+msgid "Return to Beginning"
+msgstr "Вернуться к началу"
+
+msgid "Right"
+msgstr "Правильно"
+
+msgid "Right-handed"
+msgstr "Правша"
+
+msgid "Robotnik Radio"
+msgstr "Robotnik Radio"
+
+msgid "Rotate Left"
+msgstr "Повернуть влево"
+
+msgid "Rotate Right"
+msgstr "Повернуть вправо"
+
+msgid "Rounded"
+msgstr "Закругленный"
+
+msgid "Russian"
+msgstr "русский"
+
+msgid "SSID"
+msgstr "SSID"
+
+msgid "Save Theme Preset"
+msgstr "Сохранить предустановку темы"
+
+msgid "Save completed.\nIt may take 1 minute or longer to restart the access point."
+msgstr "Сохранение завершено.\nПерезапуск точки доступа может занять 1 минуту или больше."
+
+msgid "Save the current appearance with a name."
+msgstr "Сохраните текущий внешний вид под именем."
+
+msgid "Saved Data Utility (PS2)"
+msgstr "Утилита сохраненных данных (PS2)"
+
+msgid "Saved Data Utility (PS3™)"
+msgstr "Утилита сохранения данных (PS3™)"
+
+msgid "Saved Data Utility (minis/PSP™)"
+msgstr "Утилита сохранения данных (minis/PSP™)"
+
+msgid "Saved Theme Presets"
+msgstr "Сохраненные пресеты тем"
+
+msgid "Scale subtitle text."
+msgstr "Масштабируйте текст субтитров."
+
+msgid "Scale text throughout OpenXMB."
+msgstr "Масштабируйте текст по всему OpenXMB."
+
+msgid "Scan"
+msgstr "Сканировать"
+
+msgid "Scanning...\nPlease wait."
+msgstr "Сканирование...\nПожалуйста, подождите."
+
+msgid "Scans the network and connects to a media server. To use this function, a media server must be set up to allow connections from the OpenXMB system."
+msgstr "Сканирует сеть и подключается к медиасерверу. Чтобы использовать эту функцию, медиасервер должен быть настроен на разрешение соединений из системы OpenXMB."
+
+msgid "Scene Search"
+msgstr "Поиск сцены"
+
+msgid "Schumacher Bar"
+msgstr "Schumacher Bar"
+
+msgid "Scrambled Eggman"
+msgstr "Scrambled Eggman"
+
+msgid "Screen Mode"
+msgstr "Режим экрана"
+
+msgid "Screen Saver"
+msgstr "Экранная заставка"
+
+msgid "Search Engine"
+msgstr "Поисковая система"
+
+msgid "Search for Media Servers"
+msgstr "Поиск медиа-серверов"
+
+msgid "Search provider used for non-address text."
+msgstr "Поставщик поиска, используемый для неадресного текста."
+
+msgid "Search the Internet."
+msgstr "Найдите в Интернете."
+
+msgid "Searching for the other OpenXMB system..."
+msgstr "Поиск другой системы OpenXMB..."
+
+msgid "Secondary DNS"
+msgstr "Вторичный DNS"
+
+msgid "Seconds each photograph remains visible."
+msgstr "Секунды каждая фотография остается видимой."
+
+msgid "Security"
+msgstr "Безопасность"
+
+msgid "Security Settings"
+msgstr "Настройки безопасности"
+
+msgid "Select a connection method."
+msgstr "Выберите способ подключения."
+
+msgid "Select a setting method."
+msgstr "Выберите метод настройки."
+
+msgid "Select a theme."
+msgstr "Выберите тему."
+
+msgid "Select all resolutions that are supported by your TV."
+msgstr "Выберите все разрешения, которые поддерживает ваш телевизор."
+
+msgid "Select an available playback device."
+msgstr "Выберите доступное устройство воспроизведения."
+
+msgid "Select an existing playlist or create a new playlist."
+msgstr "Выберите существующий список воспроизведения или создайте новый список воспроизведения."
+
+msgid "Select an installed core and game content."
+msgstr "Выберите установленное ядро ​​и игровой контент."
+
+msgid "Select an output format supported by the TV or AV amplifier (receiver) in use."
+msgstr "Выберите выходной формат, поддерживаемый используемым телевизором или AV-усилителем (ресивером)."
+
+msgid "Select an update method."
+msgstr "Выберите метод обновления."
+
+msgid "Select the Bluetooth® device to register."
+msgstr "Выберите устройство Bluetooth® для регистрации."
+
+msgid "Select the access point to be used."
+msgstr "Выберите точку доступа, которую будете использовать."
+
+msgid "Select the connector on the TV or AV amplifier (receiver)."
+msgstr "Выберите разъем на телевизоре или AV-усилителе (ресивере)."
+
+msgid "Select the connector on the TV."
+msgstr "Выберите разъем на телевизоре."
+
+msgid "Select the destination for the selected items."
+msgstr "Выберите место назначения для выбранных элементов."
+
+msgid "Select the keyboard type."
+msgstr "Выберите тип клавиатуры."
+
+msgid "Select the method for setting the output format."
+msgstr "Выберите метод установки формата вывода."
+
+msgid "Select the operation mode of the network device."
+msgstr "Выберите режим работы сетевого устройства."
+
+msgid "Select the operation mode of the network device.\nIn most cases, select Auto-Detect."
+msgstr "Выберите режим работы сетевого устройства.\nВ большинстве случаев выберите «Автоопределение»."
+
+msgid "Select the system you are using."
+msgstr "Выберите систему, которую вы используете."
+
+msgid "Select the type of connector on your TV."
+msgstr "Выберите тип разъема на вашем телевизоре."
+
+msgid "Send a Message"
+msgstr "Отправить сообщение"
+
+msgid "Sent Items"
+msgstr "Отправленные элементы"
+
+msgid "Set"
+msgstr "Установить"
+
+msgid "Set Audio Output Settings"
+msgstr "Установите настройки аудиовыхода"
+
+msgid "Set Manually"
+msgstr "Установить вручную"
+
+msgid "Set as Wallpaper"
+msgstr "Установить как обои"
+
+msgid "Set the Ad Hoc Mode channel for PSP® Remasters."
+msgstr "Установите канал режима Ad Hoc для ремастеров PSP®."
+
+msgid "Set the BD audio output format."
+msgstr "Установите формат вывода звука BD."
+
+msgid "Set the DHCP host name.\nIn most cases this setting does not need to be changed."
+msgstr "Установите имя хоста DHCP.\nВ большинстве случаев эту настройку менять не нужно."
+
+msgid "Set the default BD audio language."
+msgstr "Установите язык аудио по умолчанию BD."
+
+msgid "Set the default DVD audio language."
+msgstr "Установите язык аудио по умолчанию DVD."
+
+msgid "Set the default audio language for content on the HDD."
+msgstr "Установите язык аудио по умолчанию для содержимого на жестком диске."
+
+msgid "Set the time and date.\n\nUse the arrow keys to adjust each field, then press the X button to apply."
+msgstr "Установите время и дату.\n\n Используйте клавиши со стрелками для настройки каждого поля, затем нажмите кнопку X, чтобы применить изменения."
+
+msgid "Set via Internet"
+msgstr "Установить через Интернет"
+
+msgid "Sets for daylight saving time."
+msgstr "Устанавливает переход на летнее время."
+
+msgid "Sets for use of a preset combination of elements such as colour, background or icons."
+msgstr "Наборы для использования заранее заданной комбинации элементов, таких как цвет, фон или значки."
+
+msgid "Sets the audio input and output devices for voice/video chat and other communication features."
+msgstr "Устанавливает устройства ввода и вывода звука для голосового/видеочата и других функций связи."
+
+msgid "Sets the audio input and output devices for voice/video chat and other communication features.\nSelect an audio device."
+msgstr "Устанавливает устройства ввода и вывода звука для голосового/видеочата и других функций связи.\nВыберите аудиоустройство."
+
+msgid "Sets the audio input and output devices.\nSelect an option."
+msgstr "Устанавливает устройства ввода и вывода звука.\nВыберите вариант."
+
+msgid "Sets the audio output device for use during remote play. To output audio from a PS Vita system, a PSP™ system, a PC or a mobile phone, select [Remote Play Device]."
+msgstr "Устанавливает устройство вывода звука для использования во время удаленного воспроизведения. Чтобы вывести звук с системы PS Vita, системы PSP™, ПК или мобильного телефона, выберите [Устройство удаленного воспроизведения]."
+
+msgid "Sets the background of the XMB™ screen."
+msgstr "Устанавливает фон экрана XMB™."
+
+msgid "Sets the colour of the background and options menu."
+msgstr "Устанавливает цвет фона и меню опций."
+
+msgid "Sets the date and time for this system."
+msgstr "Устанавливает дату и время для этой системы."
+
+msgid "Sets the date and time for this system.\nSelect how to set the date and time."
+msgstr "Устанавливает дату и время для этой системы.\nВыберите способ установки даты и времени."
+
+msgid "Sets the delay before key repeat starts."
+msgstr "Устанавливает задержку перед началом повтора клавиши."
+
+msgid "Sets the font displayed on the XMB™ screen."
+msgstr "Устанавливает шрифт, отображаемый на экране XMB™."
+
+msgid "Sets the method for connecting the system to the Internet.\nSelect a connection method."
+msgstr "Устанавливает метод подключения системы к Интернету.\nВыберите способ подключения."
+
+msgid "Sets the method for connecting the system to the Internet. Select this option to connect to a wireless LAN or to change the settings."
+msgstr "Устанавливает метод подключения системы к Интернету. Выберите этот вариант, чтобы подключиться к беспроводной локальной сети или изменить настройки."
+
+msgid "Sets the mouse type. Set this option based on which hand you use to operate the mouse."
+msgstr "Устанавливает тип мыши. Установите этот параметр в зависимости от того, какой рукой вы управляете мышью."
+
+msgid "Sets the order of display for year, month and day."
+msgstr "Устанавливает порядок отображения года, месяца и дня."
+
+msgid "Sets the output format of video content recorded in a wide color range. Set this option as necessary for the TV in use."
+msgstr "Устанавливает выходной формат видеоконтента, записанного в широком цветовом диапазоне. Установите эту опцию, если это необходимо для используемого телевизора."
+
+msgid "Sets the output method for color signals when playing BDs or DVDs."
+msgstr "Устанавливает метод вывода цветовых сигналов при воспроизведении дисков BD или DVD."
+
+msgid "Sets the playback method for content items recorded at 24 Hz (frames/second)."
+msgstr "Устанавливает метод воспроизведения элементов контента, записанных с частотой 24 Гц (кадров в секунду)."
+
+msgid "Sets the playback method for content recorded at 50 Hz. This setting is used when playing content saved on the system storage or storage media."
+msgstr "Устанавливает метод воспроизведения контента, записанного с частотой 50 Гц. Этот параметр используется при воспроизведении содержимого, сохраненного в системной памяти или на носителе."
+
+msgid "Sets the range of RGB output signals for an HDMI connection."
+msgstr "Устанавливает диапазон выходных сигналов RGB для соединения HDMI."
+
+msgid "Sets the rate at which a held key repeats."
+msgstr "Устанавливает частоту повторения удерживаемой клавиши."
+
+msgid "Sets the speed at which the mouse pointer moves. The mouse pointer is displayed in the Internet browser and in games and other software that support use of a mouse."
+msgstr "Устанавливает скорость перемещения указателя мыши. Указатель мыши отображается в интернет-браузере, а также в играх и другом программном обеспечении, поддерживающем использование мыши."
+
+msgid "Sets the text entry method for a connected keyboard."
+msgstr "Устанавливает метод ввода текста для подключенной клавиатуры."
+
+msgid "Sets the time display to either a 12-hour or 24-hour clock."
+msgstr "Устанавливает отображение времени в 12-часовом или 24-часовом формате."
+
+msgid "Sets the time-of-day lighting (day, dusk, night or automatic)."
+msgstr "Устанавливает освещение в зависимости от времени суток (день, сумерки, ночь или автоматический)."
+
+msgid "Sets the time-of-day lighting of the XMB™ screen."
+msgstr "Устанавливает освещение экрана XMB™ в зависимости от времени суток."
+
+msgid "Sets to output audio through multiple connectors simultaneously. Audio output to connectors that are not selected in [Audio Output Settings] is downscaled to 2 Ch."
+msgstr "Устанавливает вывод звука через несколько разъемов одновременно. Аудиовыход на разъемы, которые не выбраны в [Настройки аудиовыхода], уменьшается до 2-кан."
+
+msgid "Sets whether or not to automatically turn off controllers. If you do not use a controller for a set amount of time, it will turn off automatically."
+msgstr "Устанавливает, следует ли автоматически отключать контроллеры. Если вы не используете контроллер в течение заданного времени, он автоматически выключится."
+
+msgid "Sets whether or not to automatically turn off this system. If you do not operate the system for a set amount of time, the system will turn off automatically."
+msgstr "Устанавливает, следует ли автоматически отключать эту систему. Если вы не пользуетесь системой в течение заданного времени, система автоматически выключится."
+
+msgid "Sets whether or not to connect this system to the Internet. Select this option if you want to temporarily disable the Internet connection."
+msgstr "Устанавливает, подключать ли эту систему к Интернету. Выберите этот вариант, если вы хотите временно отключить подключение к Интернету."
+
+msgid "Sets whether or not to connect to media servers."
+msgstr "Определяет, следует ли подключаться к медиасерверам."
+
+msgid "Sets whether or not to output all audio to the headset."
+msgstr "Устанавливает, выводить ли весь звук на гарнитуру."
+
+msgid "Sets whether or not to turn on this system automatically when a registered device is connected for remote play."
+msgstr "Устанавливает, включать ли эту систему автоматически при подключении зарегистрированного устройства для удаленного воспроизведения."
+
+msgid "Sets whether or not to use key tones on the XMB™ menu."
+msgstr "Устанавливает, использовать ли звуки клавиш в меню XMB™."
+
+msgid "Sets whether or not to use the vibration function. This setting will be applied to all controllers that support the vibration function."
+msgstr "Устанавливает, использовать или нет функцию вибрации. Эта настройка будет применена ко всем контроллерам, поддерживающим функцию вибрации."
+
+msgid "Settings"
+msgstr "Настройки"
+
+msgid "Settings List"
+msgstr "Список настроек"
+
+msgid "Settings and Connection Status List"
+msgstr "Список настроек и состояния подключения"
+
+msgid "Short"
+msgstr "Короткий"
+
+msgid "Show FPS"
+msgstr "Показать FPS"
+
+msgid "Show GPU Memory"
+msgstr "Показать память GPU"
+
+msgid "Show Seconds"
+msgstr "Показать секунды"
+
+msgid "Show background particles."
+msgstr "Показать фоновые частицы."
+
+msgid "Show seconds in the clock."
+msgstr "Показывать секунды на часах."
+
+msgid "Show the animated background ribbon."
+msgstr "Покажите анимированную фоновую ленту."
+
+msgid "Show the controller keyboard during text entry."
+msgstr "Показывать клавиатуру контроллера во время ввода текста."
+
+msgid "Show the dismissible startup warning."
+msgstr "Показать предупреждение о закрытии запуска."
+
+msgid "Shuffle"
+msgstr "Перетасовать"
+
+msgid "Shuffle Slideshow"
+msgstr "Перемешать слайд-шоу"
+
+msgid "Shuffle tracks in the play queue."
+msgstr "Перемешать треки в очереди воспроизведения."
+
+msgid "Sign Up"
+msgstr "Зарегистрироваться"
+
+msgid "Sign in to PlayStation®Network to add friends, exchange messages and join chat rooms."
+msgstr "Войдите в PlayStation®Network, чтобы добавлять друзей, обмениваться сообщениями и присоединяться к чатам."
+
+msgid "Sign in to use Friends features"
+msgstr "Войдите, чтобы использовать функции «Друзья»"
+
+msgid "Sign up for a PlayStation®Network account.\nA broadband Internet connection is required."
+msgstr "Зарегистрируйте учетную запись PlayStation®Network.\nТребуется широкополосное подключение к Интернету."
+
+msgid "Size"
+msgstr "Размер"
+
+msgid "Slide"
+msgstr "Слайд"
+
+msgid "Slideshow"
+msgstr "Слайд-шоу"
+
+msgid "Slideshow Duration"
+msgstr "Продолжительность слайд-шоу"
+
+msgid "Slideshow Speed"
+msgstr "Скорость слайд-шоу"
+
+msgid "Slideshow Style"
+msgstr "Стиль слайд-шоу"
+
+msgid "Slideshow Transition"
+msgstr "Переход к слайд-шоу"
+
+msgid "Slow"
+msgstr "Медленно"
+
+msgid "Slow (Forward)"
+msgstr "Медленно (вперед)"
+
+msgid "Slow (Reverse)"
+msgstr "Медленно (обратно)"
+
+msgid "Smooth"
+msgstr "Гладкий"
+
+msgid "Smooth out the rough edges of images of PlayStation® and PlayStation®2 format software."
+msgstr "Сглаживайте неровные края изображений с помощью программного обеспечения формата PlayStation® и PlayStation®2."
+
+msgid "So Long and Thanks for All the..."
+msgstr "So Long and Thanks for All the..."
+
+msgid "Software Instruction Manuals"
+msgstr "Руководства по эксплуатации программного обеспечения"
+
+msgid "Songs"
+msgstr "Песни"
+
+msgid "Sonic the Hedgehog and Knuckles"
+msgstr "Sonic the Hedgehog and Knuckles"
+
+msgid "Sort By"
+msgstr "Сортировать по"
+
+msgid "Sort tracks in each folder."
+msgstr "Сортировка треков в каждой папке."
+
+msgid "Sound"
+msgstr "Звук"
+
+msgid "Sound Set Folder"
+msgstr "Папка с набором звуков"
+
+msgid "Sound Settings"
+msgstr "Настройки звука"
+
+msgid "Sound folder not found."
+msgstr "Папка со звуком не найдена."
+
+msgid "Sound set needs a playable "
+msgstr "Звуковой набор нуждается в воспроизводимом"
+
+msgid "Spanish"
+msgstr "испанский"
+
+msgid "Sparkle Colour"
+msgstr "Блестящий цвет"
+
+msgid "Sparkles"
+msgstr "блестки"
+
+msgid "Speed and Duplex"
+msgstr "Скорость и дуплекс"
+
+msgid "Standard Input"
+msgstr "Стандартный ввод"
+
+msgid "Start OpenXMB when you sign in."
+msgstr "Запустите OpenXMB при входе в систему."
+
+msgid "Start a Chat"
+msgstr "Начать чат"
+
+msgid "Start a new text chat with a friend or a group."
+msgstr "Начните новый текстовый чат с другом или группой."
+
+msgid "Starts the system automatically and downloads game patches, uploads new saved data to online storage and syncs trophy information with the server."
+msgstr "Автоматически запускает систему и загружает игровые патчи, загружает новые сохраненные данные в онлайн-хранилище и синхронизирует информацию о трофеях с сервером."
+
+msgid "Startup Intro"
+msgstr "Анимация запуска"
+
+msgid "Startup Sound"
+msgstr "Звук запуска"
+
+msgid "Status of Registered Devices"
+msgstr "Статус зарегистрированных устройств"
+
+msgid "Stereo Headset Audio Extension"
+msgstr "Аудио расширение стереогарнитуры"
+
+msgid "Stop"
+msgstr "Стоп"
+
+msgid "Stranger to Closure"
+msgstr "Stranger to Closure"
+
+msgid "Subnet Mask"
+msgstr "Маска подсети"
+
+msgid "Subscribe to PlayStation®Plus and get your hands on all the benefits that come with membership."
+msgstr "Подпишитесь на PlayStation®Plus и получите все преимущества членства."
+
+msgid "Subtitle Language"
+msgstr "Язык субтитров"
+
+msgid "Subtitle Options"
+msgstr "Параметры субтитров"
+
+msgid "Subtitle Size"
+msgstr "Размер субтитров"
+
+msgid "Swedish"
+msgstr "Шведский"
+
+msgid "Synchronise presentation to the display."
+msgstr "Синхронизируйте презентацию с дисплеем."
+
+msgid "System"
+msgstr "Система"
+
+msgid "System Auto-Off"
+msgstr "Автоматическое выключение системы"
+
+msgid "System Default"
+msgstr "Системные настройки по умолчанию"
+
+msgid "System Default Device"
+msgstr "Системное устройство по умолчанию"
+
+msgid "System Information"
+msgstr "Информация о системе"
+
+msgid "System Language"
+msgstr "Системный язык"
+
+msgid "System Name"
+msgstr "Имя системы"
+
+msgid "System Settings"
+msgstr "Системные настройки"
+
+msgid "System Software\nVersion 4.91\n\nMAC Address (Wired)\n00:1F:A7:00:00:00\n\nMAC Address (Wi-Fi)\n00:1F:A7:00:00:01\n\nIP Address\n192.168.1.10\n\nSystem Storage\n466 GB free of 500 GB"
+msgstr "Системное программное обеспечение\nВерсия 4.91\n\n MAC-адрес (проводной)\n00:1F:A7:00:00:00\n\n MAC-адрес (Wi-Fi)\n00:1F:A7:00:00:01\n\n IP Адрес\n192.168.1.10\n\n Системная память\n466 ГБ свободно из 500 ГБ"
+
+msgid "System Update"
+msgstr "Обновление системы"
+
+msgid "Teal"
+msgstr "Бирюзовый"
+
+msgid "Term"
+msgstr "Срок"
+
+msgid "Tests the Internet connection and displays the results."
+msgstr "Проверяет подключение к Интернету и отображает результаты."
+
+msgid "Tests the Internet connection and displays the results.\n\nObtain IP Address    Succeeded\nInternet Connection  Succeeded\nPlayStation™Network  Succeeded\nNAT Type             Type 2\nUPnP                 Available\nConnection Speed (Download)  85.4 Mbps\nConnection Speed (Upload)    24.7 Mbps"
+msgstr "Проверяет подключение к Интернету и отображает результаты.\n\n Получение адреса IP Успешно\nПодключение к Интернету Успешно\nPlayStation™Network Успешно\nТип NAT Тип 2\nДоступен UPnP\nСкорость соединения (загрузка) 85,4 Мбит/с\nСкорость соединения (загрузка) 24,7 Мбит/с"
+
+msgid "Tests the image from a camera that is connected to the system using a USB cable. You can adjust settings to reduce flickering for some cameras."
+msgstr "Тестирует изображение с камеры, подключенной к системе с помощью кабеля USB. Вы можете настроить параметры, чтобы уменьшить мерцание для некоторых камер."
+
+msgid "Tests the image from a camera that is connected to the system using a USB cable. You can adjust settings to reduce flickering for some cameras.\n\nNo camera is currently connected."
+msgstr "Тестирует изображение с камеры, подключенной к системе с помощью кабеля USB. Вы можете настроить параметры, чтобы уменьшить мерцание для некоторых камер.\n\n В данный момент камера не подключена."
+
+msgid "Text Colour"
+msgstr "Цвет текста"
+
+msgid "That Freezing Feeling"
+msgstr "That Freezing Feeling"
+
+msgid "The Doomsday"
+msgstr "The Doomsday"
+
+msgid "The Secluded Stronghold"
+msgstr "The Secluded Stronghold"
+
+msgid "The Wait is Over!"
+msgstr "The Wait is Over!"
+
+msgid "The audio output settings have been updated."
+msgstr "Настройки вывода звука обновлены."
+
+msgid "The date and time have been set."
+msgstr "Дата и время установлены."
+
+msgid "The image will be deleted.\nAre you sure you want to continue?"
+msgstr "Изображение будет удалено.\nВы уверены, что хотите продолжить?"
+
+msgid "The name displayed by OpenXMB."
+msgstr "Имя, отображаемое OpenXMB."
+
+msgid "The other OpenXMB system was not found.\nCheck that both systems are connected to the same network."
+msgstr "Другая система OpenXMB не найдена.\nУбедитесь, что обе системы подключены к одной сети."
+
+msgid "The password has been changed."
+msgstr "Пароль был изменен."
+
+msgid "The passwords do not match.\nTry again."
+msgstr "Пароли не совпадают.\nПопробуйте еще раз."
+
+msgid "The selected items will be deleted.\nAre you sure you want to continue?"
+msgstr "Выбранные элементы будут удалены.\nВы уверены, что хотите продолжить?"
+
+msgid "The system and devices connected via HDMI can operate each other."
+msgstr "Система и устройства, подключенные через HDMI, могут управлять друг другом."
+
+msgid "The system has been restored to its default settings."
+msgstr "Система восстановлена ​​до настроек по умолчанию."
+
+msgid "The system software is up to date.\n\nThe latest version of the system software has already been installed."
+msgstr "Программное обеспечение системы обновлено.\n\n Последняя версия системного программного обеспечения уже установлена."
+
+msgid "The term has been added."
+msgstr "Термин добавлен."
+
+msgid "The title that is currently playing will be deleted.\nAre you sure you want to continue?"
+msgstr "Воспроизводимый в данный момент заголовок будет удален.\nВы уверены, что хотите продолжить?"
+
+msgid "The video output settings have been updated."
+msgstr "Настройки видеовыхода обновлены."
+
+msgid "Theme"
+msgstr "Тема"
+
+msgid "Theme Settings"
+msgstr "Настройки темы"
+
+msgid "Theme archive or folder"
+msgstr "Архив или папка темы"
+
+msgid "There are no registered devices."
+msgstr "Нет зарегистрированных устройств."
+
+msgid "There are no subtitle options available."
+msgstr "Нет доступных вариантов субтитров."
+
+msgid "There is no audio."
+msgstr "Нет звука."
+
+msgid "There is no backup data.\nConnect storage media that contains the backup data."
+msgstr "Резервных данных нет.\nПодключите носитель данных, содержащий данные резервной копии."
+
+msgid "This feature is not available yet. This will be implemented in a future beta. Sorry!"
+msgstr "Эта функция пока недоступна. Это будет реализовано в будущей бета-версии. Извини!"
+
+msgid "This file is not a supported image or video."
+msgstr "Этот файл не является поддерживаемым изображением или видео."
+
+msgid "This is the system to transfer data from"
+msgstr "Это система передачи данных из"
+
+msgid "This is the system to transfer data to"
+msgstr "Это система для передачи данных"
+
+msgid "This sample count is unavailable on the active GPU."
+msgstr "Это количество выборок недоступно на активном GPU."
+
+msgid "This video cannot be opened."
+msgstr "Это видео невозможно открыть."
+
+msgid "Three Ring Nightfall"
+msgstr "Three Ring Nightfall"
+
+msgid "Time"
+msgstr "Время"
+
+msgid "Time (HH:MM)"
+msgstr "Время (ЧЧ:ММ)"
+
+msgid "Time Format"
+msgstr "Формат времени"
+
+msgid "Time Zone"
+msgstr "Часовой пояс"
+
+msgid "Time Zone Offset"
+msgstr "Смещение часового пояса"
+
+msgid "Title Repeat"
+msgstr "Повтор названия"
+
+msgid "Title ▲"
+msgstr "Название ▲"
+
+msgid "Title ▼"
+msgstr "Название ▼"
+
+msgid "To register (pair), you will need to prepare the Bluetooth® device.\nFor information on preparing the device, refer to the instructions supplied with the Bluetooth® device."
+msgstr "Для регистрации (сопряжения) вам потребуется подготовить устройство Bluetooth®.\nИнформацию о подготовке устройства см. в инструкциях, прилагаемых к устройству Bluetooth®."
+
+msgid "Transfers data from your current OpenXMB system to a new OpenXMB system over a network.\n\nConnect both systems to the same network, then follow the on-screen instructions on each system."
+msgstr "Переносит данные из вашей текущей системы OpenXMB в новую систему OpenXMB по сети.\n\n Подключите обе системы к одной сети, затем следуйте инструкциям на экране каждой системы."
+
+msgid "Transfers data that is saved on one OpenXMB system to another OpenXMB system. You can use this feature when replacing the OpenXMB system that you usually use with another OpenXMB system."
+msgstr "Переносит данные, сохраненные в одной системе OpenXMB, в другую систему OpenXMB. Вы можете использовать эту функцию при замене системы OpenXMB, которую вы обычно используете, на другую систему OpenXMB."
+
+msgid "Transition between photographs."
+msgstr "Переход между фотографиями."
+
+msgid "Trimming"
+msgstr "Обрезка"
+
+msgid "Trophy Collection"
+msgstr "Коллекция трофеев"
+
+msgid "Trophy Notifications"
+msgstr "Уведомления о трофеях"
+
+msgid "Turkish"
+msgstr "турецкий"
+
+msgid "Turn Off System"
+msgstr "Выключить систему"
+
+msgid "Turn Off System Automatically After Background Download"
+msgstr "Автоматическое выключение системы после фоновой загрузки"
+
+msgid "UPnP"
+msgstr "УПнП"
+
+msgid "USB Headset"
+msgstr "USB Гарнитура"
+
+msgid "Unable to update launch at login."
+msgstr "Невозможно обновить запуск при входе в систему."
+
+msgid "Unlimited"
+msgstr "Безлимитный"
+
+msgid "Unregister All"
+msgstr "Отменить регистрацию всех"
+
+msgid "Up"
+msgstr "Вверх"
+
+msgid "Update the OpenXMB system software."
+msgstr "Обновите системное программное обеспечение OpenXMB."
+
+msgid "Update via Internet"
+msgstr "Обновление через Интернет"
+
+msgid "Update via Storage Media"
+msgstr "Обновление через носитель"
+
+msgid "Upscale"
+msgstr "высококлассный"
+
+msgid "Use"
+msgstr "Использование"
+
+msgid "Use a folder containing ok.wav, confirm.wav, cancel.wav and back.wav."
+msgstr "Используйте папку, содержащую ok.wav, submit.wav, cancel.wav и back.wav."
+
+msgid "Use a hexadecimal colour such as #ffeefc."
+msgstr "Используйте шестнадцатеричный цвет, например #ffeefc."
+
+msgid "Use a hexadecimal colour."
+msgstr "Используйте шестнадцатеричный цвет."
+
+msgid "Use a six-digit hexadecimal colour such as #ffeefc."
+msgstr "Используйте шестизначный шестнадцатеричный цвет, например #ffeefc."
+
+msgid "Use auto or a hexadecimal colour."
+msgstr "Используйте авто или шестнадцатеричный цвет."
+
+msgid "Use refractive icon materials."
+msgstr "Используйте преломляющие материалы для значков."
+
+msgid "Use the selected Bluetooth® device to enter the pass key shown below and press the Enter key within 30 seconds.\\n\\nPass Key:  0000"
+msgstr "Используйте выбранное устройство Bluetooth®, чтобы ввести ключ доступа, показанный ниже, и нажмите клавишу Enter в течение 30 секунд.\\n\\nКлюч доступа: 0000"
+
+msgid "User Name"
+msgstr "Имя пользователя"
+
+msgid "Users"
+msgstr "Пользователи"
+
+msgid "Using the device you want to register, select [Settings] > [Network Settings] > [Internet Connection], and then enter the numbers shown below.\n\nRegistration code:  2461-8053\n\nThe registration code is valid for 5 minutes."
+msgstr "Используя устройство, которое вы хотите зарегистрировать, выберите [Настройки] > [Настройки сети] > [Подключение к Интернету], а затем введите цифры, показанные ниже.\n\n Регистрационный код: 2461-8053\n\n Регистрационный код действителен в течение 5 минут."
+
+msgid "VSync"
+msgstr "VSync"
+
+msgid "Video"
+msgstr "Видео"
+
+msgid "Video Decoding"
+msgstr "Декодирование видео"
+
+msgid "Video Editor & Uploader"
+msgstr "Видеоредактор и загрузчик"
+
+msgid "Video Output Settings"
+msgstr "Настройки видеовыхода"
+
+msgid "Video Settings"
+msgstr "Настройки видео"
+
+msgid "Video Volume"
+msgstr "Громкость видео"
+
+msgid "Videos Folder"
+msgstr "Папка видео"
+
+msgid "View"
+msgstr "Посмотреть"
+
+msgid "View Mode (PSP Remasters)"
+msgstr "Режим просмотра (ремастеры PSP)"
+
+msgid "View Web pages on the Internet."
+msgstr "Просмотр веб-страниц в Интернете."
+
+msgid "View active audio and video playback diagnostics."
+msgstr "Просмотр активной диагностики воспроизведения аудио и видео."
+
+msgid "View and join active chat rooms."
+msgstr "Просматривайте активные чаты и присоединяйтесь к ним."
+
+msgid "View messages you have received and sent."
+msgstr "Просмотр сообщений, которые вы получили и отправили."
+
+msgid "View the list of players you have blocked. You will not receive messages from blocked players."
+msgstr "Просмотрите список игроков, которых вы заблокировали. Вы не будете получать сообщения от заблокированных игроков."
+
+msgid "View the list of players you have met during online play."
+msgstr "Просмотрите список игроков, которых вы встретили во время сетевой игры."
+
+msgid "View the online instruction manuals.\nThe latest version of the manual will be available."
+msgstr "Просмотрите онлайн-руководства по эксплуатации.\nБудет доступна последняя версия руководства."
+
+msgid "View trophies that you have earned."
+msgstr "Просмотрите заработанные вами трофеи."
+
+msgid "Violet"
+msgstr "Фиолетовый"
+
+msgid "Visual Player"
+msgstr "Визуальный проигрыватель"
+
+msgid "Voice Changer"
+msgstr "Преобразователь голоса"
+
+msgid "Volume Control"
+msgstr "Регулятор громкости"
+
+msgid "Volume for all OpenXMB audio."
+msgstr "Громкость всего звука OpenXMB."
+
+msgid "Volume of navigation and confirmation sounds."
+msgstr "Громкость звуков навигации и подтверждения."
+
+msgid "WEP"
+msgstr "WEP"
+
+msgid "WEP Key"
+msgstr "WEP Ключ"
+
+msgid "WLAN Security Setting"
+msgstr "Настройка безопасности WLAN"
+
+msgid "WLAN Settings"
+msgstr "Настройки WLAN"
+
+msgid "WPA Key"
+msgstr "WPA Ключ"
+
+msgid "WPA-PSK (AES)"
+msgstr "WPA-PSK (AES)"
+
+msgid "WPA-PSK (TKIP)"
+msgstr "WPA-PSK (ТКИП)"
+
+msgid "WPA-PSK / WPA2-PSK"
+msgstr "WPA-PSK / WPA2-PSK"
+
+msgid "WPA2-PSK (AES)"
+msgstr "WPA2-PSK (AES)"
+
+msgid "WPA2-PSK (TKIP)"
+msgstr "WPA2-PSK (ТКИП)"
+
+msgid "Waiting for the device to connect..."
+msgstr "Ожидание подключения устройства..."
+
+msgid "Walk on Water"
+msgstr "Walk on Water"
+
+msgid "Wallpaper"
+msgstr "обои"
+
+msgid "Water on the Dancefloor"
+msgstr "Water on the Dancefloor"
+
+msgid "Wave"
+msgstr "Wave"
+
+msgid "Wave visualiser"
+msgstr "Визуализация Wave"
+
+
+
+msgid "Welcome Clip"
+msgstr "Приветственный клип"
+
+msgid "Welcome to PlayStation®3.\nThe \"What's New\" screen is where to find all the latest PlayStation® news, updates, plus easy access to the games you've most recently played.\nTo access the \"What's New\" screen, connect to PSN* – it's free to join and it's your gateway to a world of entertainment, so sign up today!\n\n* Broadband Internet connection required."
+msgstr "Добро пожаловать в PlayStation®3.\nНа экране «Что нового» можно найти все последние новости и обновления PlayStation®, а также легкий доступ к играм, в которые вы недавно играли.\nЧтобы получить доступ к экрану «Что нового», подключитесь к PSN*. Регистрация бесплатна и открывает вам доступ в мир развлечений, поэтому зарегистрируйтесь сегодня!\n\n * Требуется широкополосное подключение к Интернету."
+
+msgid "Welcome to PlayStation®Network"
+msgstr "Добро пожаловать в PlayStation®Network"
+
+msgid "Western (Latin)"
+msgstr "Западный (латиница)"
+
+msgid "What's New"
+msgstr "Что нового"
+
+msgid "White"
+msgstr "Белый"
+
+msgid "Window Mode"
+msgstr "Оконный режим"
+
+msgid "Windowed"
+msgstr "оконный"
+
+msgid "Wired Connection"
+msgstr "Проводное соединение"
+
+msgid "Wireless"
+msgstr "Беспроводная связь"
+
+msgid "Wireless Headset 2.0"
+msgstr "Беспроводная гарнитура 2.0"
+
+msgid "Wireless Stereo Headset Settings"
+msgstr "Настройки беспроводной стереогарнитуры"
+
+msgid "XMB Waves"
+msgstr "XMB-волны"
+
+msgid "Y Cb Cr"
+msgstr "Y Cb Кр"
+
+msgid "Y Pb/Cb Pr/Cr Super-White (HDMI)"
+msgstr "Y Pb/Cb Pr/Cr Супербелый (HDMI)"
+
+msgid "YYYY/MM/DD"
+msgstr "ГГГГ/ММ/ДД"
+
+msgid "Yellow"
+msgstr "Желтый"
+
+msgid "Yes"
+msgstr "Да"
+
+msgid "You can change the voice that is input using an audio input device."
+msgstr "Вы можете изменить вводимый голос с помощью устройства аудиоввода."
+
+msgid "You can edit a video that you like, upload it to a video sharing website, and then invite your friends to view the video."
+msgstr "Вы можете отредактировать понравившееся видео, загрузить его на веб-сайт для обмена видео, а затем пригласить друзей просмотреть это видео."
+
+msgid "You cannot create an icon less than 15 seconds in length."
+msgstr "Вы не можете создать иконку длиной менее 15 секунд."
+
+msgid "Zoom"
+msgstr "Увеличить"
+
+msgid "Zoom In"
+msgstr "Увеличить масштаб"
+
+msgid "Zoom Out"
+msgstr "Уменьшить масштаб"
+
+msgid "auto"
+msgstr "авто"
+
+msgid "category.settings.accessory.settings"
+msgstr "категория.настройки.аксессуар.настройки"
+
+msgid "category.settings.display.settings"
+msgstr "категория.настройки.дисплей.настройки"
+
+msgid "category.settings.music.settings"
+msgstr "категория.настройки.музыка.настройки"
+
+msgid "category.settings.network.settings"
+msgstr "категория.settings.network.settings"
+
+msgid "category.settings.power.save.settings"
+msgstr "категория.настройки.power.save.settings"
+
+msgid "controller button"
+msgstr "кнопка контроллера"
+
+msgid "corp-eap"
+msgstr "корпорация-eap"
+
+msgid "en"
+msgstr "ru"
+
+msgid "fr"
+msgstr "пт"
+
+msgid "hi"
+msgstr "привет"
+
+msgid "http://s3k.ocremix.org - Project Chaos - Bonus Tracks"
+msgstr "http://s3k.ocremix.org - Project Chaos - Bonus Tracks"
+
+msgid "iMushroom"
+msgstr "iMushroom"
+
+msgid "keyboard key"
+msgstr "клавиша клавиатуры"
+
+msgid "linksys"
+msgstr "Linksys"
+
+msgid "Indonesian"
+msgstr "Индонезийский"
+
+msgid "Simplified Chinese"
+msgstr "Упрощённый китайский"
+
+msgid "Traditional Chinese"
+msgstr "Традиционный китайский"
+
+msgid "\nThe original was preserved."
+msgstr "\nОригинал сохранен."
+
+msgid "   Off"
+msgstr "   Выкл."
+
+msgid "   On"
+msgstr "   Вкл."
+
+msgid "  Played "
+msgstr "  Играл "
+
+msgid "  Select to cycle"
+msgstr "  Выберите для езды на велосипеде"
+
+msgid "  Select to remove scan root"
+msgstr "  Выберите, чтобы удалить корень сканирования"
+
+msgid " (active)"
+msgstr " (активный)"
+
+msgid " (away locally)"
+msgstr " (на месте)"
+
+msgid " (present locally)"
+msgstr " (присутствует локально)"
+
+msgid " Last error: "
+msgstr " Последняя ошибка: "
+
+msgid " RPCS3 root(s)."
+msgstr " RPCS3 корень(и)."
+
+msgid " Settings"
+msgstr " Настройки"
+
+msgid " cores / "
+msgstr " ядра / "
+
+msgid " cores found. Left/Right cycles the core field."
+msgstr " найдены ядра. Влево/вправо циклически переключает основное поле."
+
+msgid " game(s)."
+msgstr " игра(ы)."
+
+msgid " path"
+msgstr " путь"
+
+msgid " playable discs found."
+msgstr " Найдены воспроизводимые диски."
+
+msgid " theme(s)."
+msgstr " тема(ы)."
+
+msgid " threads"
+msgstr " нити"
+
+msgid " times"
+msgstr " раз"
+
+msgid " to the default printer?"
+msgstr " на принтер по умолчанию?"
+
+msgid " tracks"
+msgstr " треки"
+
+msgid " tracks added to "
+msgstr " треки добавлены в "
+
+msgid " upload bytes"
+msgstr " загрузить байты"
+
+msgid " will be moved to a recovery folder. It will not be permanently deleted."
+msgstr " будет перемещен в папку восстановления. Он не будет удален навсегда."
+
+msgid "& © 2025-2026. Syndromatic Limited Britannia. All rights reserved."
+msgstr "& © 2025-2026. Syndromatic Limited Britannia. Все права защищены."
+
+msgid ". Select it to apply."
+msgstr ". Выберите его, чтобы применить."
+
+msgid "12-hour"
+msgstr "12-часовой"
+
+msgid "15 seconds"
+msgstr "15 секунд"
+
+msgid "1½ speed (muted)"
+msgstr "1½ скорости (без звука)"
+
+msgid "24-hour"
+msgstr "24-часовой"
+
+msgid "3 seconds"
+msgstr "3 секунды"
+
+msgid "? Music files are preserved."
+msgstr "? Музыкальные файлы сохраняются."
+
+msgid "A core is already running. Return to its window or stop the session."
+msgstr "Ядро уже работает. Вернитесь в его окно или остановите сеанс."
+
+msgid "About"
+msgstr "О"
+
+msgid "Active local user changed. Settings and themes use this profile."
+msgstr "Активный локальный пользователь изменен. Настройки и темы используют этот профиль."
+
+msgid "Add Current Play Queue"
+msgstr "Добавить текущую очередь воспроизведения"
+
+msgid "Add Selected to Playlist..."
+msgstr "Добавить выбранное в плейлист..."
+
+msgid "Add Track / Folder / Playlist..."
+msgstr "Добавить трек/папку/плейлист..."
+
+msgid "Add custom section"
+msgstr "Добавить пользовательский раздел"
+
+msgid "Add detected RPCS3 game folders"
+msgstr "Добавить обнаруженные папки игры RPCS3."
+
+msgid "Add game folder"
+msgstr "Добавить папку с игрой"
+
+msgid "Add game manually"
+msgstr "Добавить игру вручную"
+
+msgid "Add local friend"
+msgstr "Добавить местного друга"
+
+msgid "Add local trophy"
+msgstr "Добавить местный трофей"
+
+msgid "Add to Queue"
+msgstr "Добавить в очередь"
+
+msgid "Added to Playlist"
+msgstr "Добавлено в плейлист"
+
+msgid "Address: "
+msgstr "Адрес: "
+
+msgid "Adjust settings for the OpenXMB system."
+msgstr "Настройте параметры системы OpenXMB."
+
+msgid "Album"
+msgstr "Альбом"
+
+msgid "Album art exceeds texture upload capacity"
+msgstr "Обложка альбома превышает возможности загрузки текстур"
+
+msgid "Album: "
+msgstr "Альбом: "
+
+msgid "All videos"
+msgstr "Все видео"
+
+msgid "An artwork request is already in progress"
+msgstr "Запрос на художественное оформление уже обрабатывается"
+
+msgid "Animated Theme"
+msgstr "Анимированная тема"
+
+msgid "Anti-aliasing    "
+msgstr "Сглаживание    "
+
+msgid "Apply a theme first, then use this action."
+msgstr "Сначала примените тему, а затем используйте это действие."
+
+msgid "Apply this change to local library data"
+msgstr "Примените это изменение к данным локальной библиотеки."
+
+msgid "Archive this user profile?"
+msgstr "Архивировать этот профиль пользователя?"
+
+msgid "Archives the user's data; at least one profile is retained"
+msgstr "Архивирует данные пользователя; хотя бы один профиль сохраняется"
+
+msgid "Arguments (quote values containing spaces)"
+msgstr "Аргументы (значения в кавычках, содержащие пробелы)"
+
+msgid "Arrows + Z/X/A/S: play   Space: pause   F5/F8: save/load   F12: screenshot"
+msgstr "Стрелки + Z/X/A/S: воспроизведение Пробел: пауза F5/F8: сохранение/загрузка F12: снимок экрана"
+
+msgid "Artist"
+msgstr "Художник"
+
+msgid "Artist: "
+msgstr "Художник: "
+
+msgid "Artwork key environment variable (no key values)"
+msgstr "Ключевая переменная среды графического объекта (без ключевых значений)"
+
+msgid "Artwork provider disabled"
+msgstr "Поставщик иллюстраций отключен"
+
+msgid "Artwork saved: "
+msgstr "Работа сохранена: "
+
+msgid "Audio CDs, DVD and Blu-ray folders/devices. Playback uses an installed desktop player."
+msgstr "Аудио компакт-диски, папки/устройства DVD и Blu-ray. Воспроизведение осуществляется с помощью установленного настольного плеера."
+
+msgid "Audio is muted during speed playback"
+msgstr "Звук отключается во время ускоренного воспроизведения"
+
+msgid "Audio output active"
+msgstr "Аудиовыход активен"
+
+msgid "Audio track"
+msgstr "Аудио дорожка"
+
+msgid "Avatar"
+msgstr "Аватар"
+
+msgid "Avatar image"
+msgstr "Изображение аватара"
+
+msgid "Avatar image path"
+msgstr "Путь к изображению аватара"
+
+msgid "Away locally"
+msgstr "В гостях локально"
+
+msgid "Background / animation"
+msgstr "Фон/анимация"
+
+msgid "Background image"
+msgstr "Фоновое изображение"
+
+msgid "Binding saved"
+msgstr "Привязка сохранена."
+
+msgid "Biography"
+msgstr "Биография"
+
+msgid "Browse in a separate system-browser window with your own keyboard and mouse."
+msgstr "Просматривайте файлы в отдельном окне системного браузера с помощью собственной клавиатуры и мыши."
+
+msgid "Browser address"
+msgstr "Адрес браузера"
+
+msgid "CPU Cores / Threads"
+msgstr "Ядра процессора/потоки"
+
+msgid "CPU Threads"
+msgstr "Потоки ЦП"
+
+msgid "Cannot Add Tracks"
+msgstr "Не могу добавить треки"
+
+msgid "Cannot Create Playlist"
+msgstr "Не могу создать плейлист"
+
+msgid "Cannot open file"
+msgstr "Не могу открыть файл"
+
+msgid "Cannot save video position: "
+msgstr "Невозможно сохранить позицию видео: "
+
+msgid "Capture your desktop or start OpenXMB automatically when you log in."
+msgstr "Сделайте снимок рабочего стола или запустите OpenXMB автоматически при входе в систему."
+
+msgid "Channels"
+msgstr "Каналы"
+
+msgid "Channels: "
+msgstr "Каналы: "
+
+msgid "Choose Font File..."
+msgstr "Выберите файл шрифта..."
+
+msgid "Choose executable, arguments, artwork, preview video and music"
+msgstr "Выберите исполняемый файл, аргументы, обложку, предварительный просмотр видео и музыки."
+
+msgid "Close"
+msgstr "Закрыть"
+
+msgid "Close dedicated browser session"
+msgstr "Закрыть выделенный сеанс браузера"
+
+msgid "Close menu"
+msgstr "Закрыть меню"
+
+msgid "Codec"
+msgstr "Кодек"
+
+msgid "Codec: "
+msgstr "Кодек: "
+
+msgid "Configure scan roots without moving your games"
+msgstr "Настройте корни сканирования, не перемещая игры"
+
+msgid "Confirm: play from track    Options: playlist    Extra: edit track    Back: close"
+msgstr "Подтвердить: воспроизведение с дорожки. Опции: список воспроизведения. Дополнительно: редактировать дорожку. Назад: закрыть."
+
+msgid "Content: "
+msgstr "Содержание: "
+
+msgid "Control browser with gamepad"
+msgstr "Управление браузером с помощью геймпада"
+
+msgid "Controller prompts    "
+msgstr "Подсказки контроллера    "
+
+msgid "Controller rumble    "
+msgstr "Грохот контроллера    "
+
+msgid "Core started in its own window. Escape returns here; F5 saves and F8 loads."
+msgstr "Core запустился в отдельном окне. Сюда возвращается «Побег»; F5 сохраняет, F8 загружает."
+
+msgid "Core: "
+msgstr "Основной: "
+
+msgid "Could not save slideshow"
+msgstr "Не удалось сохранить слайдшоу"
+
+msgid "Create Custom Theme"
+msgstr "Создать собственную тему"
+
+msgid "Create Custom Theme..."
+msgstr "Создать собственную тему..."
+
+msgid "Create a named category backed by a local folder"
+msgstr "Создайте именованную категорию, поддерживаемую локальной папкой."
+
+msgid "Create local user"
+msgstr "Создать локального пользователя"
+
+msgid "Creating custom theme..."
+msgstr "Создание собственной темы..."
+
+msgid "Custom Sections"
+msgstr "Пользовательские разделы"
+
+msgid "Custom category"
+msgstr "Пользовательская категория"
+
+msgid "Custom category name"
+msgstr "Название пользовательской категории"
+
+msgid "Custom section"
+msgstr "Пользовательский раздел"
+
+msgid "Custom section saved"
+msgstr "Пользовательский раздел сохранен."
+
+msgid "Custom sections"
+msgstr "Пользовательские разделы"
+
+msgid "Custom theme created. Export it as a ZIP to share."
+msgstr "Создана собственная тема. Экспортируйте его в формате ZIP, чтобы поделиться."
+
+msgid "Date: "
+msgstr "Дата: "
+
+msgid "Dedicated Graphics Memory"
+msgstr "Выделенная графическая память"
+
+msgid "Defaults restored"
+msgstr "Настройки по умолчанию восстановлены"
+
+msgid "Delete "
+msgstr "Удалить "
+
+msgid "Delete Playlist..."
+msgstr "Удалить плейлист..."
+
+msgid "Delete Playlist?"
+msgstr "Удалить плейлист?"
+
+msgid "Delete local user"
+msgstr "Удалить локального пользователя"
+
+msgid "Delete preset? Type DELETE to confirm"
+msgstr "Удалить пресет? Введите DELETE для подтверждения."
+
+msgid "Description"
+msgstr "Описание"
+
+msgid "Designed by Kavish Krishnakumar in Manchester."
+msgstr "Разработан Kavish Krishnakumar в Манчестере."
+
+msgid "Desktop Tools"
+msgstr "Настольные инструменты"
+
+msgid "Developer"
+msgstr "Разработчик"
+
+msgid "Disable artwork provider"
+msgstr "Отключить поставщик изображений"
+
+msgid "Disabled or key absent; local artwork remains available"
+msgstr "Отключен или ключ отсутствует; местные произведения искусства остаются доступными"
+
+msgid "Disc Media"
+msgstr "Дисковые носители"
+
+msgid "Disc ready. Select it to play."
+msgstr "Диск готов. Выберите его, чтобы играть."
+
+msgid "Discard"
+msgstr "Отказаться"
+
+msgid "Discard unsaved edits and reload the saved track list?"
+msgstr "Отменить несохраненные изменения и перезагрузить сохраненный список треков?"
+
+msgid "Display name"
+msgstr "Отображаемое имя"
+
+msgid "Document information"
+msgstr "Информация о документе"
+
+msgid "Document page exceeds texture upload limit"
+msgstr "Страница документа превышает лимит загрузки текстур"
+
+msgid "Done"
+msgstr "Готово"
+
+msgid "Double speed (muted)"
+msgstr "Двойная скорость (без звука)"
+
+msgid "Download artwork for this game"
+msgstr "Скачать обложку к этой игре"
+
+msgid "Edit Selected Track"
+msgstr "Редактировать выбранный трек"
+
+msgid "Emulation"
+msgstr "Эмуляция"
+
+msgid "Emulation session finished. Save RAM is stored automatically."
+msgstr "Сеанс эмуляции завершен. Сохранение оперативной памяти сохраняется автоматически."
+
+msgid "Enable the provider and configure its key first; no request was made"
+msgstr "Сначала включите провайдера и настройте его ключ; никакой запрос не был сделан"
+
+msgid "Enabled and key is configured"
+msgstr "Включено и ключ настроен."
+
+msgid "End of queue"
+msgstr "Конец очереди"
+
+msgid "Enter"
+msgstr "Войти"
+
+msgid "Enter Address"
+msgstr "Введите адрес"
+
+msgid "Enter Text"
+msgstr "Введите текст"
+
+msgid "Executable"
+msgstr "Исполняемый файл"
+
+msgid "Executable path or command"
+msgstr "Исполняемый путь или команда"
+
+msgid "Exit"
+msgstr "Выход"
+
+msgid "Export selected theme..."
+msgstr "Экспортировать выбранную тему..."
+
+msgid "Export theme ZIP (new filename)"
+msgstr "Экспорт темы в формате ZIP (новое имя файла)"
+
+msgid "Exporting theme..."
+msgstr "Экспорт темы..."
+
+msgid "FPS: {:.2f}"
+msgstr "FPS: {:.2f}"
+
+msgid "Failed to get file size"
+msgstr "Не удалось получить размер файла"
+
+msgid "Failed to map file"
+msgstr "Не удалось сопоставить файл"
+
+msgid "Failed to open file"
+msgstr "Не удалось открыть файл"
+
+msgid "Failed to open video"
+msgstr "Не удалось открыть видео"
+
+msgid "Failed to read file"
+msgstr "Не удалось прочитать файл"
+
+msgid "Favorites are kept in your local profile"
+msgstr "Избранное хранится в вашем локальном профиле."
+
+msgid "First page"
+msgstr "Первая страница"
+
+msgid "Fit page"
+msgstr "Подогнать страницу"
+
+msgid "Folder"
+msgstr "Папка"
+
+msgid "Folder does not exist"
+msgstr "Папка не существует"
+
+msgid "Font file"
+msgstr "Файл шрифта"
+
+msgid "For more information, see the Licenses section."
+msgstr "Более подробную информацию смотрите в разделе Лицензии."
+
+msgid "Forward"
+msgstr "Вперед"
+
+msgid "Frame cap    "
+msgstr "Крышка рамки    "
+
+msgid "Friend display name"
+msgstr "Отображаемое имя друга"
+
+msgid "Friends - local simulation"
+msgstr "Друзья - локальный симулятор"
+
+msgid "Full screen (stretch)"
+msgstr "Полный экран (растянуть)"
+
+msgid "GPU Local Memory"
+msgstr "GPU Локальная память"
+
+msgid "Game Library"
+msgstr "Библиотека игр"
+
+msgid "Game details"
+msgstr "Детали игры"
+
+msgid "Game folder path"
+msgstr "Путь к папке с игрой"
+
+msgid "Game library"
+msgstr "Библиотека игр"
+
+msgid "Game library folders"
+msgstr "Папки библиотеки игр"
+
+msgid "Game title"
+msgstr "Название игры"
+
+msgid "Game/content file (empty for no-content cores)"
+msgstr "Файл игры/контента (пустой для ядер без контента)"
+
+msgid "Genre"
+msgstr "Жанр"
+
+msgid "Genre: "
+msgstr "Жанр: "
+
+msgid "Glass icons    "
+msgstr "Стеклянные иконки    "
+
+msgid "Grade"
+msgstr "Оценка"
+
+msgid "Graphics Driver"
+msgstr "Графический драйвер"
+
+msgid "Graphics Processor"
+msgstr "Графический процессор"
+
+msgid "Home"
+msgstr "Главная"
+
+msgid "IF YOU HAVE A HISTORY OF EPILEPSY OR SEIZURES, CONSULT A DOCTOR BEFORE USE. CERTAIN PATTERNS MAY TRIGGER SEIZURES WITH NO PRIOR HISTORY. BEFORE USING THIS PRODUCT, CAREFULLY READ THE INSTRUCTION MANUAL."
+msgstr "ЕСЛИ У ВАС ЕСТЬ ЭПИЛЕПСИЯ ИЛИ ПРИСУДКИ, ПРОКОНСУЛЬТИРУЙТЕСЬ С ВРАЧОМ ПЕРЕД ИСПОЛЬЗОВАНИЕМ. ОПРЕДЕЛЕННЫЕ МОДЕЛИ МОГУТ ВЫЗВАТЬ ПРИСУДЫ БЕЗ ПРЕДЫДУЩЕГО ИСТОРИИ. ПЕРЕД ИСПОЛЬЗОВАНИЕМ ЭТОГО ИЗДЕЛИЯ ВНИМАТЕЛЬНО ПРОЧТИТЕ РУКОВОДСТВО ПО ЭКСПЛУАТАЦИИ."
+
+msgid "Icon"
+msgstr "Значок"
+
+msgid "Icon image"
+msgstr "Изображение значка"
+
+msgid "Icons"
+msgstr "Иконки"
+
+msgid "Image exceeds texture upload limit"
+msgstr "Изображение превышает лимит загрузки текстур"
+
+msgid "Import .p3t, .zip or theme folder"
+msgstr "Импортируйте папку .p3t, .zip или тему."
+
+msgid "Import inbox ("
+msgstr "Импортировать входящие ("
+
+msgid "Import theme or icon pack..."
+msgstr "Импортировать тему или пакет значков..."
+
+msgid "Imported "
+msgstr "Импортировано "
+
+msgid "Importing inbox..."
+msgstr "Импорт входящих..."
+
+msgid "Importing theme..."
+msgstr "Импорт темы..."
+
+msgid "Imports game manifests, desktop entries and native executables"
+msgstr "Импортирует манифесты игр, записи рабочего стола и собственные исполняемые файлы."
+
+msgid "Install / manage themes..."
+msgstr "Установка/управление темами..."
+
+msgid "Install CUPS client tools (lp or lpr), configure a printer, and add the tools to PATH."
+msgstr "Установите клиентские инструменты CUPS (lp или lpr), настройте принтер и добавьте инструменты в PATH."
+
+msgid "Installed Memory"
+msgstr "Установленная память"
+
+msgid "Installed copy removed. Original import source was kept."
+msgstr "Установленная копия удалена. Первоначальный источник импорта был сохранен."
+
+msgid "InterfaceFX TEXT PROBE: The quick brown fox jumps over the lazy dog."
+msgstr "InterfaceFX ТЕКСТОВЫЙ ЗОНД: Быстрая коричневая лиса прыгает через ленивую собаку."
+
+msgid "Keep current data"
+msgstr "Сохраняйте текущие данные"
+
+msgid "Keeps all game files"
+msgstr "Сохраняет все файлы игры"
+
+msgid "Keeps its folder and files"
+msgstr "Сохраняет свою папку и файлы"
+
+msgid "Keeps the executable and source media"
+msgstr "Сохраняет исполняемый файл и исходный носитель."
+
+msgid "Keyboard Controls"
+msgstr "Управление с клавиатуры"
+
+msgid "Keyboard bindings"
+msgstr "Привязки клавиатуры"
+
+msgid "Last page"
+msgstr "Последняя страница"
+
+msgid "Launch "
+msgstr "Запуск "
+
+msgid "Launch arguments"
+msgstr "Запустить аргументы"
+
+msgid "Left/Right page · Home/End first/last · Up/Down or wheel zoom · Drag to pan · P print · Tab options"
+msgstr "Левая/правая страница · Начало/конец первой/последней · Вверх/Вниз или колесико масштабирования · Перетаскивание для панорамирования · Печать P · Параметры вкладок"
+
+msgid "Library"
+msgstr "Библиотека"
+
+msgid "Libretro core library"
+msgstr "Libretro основная библиотека"
+
+msgid "Loading page…"
+msgstr "Загрузка страницы…"
+
+msgid "Loading…"
+msgstr "Загрузка…"
+
+msgid "Local Account"
+msgstr "Локальная учетная запись"
+
+msgid "Local Friends"
+msgstr "Местные друзья"
+
+msgid "Local Profiles"
+msgstr "Локальные профили"
+
+msgid "Local account - no online sign-in"
+msgstr "Локальная учетная запись – нет входа в систему через Интернет"
+
+msgid "Local account display name"
+msgstr "Отображаемое имя локальной учетной записи"
+
+msgid "Local account status"
+msgstr "Статус локального аккаунта"
+
+msgid "Local biography"
+msgstr "Местная биография"
+
+msgid "Local friend"
+msgstr "Местный друг"
+
+msgid "Local friend's name"
+msgstr "Имя местного друга"
+
+msgid "Local friends"
+msgstr "Местные друзья"
+
+msgid "Local library updated"
+msgstr "Обновлена местная библиотека"
+
+msgid "Local profile"
+msgstr "Локальный профиль"
+
+msgid "Local status"
+msgstr "Местный статус"
+
+msgid "Local status text"
+msgstr "Текст локального статуса"
+
+msgid "Local trophies"
+msgstr "Местные трофеи"
+
+msgid "Local trophy"
+msgstr "Местный трофей"
+
+msgid "Local users"
+msgstr "Локальные пользователи"
+
+msgid "Locked: "
+msgstr "Заблокировано: "
+
+msgid "Looking up game artwork..."
+msgstr "Ищу обложку игры..."
+
+msgid "Makes HTTPS requests only when provider and key are configured"
+msgstr "Выполняет HTTPS-запросы только тогда, когда настроены поставщик и ключ."
+
+msgid "Manage game folders"
+msgstr "Управление папками игры"
+
+msgid "Manage offline simulated friend records"
+msgstr "Управляйте записями симулированных друзей в автономном режиме"
+
+msgid "Manage offline trophy records"
+msgstr "Управляйте записями трофеев в автономном режиме"
+
+msgid "Mark favorite"
+msgstr "Отметить как избранное"
+
+msgid "Mark locked"
+msgstr "Отметить заблокировано"
+
+msgid "Media folder"
+msgstr "Медиа-папка"
+
+msgid "Memory Transfer Rate"
+msgstr "Скорость передачи данных в память"
+
+msgid "Menu"
+msgstr "Меню"
+
+msgid "Mounted optical-disc directory or device"
+msgstr "Подключенный каталог или устройство оптического диска"
+
+msgid "Move Down"
+msgstr "Вниз"
+
+msgid "Move Selected Down"
+msgstr "Переместить выбранное вниз"
+
+msgid "Move Selected Up"
+msgstr "Переместить выбранное вверх"
+
+msgid "Move Up"
+msgstr "Двигаться вверх"
+
+msgid "Move photo to OpenXMB Trash?"
+msgstr "Переместить фотографию в OpenXMB Корзину?"
+
+msgid "Move to Trash"
+msgstr "Отправить в корзину"
+
+msgid "Music Player"
+msgstr "Музыкальный плеер"
+
+msgid "Music folder"
+msgstr "Музыкальная папка"
+
+msgid "My Section"
+msgstr "Мой раздел"
+
+msgid "My Theme"
+msgstr "Моя тема"
+
+msgid "Native YUV GPU conversion"
+msgstr "Собственное преобразование YUV GPU"
+
+msgid "Native libretro software cores. Provide your own core, content and BIOS files."
+msgstr "Собственные программные ядра libretro. Предоставьте собственное ядро, содержимое и файлы BIOS."
+
+msgid "New Game"
+msgstr "Новая игра"
+
+msgid "New Playlist"
+msgstr "Новый плейлист"
+
+msgid "New Playlist..."
+msgstr "Новый плейлист..."
+
+msgid "New User"
+msgstr "Новый пользователь"
+
+msgid "New user name"
+msgstr "Новое имя пользователя"
+
+msgid "Next frame"
+msgstr "Следующий кадр"
+
+msgid "Next page"
+msgstr "Следующая страница"
+
+msgid "Next video"
+msgstr "Следующее видео"
+
+msgid "No RPCS3 data folder detected. Add your disc or installed-game folder manually."
+msgstr "Папка данных RPCS3 не обнаружена. Добавьте диск или папку с установленной игрой вручную."
+
+msgid "No audio CD, mounted DVD, or mounted Blu-ray was found."
+msgstr "Звук CD, смонтированный DVD или смонтированный Blu-ray не найден."
+
+msgid "No audio tracks"
+msgstr "Нет звуковых дорожек"
+
+msgid "No entries yet. Use the actions above to add one."
+msgstr "Пока нет записей. Используйте действия выше, чтобы добавить его."
+
+msgid "No native viewer is registered for this file type"
+msgstr "Для этого типа файлов не зарегистрировано ни одного встроенного средства просмотра."
+
+msgid "No playable disc structure was found at that path."
+msgstr "По этому пути не найдена воспроизводимая структура диска."
+
+msgid "No print service is available"
+msgstr "Услуга печати недоступна"
+
+msgid "No viewer is available for "
+msgstr "Ни один просмотрщик не доступен для "
+
+msgid "None (no-content core)"
+msgstr "Нет (ядро без контента)"
+
+msgid "Normal (fit)"
+msgstr "Нормальный (подходит)"
+
+msgid "Normal speed"
+msgstr "Нормальная скорость"
+
+msgid "Offline simulation; no messages or remote requests are sent"
+msgstr "Оффлайн моделирование; никакие сообщения или удаленные запросы не отправляются"
+
+msgid "Offline tracking; does not connect to a console account"
+msgstr "Оффлайн отслеживание; не подключается к консольной учетной записи"
+
+msgid "Only this local profile is changed"
+msgstr "Изменяется только этот локальный профиль"
+
+msgid "Open "
+msgstr "Открыть "
+
+msgid "Open / Resume"
+msgstr "Открыть/возобновить"
+
+msgid "Open Link"
+msgstr "Открыть ссылку"
+
+msgid "Open a dedicated browser window first."
+msgstr "Сначала откройте специальное окно браузера."
+
+msgid "Open browser window"
+msgstr "Открыть окно браузера"
+
+msgid "Open disc directory/device..."
+msgstr "Открыть каталог/устройство диска..."
+
+msgid "Open in native viewer"
+msgstr "Открыть в родном средстве просмотра"
+
+msgid "OpenXMB "
+msgstr "OpenXMB "
+
+msgid "OpenXMB Settings"
+msgstr "OpenXMB Настройки"
+
+msgid "Opening Internet Browser…"
+msgstr "Открытие Интернет-браузера…"
+
+msgid "Opening video…"
+msgstr "Вступительное видео…"
+
+msgid "Operating System"
+msgstr "Операционная система"
+
+msgid "Optical Media"
+msgstr "Оптические носители"
+
+msgid "Optional RAWG artwork provider"
+msgstr "Дополнительный поставщик изображений RAWG"
+
+msgid "Options: save / add to playlist / reorder / remove"
+msgstr "Опции: сохранить/добавить в список воспроизведения/переупорядочить/удалить."
+
+msgid "Original appearance restored."
+msgstr "Восстановлен первоначальный внешний вид."
+
+msgid "Original size"
+msgstr "Исходный размер"
+
+msgid "Overlay layers"
+msgstr "Наложение слоев"
+
+msgid "PHOTOSENSITIVE EPILEPSY"
+msgstr "ФОТОСЕНСИТИВНАЯ ЭПИЛЕПСИЯ"
+
+msgid "Page Information"
+msgstr "Информация о странице"
+
+msgid "Page loaded"
+msgstr "Страница загружена"
+
+msgid "Paused"
+msgstr "Приостановлено"
+
+msgid "Photo Playlists"
+msgstr "Плейлисты с фотографиями"
+
+msgid "Photo copy saved"
+msgstr "Копия фотографии сохранена."
+
+msgid "Photo information"
+msgstr "Информация о фотографии"
+
+msgid "Photo moved to OpenXMB Trash"
+msgstr "Фотография перемещена в корзину OpenXMB."
+
+msgid "Photo operation failed"
+msgstr "Операция с фотографией не удалась"
+
+msgid "Photo sent to print service"
+msgstr "Фотография отправлена в типографию."
+
+msgid "Pictures folder"
+msgstr "Папка с изображениями"
+
+msgid "Play Next"
+msgstr "Играть дальше"
+
+msgid "Play Now"
+msgstr "Играть сейчас"
+
+msgid "Play Queue"
+msgstr "Играть в очередь"
+
+msgid "Play from beginning"
+msgstr "Играть с начала"
+
+msgid "Play preview music"
+msgstr "Воспроизвести музыку для предварительного просмотра"
+
+msgid "Play video preview"
+msgstr "Воспроизвести предпросмотр видео"
+
+msgid "Playback error"
+msgstr "Ошибка воспроизведения"
+
+msgid "Playback speed"
+msgstr "Скорость воспроизведения"
+
+msgid "Playing"
+msgstr "Играя"
+
+msgid "Playing "
+msgstr "Играя "
+
+msgid "Playing game preview music"
+msgstr "Воспроизведение музыки для предварительного просмотра игры"
+
+msgid "Playing playlist"
+msgstr "Воспроизведение плейлиста"
+
+msgid "Playlist"
+msgstr "Плейлист"
+
+msgid "Playlist Created"
+msgstr "Плейлист создан"
+
+msgid "Playlist renamed"
+msgstr "Плейлист переименован"
+
+msgid "Playlist saved"
+msgstr "Плейлист сохранен."
+
+msgid "Present locally"
+msgstr "Представление локально"
+
+msgid "Preset applied."
+msgstr "Предустановка применена."
+
+msgid "Preset deleted."
+msgstr "Предустановка удалена."
+
+msgid "Preset kept."
+msgstr "Предустановка сохранена."
+
+msgid "Preset saved."
+msgstr "Предустановка сохранена."
+
+msgid "Preset: "
+msgstr "Предустановка: "
+
+msgid "Preview music"
+msgstr "Предварительный просмотр музыки"
+
+msgid "Preview video"
+msgstr "Предварительный просмотр видео"
+
+msgid "Previous frame"
+msgstr "Предыдущий кадр"
+
+msgid "Previous page"
+msgstr "Предыдущая страница"
+
+msgid "Previous video"
+msgstr "Предыдущее видео"
+
+msgid "Print current page…"
+msgstr "Распечатать текущую страницу…"
+
+msgid "Print document?"
+msgstr "Распечатать документ?"
+
+msgid "Print entire PDF…"
+msgstr "Распечатать PDF-файл целиком…"
+
+msgid "Print job submitted"
+msgstr "Задание на печать отправлено"
+
+msgid "Printing failed"
+msgstr "Печать не удалась"
+
+msgid "Printing unavailable"
+msgstr "Печать недоступна"
+
+msgid "Processor"
+msgstr "Процессор"
+
+msgid "Profile: "
+msgstr "Профиль: "
+
+msgid "Provider enabled. Supply the key securely in environment settings."
+msgstr "Провайдер включен. Надежно укажите ключ в настройках среды."
+
+msgid "Queue added; choose Save to keep changes"
+msgstr "Добавлена ​​очередь; выберите «Сохранить», чтобы сохранить изменения."
+
+msgid "RGBA upload"
+msgstr "загрузка RGBA"
+
+msgid "Refresh"
+msgstr "Обновить"
+
+msgid "Refresh installed cores (Left/Right cycles core)"
+msgstr "Обновить установленные ядра (ядро левого/правого цикла)"
+
+msgid "Refresh optical media"
+msgstr "Обновить оптический носитель"
+
+msgid "Release year (0 if unknown)"
+msgstr "Год выпуска (0, если неизвестен)"
+
+msgid "Reload"
+msgstr "Перезагрузить"
+
+msgid "Reload Saved Playlist"
+msgstr "Перезагрузить сохраненный плейлист"
+
+msgid "Reload Saved Playlist?"
+msgstr "Перезагрузить сохраненный плейлист?"
+
+msgid "Reload this playlist before saving; its contents could not be read."
+msgstr "Перезагрузите этот плейлист перед сохранением; его содержимое невозможно было прочитать."
+
+msgid "Remove Selected"
+msgstr "Удалить выбранное"
+
+msgid "Remove favorite"
+msgstr "Удалить избранное"
+
+msgid "Remove from Queue"
+msgstr "Удалить из очереди"
+
+msgid "Remove from game library"
+msgstr "Удалить из библиотеки игр"
+
+msgid "Remove installed theme..."
+msgstr "Удалить установленную тему..."
+
+msgid "Remove installed theme? Type DELETE to confirm"
+msgstr "Удалить установленную тему? Введите DELETE для подтверждения."
+
+msgid "Remove local friend"
+msgstr "Удалить местного друга"
+
+msgid "Remove local friend?"
+msgstr "Удалить местного друга?"
+
+msgid "Remove local trophy"
+msgstr "Удалить локальный трофей"
+
+msgid "Remove local trophy?"
+msgstr "Удалить местный трофей?"
+
+msgid "Remove section"
+msgstr "Удалить раздел"
+
+msgid "Remove this custom section?"
+msgstr "Удалить этот специальный раздел?"
+
+msgid "Remove this game entry?"
+msgstr "Удалить эту запись об игре?"
+
+msgid "Remove this scan root?"
+msgstr "Удалить этот корень сканирования?"
+
+msgid "Removes this offline record"
+msgstr "Удаляет эту автономную запись"
+
+msgid "Rename Playlist"
+msgstr "Переименовать плейлист"
+
+msgid "Rename Playlist..."
+msgstr "Переименовать плейлист..."
+
+msgid "Rename section"
+msgstr "Переименовать раздел"
+
+msgid "Rename user"
+msgstr "Переименовать пользователя"
+
+msgid "Repeat all"
+msgstr "Повторить все"
+
+msgid "Repeat off"
+msgstr "Повтор выключен"
+
+msgid "Repeat one"
+msgstr "Повторите один"
+
+msgid "Repeat: "
+msgstr "Повторите: "
+
+msgid "Replay 10 seconds"
+msgstr "Повтор 10 секунд"
+
+msgid "Reported CPU Clock"
+msgstr "Сообщаемая частота процессора"
+
+msgid "Reset"
+msgstr "Сброс"
+
+msgid "Reset current profile settings"
+msgstr "Сбросить текущие настройки профиля"
+
+msgid "Reset settings?"
+msgstr "Сбросить настройки?"
+
+msgid "Resize"
+msgstr "Изменить размер"
+
+msgid "Restore default bindings"
+msgstr "Восстановить привязки по умолчанию"
+
+msgid "Restore the current profile's default shell preferences? Media files and other profiles are preserved."
+msgstr "Восстановить настройки оболочки по умолчанию для текущего профиля? Медиа-файлы и другие профили сохраняются."
+
+msgid "Restore the original appearance."
+msgstr "Восстановить первоначальный вид."
+
+msgid "Return"
+msgstr "Возврат"
+
+msgid "SDL scancode for "
+msgstr "SDL скан-код для "
+
+msgid "Save"
+msgstr "Сохранить"
+
+msgid "Save Playlist Changes?"
+msgstr "Сохранить изменения плейлиста?"
+
+msgid "Save Queue as Playlist..."
+msgstr "Сохранить очередь как список воспроизведения..."
+
+msgid "Save component preset"
+msgstr "Сохранить предустановку компонента"
+
+msgid "Save component preset..."
+msgstr "Сохранить предустановку компонента..."
+
+msgid "Save crop"
+msgstr "Сохранить урожай"
+
+msgid "Saved"
+msgstr "Сохранено"
+
+msgid "Saved playlist loaded"
+msgstr "Сохраненный плейлист загружен."
+
+msgid "Saving…"
+msgstr "Сохранение…"
+
+msgid "Scan configured folders"
+msgstr "Сканировать настроенные папки"
+
+msgid "Scan game folders"
+msgstr "Сканировать папки с игрой"
+
+msgid "Scene search"
+msgstr "Поиск сцены"
+
+msgid "Screen mode"
+msgstr "Режим экрана"
+
+msgid "Scroll Down"
+msgstr "Прокрутите вниз"
+
+msgid "Scroll Up"
+msgstr "Прокрутить вверх"
+
+msgid "Section folder path"
+msgstr "Путь к папке раздела"
+
+msgid "Section icon path"
+msgstr "Путь к значку раздела"
+
+msgid "Section name"
+msgstr "Название раздела"
+
+msgid "Select"
+msgstr "Выбрать"
+
+msgid "Select / Edit"
+msgstr "Выбрать/изменить"
+
+msgid "Select a core library"
+msgstr "Выберите основную библиотеку"
+
+msgid "Separate settings, themes, game library and local social data"
+msgstr "Отдельные настройки, темы, библиотека игр и локальные социальные данные."
+
+msgid "Shift"
+msgstr "Сдвиг"
+
+msgid "Show FPS    "
+msgstr "Показать FPS    "
+
+msgid "Show GPU memory    "
+msgstr "Показать память GPU    "
+
+msgid "Slideshow saved: "
+msgstr "Слайд-шоу сохранено: "
+
+msgid "Sound effects"
+msgstr "Звуковые эффекты"
+
+msgid "Space"
+msgstr "Космос"
+
+msgid "Start OpenXMB at login: "
+msgstr "Запустите OpenXMB при входе в систему: "
+
+msgid "Start emulation"
+msgstr "Запустить эмуляцию"
+
+msgid "Started "
+msgstr "Началось "
+
+msgid "Status"
+msgstr "Статус"
+
+msgid "Stick: pointer  A: click  X: Tab  Y: text  Start: address  Shoulder: Enter  B: return"
+msgstr "Палка: указатель A: щелчок X: вкладка Y: текст Начало: адрес Плечо: Enter B: возврат"
+
+msgid "Stop emulation"
+msgstr "Остановить эмуляцию"
+
+msgid "Stopped"
+msgstr "Остановлено"
+
+msgid "Stops optional provider lookups"
+msgstr "Останавливает дополнительный поиск поставщиков"
+
+msgid "Submit page "
+msgstr "Отправить страницу "
+
+msgid "Submit the entire PDF to the default printer?"
+msgstr "Отправить весь PDF-файл на принтер по умолчанию?"
+
+msgid "Submitting print job…"
+msgstr "Отправка задания на печать…"
+
+msgid "Subtitles"
+msgstr "Субтитры"
+
+msgid "Supported manifest: openxmb-game.json"
+msgstr "Поддерживаемый манифест: openxmb-game.json."
+
+msgid "Switch to "
+msgstr "Переключиться на "
+
+msgid "System Tools"
+msgstr "Системные инструменты"
+
+msgid "Take screenshot"
+msgstr "Сделать скриншот"
+
+msgid "Text"
+msgstr "Текст"
+
+msgid "Text for the focused browser field"
+msgstr "Текст для выделенного поля браузера"
+
+msgid "The GNU General Public License version 3 or later applies to OpenXMB. License files could not be found in this installation."
+msgstr "GNU General Public License версии 3 или более поздней применяется к OpenXMB. В этой установке не удалось найти файлы лицензий."
+
+msgid "The Syndromatic Open Xross Media Bar shell experience."
+msgstr "Опыт оболочки Syndromatic Open Xross Media Bar."
+
+msgid "The browser exited unexpectedly. Reopen Internet Browser; check the WebView2 Runtime if this continues."
+msgstr "Браузер неожиданно завершил работу. Снова откройте Интернет-браузер; проверьте среду выполнения WebView2, если это продолжается."
+
+msgid "The core session could not continue. Check the selected core/content and its BIOS requirements."
+msgstr "Основная сессия не могла продолжаться. Проверьте выбранное ядро/содержимое и его требования к BIOS."
+
+msgid "The document was accepted by the configured print command."
+msgstr "Документ был принят настроенной командой печати."
+
+msgid "The original is recoverable at:\n"
+msgstr "Оригинал можно восстановить по адресу: \n.\n"
+
+msgid "The play queue is empty"
+msgstr "Очередь воспроизведения пуста"
+
+msgid "The scanner reads files; it never launches discovered games"
+msgstr "Сканер читает файлы; он никогда не запускает обнаруженные игры"
+
+msgid "The selected local item no longer exists"
+msgstr "Выбранный локальный элемент больше не существует"
+
+msgid "Theme Library"
+msgstr "Библиотека тем"
+
+msgid "Theme applied. Your component choices were saved."
+msgstr "Тема применена. Ваш выбор компонентов был сохранен."
+
+msgid "Theme colors"
+msgstr "Цвета темы"
+
+msgid "Theme exported to "
+msgstr "Тема экспортирована в "
+
+msgid "Theme kept."
+msgstr "Тема сохранена."
+
+msgid "Theme library refreshed."
+msgstr "Библиотека тем обновлена."
+
+msgid "Theme manager is not attached to the shell yet"
+msgstr "Менеджер тем еще не привязан к оболочке"
+
+msgid "Theme operation in progress. Originals remain unchanged."
+msgstr "Работа с темой продолжается. Оригиналы остаются без изменений."
+
+msgid "This folder is empty."
+msgstr "Эта папка пуста."
+
+msgid "This playlist is empty. Open Options to add tracks or a folder."
+msgstr "Этот плейлист пуст. Откройте «Параметры», чтобы добавить треки или папку."
+
+msgid "This program is licensed to you under the GNU General Public License version 3.0."
+msgstr "Эта программа предоставляется вам по лицензии GNU General Public License версии 3.0."
+
+msgid "This setting is not supported by this build."
+msgstr "Этот параметр не поддерживается данной сборкой."
+
+msgid "This video"
+msgstr "Это видео"
+
+msgid "Title"
+msgstr "Название"
+
+msgid "Toggle simulated presence"
+msgstr "Переключить имитацию присутствия"
+
+msgid "Track"
+msgstr "Трек"
+
+msgid "Track added to queue"
+msgstr "Трек добавлен в очередь"
+
+msgid "Track will play next"
+msgstr "Трек будет воспроизводиться следующим"
+
+msgid "Track, Folder or Playlist Path"
+msgstr "Путь к дорожке, папке или списку воспроизведения"
+
+msgid "Track: "
+msgstr "Трек: "
+
+msgid "Trophy description"
+msgstr "Описание трофея"
+
+msgid "Trophy title"
+msgstr "Название трофея"
+
+msgid "Type into browser field..."
+msgstr "Введите в поле браузера..."
+
+msgid "Unavailable"
+msgstr "Недоступно"
+
+msgid "Unlock local trophy"
+msgstr "Разблокировать местный трофей"
+
+msgid "Unlocked: "
+msgstr "Разблокировано: "
+
+msgid "Up/Down: select    Confirm: change    Cancel: back"
+msgstr "Вверх/Вниз: выбрать Подтвердить: изменить Отмена: назад"
+
+msgid "Use an SDL scancode from 4 to 512"
+msgstr "Используйте скан-код SDL от 4 до 512."
+
+msgid "User name"
+msgstr "Имя пользователя"
+
+msgid "User profile"
+msgstr "Профиль пользователя"
+
+msgid "Uses installed RPCS3 data roots; custom disc folders can be added normally"
+msgstr "Использует установленные корни данных RPCS3; пользовательские папки диска можно добавлять обычным образом"
+
+msgid "VSync    "
+msgstr "VSync    "
+
+msgid "Video Memory: {:.2f}/{:.2f} MB"
+msgstr "Видеопамять: {:.2f}/{:.2f} МБ"
+
+msgid "Video could not be loaded"
+msgstr "Видео не удалось загрузить"
+
+msgid "Video information"
+msgstr "Информация о видео"
+
+msgid "Video list"
+msgstr "Список видео"
+
+msgid "Video playback failed"
+msgstr "Воспроизведение видео не удалось"
+
+msgid "Video upload failed: "
+msgstr "Не удалось загрузить видео: "
+
+msgid "Videos folder"
+msgstr "Папка видео"
+
+msgid "View background artwork"
+msgstr "Посмотреть фоновую иллюстрацию"
+
+msgid "Volume"
+msgstr "Объем"
+
+msgid "Volume  "
+msgstr "Объем  "
+
+msgid "Volume +"
+msgstr "Громкость +"
+
+msgid "Volume −"
+msgstr "Объем —"
+
+msgid "Wait for the photo to finish loading"
+msgstr "Подождите, пока фотография загрузится"
+
+msgid "Wallpaper updated"
+msgstr "Обои обновлены"
+
+msgid "Web address"
+msgstr "Веб-адрес"
+
+msgid "Working directory"
+msgstr "Рабочий каталог"
+
+msgid "Year"
+msgstr "Год"
+
+msgid "Year must be 0-9999"
+msgstr "Год должен быть от 0 до 9999."
+
+msgid "Zoom in"
+msgstr "Увеличить масштаб"
+
+msgid "Zoom must be between 0.25 and 5.0"
+msgstr "Масштаб должен быть от 0,25 до 5,0."
+
+msgid "Zoom out"
+msgstr "Уменьшить масштаб"
+
+msgid "open "
+msgstr "открыть "
+
+msgid "version "
+msgstr "версия "
+
+msgid "¼ speed (muted)"
+msgstr "¼ скорости (без звука)"
+
+msgid "½ speed (muted)"
+msgstr "½ скорости (без звука)"
+
+msgid "← More text →"
+msgstr "← Подробнее →"
+
+msgid "✓ Off"
+msgstr "✓ Выкл."
+
+msgid "Vulkan"
+msgstr "Vulkan"
+
+msgid "OK"
+msgstr "ОК"
+
+# Native player metadata labels; preserve dynamic metadata separately.
+
+msgid "Album:"
+msgstr "Альбом:"
+
+msgid "Artist:"
+msgstr "Художник:"
+
+msgid "Genre:"
+msgstr "Жанр:"
+
+msgid "Date:"
+msgstr "Дата:"
+
+msgid "Track:"
+msgstr "Трек:"
+
+msgid "Codec:"
+msgstr "Кодек:"
+
+msgid "Channels:"
+msgstr "Каналы:"
+
+msgid "Use system language"
+msgstr "Использовать язык системы"
+
+msgid "Import inbox"
+msgstr "Папка импорта"
+
+msgid "Preset:"
+msgstr "Предустановка:"

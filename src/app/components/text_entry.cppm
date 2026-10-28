@@ -1,4 +1,5 @@
 module;
+#include "../../localization/shell_locale.hpp"
 
 #include "dialog_input.hpp"
 #include "dialog_text_layout.hpp"
@@ -28,7 +29,7 @@ public:
 
     text_entry_overlay(std::string title, std::string initial,
                        std::function<void(std::string)> accept,std::function<void()> cancel={})
-        : title_(std::move(title)), editor_(std::move(initial)), accept_(std::move(accept)),cancel_(std::move(cancel)) {}
+        : title_(::openxmb::localization::shell_locale::translate(title)), editor_(std::move(initial)), accept_(std::move(accept)),cancel_(std::move(cancel)) {}
 
     result on_event(const event& e) override {
         std::optional<unsigned> down,up;
@@ -89,7 +90,7 @@ public:
             const bool focused=editor_.row==5&&(editor_.col<2?0:editor_.col<5?1:editor_.col<7?2:3)==i;
             const float x=418+i*273;
             icons_.box(c,i==3?"osk/button_base_g":"osk/button_base_blue_gray",x,715,266,58,focused?1.0F:0.8F);
-            c.text(labels[i],x+133,755,26,{0.025F,0.025F,0.025F,1},0,true);
+            c.text(::openxmb::localization::shell_locale::translate(labels[i]),x+133,755,26,{0.025F,0.025F,0.025F,1},0,true);
             if(focused) c.rect(x+5,718,256,1,{1,1,1,1});
         }
         c.rect(393,790,1133,76,grey(0.38F));

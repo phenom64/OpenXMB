@@ -17,9 +17,11 @@
  */
 
 module;
+#include "../../localization/ui_literal_text.hpp"
 
 #include "openxmb/xmb/catalog.hpp"
 #include "desktop_settings_catalog.hpp"
+#include "../../localization/shell_locale.hpp"
 #include "media_motion.hpp"
 #include "openxmb/xmb/background.hpp"
 #include "openxmb/desktop/library.hpp"
@@ -780,7 +782,7 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
     const auto catalog_path = asset_directory / "catalog/en.json";
     if(auto loaded = openxmb::xmb::load_catalog_file(catalog_path); loaded) {
         settings_catalog.emplace(std::move(*loaded.value));
-        desktop_settings::populate(*settings_catalog);
+        desktop_settings::populate(*settings_catalog, openxmb::localization::shell_locale::translate);
         if(auto created = openxmb::xmb::SettingsCatalogController::create(*settings_catalog); created) {
             settings_controller.emplace(std::move(*created.controller));
             std::unordered_set<std::string> loaded_icon_refs;
@@ -991,7 +993,7 @@ void main_menu::seed_settings_dialog_values() {
     for(const auto& [node_id, node] : settings_catalog->nodes) {
         (void)node_id;
         if(node.action_id.starts_with("desktop.")) {
-            settings_value_labels[node.id]=desktop_settings::value(node.action_id.substr(8),xmb);continue;
+            settings_value_labels[node.id]=desktop_settings::display_value(node.action_id.substr(8),xmb);continue;
         }
         if(node.action_id=="simulate.system.language") {
             for(const auto& choice:node.choices)
@@ -1158,13 +1160,13 @@ bool main_menu::open_settings_dialog_choice_overlay(
     }
     if(plan.target_id=="dialog.font") {
         settings_choice_panel_open=true;auto* host=xmb;
-        host->emplace_overlay<choice_overlay>(std::vector<std::string>{"Original","Choose Font File..."},0,
+        host->emplace_overlay<choice_overlay>(::app::detail::localize_ui_choices(std::vector<std::string>{"Original","Choose Font File..."}),0,
             [this,host](unsigned i){settings_choice_panel_open=false;if(!i){host->set_font_file("default");config::CONFIG.save_config();}
             else host->emplace_overlay<text_entry_overlay>("Font file",config::CONFIG.fontPath.string(),[host](std::string path){if(std::filesystem::is_regular_file(std::filesystem::u8path(path))){try{host->set_font_file(path);config::CONFIG.save_config();}catch(const std::exception& error){host->emplace_overlay<message_overlay>("Font",error.what());}}else host->emplace_overlay<message_overlay>("Font","Font file not found.");});},[this]{settings_choice_panel_open=false;});return true;
     }
     if(plan.target_id=="dialog.background") {
         settings_choice_panel_open=true;auto* host=xmb;
-        host->emplace_overlay<choice_overlay>(std::vector<std::string>{"Original","Classic","Wallpaper","Brightness"},0,
+        host->emplace_overlay<choice_overlay>(::app::detail::localize_ui_choices(std::vector<std::string>{"Original","Classic","Wallpaper","Brightness"}),0,
             [this,host](unsigned i){settings_choice_panel_open=false;
                 if(i<2){config::CONFIG.setBackgroundType(i?config::config::background_type::wave:config::config::background_type::original);config::CONFIG.save_config();return;}
                 openxmb::xmb::CatalogNode node;node.id="category.settings.desktop.background";node.action_id=i==2?"desktop.theme.wallpaper":"desktop.display.brightness";
@@ -1535,7 +1537,7 @@ void main_menu::render(auroreengine::gui_renderer& renderer) {
         : (in_submenu ? submenu_progress : 1.0 - submenu_progress);
     bool in_submenu_now = in_submenu || partial > 0.0;
 
-    if(settings_catalog)for(const auto& [id,node]:settings_catalog->nodes)if(node.action_id.starts_with("desktop."))settings_value_labels[id]=desktop_settings::value(node.action_id.substr(8),xmb);
+    if(settings_catalog)for(const auto& [id,node]:settings_catalog->nodes)if(node.action_id.starts_with("desktop."))settings_value_labels[id]=desktop_settings::display_value(node.action_id.substr(8),xmb);
     render_crossbar(renderer, now);
     if(settings_category_active()) {
         render_settings_scene(renderer, now);

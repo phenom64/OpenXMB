@@ -1,4 +1,5 @@
 module;
+#include "../localization/shell_locale.hpp"
 
 #include <algorithm>
 #include <array>
@@ -159,7 +160,7 @@ public:
       if(components_page_) {
         const std::array<std::string_view,6> names{"Background / animation","Icons","Sound effects","Theme colors","Font","Overlay layers"};
         const std::array<bool,6> enabled{options_.background,options_.icons,options_.sounds,options_.colors,options_.font,options_.overlay};
-        label=std::string(names[i])+(enabled[i]?"   On":"   Off");
+        label=::openxmb::localization::shell_locale::translate(names[i])+"   "+::openxmb::localization::shell_locale::translate(enabled[i]?"On":"Off");
       } else label=rows_[i].label;
       icons_.draw(c,"theme/icon_setting_item",566,y,focused?180:78,opacity);
       c.text(label,683,y+(focused?3:11),focused?34:30,{1,1,1,opacity},focused?app::xmb_canvas::pulse():0);
@@ -173,7 +174,7 @@ public:
         const auto frame=openxmb::themes::ThemeLibrary::sample_animation(preview,seconds);
         const auto image=frame.background.empty()?preview.preview:frame.background;
         draw_image(renderer,image,0.68F,0.39F,0.24F,0.24F);
-        c.text(preview.dynamic?"Animated Theme":"Theme",683,547,22,{1,1,1,0.82F});
+        c.text(::openxmb::localization::shell_locale::translate(preview.dynamic?"Animated Theme":"Theme"),683,547,22,{1,1,1,0.82F});
       }
     } else if(!components_page_&&selected_==0) c.text("Restore the original appearance.",683,547,22,{1,1,1,0.82F});
     if(!message_.empty()) c.text(shorten(message_,100),683,950,22,{1,1,1,0.85F});
@@ -191,18 +192,18 @@ private:
   static std::string shorten(const std::string& text, std::size_t maximum) { return text.size() > maximum ? text.substr(0, maximum - 3) + "..." : text; }
   void refresh() {
     preview_id_.clear();selected_preview_.reset();
-    rows_.clear(); rows_.push_back({"Original", Kind::defaults, {}});
+    rows_.clear(); rows_.push_back({::openxmb::localization::shell_locale::translate("Original"), Kind::defaults, {}});
     for (const auto& theme : library_->discover()) rows_.push_back({theme.name, Kind::theme, theme.id});
-    rows_.push_back({"Import theme or icon pack...", Kind::import_path, {}});
-    rows_.push_back({"Create Custom Theme...", Kind::create_theme, {}});
+    rows_.push_back({::openxmb::localization::shell_locale::translate("Import theme or icon pack..."), Kind::import_path, {}});
+    rows_.push_back({::openxmb::localization::shell_locale::translate("Create Custom Theme..."), Kind::create_theme, {}});
     inbox_.clear();
     for (const auto& entry : std::filesystem::directory_iterator(library_->inbox()))
       if (!entry.is_symlink() && (entry.is_directory() || entry.path().extension() == ".p3t" || entry.path().extension() == ".zip")) inbox_.push_back(entry.path());
-    rows_.push_back({"Import inbox (" + std::to_string(inbox_.size()) + ")", Kind::inbox, {}});
-    rows_.push_back({"Export selected theme...", Kind::export_theme, {}});
-    rows_.push_back({"Save component preset...", Kind::save_preset, {}});
-    rows_.push_back({"Remove installed theme...", Kind::remove_theme, {}});
-    for (const auto& preset : library_->presets()) rows_.push_back({"Preset: " + preset, Kind::preset, preset});
+    rows_.push_back({::openxmb::localization::shell_locale::translate("Import inbox")+" (" + std::to_string(inbox_.size()) + ")", Kind::inbox, {}});
+    rows_.push_back({::openxmb::localization::shell_locale::translate("Export selected theme..."), Kind::export_theme, {}});
+    rows_.push_back({::openxmb::localization::shell_locale::translate("Save component preset..."), Kind::save_preset, {}});
+    rows_.push_back({::openxmb::localization::shell_locale::translate("Remove installed theme..."), Kind::remove_theme, {}});
+    for (const auto& preset : library_->presets()) rows_.push_back({::openxmb::localization::shell_locale::translate("Preset:")+" " + preset, Kind::preset, preset});
     selected_ = std::min(selected_, rows_.size() - 1);
     if (auto active = library_->active()) { chosen_id_ = active->id; options_ = active->components; }
   }

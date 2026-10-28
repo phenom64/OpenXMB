@@ -1,0 +1,5073 @@
+# OpenXMB translations.
+msgid ""
+msgstr ""
+"Project-Id-Version: OpenXMB 1.0\n"
+"Language: id\n"
+"PO-Revision-Date: 2026-10-28 00:00+0000\n"
+"Last-Translator: Machine-assisted translation\n"
+"Language-Team: id\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgid "\nSample rate: "
+msgstr "\nTingkat sampel:"
+
+msgid "\nVideo decoder details are available in the video player's information display."
+msgstr "\nDetail dekoder video tersedia di tampilan informasi pemutar video."
+
+msgid " Hz\nChannels: "
+msgstr "Hz\nSaluran:"
+
+msgid " for "
+msgstr "untuk"
+
+msgid " games to the library."
+msgstr "permainan ke perpustakaan."
+
+msgid "(No registered devices)"
+msgstr "(Tidak ada perangkat yang terdaftar)"
+
+msgid "*User"
+msgstr "*Pengguna"
+
+msgid "+1"
+msgstr "+1"
+
+msgid "+2"
+msgstr "+2"
+
+msgid "+3"
+msgstr "+3"
+
+msgid "+4"
+msgstr "+4"
+
+msgid "-1"
+msgstr "-1"
+
+msgid "-2"
+msgstr "-2"
+
+msgid "-3"
+msgstr "-3"
+
+msgid "-4"
+msgstr "-4"
+
+msgid "1"
+msgstr "1"
+
+msgid "1 minute"
+msgstr "1 menit"
+
+msgid "1. Transfer data from this system to the other OpenXMB system."
+msgstr "1. Mentransfer data dari sistem ini ke sistem OpenXMB lainnya."
+
+msgid "10"
+msgstr "10"
+
+msgid "10 Images"
+msgstr "10 Gambar"
+
+msgid "10 minutes"
+msgstr "10 menit"
+
+msgid "10 seconds"
+msgstr "10 detik"
+
+msgid "1000BASE-T Full-Duplex"
+msgstr "Dupleks Penuh 1000BASE-T"
+
+msgid "1000BASE-T Half-Duplex"
+msgstr "Setengah Dupleks 1000BASE-T"
+
+msgid "100BASE-TX Full-Duplex"
+msgstr "Dupleks Penuh 100BASE-TX"
+
+msgid "100BASE-TX Half-Duplex"
+msgstr "Setengah Dupleks 100BASE-TX"
+
+msgid "106481"
+msgstr "106481"
+
+msgid "1080i"
+msgstr "1080i"
+
+msgid "1080p"
+msgstr "1080p"
+
+msgid "1080p 24 Hz Output (HDMI)"
+msgstr "Keluaran 1080p 24Hz (HDMI)"
+
+msgid "10BASE-T Full-Duplex"
+msgstr "Dupleks Penuh 10BASE-T"
+
+msgid "10BASE-T Half-Duplex"
+msgstr "Setengah Dupleks 10BASE-T"
+
+msgid "11"
+msgstr "11"
+
+msgid "12-Hour Clock"
+msgstr "Jam 12 Jam"
+
+msgid "1245403"
+msgstr "1245403"
+
+msgid "1308922"
+msgstr "1308922"
+
+msgid "15 minutes"
+msgstr "15 menit"
+
+msgid "15 seconds of video starting from this scene will be set as the icon.\nIf an icon has already been set, it will be overwritten.\nDo you want to continue?"
+msgstr "Video berdurasi 15 detik yang dimulai dari adegan ini akan ditetapkan sebagai ikon.\nJika ikon telah disetel, ikon tersebut akan ditimpa.\nApakah Anda ingin melanjutkan?"
+
+msgid "2"
+msgstr "2"
+
+msgid "2 minutes"
+msgstr "2 menit"
+
+msgid "2. Transfer data from the other OpenXMB system to this system."
+msgstr "2. Mentransfer data dari sistem OpenXMB lain ke sistem ini."
+
+msgid "24-Hour Clock"
+msgstr "Jam 24 Jam"
+
+msgid "3"
+msgstr "3"
+
+msgid "30 minutes"
+msgstr "30 menit"
+
+msgid "35 Tracks  28:00"
+msgstr "35 Lagu 28:00"
+
+msgid "358972"
+msgstr "358972"
+
+msgid "3D Display (PSP Remasters)"
+msgstr "Tampilan 3D (PSP Remaster)"
+
+msgid "4"
+msgstr "4"
+
+msgid "44.1 kHz"
+msgstr "44,1 kHz"
+
+msgid "48 kHz"
+msgstr "48kHz"
+
+msgid "480p"
+msgstr "480p"
+
+msgid "5"
+msgstr "5"
+
+msgid "5 minutes"
+msgstr "5 menit"
+
+msgid "5 seconds"
+msgstr "5 detik"
+
+msgid "50 Hz Video Output"
+msgstr "Keluaran Video 50Hz"
+
+msgid "509987"
+msgstr "509987"
+
+msgid "551537"
+msgstr "551537"
+
+msgid "576p"
+msgstr "576p"
+
+msgid "586388"
+msgstr "586388"
+
+msgid "6"
+msgstr "6"
+
+msgid "677357"
+msgstr "677357"
+
+msgid "7"
+msgstr "7"
+
+msgid "720p"
+msgstr "720p"
+
+msgid "8"
+msgstr "8"
+
+msgid "88.2 kHz"
+msgstr "88,2 kHz"
+
+msgid "893848"
+msgstr "893848"
+
+msgid "9"
+msgstr "9"
+
+msgid "96 kHz"
+msgstr "96kHz"
+
+msgid "976156"
+msgstr "976156"
+
+msgid "A-B Repeat"
+msgstr "A-B Ulangi"
+
+msgid "AAC"
+msgstr "AAC"
+
+msgid "AOSS"
+msgstr "AOSS"
+
+msgid "ATERM-5F3C2A-G"
+msgstr "ATERM-5F3C2A-G"
+
+msgid "AV MULTI / S Video"
+msgstr "Video AV MULTI / S"
+
+msgid "AV MULTI / SCART"
+msgstr "AV MULTI / SCART"
+
+msgid "AV Settings"
+msgstr "Pengaturan AV"
+
+msgid "AVC  640x360"
+msgstr "AVC 640x360"
+
+msgid "Accessory"
+msgstr "Aksesori"
+
+msgid "Accessory Settings"
+msgstr "Pengaturan Aksesori"
+
+msgid "Ad Hoc Channel (PSP Remasters)"
+msgstr "Saluran Ad Hoc (PSP Remaster)"
+
+msgid "Ad Hoc Mode (PSP Remasters)"
+msgstr "Mode Ad Hoc (PSP Remaster)"
+
+msgid "Add Term"
+msgstr "Tambahkan Istilah"
+
+msgid "Add a Friend"
+msgstr "Tambahkan Teman"
+
+msgid "Add a player to your Friends list using their PlayStation®Network ID."
+msgstr "Tambahkan pemain ke daftar Teman Anda menggunakan ID PlayStation®Network mereka."
+
+msgid "Add to Playlist"
+msgstr "Tambahkan ke Daftar Putar"
+
+msgid "Add words to be displayed as options for predictive text entry when using the on-screen keyboard.\nSelect an option."
+msgstr "Tambahkan kata-kata yang akan ditampilkan sebagai opsi untuk entri teks prediktif saat menggunakan keyboard di layar.\nPilih salah satu opsi."
+
+msgid "Add words to be displayed as options for predictive text entry.\nSelect an option."
+msgstr "Tambahkan kata-kata yang akan ditampilkan sebagai opsi untuk entri teks prediktif.\nPilih salah satu opsi."
+
+msgid "Add/Edit Term"
+msgstr "Tambahkan/Edit Istilah"
+
+msgid "Added "
+msgstr "Ditambahkan"
+
+msgid "Address"
+msgstr "Alamat"
+
+msgid "Adjust settings for connection to the Internet.\nIf making a wired connection, you must have an Ethernet cable connected."
+msgstr "Sesuaikan pengaturan untuk koneksi ke Internet.\nJika membuat sambungan kabel, Anda harus menyambungkan kabel Ethernet."
+
+msgid "Adjust the OpenXMB scene brightness."
+msgstr "Sesuaikan kecerahan pemandangan OpenXMB."
+
+msgid "Adjusts date and time settings."
+msgstr "Menyesuaikan pengaturan tanggal dan waktu."
+
+msgid "Adjusts parental control settings."
+msgstr "Menyesuaikan pengaturan kontrol orang tua."
+
+msgid "Adjusts settings for accessories that are connected to this system."
+msgstr "Menyesuaikan pengaturan aksesori yang terhubung ke sistem ini."
+
+msgid "Adjusts settings for audio output."
+msgstr "Menyesuaikan pengaturan untuk output audio."
+
+msgid "Adjusts settings for chat."
+msgstr "Menyesuaikan pengaturan untuk obrolan."
+
+msgid "Adjusts settings for games."
+msgstr "Menyesuaikan pengaturan untuk permainan."
+
+msgid "Adjusts settings for music."
+msgstr "Menyesuaikan pengaturan untuk musik."
+
+msgid "Adjusts settings for printers that are connected to this system."
+msgstr "Menyesuaikan pengaturan untuk printer yang terhubung ke sistem ini."
+
+msgid "Adjusts settings for printers that are connected to this system.\n\nNo printer is connected to the system."
+msgstr "Menyesuaikan pengaturan untuk printer yang terhubung ke sistem ini.\n\n Tidak ada printer yang terhubung ke sistem."
+
+msgid "Adjusts settings for remote play. Remote play enables you to use a device that supports the remote play feature (such as a PSP™ system) to operate this system over a network."
+msgstr "Menyesuaikan pengaturan untuk pemutaran jarak jauh. Pemutaran jarak jauh memungkinkan Anda menggunakan perangkat yang mendukung fitur pemutaran jarak jauh (seperti sistem PSP™) untuk mengoperasikan sistem ini melalui jaringan."
+
+msgid "Adjusts settings for the Internet connection."
+msgstr "Menyesuaikan pengaturan untuk koneksi Internet."
+
+msgid "Adjusts settings for this OpenXMB system."
+msgstr "Menyesuaikan pengaturan untuk sistem OpenXMB ini."
+
+msgid "Adjusts settings for video output."
+msgstr "Menyesuaikan pengaturan untuk output video."
+
+msgid "Adjusts settings for video."
+msgstr "Menyesuaikan pengaturan untuk video."
+
+msgid "Adjusts settings related to the appearance of the XMB™ screen."
+msgstr "Menyesuaikan pengaturan yang terkait dengan tampilan layar XMB™."
+
+msgid "Adjusts settings to reduce power usage by this system."
+msgstr "Menyesuaikan pengaturan untuk mengurangi penggunaan daya oleh sistem ini."
+
+msgid "Advanced"
+msgstr "Lanjutan"
+
+msgid "After 1 hour"
+msgstr "Setelah 1 jam"
+
+msgid "After 10 Minutes"
+msgstr "Setelah 10 Menit"
+
+msgid "After 10 min."
+msgstr "Setelah 10 menit."
+
+msgid "After 2 hours"
+msgstr "Setelah 2 jam"
+
+msgid "After 20 Minutes"
+msgstr "Setelah 20 Menit"
+
+msgid "After 3 hours"
+msgstr "Setelah 3 jam"
+
+msgid "After 30 Minutes"
+msgstr "Setelah 30 Menit"
+
+msgid "After 30 min."
+msgstr "Setelah 30 menit."
+
+msgid "After 5 Minutes"
+msgstr "Setelah 5 Menit"
+
+msgid "After 5 hours"
+msgstr "Setelah 5 jam"
+
+msgid "After 60 min."
+msgstr "Setelah 60 menit."
+
+msgid "After Launching a Game"
+msgstr "Setelah Meluncurkan Game"
+
+msgid "Album Artwork"
+msgstr "Karya Seni Album"
+
+msgid "Albums"
+msgstr "Album"
+
+msgid "All"
+msgstr "Semua"
+
+msgid "All data on the system storage will be erased.\nAre you sure you want to continue?"
+msgstr "Semua data di penyimpanan sistem akan terhapus.\nApakah Anda yakin ingin melanjutkan?"
+
+msgid "All terms that were added will be deleted.\nAre you sure you want to continue?"
+msgstr "Semua istilah yang ditambahkan akan dihapus.\nApakah Anda yakin ingin melanjutkan?"
+
+msgid "Analog Navigation"
+msgstr "Navigasi Analog"
+
+msgid "Anti-aliasing"
+msgstr "Anti-aliasing"
+
+msgid "Apply a saved appearance preset."
+msgstr "Terapkan preset tampilan yang disimpan."
+
+msgid "Apply upscaling to PlayStation® format software."
+msgstr "Terapkan peningkatan ke perangkat lunak berformat PlayStation®."
+
+msgid "Are you sure you want to delete the track?"
+msgstr "Apakah Anda yakin ingin menghapus trek tersebut?"
+
+msgid "Artist ▲"
+msgstr "Artis ▲"
+
+msgid "Artist ▼"
+msgstr "Artis ▼"
+
+msgid "Artists"
+msgstr "Artis"
+
+msgid "Audio Device Settings"
+msgstr "Pengaturan Perangkat Audio"
+
+msgid "Audio Input Connector / SCART / AV MULTI"
+msgstr "Konektor Input Audio / SCART / AV MULTI"
+
+msgid "Audio Language"
+msgstr "Bahasa Audio"
+
+msgid "Audio Multi-Output"
+msgstr "Audio Multi-Keluaran"
+
+msgid "Audio Options"
+msgstr "Opsi Audio"
+
+msgid "Audio Output Device"
+msgstr "Perangkat Keluaran Audio"
+
+msgid "Audio Output Settings"
+msgstr "Pengaturan Keluaran Audio"
+
+msgid "Authentication"
+msgstr "Otentikasi"
+
+msgid "Authentication Setting"
+msgstr "Pengaturan Otentikasi"
+
+msgid "Auto"
+msgstr "Otomatis"
+
+msgid "Auto (Time of Day)"
+msgstr "Otomatis (Waktu)"
+
+msgid "Auto-Detect"
+msgstr "Deteksi Otomatis"
+
+msgid "Automatic"
+msgstr "Otomatis"
+
+msgid "Automatic Update"
+msgstr "Pembaruan Otomatis"
+
+msgid "Automatic detection or a preferred button style."
+msgstr "Deteksi otomatis atau gaya tombol pilihan."
+
+msgid "Automatic setup by access point type."
+msgstr "Pengaturan otomatis berdasarkan jenis titik akses."
+
+msgid "Automatically use hardware decoding when available."
+msgstr "Secara otomatis menggunakan decoding perangkat keras jika tersedia."
+
+msgid "BD Audio Language"
+msgstr "BD Bahasa Audio"
+
+msgid "BD Audio Output Format (HDMI)"
+msgstr "BD Format Keluaran Audio (HDMI)"
+
+msgid "BD Data Utility"
+msgstr "BD Utilitas Data"
+
+msgid "BD Parental Control"
+msgstr "BD Kontrol Orang Tua"
+
+msgid "BD Remote Control Registration"
+msgstr "BD Pendaftaran Kendali Jarak Jauh"
+
+msgid "BD/DVD - Video Output Format (HDMI)"
+msgstr "BD/DVD - Format Keluaran Video (HDMI)"
+
+msgid "BD/DVD Auto-start"
+msgstr "BD/DVD Mulai otomatis"
+
+msgid "BT Stereo Headphones"
+msgstr "Headphone Stereo BT"
+
+msgid "Back"
+msgstr "Kembali"
+
+msgid "Back Up"
+msgstr "Cadangkan"
+
+msgid "Back up completed."
+msgstr "Pencadangan selesai."
+
+msgid "Back up or restore data on the system storage.\nSelect the operation you want to perform."
+msgstr "Cadangkan atau pulihkan data pada penyimpanan sistem.\nPilih operasi yang ingin Anda lakukan."
+
+msgid "Background"
+msgstr "Latar Belakang"
+
+msgid "Background Audio"
+msgstr "Audio Latar Belakang"
+
+msgid "Background File"
+msgstr "Berkas Latar Belakang"
+
+msgid "Background Frame Limit"
+msgstr "Batas Bingkai Latar Belakang"
+
+msgid "Background Music"
+msgstr "Musik Latar Belakang"
+
+msgid "Background file not found."
+msgstr "File latar belakang tidak ditemukan."
+
+msgid "Backing up...\nDo not remove the storage media."
+msgstr "Mencadangkan...\nJangan keluarkan media penyimpanan."
+
+msgid "Backs up data saved on the system storage to storage media, or restores data that has been backed up.\nSelect an option."
+msgstr "Mencadangkan data yang disimpan di penyimpanan sistem ke media penyimpanan, atau memulihkan data yang telah dicadangkan.\nPilih salah satu opsi."
+
+msgid "Backup Utility"
+msgstr "Utilitas Cadangan"
+
+msgid "Baltic"
+msgstr "Baltik"
+
+msgid "Before the Storm"
+msgstr "Before the Storm"
+
+msgid "Beneath the Ashes"
+msgstr "Beneath the Ashes"
+
+msgid "Bing"
+msgstr "Bing"
+
+msgid "Bitstream"
+msgstr "aliran bit"
+
+msgid "Black"
+msgstr "Hitam"
+
+msgid "Block Noise Reduction"
+msgstr "Blokir Pengurangan Kebisingan"
+
+msgid "Blue"
+msgstr "Biru"
+
+msgid "Bluetooth Keyboard"
+msgstr "Bluetooth Papan Ketik"
+
+msgid "Bluetooth Mouse"
+msgstr "Bluetooth Tikus"
+
+msgid "Bluetooth® Headset"
+msgstr "Bluetooth® Headset"
+
+msgid "Borderless"
+msgstr "Tanpa batas"
+
+msgid "Breathtaking Vision"
+msgstr "Breathtaking Vision"
+
+msgid "Bright"
+msgstr "Cerah"
+
+msgid "Brightness"
+msgstr "Kecerahan"
+
+msgid "British English"
+msgstr "Bahasa Inggris Britania"
+
+msgid "Brown"
+msgstr "coklat"
+
+msgid "Browse and purchase games, add-ons, movies, and more for your OpenXMB system.\n\nDownload demos, full games, themes, wallpapers, and exclusive content.\n\nA broadband Internet connection and a PlayStation®Network account are required to use PlayStation®Store."
+msgstr "Telusuri dan beli game, add-on, film, dan lainnya untuk sistem OpenXMB Anda.\n\n Unduh demo, permainan lengkap, tema, wallpaper, dan konten eksklusif.\n\n Koneksi Internet broadband dan akun PlayStation®Network diperlukan untuk menggunakan PlayStation®Store."
+
+msgid "Browse folders, songs, albums, artists or saved playlists."
+msgstr "Jelajahi folder, lagu, album, artis, atau daftar putar yang disimpan."
+
+msgid "Browser"
+msgstr "Peramban"
+
+msgid "Buffalo-A1B2C3"
+msgstr "Kerbau-A1B2C3"
+
+msgid "By Album"
+msgstr "Berdasarkan Album"
+
+msgid "By Artist"
+msgstr "Oleh Artis"
+
+msgid "By Genre"
+msgstr "Berdasarkan Genre"
+
+msgid "By Month"
+msgstr "Berdasarkan Bulan"
+
+msgid "By Release Year"
+msgstr "Berdasarkan Tahun Rilis"
+
+msgid "By Track"
+msgstr "Berdasarkan Jalur"
+
+msgid "By Year"
+msgstr "Berdasarkan Tahun"
+
+msgid "Calibrate Motion Controller"
+msgstr "Kalibrasi Pengontrol Gerakan"
+
+msgid "Calibrates the magnetic sensor of a motion controller. Use this setting when the motion controller does not control on-screen movement as expected."
+msgstr "Mengkalibrasi sensor magnetik pengontrol gerak. Gunakan pengaturan ini ketika pengontrol gerakan tidak mengontrol pergerakan di layar seperti yang diharapkan."
+
+msgid "Calibrates the magnetic sensor of a motion controller. Use this setting when the motion controller does not control on-screen movement as expected.\n\nPlace the controller on a flat surface, then press the X button."
+msgstr "Mengkalibrasi sensor magnetik pengontrol gerak. Gunakan pengaturan ini ketika pengontrol gerakan tidak mengontrol pergerakan di layar seperti yang diharapkan.\n\n Tempatkan pengontrol pada permukaan yang rata, lalu tekan tombol X."
+
+msgid "Camera Device Settings"
+msgstr "Pengaturan Perangkat Kamera"
+
+msgid "Can you read this screen?\nSelect [Yes] if you can.\n\nIf you do not press any buttons, the system will automatically go back to the previous setting."
+msgstr "Bisakah Anda membaca layar ini?\nPilih [Ya] jika Anda bisa.\n\n Jika Anda tidak menekan tombol apa pun, sistem akan otomatis kembali ke pengaturan sebelumnya."
+
+msgid "Cancel"
+msgstr "Batalkan"
+
+msgid "Canyon"
+msgstr "Ngarai"
+
+msgid "Caution-Echidnas May Eat Your Brain"
+msgstr "Caution-Echidnas May Eat Your Brain"
+
+msgid "Central European"
+msgstr "Eropa Tengah"
+
+msgid "Change Binding"
+msgstr "Ubah Pengikatan"
+
+msgid "Change Effect"
+msgstr "Ubah Efek"
+
+msgid "Change Icon"
+msgstr "Ubah Ikon"
+
+msgid "Change Password"
+msgstr "Ubah Kata Sandi"
+
+msgid "Change the number assigned to the controller that is currently in use."
+msgstr "Ubah nomor yang ditetapkan ke pengontrol yang sedang digunakan."
+
+msgid "Change the number assigned to the controller that is currently in use.\n\nPress the PS button on the controller you want to reassign."
+msgstr "Ubah nomor yang ditetapkan ke pengontrol yang sedang digunakan.\n\n Tekan tombol PS pada pengontrol yang ingin Anda tetapkan ulang."
+
+msgid "Change the password required to play games or videos, or to use the Internet browser.\n\nEnter your current password."
+msgstr "Ubah kata sandi yang diperlukan untuk bermain game atau video, atau untuk menggunakan browser Internet.\n\n Masukkan kata sandi Anda saat ini."
+
+msgid "Channel 1"
+msgstr "Saluran 1"
+
+msgid "Channel 11"
+msgstr "Saluran 11"
+
+msgid "Channel 6"
+msgstr "Saluran 6"
+
+msgid "Chapters"
+msgstr "bab"
+
+msgid "Character Set"
+msgstr "Kumpulan Karakter"
+
+msgid "Chat Rooms"
+msgstr "Ruang Obrolan"
+
+msgid "Chat Settings"
+msgstr "Pengaturan Obrolan"
+
+msgid "Checking for the latest version of the system software..."
+msgstr "Memeriksa versi terbaru perangkat lunak sistem..."
+
+msgid "Checking network configuration...\nPlease wait."
+msgstr "Memeriksa konfigurasi jaringan...\nHarap tunggu."
+
+msgid "Chinese"
+msgstr "Cina"
+
+msgid "Chinese (simplified)"
+msgstr "Cina (sederhana)"
+
+msgid "Chinese (traditional)"
+msgstr "Cina (tradisional)"
+
+msgid "Choose a 12-hour or 24-hour clock."
+msgstr "Pilih waktu 12 jam atau 24 jam."
+
+msgid "Choose a TrueType or OpenType font file."
+msgstr "Pilih file font TrueType atau OpenType."
+
+msgid "Choose a photo or video background."
+msgstr "Pilih latar belakang foto atau video."
+
+msgid "Choose an action, then press its controller button."
+msgstr "Pilih tindakan, lalu tekan tombol pengontrolnya."
+
+msgid "Choose an action, then press its keyboard key."
+msgstr "Pilih tindakan, lalu tekan tombol keyboardnya."
+
+msgid "Choose an existing folder."
+msgstr "Pilih folder yang ada."
+
+msgid "Choose how OpenXMB uses the display."
+msgstr "Pilih bagaimana OpenXMB menggunakan tampilan."
+
+msgid "Choose how the shell behaves while a game runs."
+msgstr "Pilih bagaimana shell berperilaku saat game berjalan."
+
+msgid "Choose the folder scanned for games."
+msgstr "Pilih folder yang dipindai untuk permainan."
+
+msgid "Choose the full-screen music presentation."
+msgstr "Pilih presentasi musik layar penuh."
+
+msgid "Choose the fullscreen display resolution."
+msgstr "Pilih resolusi tampilan layar penuh."
+
+msgid "Choose the icon material."
+msgstr "Pilih bahan ikon."
+
+msgid "Choose the root folder for music and playlists."
+msgstr "Pilih folder root untuk musik dan daftar putar."
+
+msgid "Choose the root folder for photos."
+msgstr "Pilih folder root untuk foto."
+
+msgid "Choose the root folder for videos."
+msgstr "Pilih folder root untuk video."
+
+msgid "Classic"
+msgstr "Klasik"
+
+msgid "Clear Browsing Data"
+msgstr "Hapus Data Penjelajahan"
+
+msgid "Clear Browsing Data?"
+msgstr "Hapus Data Penjelajahan?"
+
+msgid "Clear Thumbnail Cache?"
+msgstr "Hapus Cache Gambar Kecil?"
+
+msgid "Colour"
+msgstr "Warna"
+
+msgid "Component / D-Terminal"
+msgstr "Komponen / D-Terminal"
+
+msgid "Compose and send a new message."
+msgstr "Tulis dan kirim pesan baru."
+
+msgid "Composite / S Video"
+msgstr "Video Komposit / S"
+
+msgid "Configure Ad Hoc Mode settings for PSP® Remasters."
+msgstr "Konfigurasikan pengaturan Mode Ad Hoc untuk PSP® Remaster."
+
+msgid "Configure BD/DVD auto-start settings."
+msgstr "Konfigurasikan pengaturan mulai otomatis BD/DVD."
+
+msgid "Configure audio output settings."
+msgstr "Konfigurasikan pengaturan keluaran audio."
+
+msgid "Configure the screen saver settings."
+msgstr "Konfigurasikan pengaturan screen saver."
+
+msgid "Configure the screen size for PSP® Remasters."
+msgstr "Konfigurasikan ukuran layar untuk PSP® Remasters."
+
+msgid "Configure video output settings according to your TV."
+msgstr "Konfigurasikan pengaturan output video sesuai dengan TV Anda."
+
+msgid "Confirm"
+msgstr "Konfirmasikan"
+
+msgid "Connect"
+msgstr "Hubungkan"
+
+msgid "Connect PS Vita System Using Network"
+msgstr "Hubungkan Sistem PS Vita Menggunakan Jaringan"
+
+msgid "Connecting...\nPlease wait."
+msgstr "Menghubungkan...\nHarap tunggu."
+
+msgid "Connection test completed."
+msgstr "Tes koneksi selesai."
+
+msgid "Continue after the last photograph."
+msgstr "Lanjutkan setelah foto terakhir."
+
+msgid "Continue audio when OpenXMB loses focus."
+msgstr "Lanjutkan audio saat OpenXMB kehilangan fokus."
+
+msgid "Continue music after closing the player."
+msgstr "Lanjutkan musik setelah menutup pemutar."
+
+msgid "Control for HDMI"
+msgstr "Kontrol untuk HDMI"
+
+msgid "Controller Auto-Off"
+msgstr "Pengontrol Mati Otomatis"
+
+msgid "Controller Bindings"
+msgstr "Ikatan Pengontrol"
+
+msgid "Controller Prompts"
+msgstr "Perintah Pengontrol"
+
+msgid "Controller Vibration"
+msgstr "Getaran Pengontrol"
+
+msgid "Controller Vibration Function"
+msgstr "Fungsi Getaran Pengontrol"
+
+msgid "Copy"
+msgstr "Salin"
+
+msgid "Copy Multiple"
+msgstr "Salin Banyak"
+
+msgid "Corrupted Data"
+msgstr "Data Rusak"
+
+msgid "Create New Internal Memory Card"
+msgstr "Buat Kartu Memori Internal Baru"
+
+msgid "Create New User"
+msgstr "Buat Pengguna Baru"
+
+msgid "Create a new internal memory card."
+msgstr "Buat kartu memori internal baru."
+
+msgid "Crimson"
+msgstr "Merah tua"
+
+msgid "Cross Color Reduction Filter"
+msgstr "Filter Pengurangan Warna Silang"
+
+msgid "Crossfade"
+msgstr "memudar silang"
+
+msgid "Custom"
+msgstr "Adat"
+
+msgid "Cyan"
+msgstr "Sian"
+
+msgid "Cyrillic"
+msgstr "Sirilik"
+
+msgid "DD/MM/YYYY"
+msgstr "HH/MM/YYYY"
+
+msgid "DHCP Host Name"
+msgstr "Nama Host DHCP"
+
+msgid "DNS Setting"
+msgstr "DNS Pengaturan"
+
+msgid "DNS Setting\nIn most cases, select [Automatic]."
+msgstr "DNS Pengaturan\nDalam kebanyakan kasus, pilih [Otomatis]."
+
+msgid "DTS 5.1 Ch."
+msgstr "DTS 5.1 Bab."
+
+msgid "DVD Audio Language"
+msgstr "DVD Bahasa Audio"
+
+msgid "DVD Parental Control"
+msgstr "DVD Kontrol Orang Tua"
+
+msgid "Danish"
+msgstr "Denmark"
+
+msgid "Dark Blue"
+msgstr "Biru Tua"
+
+msgid "Dark Green"
+msgstr "Hijau Tua"
+
+msgid "Data Transfer Utility"
+msgstr "Utilitas Transfer Data"
+
+msgid "Date"
+msgstr "Tanggal"
+
+msgid "Date (YYYY/MM/DD)"
+msgstr "Tanggal (YYYY/MM/DD)"
+
+msgid "Date Format"
+msgstr "Format Tanggal"
+
+msgid "Date and Time"
+msgstr "Tanggal dan Waktu"
+
+msgid "Date and Time Settings"
+msgstr "Pengaturan Tanggal dan Waktu"
+
+msgid "Day"
+msgstr "Hari"
+
+msgid "Day/Night"
+msgstr "Siang/Malam"
+
+msgid "Daylight Saving"
+msgstr "Musim Panas"
+
+msgid "Dead Batteries"
+msgstr "Dead Batteries"
+
+msgid "Decoder Information"
+msgstr "Informasi Dekoder"
+
+msgid "Deep Color Output (HDMI)"
+msgstr "Keluaran Warna Dalam (HDMI)"
+
+msgid "Default"
+msgstr "Bawaan"
+
+msgid "Default Repeat"
+msgstr "Ulangi Default"
+
+msgid "Default Router"
+msgstr "Perute Bawaan"
+
+msgid "Default Screen Fit"
+msgstr "Kesesuaian Layar Default"
+
+msgid "Default Shuffle"
+msgstr "Acak Default"
+
+msgid "Default Sort"
+msgstr "Penyortiran Bawaan"
+
+msgid "Default browser page scale."
+msgstr "Skala halaman browser default."
+
+msgid "Default volume for music playback."
+msgstr "Volume default untuk pemutaran musik."
+
+msgid "Default volume for video playback."
+msgstr "Volume default untuk pemutaran video."
+
+msgid "Delay between held directional inputs in milliseconds."
+msgstr "Penundaan antara input arah yang ditahan dalam milidetik."
+
+msgid "Delete"
+msgstr "Hapus"
+
+msgid "Delete All"
+msgstr "Hapus Semua"
+
+msgid "Delete BD data saved on the system storage."
+msgstr "Hapus data BD yang disimpan di penyimpanan sistem."
+
+msgid "Delete Backup Data"
+msgstr "Hapus Data Cadangan"
+
+msgid "Delete Multiple"
+msgstr "Hapus Banyak"
+
+msgid "Delete PS Vita System's Backup Files"
+msgstr "Hapus File Cadangan Sistem PS Vita"
+
+msgid "Delete Predictive Text Dictionary"
+msgstr "Hapus Kamus Teks Prediktif"
+
+msgid "Delete Registered Device"
+msgstr "Hapus Perangkat Terdaftar"
+
+msgid "Delete Term"
+msgstr "Hapus Istilah"
+
+msgid "Deletes backup files for the PS Vita system saved on this system."
+msgstr "Menghapus file cadangan untuk sistem PS Vita yang disimpan di sistem ini."
+
+msgid "Deletes backup files for the PS Vita system saved on this system.\n\nThe backup files for the PS Vita system will be deleted.\nYou can only delete the backup files for your account.\n\nDo you want to delete the backup files?"
+msgstr "Menghapus file cadangan untuk sistem PS Vita yang disimpan di sistem ini.\n\n File cadangan untuk sistem PS Vita akan dihapus.\nAnda hanya dapat menghapus file cadangan untuk akun Anda.\n\n Apakah Anda ingin menghapus file cadangan?"
+
+msgid "Deletes registered remote play devices from this system.\nSelect a device to delete."
+msgstr "Menghapus perangkat pemutaran jarak jauh yang terdaftar dari sistem ini.\nPilih perangkat yang akan dihapus."
+
+msgid "Deletes words that were added automatically to the dictionary when using the on-screen keyboard."
+msgstr "Menghapus kata-kata yang ditambahkan secara otomatis ke kamus saat menggunakan keyboard di layar."
+
+msgid "Deletes words that were added automatically to the dictionary when using the on-screen keyboard.\n\nThe predictive text dictionary will be deleted.\nAre you sure you want to continue?"
+msgstr "Menghapus kata-kata yang ditambahkan secara otomatis ke kamus saat menggunakan keyboard di layar.\n\n Kamus teks prediktif akan dihapus.\nApakah Anda yakin ingin melanjutkan?"
+
+msgid "Deletion completed."
+msgstr "Penghapusan selesai."
+
+msgid "Device List"
+msgstr "Daftar Perangkat"
+
+msgid "Dictionary Type"
+msgstr "Jenis Kamus"
+
+msgid "Dim"
+msgstr "Redup"
+
+msgid "Dim the scene after inactivity."
+msgstr "Redupkan pemandangan setelah tidak ada aktivitas."
+
+msgid "Directory for browser downloads."
+msgstr "Direktori untuk unduhan browser."
+
+msgid "Disable"
+msgstr "Nonaktifkan"
+
+msgid "Disabled"
+msgstr "Dengan disabilitas"
+
+msgid "Disc Auto-Start"
+msgstr "Disk Mulai Otomatis"
+
+msgid "Disconnect"
+msgstr "Putuskan sambungan"
+
+msgid "Disconnect All"
+msgstr "Putuskan Semua"
+
+msgid "Display"
+msgstr "Tampilan"
+
+msgid "Display GPU memory use."
+msgstr "Tampilkan penggunaan memori GPU."
+
+msgid "Display Mode"
+msgstr "Modus Tampilan"
+
+msgid "Display PSP® Remasters in 3D."
+msgstr "Tampilkan PSP® Remaster dalam 3D."
+
+msgid "Display Settings"
+msgstr "Pengaturan Tampilan"
+
+msgid "Display [What's New]"
+msgstr "Tampilkan [Yang Baru]"
+
+msgid "Display available cover artwork."
+msgstr "Tampilkan karya seni sampul yang tersedia."
+
+msgid "Display information about the selected content."
+msgstr "Menampilkan informasi tentang konten yang dipilih."
+
+msgid "Display the shell frame rate."
+msgstr "Menampilkan kecepatan bingkai shell."
+
+msgid "Displays a list of PS Vita systems registered with this system.\n\nNo PS Vita systems are currently registered."
+msgstr "Menampilkan daftar sistem PS Vita yang terdaftar pada sistem ini.\n\n Saat ini tidak ada sistem PS Vita yang terdaftar."
+
+msgid "Displays a list of devices registered with this system.\n\nNo devices are currently registered for remote play."
+msgstr "Menampilkan daftar perangkat yang terdaftar pada sistem ini.\n\n Saat ini tidak ada perangkat yang terdaftar untuk pemutaran jarak jauh."
+
+msgid "Displays current network settings and connection status."
+msgstr "Menampilkan pengaturan jaringan saat ini dan status koneksi."
+
+msgid "Displays current network settings and the Internet connection status.\n\nConnection Name    Default\nConnection Type    Wired\nIP Address         192.168.1.10\nSubnet Mask        255.255.255.0\nDefault Gateway    192.168.1.1\nPrimary DNS        8.8.8.8\nSecondary DNS      8.8.4.4"
+msgstr "Menampilkan pengaturan jaringan saat ini dan status koneksi Internet.\n\n Nama Koneksi Default\nJenis Koneksi Berkabel\nIP Alamat 192.168.1.10\nSubnet Mask 255.255.255.0\nGerbang Default 192.168.1.1\nPrimer DNS 8.8.8.8\nSekunder DNS 8.8.4.4"
+
+msgid "Displays manuals for the software installed on the OpenXMB system."
+msgstr "Menampilkan manual untuk perangkat lunak yang diinstal pada sistem OpenXMB."
+
+msgid "Displays the messages you have received."
+msgstr "Menampilkan pesan yang Anda terima."
+
+msgid "Displays the messages you have sent."
+msgstr "Menampilkan pesan yang telah Anda kirim."
+
+msgid "Displays the registration code that is required to play DivX® VOD content."
+msgstr "Menampilkan kode registrasi yang diperlukan untuk memutar konten DivX® VOD."
+
+msgid "Displays the registration code that is required to play DivX® VOD content.\n\nRegistration Code:\n\n8C9D7E1F\n\nVisit http://www.divx.com/vod/ for instructions on how to register the code."
+msgstr "Menampilkan kode registrasi yang diperlukan untuk memutar konten DivX® VOD.\n\n Kode Pendaftaran:\n\n 8C9D7E1F\n\n Kunjungi http://www.divx.com/vod/ untuk instruksi tentang cara mendaftarkan kode."
+
+msgid "DivX® VOD Registration Code"
+msgstr "DivX® Kode Registrasi VOD"
+
+msgid "Divided from Grace"
+msgstr "Divided from Grace"
+
+msgid "Do Not Display"
+msgstr "Jangan Ditampilkan"
+
+msgid "Do Not Set"
+msgstr "Jangan Setel"
+
+msgid "Do Not Use"
+msgstr "Jangan Gunakan"
+
+msgid "Do you want to back up data on the system storage to other storage media?\n\nLimitations may apply when backing up certain copyright-protected content."
+msgstr "Apakah Anda ingin membackup data pada penyimpanan sistem ke media penyimpanan lain?\n\n Batasan mungkin berlaku saat mencadangkan konten tertentu yang dilindungi hak cipta."
+
+msgid "Do you want to cancel?\nThe settings you have made so far will not be saved if you cancel."
+msgstr "Apakah Anda ingin membatalkan?\nPengaturan yang Anda buat sejauh ini tidak akan disimpan jika Anda membatalkan."
+
+msgid "Do you want to overwrite the wallpaper?\nIf you do, the current wallpaper will be lost.\nOnly one wallpaper image can be saved."
+msgstr "Apakah Anda ingin menimpa wallpaper?\nJika Anda melakukannya, wallpaper saat ini akan hilang.\nHanya satu gambar wallpaper yang dapat disimpan."
+
+msgid "Do you want to perform advanced settings?"
+msgstr "Apakah Anda ingin melakukan pengaturan lanjutan?"
+
+msgid "Dolby Digital 5.1 Ch."
+msgstr "Dolby Digital 5.1 Bab."
+
+msgid "Double Scale"
+msgstr "Skala Ganda"
+
+msgid "Down"
+msgstr "Turun"
+
+msgid "Downloads Folder"
+msgstr "Folder Unduhan"
+
+msgid "DuckDuckGo"
+msgstr "DuckDuckGo"
+
+msgid "Dusk"
+msgstr "Senja"
+
+msgid "Dutch"
+msgstr "Belanda"
+
+msgid "EAP Authentication"
+msgstr "Otentikasi EAP"
+
+msgid "EAP-MD5"
+msgstr "EAP-MD5"
+
+msgid "Easy"
+msgstr "Mudah"
+
+msgid "Echo Cancellation"
+msgstr "Pembatalan Gema"
+
+msgid "Edit"
+msgstr "Sunting"
+
+msgid "Edit Term"
+msgstr "Sunting Istilah"
+
+msgid "Elevator Music"
+msgstr "Elevator Music"
+
+msgid "Emulation Configuration"
+msgstr "Konfigurasi Emulasi"
+
+msgid "Enable"
+msgstr "Aktifkan"
+
+msgid "Enable ATRAC"
+msgstr "Aktifkan ATRAC"
+
+msgid "Enable WMA Playback"
+msgstr "Aktifkan Pemutaran WMA"
+
+msgid "Enable analog controller navigation."
+msgstr "Aktifkan navigasi pengontrol analog."
+
+msgid "Enable controller feedback."
+msgstr "Aktifkan umpan balik pengontrol."
+
+msgid "Enabled"
+msgstr "Diaktifkan"
+
+msgid "English"
+msgstr "bahasa Inggris"
+
+msgid "English (UK)"
+msgstr "Bahasa Inggris (Inggris Raya)"
+
+msgid "English (US)"
+msgstr "Inggris (AS)"
+
+msgid "English (United Kingdom)"
+msgstr "Inggris (Inggris Raya)"
+
+msgid "English (United States)"
+msgstr "Bahasa Inggris (Amerika Serikat)"
+
+msgid "Enter Manually"
+msgstr "Masuk Secara Manual"
+
+msgid "Enter a new 4-digit password."
+msgstr "Masukkan kata sandi 4 digit baru."
+
+msgid "Enter the new password again to confirm."
+msgstr "Masukkan kata sandi baru lagi untuk konfirmasi."
+
+msgid "Eternal Excavation"
+msgstr "Eternal Excavation"
+
+msgid "Evening"
+msgstr "Malam"
+
+msgid "External Subtitle"
+msgstr "Subjudul Eksternal"
+
+msgid "Extra"
+msgstr "Ekstra"
+
+msgid "FON_FREE_INTERNET"
+msgstr "FON_FREE_INTERNET"
+
+msgid "FREE* to access, PlayStation®Store is the only place to download new and exclusive PS3™ games, FREE playable demos, add-on packs, and high-definition videos.\n\nGet more for your PS3™ and visit PlayStation®Store today.\n\n* Broadband Internet connection required."
+msgstr "GRATIS* untuk diakses, PlayStation®Store adalah satu-satunya tempat untuk mengunduh game PS3™ baru dan eksklusif, demo GRATIS yang dapat dimainkan, paket tambahan, dan video definisi tinggi.\n\n Dapatkan lebih banyak untuk PS3™ Anda dan kunjungi PlayStation®Store hari ini.\n\n * Diperlukan koneksi Internet broadband."
+
+msgid "Fade"
+msgstr "Memudar"
+
+msgid "Fast"
+msgstr "Cepat"
+
+msgid "Fast Forward"
+msgstr "Maju Cepat"
+
+msgid "Fast Reverse"
+msgstr "Mundur Cepat"
+
+msgid "File logging is unavailable on this platform."
+msgstr "Pencatatan file tidak tersedia di platform ini."
+
+msgid "Fill"
+msgstr "Isi"
+
+msgid "Film Date ▲"
+msgstr "Tanggal Film ▲"
+
+msgid "Film Date ▼"
+msgstr "Tanggal Film ▼"
+
+msgid "Finish"
+msgstr "Selesai"
+
+msgid "Finnish"
+msgstr "Finlandia"
+
+msgid "Fit"
+msgstr "Cocok"
+
+msgid "Flow"
+msgstr "Flow"
+
+msgid "Flow visualiser"
+msgstr "Visualisasi Flow"
+
+
+
+msgid "Folder Repeat"
+msgstr "Ulangi Folder"
+
+msgid "Folders"
+msgstr "Folder"
+
+msgid "Follow the on-screen instructions on your PlayStation®Vita system."
+msgstr "Ikuti petunjuk di layar pada sistem PlayStation®Vita Anda."
+
+msgid "Font"
+msgstr "huruf"
+
+msgid "Font File"
+msgstr "Berkas Font"
+
+msgid "Font file not found."
+msgstr "File font tidak ditemukan."
+
+msgid "Format Hard Disk"
+msgstr "Memformat Hard Disk"
+
+msgid "Format System Storage"
+msgstr "Format Penyimpanan Sistem"
+
+msgid "Format Utility"
+msgstr "Utilitas Format"
+
+msgid "Format completed."
+msgstr "Pemformatan selesai."
+
+msgid "Formats the system storage and restores the system software to its default settings.\n\nAll data on the hard disk will be deleted, and the system software will be reinstalled.\nDo you want to continue?"
+msgstr "Memformat penyimpanan sistem dan mengembalikan perangkat lunak sistem ke pengaturan defaultnya.\n\n Semua data pada hard disk akan dihapus, dan perangkat lunak sistem akan diinstal ulang.\nApakah Anda ingin melanjutkan?"
+
+msgid "Formats the system storage and restores the system software to its default settings.\nAre you sure you want to continue?"
+msgstr "Memformat penyimpanan sistem dan mengembalikan perangkat lunak sistem ke pengaturan defaultnya.\nApakah Anda yakin ingin melanjutkan?"
+
+msgid "Formats the system storage. All data on the system storage will be deleted during formatting."
+msgstr "Memformat penyimpanan sistem. Semua data di penyimpanan sistem akan dihapus selama pemformatan."
+
+msgid "Formats the system storage. All data on the system storage will be deleted during formatting.\nSelect an option."
+msgstr "Memformat penyimpanan sistem. Semua data di penyimpanan sistem akan dihapus selama pemformatan.\nPilih salah satu opsi."
+
+msgid "Formatting...\nDo not remove the storage media."
+msgstr "Memformat...\nJangan keluarkan media penyimpanan."
+
+msgid "Formatting...\nDo not turn off the system."
+msgstr "Memformat...\nJangan matikan sistem."
+
+msgid "Fractal Dive"
+msgstr "Fractal Dive"
+
+msgid "Frame Advance"
+msgstr "Bingkai Maju"
+
+msgid "Frame Limit"
+msgstr "Batas Bingkai"
+
+msgid "Frame Noise Reduction"
+msgstr "Pengurangan Kebisingan Bingkai"
+
+msgid "Frame Reverse"
+msgstr "Bingkai Terbalik"
+
+msgid "French"
+msgstr "Perancis"
+
+msgid "Friends"
+msgstr "Teman"
+
+msgid "Full"
+msgstr "Penuh"
+
+msgid "Full Format"
+msgstr "Format Penuh"
+
+msgid "Full Screen"
+msgstr "Layar Penuh"
+
+msgid "Fullscreen"
+msgstr "Layar penuh"
+
+msgid "GMT"
+msgstr "GMT"
+
+msgid "GMT+00:00 Casablanca"
+msgstr "GMT+00:00 Casablanca"
+
+msgid "GMT+00:00 Dublin"
+msgstr "GMT+00:00 Dublin"
+
+msgid "GMT+00:00 Lisbon"
+msgstr "GMT+00:00 Lisboa"
+
+msgid "GMT+00:00 London"
+msgstr "GMT+00:00 London"
+
+msgid "GMT+00:00 Reykjavik"
+msgstr "GMT+00:00 Reykjavik"
+
+msgid "GMT+01:00"
+msgstr "GMT+01:00"
+
+msgid "GMT+01:00 Amsterdam"
+msgstr "GMT+01:00 Amsterdam"
+
+msgid "GMT+01:00 Berlin"
+msgstr "GMT+01:00Berlin"
+
+msgid "GMT+01:00 Madrid"
+msgstr "GMT+01:00 Madrid"
+
+msgid "GMT+01:00 Paris"
+msgstr "GMT+01:00 Paris"
+
+msgid "GMT+01:00 Rome"
+msgstr "GMT+01:00 Roma"
+
+msgid "GMT+01:00 Stockholm"
+msgstr "GMT+01:00 Stockholm"
+
+msgid "GMT+02:00"
+msgstr "GMT+02:00"
+
+msgid "GMT+02:00 Athens"
+msgstr "GMT+02:00 Athena"
+
+msgid "GMT+02:00 Cairo"
+msgstr "GMT+02:00 Kairo"
+
+msgid "GMT+02:00 Helsinki"
+msgstr "GMT+02:00 Helsinki"
+
+msgid "GMT+02:00 Johannesburg"
+msgstr "GMT+02:00 Johannesburg"
+
+msgid "GMT+03:00"
+msgstr "GMT+03:00"
+
+msgid "GMT+03:00 Istanbul"
+msgstr "GMT+03:00 Istambul"
+
+msgid "GMT+03:00 Moscow"
+msgstr "GMT+03:00 Moskow"
+
+msgid "GMT+03:00 Nairobi"
+msgstr "GMT+03:00 Nairobi"
+
+msgid "GMT+03:30 Tehran"
+msgstr "GMT+03:30 Teheran"
+
+msgid "GMT+04:00"
+msgstr "GMT+04:00"
+
+msgid "GMT+04:00 Dubai"
+msgstr "GMT+04:00 Dubai"
+
+msgid "GMT+04:30 Kabul"
+msgstr "GMT+04:30 Kabul"
+
+msgid "GMT+05:00"
+msgstr "GMT+05:00"
+
+msgid "GMT+05:00 Karachi"
+msgstr "GMT+05:00 Karachi"
+
+msgid "GMT+05:30"
+msgstr "GMT+05:30"
+
+msgid "GMT+05:30 New Delhi"
+msgstr "GMT+05:30 New Delhi"
+
+msgid "GMT+05:45 Kathmandu"
+msgstr "GMT+05:45 Kathmandu"
+
+msgid "GMT+06:00"
+msgstr "GMT+06:00"
+
+msgid "GMT+06:00 Dhaka"
+msgstr "GMT+06:00 Dhaka"
+
+msgid "GMT+07:00"
+msgstr "GMT+07:00"
+
+msgid "GMT+07:00 Bangkok"
+msgstr "GMT+07:00 Bangkok"
+
+msgid "GMT+07:00 Jakarta"
+msgstr "GMT+07:00 Jakarta"
+
+msgid "GMT+08:00"
+msgstr "GMT+08:00"
+
+msgid "GMT+08:00 Beijing"
+msgstr "GMT+08:00 Beijing"
+
+msgid "GMT+08:00 Hong Kong"
+msgstr "GMT+08:00 Hong Kong"
+
+msgid "GMT+08:00 Singapore"
+msgstr "GMT+08:00 Singapura"
+
+msgid "GMT+09:00"
+msgstr "GMT+09:00"
+
+msgid "GMT+09:00 Seoul"
+msgstr "GMT+09:00 Seoul"
+
+msgid "GMT+09:00 Tokyo"
+msgstr "GMT+09:00 Tokyo"
+
+msgid "GMT+09:30 Adelaide"
+msgstr "GMT+09:30 Adelaide"
+
+msgid "GMT+10:00"
+msgstr "GMT+10:00"
+
+msgid "GMT+10:00 Guam"
+msgstr "GMT+10:00 Guam"
+
+msgid "GMT+10:00 Sydney"
+msgstr "GMT+10:00 Sydney"
+
+msgid "GMT+11:00"
+msgstr "GMT+11:00"
+
+msgid "GMT+11:00 Solomon Islands"
+msgstr "GMT+11:00 Kepulauan Solomon"
+
+msgid "GMT+12:00"
+msgstr "GMT+12:00"
+
+msgid "GMT+12:00 Auckland"
+msgstr "GMT+12:00 Auckland"
+
+msgid "GMT+13:00 Samoa"
+msgstr "GMT+13:00 Samoa"
+
+msgid "GMT-01:00"
+msgstr "GMT-01:00"
+
+msgid "GMT-01:00 Azores"
+msgstr "GMT-01:00 Azores"
+
+msgid "GMT-02:00"
+msgstr "GMT-02:00"
+
+msgid "GMT-03:00"
+msgstr "GMT-03:00"
+
+msgid "GMT-03:00 Buenos Aires"
+msgstr "GMT-03:00 Buenos Aires"
+
+msgid "GMT-03:00 Sao Paulo"
+msgstr "GMT-03:00 Sao Paulo"
+
+msgid "GMT-03:30 Newfoundland"
+msgstr "GMT-03:30 Tanah Baru"
+
+msgid "GMT-04:00"
+msgstr "GMT-04:00"
+
+msgid "GMT-04:00 Atlantic (Canada)"
+msgstr "GMT-04.00 Atlantik (Kanada)"
+
+msgid "GMT-04:00 Caracas"
+msgstr "GMT-04:00 Karakas"
+
+msgid "GMT-04:00 Santiago"
+msgstr "GMT-04:00 Santiago"
+
+msgid "GMT-05:00"
+msgstr "GMT-05:00"
+
+msgid "GMT-05:00 Bogota"
+msgstr "GMT-05:00 Bogota"
+
+msgid "GMT-05:00 Eastern Time (US & Canada)"
+msgstr "GMT-05.00 Waktu Bagian Timur (AS & Kanada)"
+
+msgid "GMT-05:00 Lima"
+msgstr "GMT-05:00 Lima"
+
+msgid "GMT-06:00"
+msgstr "GMT-06:00"
+
+msgid "GMT-06:00 Central Time (US & Canada)"
+msgstr "GMT-06.00 Waktu Tengah (AS & Kanada)"
+
+msgid "GMT-06:00 Mexico City"
+msgstr "GMT-06:00 Kota Meksiko"
+
+msgid "GMT-07:00"
+msgstr "GMT-07:00"
+
+msgid "GMT-07:00 Chihuahua"
+msgstr "GMT-07:00 Chihuahua"
+
+msgid "GMT-07:00 Mountain Time (US & Canada)"
+msgstr "GMT-07.00 Waktu Pegunungan (AS & Kanada)"
+
+msgid "GMT-08:00"
+msgstr "GMT-08:00"
+
+msgid "GMT-08:00 Pacific Time (US & Canada)"
+msgstr "GMT-08.00 Waktu Pasifik (AS & Kanada)"
+
+msgid "GMT-08:00 Tijuana"
+msgstr "GMT-08:00 Tijuana"
+
+msgid "GMT-09:00"
+msgstr "GMT-09:00"
+
+msgid "GMT-09:00 Alaska"
+msgstr "GMT-09:00 Alaska"
+
+msgid "GMT-10:00"
+msgstr "GMT-10:00"
+
+msgid "GMT-10:00 Hawaii"
+msgstr "GMT-10:00 Hawaii"
+
+msgid "GMT-11:00"
+msgstr "GMT-11:00"
+
+msgid "GMT-11:00 Samoa"
+msgstr "GMT-11:00 Samoa"
+
+msgid "GMT-12:00"
+msgstr "GMT-12:00"
+
+msgid "Game"
+msgstr "Permainan"
+
+msgid "Game Data Utility"
+msgstr "Utilitas Data Permainan"
+
+msgid "Game Library Folder"
+msgstr "Folder Perpustakaan Permainan"
+
+msgid "Game Settings"
+msgstr "Pengaturan Permainan"
+
+msgid "Generated thumbnails will be recreated when needed. Original media is preserved."
+msgstr "Thumbnail yang dihasilkan akan dibuat ulang bila diperlukan. Media asli dipertahankan."
+
+msgid "Genre ▲"
+msgstr "Genre ▲"
+
+msgid "Genre ▼"
+msgstr "Genre ▼"
+
+msgid "German"
+msgstr "Jerman"
+
+msgid "Glass Icons"
+msgstr "Ikon Kaca"
+
+msgid "Globe"
+msgstr "Bola dunia"
+
+msgid "Go To"
+msgstr "Pergi ke"
+
+msgid "Gold"
+msgstr "Emas"
+
+msgid "Google"
+msgstr "Google"
+
+msgid "Gray"
+msgstr "Abu-abu"
+
+msgid "Greek"
+msgstr "Yunani"
+
+msgid "Green"
+msgstr "Hijau"
+
+msgid "Groove Basin"
+msgstr "Groove Basin"
+
+msgid "Group Content"
+msgstr "Konten Grup"
+
+msgid "HDD Audio Language"
+msgstr "Bahasa Audio HDD"
+
+msgid "HDMI"
+msgstr "HDMI"
+
+msgid "Heads Up for Tails"
+msgstr "Heads Up for Tails"
+
+msgid "Heat Blur"
+msgstr "Heat Blur"
+
+msgid "Helium Stairways"
+msgstr "Helium Stairways"
+
+msgid "High"
+msgstr "Tinggi"
+
+msgid "High Pitch"
+msgstr "Nada Tinggi"
+
+msgid "Hindi"
+msgstr "bahasa Hindi"
+
+msgid "Home directory unavailable."
+msgstr "Direktori beranda tidak tersedia."
+
+msgid "Homepage"
+msgstr "Beranda"
+
+msgid "Hours added to local system time for display."
+msgstr "Jam ditambahkan ke waktu sistem lokal untuk ditampilkan."
+
+msgid "How photographs fit on screen."
+msgstr "Bagaimana foto pas di layar."
+
+msgid "How video fits on the screen."
+msgstr "Bagaimana video pas di layar."
+
+msgid "Hydrochill"
+msgstr "Hydrochill"
+
+msgid "IP Address"
+msgstr "IP Alamat"
+
+msgid "IP Address Setting"
+msgstr "IP Pengaturan Alamat"
+
+msgid "Ice Cap 4 Life"
+msgstr "Ice Cap 4 Life"
+
+msgid "Icon Colour"
+msgstr "Warna Ikon"
+
+msgid "Icon Style"
+msgstr "Gaya Ikon"
+
+msgid "Idle Dimming"
+msgstr "Peredupan Diam"
+
+msgid "If you format, all data on the system storage will be deleted.\nThis data cannot be restored.\nAre you sure you want to continue?"
+msgstr "Jika Anda memformat, semua data di penyimpanan sistem akan terhapus.\nData ini tidak dapat dipulihkan.\nApakah Anda yakin ingin melanjutkan?"
+
+msgid "If you perform a connection test, the current connection will be terminated and the system will be disconnected.\nDo you want to continue?"
+msgstr "Jika Anda melakukan tes koneksi, koneksi saat ini akan dihentikan dan sistem akan terputus.\nApakah Anda ingin melanjutkan?"
+
+msgid "Image Name"
+msgstr "Nama Gambar"
+
+msgid "Import Date ▲"
+msgstr "Tanggal Impor ▲"
+
+msgid "Import Date ▼"
+msgstr "Tanggal Impor ▼"
+
+msgid "Import a theme archive or theme folder."
+msgstr "Impor arsip tema atau folder tema."
+
+msgid "Inbox"
+msgstr "Kotak masuk"
+
+msgid "Information"
+msgstr "Informasi"
+
+msgid "Input Device"
+msgstr "Perangkat Masukan"
+
+msgid "Install"
+msgstr "Instal"
+
+msgid "Install Theme"
+msgstr "Instal Tema"
+
+msgid "Instant Advance"
+msgstr "Kemajuan Instan"
+
+msgid "Instant Replay"
+msgstr "Putar Ulang Instan"
+
+msgid "Interface Text Size"
+msgstr "Ukuran Teks Antarmuka"
+
+msgid "Interface Volume"
+msgstr "Volume Antarmuka"
+
+msgid "Internal Memory Card"
+msgstr "Kartu Memori Internal"
+
+msgid "Internal memory card for PS/PS2 saved data."
+msgstr "Kartu memori internal untuk menyimpan data PS/PS2."
+
+msgid "Internet Browser"
+msgstr "Peramban Internet"
+
+msgid "Internet Browser Start Control"
+msgstr "Kontrol Mulai Browser Internet"
+
+msgid "Internet Connection"
+msgstr "Koneksi Internet"
+
+msgid "Internet Connection Settings"
+msgstr "Pengaturan Koneksi Internet"
+
+msgid "Internet Connection Test"
+msgstr "Tes Koneksi Internet"
+
+msgid "Internet Search"
+msgstr "Pencarian Internet"
+
+msgid "Internet connection settings have been completed.\n\nSave completed."
+msgstr "Pengaturan koneksi internet telah selesai.\n\n Penyimpanan selesai."
+
+msgid "It will take about 10 seconds for the access point to be ready.\nPlease wait..."
+msgstr "Diperlukan waktu sekitar 10 detik agar titik akses siap.\nHarap tunggu..."
+
+msgid "Italian"
+msgstr "Italia"
+
+msgid "Ivory Gadget"
+msgstr "Ivory Gadget"
+
+msgid "Japanese"
+msgstr "Jepang"
+
+msgid "Keep Running"
+msgstr "Terus Berlari"
+
+msgid "Keep this computer awake while media plays."
+msgstr "Jaga agar komputer ini tetap aktif saat media diputar."
+
+msgid "Key Repeat Delay"
+msgstr "Penundaan Pengulangan Kunci"
+
+msgid "Key Repeat Rate"
+msgstr "Tingkat Pengulangan Kunci"
+
+msgid "Key Tone"
+msgstr "Nada Kunci"
+
+msgid "Keyboard Bindings"
+msgstr "Pengikatan Keyboard"
+
+msgid "Keyboard Entry Method"
+msgstr "Metode Entri Keyboard"
+
+msgid "Keyboard Type"
+msgstr "Jenis Papan Ketik"
+
+msgid "Knuckleduster"
+msgstr "Knuckleduster"
+
+msgid "Korean"
+msgstr "Bahasa Korea"
+
+msgid "Language"
+msgstr "Bahasa"
+
+msgid "Language 1"
+msgstr "Bahasa 1"
+
+msgid "Launch at Login"
+msgstr "Luncurkan saat Login"
+
+msgid "Lava Passion"
+msgstr "Lava Passion"
+
+msgid "Left"
+msgstr "Kiri"
+
+msgid "Left + Right"
+msgstr "Kiri + Kanan"
+
+msgid "Left-handed"
+msgstr "kidal"
+
+msgid "Level 1"
+msgstr "tingkat 1"
+
+msgid "Level 2"
+msgstr "tingkat 2"
+
+msgid "Level 3"
+msgstr "tingkat 3"
+
+msgid "Level 4"
+msgstr "tingkat 4"
+
+msgid "Level 5"
+msgstr "tingkat 5"
+
+msgid "Level 6"
+msgstr "tingkat 6"
+
+msgid "Level 7"
+msgstr "tingkat 7"
+
+msgid "Level 8"
+msgstr "tingkat 8"
+
+msgid "Library View"
+msgstr "Tampilan Perpustakaan"
+
+msgid "Licenses"
+msgstr "Lisensi"
+
+msgid "Light Purple"
+msgstr "Ungu Muda"
+
+msgid "Lime"
+msgstr "jeruk nipis"
+
+msgid "Limited"
+msgstr "Terbatas"
+
+msgid "Linear PCM"
+msgstr "PCM linier"
+
+msgid "Linear PCM 2 Ch. 44.1 kHz"
+msgstr "PCM Linier 2 Bab. 44,1 kHz"
+
+msgid "Linear PCM 5.1 Ch."
+msgstr "PCM Linier 5.1 Bab."
+
+msgid "Linear PCM 7.1 Ch."
+msgstr "PCM Linier 7.1 Bab."
+
+msgid "List of Registered PS Vita Systems"
+msgstr "Daftar Sistem PS Vita Terdaftar"
+
+msgid "Live at the Sandopolis"
+msgstr "Live at the Sandopolis"
+
+msgid "Long"
+msgstr "Panjang"
+
+msgid "Low"
+msgstr "Rendah"
+
+msgid "Low Pitch"
+msgstr "Nada Rendah"
+
+msgid "MM/DD/YYYY"
+msgstr "MM/DD/YYYY"
+
+msgid "MTU"
+msgstr "MTU"
+
+msgid "Magenta"
+msgstr "ungu"
+
+msgid "Malicious Fingers"
+msgstr "Malicious Fingers"
+
+msgid "Manage Bluetooth® Devices"
+msgstr "Kelola Perangkat Bluetooth®"
+
+msgid "Manage Bluetooth® devices."
+msgstr "Kelola perangkat Bluetooth®."
+
+msgid "Manage your PlayStation®Network account."
+msgstr "Kelola akun PlayStation®Network Anda."
+
+msgid "Manages game data installed on the OpenXMB system. To delete a game data item, select it and then press the @T button."
+msgstr "Mengelola data game yang diinstal pada sistem OpenXMB. Untuk menghapus item data game, pilih item tersebut lalu tekan tombol @T."
+
+msgid "Manages internal memory cards for use with PlayStation® and PlayStation®2 format software."
+msgstr "Mengelola kartu memori internal untuk digunakan dengan perangkat lunak format PlayStation® dan PlayStation®2."
+
+msgid "Manual"
+msgstr "petunjuk"
+
+msgid "Master Volume"
+msgstr "Jilid Utama"
+
+msgid "Maximum shell rendering rate."
+msgstr "Tingkat rendering shell maksimum."
+
+msgid "Media Server Connection"
+msgstr "Koneksi Server Media"
+
+msgid "Memory Card Utility (PS/PS2)"
+msgstr "Utilitas Kartu Memori (PS/PS2)"
+
+msgid "Message Box"
+msgstr "Kotak Pesan"
+
+msgid "Microphone Level"
+msgstr "Tingkat Mikrofon"
+
+msgid "Microphone Volume"
+msgstr "Volume Mikrofon"
+
+msgid "Minimise"
+msgstr "Minimalkan"
+
+msgid "Momentary Standstill"
+msgstr "Momentary Standstill"
+
+msgid "Morning"
+msgstr "Pagi"
+
+msgid "Mosquito Noise Reduction"
+msgstr "Pengurangan Kebisingan Nyamuk"
+
+msgid "Mouse Type"
+msgstr "Jenis Tikus"
+
+msgid "Move OpenXMB to a connected display."
+msgstr "Pindahkan OpenXMB ke layar yang terhubung."
+
+msgid "Multisample anti-aliasing for supported graphics hardware."
+msgstr "Anti-aliasing multisampel untuk perangkat keras grafis yang didukung."
+
+msgid "Music"
+msgstr "Musik"
+
+msgid "Music Folder"
+msgstr "Folder Musik"
+
+msgid "Music Settings"
+msgstr "Pengaturan Musik"
+
+msgid "Music Visualiser"
+msgstr "Visualisasi Musik"
+
+msgid "Music Volume"
+msgstr "Volume Musik"
+
+msgid "Music codec: "
+msgstr "Kodek musik:"
+
+msgid "My PlayStation®Network Account"
+msgstr "Akun PlayStation®Network saya"
+
+msgid "MyHome_5GHz (Private Networks Only)"
+msgstr "MyHome_5GHz (Hanya Jaringan Pribadi)"
+
+msgid "NETGEAR-Guest"
+msgstr "NETGEAR-Tamu"
+
+msgid "Name"
+msgstr "Nama"
+
+msgid "Navigation Repeat"
+msgstr "Navigasi Ulangi"
+
+msgid "Network"
+msgstr "Jaringan"
+
+msgid "Network Settings"
+msgstr "Pengaturan Jaringan"
+
+msgid "Next"
+msgstr "Selanjutnya"
+
+msgid "Night"
+msgstr "Malam"
+
+msgid "No"
+msgstr "Tidak"
+
+msgid "No saved theme presets."
+msgstr "Tidak ada preset tema yang disimpan."
+
+msgid "No wireless stereo headset is connected."
+msgstr "Tidak ada headset stereo nirkabel yang tersambung."
+
+msgid "None"
+msgstr "Tidak ada"
+
+msgid "Normal"
+msgstr "Biasa"
+
+msgid "Norwegian"
+msgstr "Norwegia"
+
+msgid "Notification Messages"
+msgstr "Pesan Pemberitahuan"
+
+msgid "Obtaining the date and time via the Internet..."
+msgstr "Mendapatkan tanggal dan waktu melalui Internet..."
+
+msgid "Obtains the correct date and time automatically via the Internet when you sign in to PSN, and sets them on your system."
+msgstr "Mendapatkan tanggal dan waktu yang benar secara otomatis melalui Internet saat Anda masuk ke PSN, dan mengaturnya di sistem Anda."
+
+msgid "Obtains the correct date and time automatically via the Internet when you sign in to PSN, and sets them on your system.\n\nA network connection is required for this feature."
+msgstr "Mendapatkan tanggal dan waktu yang benar secara otomatis melalui Internet saat Anda masuk ke PSN, dan mengaturnya di sistem Anda.\n\n Koneksi jaringan diperlukan untuk fitur ini."
+
+msgid "Off"
+msgstr "Mati"
+
+msgid "On"
+msgstr "Aktif"
+
+msgid "On-Screen Keyboard"
+msgstr "Papan Ketik di Layar"
+
+msgid "One"
+msgstr "Satu"
+
+msgid "Online Instruction Manuals"
+msgstr "Manual Instruksi Online"
+
+msgid "Open Log Folder"
+msgstr "Buka Folder Log"
+
+msgid "Open the location of diagnostic logs."
+msgstr "Buka lokasi log diagnostik."
+
+msgid "OpenXMB system"
+msgstr "sistem OpenXMB"
+
+msgid "OpenXMB version and information about this computer."
+msgstr "Versi OpenXMB dan informasi tentang komputer ini."
+
+msgid "Operate other devices on the network from this system."
+msgstr "Operasikan perangkat lain di jaringan dari sistem ini."
+
+msgid "Optical Digital"
+msgstr "Optik Digital"
+
+msgid "Options"
+msgstr "Pilihan"
+
+msgid "Orange"
+msgstr "Oranye"
+
+msgid "Order of year, month and day."
+msgstr "Urutan tahun, bulan dan hari."
+
+msgid "Original"
+msgstr "Asli"
+
+msgid "Output Device"
+msgstr "Perangkat Keluaran"
+
+msgid "Output Frequency"
+msgstr "Frekuensi Keluaran"
+
+msgid "Outputs Deep Color video signal. If the video output is not clean or the colors do not look right, set this option to [Off]."
+msgstr "Menghasilkan sinyal video Warna Dalam. Jika keluaran video tidak bersih atau warnanya tidak sesuai, atur pilihan ini ke [Mati]."
+
+msgid "PLAYSTATION(R)3 Headset"
+msgstr "PLAYSTATION(kanan)3 Headset"
+
+msgid "PPPoE"
+msgstr "PPPoE"
+
+msgid "PPPoE Password"
+msgstr "Kata Sandi PPPoE"
+
+msgid "PPPoE User Name"
+msgstr "Nama Pengguna PPPoE"
+
+msgid "PS Upscaler"
+msgstr "Peningkatan PS"
+
+msgid "PS Vita System Application Utility"
+msgstr "Utilitas Aplikasi Sistem PS Vita"
+
+msgid "PS/PS2 Smoothing"
+msgstr "Penghalusan PS/PS2"
+
+msgid "PS3-HOME-NET"
+msgstr "PS3-RUMAH-NET"
+
+msgid "PSN is all about entertainment and interaction.\nEnjoy FREE* online gaming, download amazing new games, game expansion packs for a host of top titles, watch trailers and get your hands on exclusive content, chat with friends, and compare Trophies.\n\nSign up today – it's easy and it's FREE!\n\n* Broadband Internet connection required."
+msgstr "PSN adalah tentang hiburan dan interaksi.\nNikmati game online GRATIS*, unduh game baru yang menakjubkan, paket ekspansi game untuk sejumlah judul teratas, tonton cuplikan dan dapatkan konten eksklusif, mengobrol dengan teman, dan bandingkan Piala.\n\n Daftar hari ini – mudah dan GRATIS!\n\n * Diperlukan koneksi Internet broadband."
+
+msgid "Page Zoom"
+msgstr "Zoom Halaman"
+
+msgid "Page opened when launching the browser."
+msgstr "Halaman dibuka saat meluncurkan browser."
+
+msgid "Parental Control"
+msgstr "Kontrol Orang Tua"
+
+msgid "Password"
+msgstr "Kata sandi"
+
+msgid "Pause"
+msgstr "Jeda"
+
+msgid "Photo"
+msgstr "Foto"
+
+msgid "Photo Album"
+msgstr "Album Foto"
+
+msgid "Photo Album 2"
+msgstr "Album Foto 2"
+
+msgid "Photo Gallery"
+msgstr "Galeri Foto"
+
+msgid "Photos"
+msgstr "Foto"
+
+msgid "Photosensitivity Warning"
+msgstr "Peringatan Fotosensitifitas"
+
+msgid "Pictures Folder"
+msgstr "Folder Gambar"
+
+msgid "Pink"
+msgstr "Merah Jambu"
+
+msgid "Play"
+msgstr "Mainkan"
+
+msgid "Play Remote Devices"
+msgstr "Mainkan Perangkat Jarak Jauh"
+
+msgid "Play from Beginning"
+msgstr "Mainkan dari Awal"
+
+msgid "Play the startup cue in full."
+msgstr "Mainkan isyarat startup secara penuh."
+
+msgid "Play the startup sequence."
+msgstr "Mainkan urutan startup."
+
+msgid "PlayStation®Network"
+msgstr "PlayStation®Network"
+
+msgid "PlayStation®Plus"
+msgstr "PlayStation®Ditambah"
+
+msgid "PlayStation®Store"
+msgstr "PlayStation®Store"
+
+msgid "Players Blocked"
+msgstr "Pemain Diblokir"
+
+msgid "Players Met"
+msgstr "Pemain Bertemu"
+
+msgid "Playlists"
+msgstr "Daftar Putar"
+
+msgid "Please wait..."
+msgstr "Mohon tunggu..."
+
+msgid "Pointer Speed"
+msgstr "Kecepatan Penunjuk"
+
+msgid "Polish"
+msgstr "Polandia"
+
+msgid "Pop"
+msgstr "Pop"
+
+msgid "Port Number"
+msgstr "Nomor Pelabuhan"
+
+msgid "Portrait"
+msgstr "Potret"
+
+msgid "Portuguese"
+msgstr "Portugis"
+
+msgid "Portuguese (Brazil)"
+msgstr "Portugis (Brasil)"
+
+msgid "Portuguese (Portugal)"
+msgstr "Portugis (Portugal)"
+
+msgid "Power Indicator"
+msgstr "Indikator Daya"
+
+msgid "Power Save"
+msgstr "Hemat Daya"
+
+msgid "Power Save Settings"
+msgstr "Pengaturan Hemat Daya"
+
+msgid "Predictive Input"
+msgstr "Masukan Prediktif"
+
+msgid "Preferred audio track language."
+msgstr "Bahasa trek audio pilihan."
+
+msgid "Preferred interface language."
+msgstr "Bahasa antarmuka pilihan."
+
+msgid "Preferred subtitle track language."
+msgstr "Bahasa trek subtitle yang disukai."
+
+msgid "Preparing...\nPlease wait."
+msgstr "Mempersiapkan...\nHarap tunggu."
+
+msgid "Preset name"
+msgstr "Nama yang telah ditetapkan"
+
+msgid "Press and hold the \"AOSS Button\" of the access point until the AOSS indicator starts blinking.\nIf you don't press the button within 2 minutes, the operation will be canceled."
+msgstr "Tekan dan tahan \"Tombol AOSS\" pada titik akses hingga indikator AOSS mulai berkedip.\nJika Anda tidak menekan tombol dalam waktu 2 menit, pengoperasian akan dibatalkan."
+
+msgid "Press and hold the \"Rakuraku Start Button\" of the access point until the \"POWER\" LED blinks in [Green].\nIf you don't press the button within 1 minute, the operation will be canceled."
+msgstr "Tekan dan tahan \"Tombol Mulai Rakuraku\" pada titik akses hingga LED \"DAYA\" berkedip [Hijau].\nJika Anda tidak menekan tombol dalam waktu 1 menit, pengoperasian akan dibatalkan."
+
+msgid "Press the \"Rakuraku Start Button\" again. Press and hold until the \"POWER\" LED turns [Orange].\nIf you don't press the button within 30 seconds, the operation will be canceled."
+msgstr "Tekan lagi \"Tombol Mulai Rakuraku\". Tekan dan tahan hingga LED \"POWER\" berubah menjadi [Oranye].\nJika Anda tidak menekan tombol dalam waktu 30 detik, pengoperasian akan dibatalkan."
+
+msgid "Press the START button and ENTER button of the BD remote control you want to register at the same time, and hold down until the screen changes."
+msgstr "Tekan tombol START dan tombol ENTER pada remote control BD yang ingin Anda daftarkan secara bersamaan, dan tahan hingga layar berubah."
+
+msgid "Prevent Sleep During Playback"
+msgstr "Mencegah Tidur Selama Pemutaran"
+
+msgid "Previous"
+msgstr "Sebelumnya"
+
+msgid "Primary DNS"
+msgstr "Utama DNS"
+
+msgid "Print"
+msgstr "Cetak"
+
+msgid "Printer Settings"
+msgstr "Pengaturan Pencetak"
+
+msgid "Proxy Server"
+msgstr "Server Proksi"
+
+msgid "Quick Format"
+msgstr "Format Cepat"
+
+msgid "Quiet Interface During Music"
+msgstr "Antarmuka Tenang Selama Musik"
+
+msgid "RGB"
+msgstr "RGB"
+
+msgid "RGB Full Range (HDMI)"
+msgstr "Rentang Penuh RGB (HDMI)"
+
+msgid "Rakuraku WLAN Start"
+msgstr "Rakuraku WLAN Mulai"
+
+msgid "Randomise slideshow order."
+msgstr "Acak urutan tayangan slide."
+
+msgid "Read the program and third-party license notices."
+msgstr "Baca pemberitahuan program dan lisensi pihak ketiga."
+
+msgid "Reading"
+msgstr "Membaca"
+
+msgid "Reassign Controllers"
+msgstr "Tetapkan kembali Pengontrol"
+
+msgid "Red"
+msgstr "Merah"
+
+msgid "Red Sphere, Blue Sphere"
+msgstr "Red Sphere, Blue Sphere"
+
+msgid "Reduce background movement and sparkles."
+msgstr "Kurangi gerakan latar belakang dan kilauan."
+
+msgid "Reduce navigation sound volume while music is playing."
+msgstr "Kurangi volume suara navigasi saat musik diputar."
+
+msgid "Reduce rendering while unfocused."
+msgstr "Kurangi rendering saat tidak fokus."
+
+msgid "Reduced Motion"
+msgstr "Gerakan Berkurang"
+
+msgid "Reduces rainbow-effect artifacts. This setting is used when the system outputs composite signal to a VIDEO IN or SCART connector."
+msgstr "Mengurangi artefak dengan efek pelangi. Pengaturan ini digunakan ketika sistem mengeluarkan sinyal komposit ke konektor VIDEO IN atau SCART."
+
+msgid "Refresh folders and metadata from your music location."
+msgstr "Segarkan folder dan metadata dari lokasi musik Anda."
+
+msgid "Refresh the configured game library."
+msgstr "Segarkan perpustakaan game yang dikonfigurasi."
+
+msgid "Register BD Remote Control"
+msgstr "Daftarkan BD Kendali Jarak Jauh"
+
+msgid "Register Bluetooth® Device"
+msgstr "Daftarkan Perangkat Bluetooth®"
+
+msgid "Register Device"
+msgstr "Daftarkan Perangkat"
+
+msgid "Register New Device"
+msgstr "Daftarkan Perangkat Baru"
+
+msgid "Register PlayStation®Vita"
+msgstr "Daftar PlayStation®Vita"
+
+msgid "Register a BD remote control for use with the OpenXMB system.\n\nPress the START button and ENTER button of the BD remote control you want to register at the same time, and hold down until the screen changes."
+msgstr "Daftarkan remote control BD untuk digunakan dengan sistem OpenXMB.\n\n Tekan tombol START dan tombol ENTER pada remote control BD yang ingin Anda daftarkan secara bersamaan, dan tahan hingga layar berubah."
+
+msgid "Register a device (such as a PS Vita or a PSP™ system) to be used for remote play with this system. Select this option to register a device for remote play if using it for the first time.\n\nEnter the following number on the remote device:\n\n12345678"
+msgstr "Daftarkan perangkat (seperti sistem PS Vita atau PSP™) untuk digunakan bermain jarak jauh dengan sistem ini. Pilih opsi ini untuk mendaftarkan perangkat untuk pemutaran jarak jauh jika menggunakannya untuk pertama kali.\n\n Masukkan nomor berikut pada perangkat jarak jauh:\n\n 12345678"
+
+msgid "Register a remote play device with this system."
+msgstr "Daftarkan perangkat pemutaran jarak jauh dengan sistem ini."
+
+msgid "Register completed."
+msgstr "Pendaftaran selesai."
+
+msgid "Register or manage Bluetooth® devices such as headsets, keyboards and mouse devices.\nSelect an option."
+msgstr "Daftarkan atau kelola perangkat Bluetooth® seperti headset, keyboard, dan perangkat mouse.\nPilih salah satu opsi."
+
+msgid "Register the BD Remote Control."
+msgstr "Daftarkan Kendali Jarak Jauh BD."
+
+msgid "Registered Device:  "
+msgstr "Perangkat Terdaftar:"
+
+msgid "Registering...\nPlease wait."
+msgstr "Mendaftar...\nHarap tunggu."
+
+msgid "Registration completed."
+msgstr "Pendaftaran selesai."
+
+msgid "Registration with the selected device will be deleted.\nAre you sure you want to continue?"
+msgstr "Pendaftaran dengan perangkat yang dipilih akan dihapus.\nApakah Anda yakin ingin melanjutkan?"
+
+msgid "Release Year ▲"
+msgstr "Tahun Rilis ▲"
+
+msgid "Release Year ▼"
+msgstr "Tahun Rilis ▼"
+
+msgid "Release the controls, then press a "
+msgstr "Lepaskan kontrol, lalu tekan a"
+
+msgid "Remember the last playback position."
+msgstr "Ingat posisi pemutaran terakhir."
+
+msgid "Remote Play Device"
+msgstr "Perangkat Putar Jarak Jauh"
+
+msgid "Remote Play Settings"
+msgstr "Pengaturan Putar Jarak Jauh"
+
+msgid "Remote Start"
+msgstr "Mulai Jarak Jauh"
+
+msgid "Remove browser cookies and cached site data."
+msgstr "Hapus cookie browser dan data situs cache."
+
+msgid "Remove browser cookies, site storage and cached pages?"
+msgstr "Hapus cookie browser, penyimpanan situs, dan halaman cache?"
+
+msgid "Remove from Playlist"
+msgstr "Hapus dari Daftar Putar"
+
+msgid "Repeat"
+msgstr "Ulangi"
+
+msgid "Repeat All"
+msgstr "Ulangi Semua"
+
+msgid "Repeat Off"
+msgstr "Ulangi Mati"
+
+msgid "Repeat On"
+msgstr "Ulangi Aktif"
+
+msgid "Repeat One"
+msgstr "Ulangi Satu"
+
+msgid "Repeat Slideshow"
+msgstr "Ulangi Tayangan Slide"
+
+msgid "Repeat setting when opening the player."
+msgstr "Ulangi pengaturan saat membuka pemutar."
+
+msgid "Rescan Game Library"
+msgstr "Pindai ulang Perpustakaan Game"
+
+msgid "Rescan Music Library"
+msgstr "Pindai ulang Perpustakaan Musik"
+
+msgid "Resolution"
+msgstr "Resolusi"
+
+msgid "Restore"
+msgstr "Pulihkan"
+
+msgid "Restore Default Settings"
+msgstr "Kembalikan Pengaturan Default"
+
+msgid "Restore Default Settings?"
+msgstr "Kembalikan Pengaturan Default?"
+
+msgid "Restore Defaults"
+msgstr "Kembalikan Default"
+
+msgid "Restore OpenXMB System"
+msgstr "Pulihkan Sistem OpenXMB"
+
+msgid "Restore Original Theme"
+msgstr "Kembalikan Tema Asli"
+
+msgid "Restore Original Theme?"
+msgstr "Kembalikan Tema Asli?"
+
+msgid "Restore completed.\nThe default settings have been restored."
+msgstr "Pemulihan selesai.\nPengaturan default telah dipulihkan."
+
+msgid "Restore the original OpenXMB appearance."
+msgstr "Kembalikan tampilan OpenXMB asli."
+
+msgid "Restore the original theme appearance?"
+msgstr "Kembalikan tampilan tema aslinya?"
+
+msgid "Restore this profile's preferences? Your media files will be preserved."
+msgstr "Pulihkan preferensi profil ini? File media Anda akan disimpan."
+
+msgid "Restore this profile's shell settings; preserve media."
+msgstr "Pulihkan pengaturan shell profil ini; melestarikan media."
+
+msgid "Restores the system software to its default settings.\n\nAll system settings will be restored to their default values.\nDo you want to continue?"
+msgstr "Mengembalikan perangkat lunak sistem ke pengaturan defaultnya.\n\n Semua pengaturan sistem akan dikembalikan ke nilai defaultnya.\nApakah Anda ingin melanjutkan?"
+
+msgid "Restores the system software to its default settings.\nAre you sure you want to continue?"
+msgstr "Mengembalikan perangkat lunak sistem ke pengaturan defaultnya.\nApakah Anda yakin ingin melanjutkan?"
+
+msgid "Resume"
+msgstr "Lanjutkan"
+
+msgid "Resume Playback"
+msgstr "Lanjutkan Pemutaran"
+
+msgid "Return to Beginning"
+msgstr "Kembali ke Awal"
+
+msgid "Right"
+msgstr "Benar"
+
+msgid "Right-handed"
+msgstr "Tidak kidal"
+
+msgid "Robotnik Radio"
+msgstr "Robotnik Radio"
+
+msgid "Rotate Left"
+msgstr "Putar ke Kiri"
+
+msgid "Rotate Right"
+msgstr "Putar ke Kanan"
+
+msgid "Rounded"
+msgstr "Bulat"
+
+msgid "Russian"
+msgstr "Rusia"
+
+msgid "SSID"
+msgstr "SSID"
+
+msgid "Save Theme Preset"
+msgstr "Simpan Preset Tema"
+
+msgid "Save completed.\nIt may take 1 minute or longer to restart the access point."
+msgstr "Penyimpanan selesai.\nMungkin memerlukan waktu 1 menit atau lebih untuk memulai ulang titik akses."
+
+msgid "Save the current appearance with a name."
+msgstr "Simpan tampilan saat ini dengan nama."
+
+msgid "Saved Data Utility (PS2)"
+msgstr "Utilitas Data Tersimpan (PS2)"
+
+msgid "Saved Data Utility (PS3™)"
+msgstr "Utilitas Data Tersimpan (PS3™)"
+
+msgid "Saved Data Utility (minis/PSP™)"
+msgstr "Utilitas Data Tersimpan (minis/PSP™)"
+
+msgid "Saved Theme Presets"
+msgstr "Preset Tema Tersimpan"
+
+msgid "Scale subtitle text."
+msgstr "Skalakan teks subtitle."
+
+msgid "Scale text throughout OpenXMB."
+msgstr "Skalakan teks di seluruh OpenXMB."
+
+msgid "Scan"
+msgstr "Pindai"
+
+msgid "Scanning...\nPlease wait."
+msgstr "Memindai...\nHarap tunggu."
+
+msgid "Scans the network and connects to a media server. To use this function, a media server must be set up to allow connections from the OpenXMB system."
+msgstr "Memindai jaringan dan menghubungkan ke server media. Untuk menggunakan fungsi ini, server media harus diatur untuk mengizinkan koneksi dari sistem OpenXMB."
+
+msgid "Scene Search"
+msgstr "Pencarian Adegan"
+
+msgid "Schumacher Bar"
+msgstr "Schumacher Bar"
+
+msgid "Scrambled Eggman"
+msgstr "Scrambled Eggman"
+
+msgid "Screen Mode"
+msgstr "Modus Layar"
+
+msgid "Screen Saver"
+msgstr "Penghemat Layar"
+
+msgid "Search Engine"
+msgstr "Mesin Pencari"
+
+msgid "Search for Media Servers"
+msgstr "Cari Server Media"
+
+msgid "Search provider used for non-address text."
+msgstr "Penyedia pencarian digunakan untuk teks non-alamat."
+
+msgid "Search the Internet."
+msgstr "Cari di Internet."
+
+msgid "Searching for the other OpenXMB system..."
+msgstr "Mencari sistem OpenXMB lainnya..."
+
+msgid "Secondary DNS"
+msgstr "Sekunder DNS"
+
+msgid "Seconds each photograph remains visible."
+msgstr "Detik setiap foto tetap terlihat."
+
+msgid "Security"
+msgstr "Keamanan"
+
+msgid "Security Settings"
+msgstr "Pengaturan Keamanan"
+
+msgid "Select a connection method."
+msgstr "Pilih metode koneksi."
+
+msgid "Select a setting method."
+msgstr "Pilih metode pengaturan."
+
+msgid "Select a theme."
+msgstr "Pilih tema."
+
+msgid "Select all resolutions that are supported by your TV."
+msgstr "Pilih semua resolusi yang didukung oleh TV Anda."
+
+msgid "Select an available playback device."
+msgstr "Pilih perangkat pemutaran yang tersedia."
+
+msgid "Select an existing playlist or create a new playlist."
+msgstr "Pilih playlist yang ada atau buat playlist baru."
+
+msgid "Select an installed core and game content."
+msgstr "Pilih inti yang diinstal dan konten game."
+
+msgid "Select an output format supported by the TV or AV amplifier (receiver) in use."
+msgstr "Pilih format output yang didukung oleh TV atau amplifier AV (penerima) yang digunakan."
+
+msgid "Select an update method."
+msgstr "Pilih metode pembaruan."
+
+msgid "Select the Bluetooth® device to register."
+msgstr "Pilih perangkat Bluetooth® untuk didaftarkan."
+
+msgid "Select the access point to be used."
+msgstr "Pilih jalur akses yang akan digunakan."
+
+msgid "Select the connector on the TV or AV amplifier (receiver)."
+msgstr "Pilih konektor pada TV atau amplifier AV (receiver)."
+
+msgid "Select the connector on the TV."
+msgstr "Pilih konektor di TV."
+
+msgid "Select the destination for the selected items."
+msgstr "Pilih tujuan untuk item yang dipilih."
+
+msgid "Select the keyboard type."
+msgstr "Pilih jenis papan ketik."
+
+msgid "Select the method for setting the output format."
+msgstr "Pilih metode untuk mengatur format keluaran."
+
+msgid "Select the operation mode of the network device."
+msgstr "Pilih mode operasi perangkat jaringan."
+
+msgid "Select the operation mode of the network device.\nIn most cases, select Auto-Detect."
+msgstr "Pilih mode operasi perangkat jaringan.\nBiasanya, pilih Deteksi Otomatis."
+
+msgid "Select the system you are using."
+msgstr "Pilih sistem yang Anda gunakan."
+
+msgid "Select the type of connector on your TV."
+msgstr "Pilih jenis konektor di TV Anda."
+
+msgid "Send a Message"
+msgstr "Kirim Pesan"
+
+msgid "Sent Items"
+msgstr "Barang Terkirim"
+
+msgid "Set"
+msgstr "Tetapkan"
+
+msgid "Set Audio Output Settings"
+msgstr "Atur Pengaturan Output Audio"
+
+msgid "Set Manually"
+msgstr "Atur Secara Manual"
+
+msgid "Set as Wallpaper"
+msgstr "Tetapkan sebagai Wallpaper"
+
+msgid "Set the Ad Hoc Mode channel for PSP® Remasters."
+msgstr "Atur saluran Mode Ad Hoc untuk PSP® Remaster."
+
+msgid "Set the BD audio output format."
+msgstr "Atur format keluaran audio BD."
+
+msgid "Set the DHCP host name.\nIn most cases this setting does not need to be changed."
+msgstr "Tetapkan nama host DHCP.\nDalam kebanyakan kasus, pengaturan ini tidak perlu diubah."
+
+msgid "Set the default BD audio language."
+msgstr "Setel bahasa audio BD default."
+
+msgid "Set the default DVD audio language."
+msgstr "Setel bahasa audio DVD default."
+
+msgid "Set the default audio language for content on the HDD."
+msgstr "Atur bahasa audio default untuk konten di HDD."
+
+msgid "Set the time and date.\n\nUse the arrow keys to adjust each field, then press the X button to apply."
+msgstr "Tetapkan waktu dan tanggal.\n\n Gunakan tombol panah untuk menyesuaikan setiap bidang, lalu tekan tombol X untuk menerapkan."
+
+msgid "Set via Internet"
+msgstr "Diatur melalui Internet"
+
+msgid "Sets for daylight saving time."
+msgstr "Menyetel waktu musim panas."
+
+msgid "Sets for use of a preset combination of elements such as colour, background or icons."
+msgstr "Mengatur penggunaan kombinasi elemen yang telah ditetapkan sebelumnya seperti warna, latar belakang, atau ikon."
+
+msgid "Sets the audio input and output devices for voice/video chat and other communication features."
+msgstr "Mengatur perangkat input dan output audio untuk obrolan suara/video dan fitur komunikasi lainnya."
+
+msgid "Sets the audio input and output devices for voice/video chat and other communication features.\nSelect an audio device."
+msgstr "Mengatur perangkat input dan output audio untuk obrolan suara/video dan fitur komunikasi lainnya.\nPilih perangkat audio."
+
+msgid "Sets the audio input and output devices.\nSelect an option."
+msgstr "Mengatur perangkat input dan output audio.\nPilih salah satu opsi."
+
+msgid "Sets the audio output device for use during remote play. To output audio from a PS Vita system, a PSP™ system, a PC or a mobile phone, select [Remote Play Device]."
+msgstr "Mengatur perangkat output audio untuk digunakan selama pemutaran jarak jauh. Untuk mengeluarkan audio dari sistem PS Vita, sistem PSP™, PC atau ponsel, pilih [Remote Play Device]."
+
+msgid "Sets the background of the XMB™ screen."
+msgstr "Mengatur latar belakang layar XMB™."
+
+msgid "Sets the colour of the background and options menu."
+msgstr "Mengatur warna latar belakang dan menu opsi."
+
+msgid "Sets the date and time for this system."
+msgstr "Menetapkan tanggal dan waktu untuk sistem ini."
+
+msgid "Sets the date and time for this system.\nSelect how to set the date and time."
+msgstr "Menetapkan tanggal dan waktu untuk sistem ini.\nPilih cara mengatur tanggal dan waktu."
+
+msgid "Sets the delay before key repeat starts."
+msgstr "Mengatur penundaan sebelum pengulangan kunci dimulai."
+
+msgid "Sets the font displayed on the XMB™ screen."
+msgstr "Mengatur font yang ditampilkan pada layar XMB™."
+
+msgid "Sets the method for connecting the system to the Internet.\nSelect a connection method."
+msgstr "Menetapkan metode untuk menghubungkan sistem ke Internet.\nPilih metode koneksi."
+
+msgid "Sets the method for connecting the system to the Internet. Select this option to connect to a wireless LAN or to change the settings."
+msgstr "Menetapkan metode untuk menghubungkan sistem ke Internet. Pilih opsi ini untuk menyambung ke LAN nirkabel atau mengubah pengaturan."
+
+msgid "Sets the mouse type. Set this option based on which hand you use to operate the mouse."
+msgstr "Mengatur jenis mouse. Atur opsi ini berdasarkan tangan mana yang Anda gunakan untuk mengoperasikan mouse."
+
+msgid "Sets the order of display for year, month and day."
+msgstr "Mengatur urutan tampilan tahun, bulan dan hari."
+
+msgid "Sets the output format of video content recorded in a wide color range. Set this option as necessary for the TV in use."
+msgstr "Mengatur format keluaran konten video yang direkam dalam rentang warna lebar. Atur opsi ini seperlunya untuk TV yang sedang digunakan."
+
+msgid "Sets the output method for color signals when playing BDs or DVDs."
+msgstr "Mengatur metode keluaran sinyal warna saat memutar BD atau DVD."
+
+msgid "Sets the playback method for content items recorded at 24 Hz (frames/second)."
+msgstr "Mengatur metode pemutaran untuk item konten yang direkam pada 24 Hz (frame/detik)."
+
+msgid "Sets the playback method for content recorded at 50 Hz. This setting is used when playing content saved on the system storage or storage media."
+msgstr "Mengatur metode pemutaran konten yang direkam pada 50 Hz. Pengaturan ini digunakan saat memutar konten yang disimpan di penyimpanan sistem atau media penyimpanan."
+
+msgid "Sets the range of RGB output signals for an HDMI connection."
+msgstr "Mengatur rentang sinyal keluaran RGB untuk koneksi HDMI."
+
+msgid "Sets the rate at which a held key repeats."
+msgstr "Menetapkan kecepatan pengulangan kunci yang ditahan."
+
+msgid "Sets the speed at which the mouse pointer moves. The mouse pointer is displayed in the Internet browser and in games and other software that support use of a mouse."
+msgstr "Mengatur kecepatan pergerakan penunjuk tetikus. Penunjuk tetikus ditampilkan di browser Internet dan di permainan serta perangkat lunak lain yang mendukung penggunaan tetikus."
+
+msgid "Sets the text entry method for a connected keyboard."
+msgstr "Mengatur metode entri teks untuk keyboard yang tersambung."
+
+msgid "Sets the time display to either a 12-hour or 24-hour clock."
+msgstr "Mengatur tampilan waktu menjadi 12 jam atau 24 jam."
+
+msgid "Sets the time-of-day lighting (day, dusk, night or automatic)."
+msgstr "Mengatur waktu pencahayaan (siang, senja, malam, atau otomatis)."
+
+msgid "Sets the time-of-day lighting of the XMB™ screen."
+msgstr "Mengatur waktu pencahayaan layar XMB™."
+
+msgid "Sets to output audio through multiple connectors simultaneously. Audio output to connectors that are not selected in [Audio Output Settings] is downscaled to 2 Ch."
+msgstr "Mengatur untuk mengeluarkan audio melalui beberapa konektor secara bersamaan. Output audio ke konektor yang tidak dipilih di [Pengaturan Output Audio] diturunkan skalanya menjadi 2 Ch."
+
+msgid "Sets whether or not to automatically turn off controllers. If you do not use a controller for a set amount of time, it will turn off automatically."
+msgstr "Menyetel apakah pengontrol akan dimatikan secara otomatis atau tidak. Jika Anda tidak menggunakan pengontrol selama jangka waktu tertentu, pengontrol akan mati secara otomatis."
+
+msgid "Sets whether or not to automatically turn off this system. If you do not operate the system for a set amount of time, the system will turn off automatically."
+msgstr "Menyetel apakah sistem ini akan dimatikan secara otomatis atau tidak. Jika Anda tidak mengoperasikan sistem selama jangka waktu tertentu, sistem akan mati secara otomatis."
+
+msgid "Sets whether or not to connect this system to the Internet. Select this option if you want to temporarily disable the Internet connection."
+msgstr "Menyetel apakah sistem ini akan dihubungkan ke Internet atau tidak. Pilih opsi ini jika Anda ingin menonaktifkan sementara koneksi Internet."
+
+msgid "Sets whether or not to connect to media servers."
+msgstr "Menyetel apakah akan menyambung ke server media atau tidak."
+
+msgid "Sets whether or not to output all audio to the headset."
+msgstr "Menyetel apakah akan mengeluarkan semua audio ke headset atau tidak."
+
+msgid "Sets whether or not to turn on this system automatically when a registered device is connected for remote play."
+msgstr "Menyetel apakah sistem ini akan dihidupkan secara otomatis atau tidak ketika perangkat terdaftar dihubungkan untuk pemutaran jarak jauh."
+
+msgid "Sets whether or not to use key tones on the XMB™ menu."
+msgstr "Menyetel apakah akan menggunakan nada tombol pada menu XMB™ atau tidak."
+
+msgid "Sets whether or not to use the vibration function. This setting will be applied to all controllers that support the vibration function."
+msgstr "Mengatur apakah akan menggunakan fungsi getar atau tidak. Pengaturan ini akan diterapkan ke semua pengontrol yang mendukung fungsi getar."
+
+msgid "Settings"
+msgstr "Pengaturan"
+
+msgid "Settings List"
+msgstr "Daftar Pengaturan"
+
+msgid "Settings and Connection Status List"
+msgstr "Pengaturan dan Daftar Status Koneksi"
+
+msgid "Short"
+msgstr "Pendek"
+
+msgid "Show FPS"
+msgstr "Tampilkan FPS"
+
+msgid "Show GPU Memory"
+msgstr "Tampilkan Memori GPU"
+
+msgid "Show Seconds"
+msgstr "Tampilkan Detik"
+
+msgid "Show background particles."
+msgstr "Tampilkan partikel latar belakang."
+
+msgid "Show seconds in the clock."
+msgstr "Tampilkan detik dalam jam."
+
+msgid "Show the animated background ribbon."
+msgstr "Tampilkan pita latar belakang animasi."
+
+msgid "Show the controller keyboard during text entry."
+msgstr "Tampilkan keyboard pengontrol selama entri teks."
+
+msgid "Show the dismissible startup warning."
+msgstr "Tampilkan peringatan startup yang dapat ditutup."
+
+msgid "Shuffle"
+msgstr "Acak"
+
+msgid "Shuffle Slideshow"
+msgstr "Acak Tayangan Slide"
+
+msgid "Shuffle tracks in the play queue."
+msgstr "Acak trek dalam antrean putar."
+
+msgid "Sign Up"
+msgstr "Daftar"
+
+msgid "Sign in to PlayStation®Network to add friends, exchange messages and join chat rooms."
+msgstr "Masuk ke PlayStation®Network untuk menambah teman, bertukar pesan, dan bergabung di ruang obrolan."
+
+msgid "Sign in to use Friends features"
+msgstr "Masuk untuk menggunakan fitur Teman"
+
+msgid "Sign up for a PlayStation®Network account.\nA broadband Internet connection is required."
+msgstr "Daftar untuk akun PlayStation®Network.\nKoneksi Internet broadband diperlukan."
+
+msgid "Size"
+msgstr "Ukuran"
+
+msgid "Slide"
+msgstr "Geser"
+
+msgid "Slideshow"
+msgstr "Tayangan slide"
+
+msgid "Slideshow Duration"
+msgstr "Durasi Tayangan Slide"
+
+msgid "Slideshow Speed"
+msgstr "Kecepatan Tayangan Slide"
+
+msgid "Slideshow Style"
+msgstr "Gaya Tayangan Slide"
+
+msgid "Slideshow Transition"
+msgstr "Transisi Tayangan Slide"
+
+msgid "Slow"
+msgstr "Lambat"
+
+msgid "Slow (Forward)"
+msgstr "Lambat (Maju)"
+
+msgid "Slow (Reverse)"
+msgstr "Lambat (Mundur)"
+
+msgid "Smooth"
+msgstr "Halus"
+
+msgid "Smooth out the rough edges of images of PlayStation® and PlayStation®2 format software."
+msgstr "Menghaluskan tepi kasar gambar perangkat lunak format PlayStation® dan PlayStation®2."
+
+msgid "So Long and Thanks for All the..."
+msgstr "So Long and Thanks for All the..."
+
+msgid "Software Instruction Manuals"
+msgstr "Manual Instruksi Perangkat Lunak"
+
+msgid "Songs"
+msgstr "Lagu"
+
+msgid "Sonic the Hedgehog and Knuckles"
+msgstr "Sonic the Hedgehog and Knuckles"
+
+msgid "Sort By"
+msgstr "Urutkan Berdasarkan"
+
+msgid "Sort tracks in each folder."
+msgstr "Urutkan trek di setiap folder."
+
+msgid "Sound"
+msgstr "Suara"
+
+msgid "Sound Set Folder"
+msgstr "Folder Kumpulan Suara"
+
+msgid "Sound Settings"
+msgstr "Pengaturan Suara"
+
+msgid "Sound folder not found."
+msgstr "Folder suara tidak ditemukan."
+
+msgid "Sound set needs a playable "
+msgstr "Kumpulan suara memerlukan pemutaran"
+
+msgid "Spanish"
+msgstr "Spanyol"
+
+msgid "Sparkle Colour"
+msgstr "Warna Berkilau"
+
+msgid "Sparkles"
+msgstr "Berkilau"
+
+msgid "Speed and Duplex"
+msgstr "Kecepatan dan Dupleks"
+
+msgid "Standard Input"
+msgstr "Masukan Standar"
+
+msgid "Start OpenXMB when you sign in."
+msgstr "Mulai OpenXMB saat Anda masuk."
+
+msgid "Start a Chat"
+msgstr "Mulai Obrolan"
+
+msgid "Start a new text chat with a friend or a group."
+msgstr "Mulai obrolan teks baru dengan teman atau grup."
+
+msgid "Starts the system automatically and downloads game patches, uploads new saved data to online storage and syncs trophy information with the server."
+msgstr "Memulai sistem secara otomatis dan mengunduh patch permainan, mengunggah data tersimpan baru ke penyimpanan online dan menyinkronkan informasi piala dengan server."
+
+msgid "Startup Intro"
+msgstr "Animasi awal"
+
+msgid "Startup Sound"
+msgstr "Suara Permulaan"
+
+msgid "Status of Registered Devices"
+msgstr "Status Perangkat Terdaftar"
+
+msgid "Stereo Headset Audio Extension"
+msgstr "Ekstensi Audio Headset Stereo"
+
+msgid "Stop"
+msgstr "Berhenti"
+
+msgid "Stranger to Closure"
+msgstr "Stranger to Closure"
+
+msgid "Subnet Mask"
+msgstr "Subnet Masker"
+
+msgid "Subscribe to PlayStation®Plus and get your hands on all the benefits that come with membership."
+msgstr "Berlangganan PlayStation®Plus dan dapatkan semua keuntungan yang didapat dari keanggotaan."
+
+msgid "Subtitle Language"
+msgstr "Bahasa Subjudul"
+
+msgid "Subtitle Options"
+msgstr "Opsi Subjudul"
+
+msgid "Subtitle Size"
+msgstr "Ukuran Subjudul"
+
+msgid "Swedish"
+msgstr "Swedia"
+
+msgid "Synchronise presentation to the display."
+msgstr "Sinkronkan presentasi ke layar."
+
+msgid "System"
+msgstr "Sistem"
+
+msgid "System Auto-Off"
+msgstr "Sistem Mati Otomatis"
+
+msgid "System Default"
+msgstr "Bawaan Sistem"
+
+msgid "System Default Device"
+msgstr "Perangkat Default Sistem"
+
+msgid "System Information"
+msgstr "Sistem Informasi"
+
+msgid "System Language"
+msgstr "Bahasa Sistem"
+
+msgid "System Name"
+msgstr "Nama Sistem"
+
+msgid "System Settings"
+msgstr "Pengaturan Sistem"
+
+msgid "System Software\nVersion 4.91\n\nMAC Address (Wired)\n00:1F:A7:00:00:00\n\nMAC Address (Wi-Fi)\n00:1F:A7:00:00:01\n\nIP Address\n192.168.1.10\n\nSystem Storage\n466 GB free of 500 GB"
+msgstr "Perangkat Lunak Sistem\nVersi 4.91\n\n Alamat MAC (Berkabel)\n00:1F:A7:00:00:00\n\n Alamat MAC (Wi-Fi)\n00:1F:A7:00:00:01\n\n IP Alamat\n192.168.1.10\n\n Penyimpanan Sistem\n466 GB bebas 500 GB"
+
+msgid "System Update"
+msgstr "Pembaruan Sistem"
+
+msgid "Teal"
+msgstr "teal"
+
+msgid "Term"
+msgstr "Istilah"
+
+msgid "Tests the Internet connection and displays the results."
+msgstr "Menguji koneksi Internet dan menampilkan hasilnya."
+
+msgid "Tests the Internet connection and displays the results.\n\nObtain IP Address    Succeeded\nInternet Connection  Succeeded\nPlayStation™Network  Succeeded\nNAT Type             Type 2\nUPnP                 Available\nConnection Speed (Download)  85.4 Mbps\nConnection Speed (Upload)    24.7 Mbps"
+msgstr "Menguji koneksi Internet dan menampilkan hasilnya.\n\n Dapatkan IP Alamat Berhasil\nKoneksi Internet Berhasil\nPlayStation™Network Berhasil\nTipe NAT Tipe 2\nUPnP Tersedia\nKecepatan Koneksi (Unduh) 85,4 Mbps\nKecepatan Koneksi (Unggah) 24,7 Mbps"
+
+msgid "Tests the image from a camera that is connected to the system using a USB cable. You can adjust settings to reduce flickering for some cameras."
+msgstr "Menguji gambar dari kamera yang terhubung ke sistem menggunakan kabel USB. Anda dapat menyesuaikan pengaturan untuk mengurangi kedipan pada beberapa kamera."
+
+msgid "Tests the image from a camera that is connected to the system using a USB cable. You can adjust settings to reduce flickering for some cameras.\n\nNo camera is currently connected."
+msgstr "Menguji gambar dari kamera yang terhubung ke sistem menggunakan kabel USB. Anda dapat menyesuaikan pengaturan untuk mengurangi kedipan pada beberapa kamera.\n\n Saat ini tidak ada kamera yang terhubung."
+
+msgid "Text Colour"
+msgstr "Warna Teks"
+
+msgid "That Freezing Feeling"
+msgstr "That Freezing Feeling"
+
+msgid "The Doomsday"
+msgstr "The Doomsday"
+
+msgid "The Secluded Stronghold"
+msgstr "The Secluded Stronghold"
+
+msgid "The Wait is Over!"
+msgstr "The Wait is Over!"
+
+msgid "The audio output settings have been updated."
+msgstr "Pengaturan output audio telah diperbarui."
+
+msgid "The date and time have been set."
+msgstr "Tanggal dan waktu telah ditentukan."
+
+msgid "The image will be deleted.\nAre you sure you want to continue?"
+msgstr "Gambar akan dihapus.\nApakah Anda yakin ingin melanjutkan?"
+
+msgid "The name displayed by OpenXMB."
+msgstr "Nama ditampilkan oleh OpenXMB."
+
+msgid "The other OpenXMB system was not found.\nCheck that both systems are connected to the same network."
+msgstr "Sistem OpenXMB lainnya tidak ditemukan.\nPeriksa apakah kedua sistem terhubung ke jaringan yang sama."
+
+msgid "The password has been changed."
+msgstr "Kata sandi telah diubah."
+
+msgid "The passwords do not match.\nTry again."
+msgstr "Kata sandinya tidak cocok.\nCoba lagi."
+
+msgid "The selected items will be deleted.\nAre you sure you want to continue?"
+msgstr "Item yang dipilih akan dihapus.\nApakah Anda yakin ingin melanjutkan?"
+
+msgid "The system and devices connected via HDMI can operate each other."
+msgstr "Sistem dan perangkat yang terhubung melalui HDMI dapat beroperasi satu sama lain."
+
+msgid "The system has been restored to its default settings."
+msgstr "Sistem telah dikembalikan ke pengaturan defaultnya."
+
+msgid "The system software is up to date.\n\nThe latest version of the system software has already been installed."
+msgstr "Perangkat lunak sistem sudah diperbarui.\n\n Versi terbaru perangkat lunak sistem telah diinstal."
+
+msgid "The term has been added."
+msgstr "Istilah ini telah ditambahkan."
+
+msgid "The title that is currently playing will be deleted.\nAre you sure you want to continue?"
+msgstr "Judul yang sedang diputar akan dihapus.\nApakah Anda yakin ingin melanjutkan?"
+
+msgid "The video output settings have been updated."
+msgstr "Pengaturan output video telah diperbarui."
+
+msgid "Theme"
+msgstr "Tema"
+
+msgid "Theme Settings"
+msgstr "Pengaturan Tema"
+
+msgid "Theme archive or folder"
+msgstr "Arsip atau folder tema"
+
+msgid "There are no registered devices."
+msgstr "Tidak ada perangkat yang terdaftar."
+
+msgid "There are no subtitle options available."
+msgstr "Tidak ada opsi subtitle yang tersedia."
+
+msgid "There is no audio."
+msgstr "Tidak ada audionya."
+
+msgid "There is no backup data.\nConnect storage media that contains the backup data."
+msgstr "Tidak ada data cadangan.\nHubungkan media penyimpanan yang berisi data cadangan."
+
+msgid "This feature is not available yet. This will be implemented in a future beta. Sorry!"
+msgstr "Fitur ini belum tersedia. Ini akan diterapkan dalam versi beta mendatang. Maaf!"
+
+msgid "This file is not a supported image or video."
+msgstr "File ini bukan gambar atau video yang didukung."
+
+msgid "This is the system to transfer data from"
+msgstr "Ini adalah sistem untuk mentransfer data"
+
+msgid "This is the system to transfer data to"
+msgstr "Ini adalah sistem untuk mentransfer data"
+
+msgid "This sample count is unavailable on the active GPU."
+msgstr "Jumlah sampel ini tidak tersedia di GPU aktif."
+
+msgid "This video cannot be opened."
+msgstr "Video ini tidak dapat dibuka."
+
+msgid "Three Ring Nightfall"
+msgstr "Three Ring Nightfall"
+
+msgid "Time"
+msgstr "Waktu"
+
+msgid "Time (HH:MM)"
+msgstr "Waktu (JJ:MM)"
+
+msgid "Time Format"
+msgstr "Format Waktu"
+
+msgid "Time Zone"
+msgstr "Zona Waktu"
+
+msgid "Time Zone Offset"
+msgstr "Perimbangan Zona Waktu"
+
+msgid "Title Repeat"
+msgstr "Ulangi Judul"
+
+msgid "Title ▲"
+msgstr "Judul ▲"
+
+msgid "Title ▼"
+msgstr "Judul ▼"
+
+msgid "To register (pair), you will need to prepare the Bluetooth® device.\nFor information on preparing the device, refer to the instructions supplied with the Bluetooth® device."
+msgstr "Untuk mendaftar (memasangkan), Anda perlu menyiapkan perangkat Bluetooth®.\nUntuk informasi tentang mempersiapkan perangkat, lihat petunjuk yang disertakan dengan perangkat Bluetooth®."
+
+msgid "Transfers data from your current OpenXMB system to a new OpenXMB system over a network.\n\nConnect both systems to the same network, then follow the on-screen instructions on each system."
+msgstr "Mentransfer data dari sistem OpenXMB Anda saat ini ke sistem OpenXMB baru melalui jaringan.\n\n Hubungkan kedua sistem ke jaringan yang sama, lalu ikuti petunjuk di layar pada setiap sistem."
+
+msgid "Transfers data that is saved on one OpenXMB system to another OpenXMB system. You can use this feature when replacing the OpenXMB system that you usually use with another OpenXMB system."
+msgstr "Mentransfer data yang disimpan di satu sistem OpenXMB ke sistem OpenXMB lainnya. Anda dapat menggunakan fitur ini saat mengganti sistem OpenXMB yang biasa Anda gunakan dengan sistem OpenXMB lain."
+
+msgid "Transition between photographs."
+msgstr "Transisi antar foto."
+
+msgid "Trimming"
+msgstr "Pemangkasan"
+
+msgid "Trophy Collection"
+msgstr "Koleksi Piala"
+
+msgid "Trophy Notifications"
+msgstr "Pemberitahuan Piala"
+
+msgid "Turkish"
+msgstr "Turki"
+
+msgid "Turn Off System"
+msgstr "Matikan Sistem"
+
+msgid "Turn Off System Automatically After Background Download"
+msgstr "Matikan Sistem Secara Otomatis Setelah Pengunduhan Latar Belakang"
+
+msgid "UPnP"
+msgstr "UPnP"
+
+msgid "USB Headset"
+msgstr "Headset USB"
+
+msgid "Unable to update launch at login."
+msgstr "Tidak dapat memperbarui peluncuran saat login."
+
+msgid "Unlimited"
+msgstr "Tidak terbatas"
+
+msgid "Unregister All"
+msgstr "Batalkan Pendaftaran Semua"
+
+msgid "Up"
+msgstr "Naik"
+
+msgid "Update the OpenXMB system software."
+msgstr "Perbarui perangkat lunak sistem OpenXMB."
+
+msgid "Update via Internet"
+msgstr "Perbarui melalui Internet"
+
+msgid "Update via Storage Media"
+msgstr "Perbarui melalui Media Penyimpanan"
+
+msgid "Upscale"
+msgstr "Kelas atas"
+
+msgid "Use"
+msgstr "Gunakan"
+
+msgid "Use a folder containing ok.wav, confirm.wav, cancel.wav and back.wav."
+msgstr "Gunakan folder yang berisi ok.wav, konfirmasi.wav, cancel.wav dan back.wav."
+
+msgid "Use a hexadecimal colour such as #ffeefc."
+msgstr "Gunakan warna heksadesimal seperti #ffeefc."
+
+msgid "Use a hexadecimal colour."
+msgstr "Gunakan warna heksadesimal."
+
+msgid "Use a six-digit hexadecimal colour such as #ffeefc."
+msgstr "Gunakan warna heksadesimal enam digit seperti #ffeefc."
+
+msgid "Use auto or a hexadecimal colour."
+msgstr "Gunakan warna otomatis atau heksadesimal."
+
+msgid "Use refractive icon materials."
+msgstr "Gunakan bahan ikon bias."
+
+msgid "Use the selected Bluetooth® device to enter the pass key shown below and press the Enter key within 30 seconds.\\n\\nPass Key:  0000"
+msgstr "Gunakan perangkat Bluetooth® yang dipilih untuk memasukkan kunci sandi yang ditunjukkan di bawah ini dan tekan tombol Enter dalam waktu 30 detik.\\n\\nKunci Sandi: 0000"
+
+msgid "User Name"
+msgstr "Nama Pengguna"
+
+msgid "Users"
+msgstr "Pengguna"
+
+msgid "Using the device you want to register, select [Settings] > [Network Settings] > [Internet Connection], and then enter the numbers shown below.\n\nRegistration code:  2461-8053\n\nThe registration code is valid for 5 minutes."
+msgstr "Menggunakan perangkat yang ingin Anda daftarkan, pilih [Pengaturan] > [Pengaturan Jaringan] > [Koneksi Internet], lalu masukkan nomor yang ditunjukkan di bawah ini.\n\n Kode registrasi: 2461-8053\n\n Kode registrasi berlaku selama 5 menit."
+
+msgid "VSync"
+msgstr "VSync"
+
+msgid "Video"
+msgstr "Video"
+
+msgid "Video Decoding"
+msgstr "Penguraian Video"
+
+msgid "Video Editor & Uploader"
+msgstr "Editor & Pengunggah Video"
+
+msgid "Video Output Settings"
+msgstr "Pengaturan Keluaran Video"
+
+msgid "Video Settings"
+msgstr "Pengaturan Video"
+
+msgid "Video Volume"
+msgstr "Volume Video"
+
+msgid "Videos Folder"
+msgstr "Folder Video"
+
+msgid "View"
+msgstr "Lihat"
+
+msgid "View Mode (PSP Remasters)"
+msgstr "Mode Tampilan (PSP Remaster)"
+
+msgid "View Web pages on the Internet."
+msgstr "Lihat halaman Web di Internet."
+
+msgid "View active audio and video playback diagnostics."
+msgstr "Lihat diagnostik pemutaran audio dan video aktif."
+
+msgid "View and join active chat rooms."
+msgstr "Lihat dan bergabunglah dengan ruang obrolan aktif."
+
+msgid "View messages you have received and sent."
+msgstr "Lihat pesan yang Anda terima dan kirim."
+
+msgid "View the list of players you have blocked. You will not receive messages from blocked players."
+msgstr "Lihat daftar pemain yang telah Anda blokir. Anda tidak akan menerima pesan dari pemain yang diblokir."
+
+msgid "View the list of players you have met during online play."
+msgstr "Lihat daftar pemain yang Anda temui selama bermain online."
+
+msgid "View the online instruction manuals.\nThe latest version of the manual will be available."
+msgstr "Lihat manual instruksi online.\nVersi terbaru dari manual ini akan tersedia."
+
+msgid "View trophies that you have earned."
+msgstr "Lihat piala yang telah Anda peroleh."
+
+msgid "Violet"
+msgstr "ungu"
+
+msgid "Visual Player"
+msgstr "Pemutar Visual"
+
+msgid "Voice Changer"
+msgstr "Pengubah Suara"
+
+msgid "Volume Control"
+msgstr "Kontrol Volume"
+
+msgid "Volume for all OpenXMB audio."
+msgstr "Volume untuk semua audio OpenXMB."
+
+msgid "Volume of navigation and confirmation sounds."
+msgstr "Volume suara navigasi dan konfirmasi."
+
+msgid "WEP"
+msgstr "WEP"
+
+msgid "WEP Key"
+msgstr "WEP Kunci"
+
+msgid "WLAN Security Setting"
+msgstr "Pengaturan Keamanan WLAN"
+
+msgid "WLAN Settings"
+msgstr "Pengaturan WLAN"
+
+msgid "WPA Key"
+msgstr "WPA Kunci"
+
+msgid "WPA-PSK (AES)"
+msgstr "WPA-PSK (AES)"
+
+msgid "WPA-PSK (TKIP)"
+msgstr "WPA-PSK (TKIP)"
+
+msgid "WPA-PSK / WPA2-PSK"
+msgstr "WPA-PSK / WPA2-PSK"
+
+msgid "WPA2-PSK (AES)"
+msgstr "WPA2-PSK (AES)"
+
+msgid "WPA2-PSK (TKIP)"
+msgstr "WPA2-PSK (TKIP)"
+
+msgid "Waiting for the device to connect..."
+msgstr "Menunggu perangkat terhubung..."
+
+msgid "Walk on Water"
+msgstr "Walk on Water"
+
+msgid "Wallpaper"
+msgstr "kertas dinding"
+
+msgid "Water on the Dancefloor"
+msgstr "Water on the Dancefloor"
+
+msgid "Wave"
+msgstr "Wave"
+
+msgid "Wave visualiser"
+msgstr "Visualisasi Wave"
+
+
+
+msgid "Welcome Clip"
+msgstr "Klip Selamat Datang"
+
+msgid "Welcome to PlayStation®3.\nThe \"What's New\" screen is where to find all the latest PlayStation® news, updates, plus easy access to the games you've most recently played.\nTo access the \"What's New\" screen, connect to PSN* – it's free to join and it's your gateway to a world of entertainment, so sign up today!\n\n* Broadband Internet connection required."
+msgstr "Selamat datang di PlayStation®3.\nLayar \"Yang Baru\" adalah tempat untuk menemukan semua berita PlayStation® terkini, pembaruan, serta akses mudah ke permainan yang terakhir Anda mainkan.\nUntuk mengakses layar \"Yang Baru\", sambungkan ke PSN* – bergabung secara gratis dan ini adalah pintu gerbang Anda ke dunia hiburan, jadi daftar sekarang!\n\n * Diperlukan koneksi Internet broadband."
+
+msgid "Welcome to PlayStation®Network"
+msgstr "Selamat datang di PlayStation®Network"
+
+msgid "Western (Latin)"
+msgstr "Barat (Latin)"
+
+msgid "What's New"
+msgstr "Apa yang Baru"
+
+msgid "White"
+msgstr "Putih"
+
+msgid "Window Mode"
+msgstr "Modus Jendela"
+
+msgid "Windowed"
+msgstr "berjendela"
+
+msgid "Wired Connection"
+msgstr "Koneksi Kabel"
+
+msgid "Wireless"
+msgstr "Nirkabel"
+
+msgid "Wireless Headset 2.0"
+msgstr "Headset Nirkabel 2.0"
+
+msgid "Wireless Stereo Headset Settings"
+msgstr "Pengaturan Headset Stereo Nirkabel"
+
+msgid "XMB Waves"
+msgstr "Gelombang XMB"
+
+msgid "Y Cb Cr"
+msgstr "Y Cb Kr"
+
+msgid "Y Pb/Cb Pr/Cr Super-White (HDMI)"
+msgstr "Y Pb/Cb Pr/Cr Super-Putih (HDMI)"
+
+msgid "YYYY/MM/DD"
+msgstr "YYYY/MM/DD"
+
+msgid "Yellow"
+msgstr "Kuning"
+
+msgid "Yes"
+msgstr "Ya"
+
+msgid "You can change the voice that is input using an audio input device."
+msgstr "Anda dapat mengubah suara yang dimasukkan menggunakan perangkat input audio."
+
+msgid "You can edit a video that you like, upload it to a video sharing website, and then invite your friends to view the video."
+msgstr "Anda dapat mengedit video yang Anda sukai, menguploadnya ke situs web berbagi video, lalu mengundang teman Anda untuk melihat video tersebut."
+
+msgid "You cannot create an icon less than 15 seconds in length."
+msgstr "Anda tidak dapat membuat ikon yang berdurasi kurang dari 15 detik."
+
+msgid "Zoom"
+msgstr "Perbesar"
+
+msgid "Zoom In"
+msgstr "Perbesar"
+
+msgid "Zoom Out"
+msgstr "Perkecil"
+
+msgid "auto"
+msgstr "otomatis"
+
+msgid "category.settings.accessory.settings"
+msgstr "kategori.pengaturan.aksesori.pengaturan"
+
+msgid "category.settings.display.settings"
+msgstr "kategori.pengaturan.tampilan.pengaturan"
+
+msgid "category.settings.music.settings"
+msgstr "kategori.pengaturan.musik.pengaturan"
+
+msgid "category.settings.network.settings"
+msgstr "kategori.pengaturan.jaringan.pengaturan"
+
+msgid "category.settings.power.save.settings"
+msgstr "kategori.pengaturan.daya.simpan.pengaturan"
+
+msgid "controller button"
+msgstr "tombol pengontrol"
+
+msgid "corp-eap"
+msgstr "perusahaan-eap"
+
+msgid "en"
+msgstr "en"
+
+msgid "fr"
+msgstr "NS"
+
+msgid "hi"
+msgstr "hai"
+
+msgid "http://s3k.ocremix.org - Project Chaos - Bonus Tracks"
+msgstr "http://s3k.ocremix.org - Project Chaos - Bonus Tracks"
+
+msgid "iMushroom"
+msgstr "iMushroom"
+
+msgid "keyboard key"
+msgstr "tombol papan ketik"
+
+msgid "linksys"
+msgstr "linkys"
+
+msgid "Indonesian"
+msgstr "Bahasa Indonesia"
+
+msgid "Simplified Chinese"
+msgstr "Bahasa Mandarin Sederhana"
+
+msgid "Traditional Chinese"
+msgstr "Bahasa Mandarin Tradisional"
+
+msgid "\nThe original was preserved."
+msgstr "\nYang asli dipertahankan."
+
+msgid "   Off"
+msgstr "   Mati"
+
+msgid "   On"
+msgstr "   Aktif"
+
+msgid "  Played "
+msgstr "  Dimainkan "
+
+msgid "  Select to cycle"
+msgstr "  Pilih untuk bersepeda"
+
+msgid "  Select to remove scan root"
+msgstr "  Pilih untuk menghapus root pemindaian"
+
+msgid " (active)"
+msgstr " (aktif)"
+
+msgid " (away locally)"
+msgstr " (pergi secara lokal)"
+
+msgid " (present locally)"
+msgstr " (hadir secara lokal)"
+
+msgid " Last error: "
+msgstr " Kesalahan terakhir: "
+
+msgid " RPCS3 root(s)."
+msgstr " RPCS3 akar."
+
+msgid " Settings"
+msgstr " Pengaturan"
+
+msgid " cores / "
+msgstr " inti / "
+
+msgid " cores found. Left/Right cycles the core field."
+msgstr " inti ditemukan. Kiri/Kanan memutar bidang inti."
+
+msgid " game(s)."
+msgstr " pertandingan)."
+
+msgid " path"
+msgstr " jalan"
+
+msgid " playable discs found."
+msgstr " disk yang dapat diputar ditemukan."
+
+msgid " theme(s)."
+msgstr " tema."
+
+msgid " threads"
+msgstr " benang"
+
+msgid " times"
+msgstr " kali"
+
+msgid " to the default printer?"
+msgstr " ke printer default?"
+
+msgid " tracks"
+msgstr " trek"
+
+msgid " tracks added to "
+msgstr " trek ditambahkan ke "
+
+msgid " upload bytes"
+msgstr " unggah byte"
+
+msgid " will be moved to a recovery folder. It will not be permanently deleted."
+msgstr " akan dipindahkan ke folder pemulihan. Itu tidak akan dihapus secara permanen."
+
+msgid "& © 2025-2026. Syndromatic Limited Britannia. All rights reserved."
+msgstr "& © 2025-2026. Syndromatic Limited Britannia. Semua hak dilindungi undang-undang."
+
+msgid ". Select it to apply."
+msgstr ". Pilih untuk diterapkan."
+
+msgid "12-hour"
+msgstr "12 jam"
+
+msgid "15 seconds"
+msgstr "15 detik"
+
+msgid "1½ speed (muted)"
+msgstr "1½ kecepatan (tidak bersuara)"
+
+msgid "24-hour"
+msgstr "24 jam"
+
+msgid "3 seconds"
+msgstr "3 detik"
+
+msgid "? Music files are preserved."
+msgstr "? File musik disimpan."
+
+msgid "A core is already running. Return to its window or stop the session."
+msgstr "Sebuah inti sudah berjalan. Kembali ke jendelanya atau hentikan sesi."
+
+msgid "About"
+msgstr "Tentang"
+
+msgid "Active local user changed. Settings and themes use this profile."
+msgstr "Pengguna lokal aktif berubah. Pengaturan dan tema menggunakan profil ini."
+
+msgid "Add Current Play Queue"
+msgstr "Tambahkan Antrean Putar Saat Ini"
+
+msgid "Add Selected to Playlist..."
+msgstr "Tambahkan Pilihan ke Daftar Putar..."
+
+msgid "Add Track / Folder / Playlist..."
+msgstr "Tambahkan Trek / Folder / Daftar Putar..."
+
+msgid "Add custom section"
+msgstr "Tambahkan bagian khusus"
+
+msgid "Add detected RPCS3 game folders"
+msgstr "Tambahkan folder game RPCS3 yang terdeteksi"
+
+msgid "Add game folder"
+msgstr "Tambahkan folder permainan"
+
+msgid "Add game manually"
+msgstr "Tambahkan permainan secara manual"
+
+msgid "Add local friend"
+msgstr "Tambahkan teman lokal"
+
+msgid "Add local trophy"
+msgstr "Tambahkan piala lokal"
+
+msgid "Add to Queue"
+msgstr "Tambahkan ke Antrean"
+
+msgid "Added to Playlist"
+msgstr "Ditambahkan ke Daftar Putar"
+
+msgid "Address: "
+msgstr "Alamat: "
+
+msgid "Adjust settings for the OpenXMB system."
+msgstr "Sesuaikan pengaturan untuk sistem OpenXMB."
+
+msgid "Album"
+msgstr "Album"
+
+msgid "Album art exceeds texture upload capacity"
+msgstr "Gambar album melebihi kapasitas unggah tekstur"
+
+msgid "Album: "
+msgstr "Album: "
+
+msgid "All videos"
+msgstr "Semua video"
+
+msgid "An artwork request is already in progress"
+msgstr "Permintaan karya seni sedang dalam proses"
+
+msgid "Animated Theme"
+msgstr "Tema Animasi"
+
+msgid "Anti-aliasing    "
+msgstr "Anti-aliasing    "
+
+msgid "Apply a theme first, then use this action."
+msgstr "Terapkan tema terlebih dahulu, lalu gunakan tindakan ini."
+
+msgid "Apply this change to local library data"
+msgstr "Terapkan perubahan ini ke data perpustakaan lokal"
+
+msgid "Archive this user profile?"
+msgstr "Arsipkan profil pengguna ini?"
+
+msgid "Archives the user's data; at least one profile is retained"
+msgstr "Mengarsipkan data pengguna; setidaknya satu profil dipertahankan"
+
+msgid "Arguments (quote values containing spaces)"
+msgstr "Argumen (nilai kutipan yang mengandung spasi)"
+
+msgid "Arrows + Z/X/A/S: play   Space: pause   F5/F8: save/load   F12: screenshot"
+msgstr "Panah + Z/X/A/S: putar Spasi: jeda F5/F8: simpan/muat F12: tangkapan layar"
+
+msgid "Artist"
+msgstr "Artis"
+
+msgid "Artist: "
+msgstr "Artis: "
+
+msgid "Artwork key environment variable (no key values)"
+msgstr "Variabel lingkungan kunci karya seni (tidak ada nilai kunci)"
+
+msgid "Artwork provider disabled"
+msgstr "Penyedia karya seni dinonaktifkan"
+
+msgid "Artwork saved: "
+msgstr "Karya seni disimpan: "
+
+msgid "Audio CDs, DVD and Blu-ray folders/devices. Playback uses an installed desktop player."
+msgstr "CD Audio, folder/perangkat DVD dan Blu-ray. Pemutaran menggunakan pemutar desktop yang terpasang."
+
+msgid "Audio is muted during speed playback"
+msgstr "Audio dibisukan selama pemutaran cepat"
+
+msgid "Audio output active"
+msgstr "Keluaran audio aktif"
+
+msgid "Audio track"
+msgstr "trek audio"
+
+msgid "Avatar"
+msgstr "Avatar"
+
+msgid "Avatar image"
+msgstr "gambar avatar"
+
+msgid "Avatar image path"
+msgstr "Jalur gambar avatar"
+
+msgid "Away locally"
+msgstr "Jauh secara lokal"
+
+msgid "Background / animation"
+msgstr "Latar belakang / animasi"
+
+msgid "Background image"
+msgstr "Gambar latar belakang"
+
+msgid "Binding saved"
+msgstr "Pengikatan disimpan"
+
+msgid "Biography"
+msgstr "Biografi"
+
+msgid "Browse in a separate system-browser window with your own keyboard and mouse."
+msgstr "Jelajahi di jendela browser sistem terpisah dengan keyboard dan mouse Anda sendiri."
+
+msgid "Browser address"
+msgstr "Alamat peramban"
+
+msgid "CPU Cores / Threads"
+msgstr "Inti/Utas CPU"
+
+msgid "CPU Threads"
+msgstr "Utas CPU"
+
+msgid "Cannot Add Tracks"
+msgstr "Tidak Dapat Menambahkan Trek"
+
+msgid "Cannot Create Playlist"
+msgstr "Tidak Dapat Membuat Daftar Putar"
+
+msgid "Cannot open file"
+msgstr "Tidak dapat membuka file"
+
+msgid "Cannot save video position: "
+msgstr "Tidak dapat menyimpan posisi video: "
+
+msgid "Capture your desktop or start OpenXMB automatically when you log in."
+msgstr "Tangkap desktop Anda atau mulai OpenXMB secara otomatis saat Anda masuk."
+
+msgid "Channels"
+msgstr "Saluran"
+
+msgid "Channels: "
+msgstr "Saluran: "
+
+msgid "Choose Font File..."
+msgstr "Pilih File Font..."
+
+msgid "Choose executable, arguments, artwork, preview video and music"
+msgstr "Pilih yang dapat dieksekusi, argumen, karya seni, video pratinjau, dan musik"
+
+msgid "Close"
+msgstr "Tutup"
+
+msgid "Close dedicated browser session"
+msgstr "Tutup sesi browser khusus"
+
+msgid "Close menu"
+msgstr "Tutup menunya"
+
+msgid "Codec"
+msgstr "Kodek"
+
+msgid "Codec: "
+msgstr "Kodek: "
+
+msgid "Configure scan roots without moving your games"
+msgstr "Konfigurasikan pemindaian root tanpa memindahkan game Anda"
+
+msgid "Confirm: play from track    Options: playlist    Extra: edit track    Back: close"
+msgstr "Konfirmasi: putar dari trek Opsi: daftar putar Ekstra: edit trek Kembali: tutup"
+
+msgid "Content: "
+msgstr "Konten: "
+
+msgid "Control browser with gamepad"
+msgstr "Kontrol browser dengan gamepad"
+
+msgid "Controller prompts    "
+msgstr "Perintah pengontrol    "
+
+msgid "Controller rumble    "
+msgstr "Pengendali bergemuruh    "
+
+msgid "Core started in its own window. Escape returns here; F5 saves and F8 loads."
+msgstr "Inti dimulai di jendelanya sendiri. Pelarian kembali ke sini; F5 menyimpan dan F8 memuat."
+
+msgid "Core: "
+msgstr "Inti: "
+
+msgid "Could not save slideshow"
+msgstr "Tidak dapat menyimpan tayangan slide"
+
+msgid "Create Custom Theme"
+msgstr "Buat Tema Khusus"
+
+msgid "Create Custom Theme..."
+msgstr "Buat Tema Khusus..."
+
+msgid "Create a named category backed by a local folder"
+msgstr "Buat kategori bernama yang didukung oleh folder lokal"
+
+msgid "Create local user"
+msgstr "Buat pengguna lokal"
+
+msgid "Creating custom theme..."
+msgstr "Membuat tema khusus..."
+
+msgid "Custom Sections"
+msgstr "Bagian Khusus"
+
+msgid "Custom category"
+msgstr "Kategori khusus"
+
+msgid "Custom category name"
+msgstr "Nama kategori khusus"
+
+msgid "Custom section"
+msgstr "Bagian khusus"
+
+msgid "Custom section saved"
+msgstr "Bagian khusus disimpan"
+
+msgid "Custom sections"
+msgstr "Bagian khusus"
+
+msgid "Custom theme created. Export it as a ZIP to share."
+msgstr "Tema khusus dibuat. Ekspor sebagai ZIP untuk dibagikan."
+
+msgid "Date: "
+msgstr "Tanggal: "
+
+msgid "Dedicated Graphics Memory"
+msgstr "Memori Grafis Khusus"
+
+msgid "Defaults restored"
+msgstr "Defaultnya dipulihkan"
+
+msgid "Delete "
+msgstr "Hapus "
+
+msgid "Delete Playlist..."
+msgstr "Hapus Daftar Putar..."
+
+msgid "Delete Playlist?"
+msgstr "Hapus Daftar Putar?"
+
+msgid "Delete local user"
+msgstr "Hapus pengguna lokal"
+
+msgid "Delete preset? Type DELETE to confirm"
+msgstr "Hapus prasetel? Ketik DELETE untuk mengonfirmasi"
+
+msgid "Description"
+msgstr "Deskripsi"
+
+msgid "Designed by Kavish Krishnakumar in Manchester."
+msgstr "Dirancang oleh Kavish Krishnakumar di Manchester."
+
+msgid "Desktop Tools"
+msgstr "Alat Desktop"
+
+msgid "Developer"
+msgstr "Pengembang"
+
+msgid "Disable artwork provider"
+msgstr "Nonaktifkan penyedia karya seni"
+
+msgid "Disabled or key absent; local artwork remains available"
+msgstr "Dinonaktifkan atau kunci tidak ada; karya seni lokal tetap tersedia"
+
+msgid "Disc Media"
+msgstr "Media Disk"
+
+msgid "Disc ready. Select it to play."
+msgstr "Disk sudah siap. Pilih untuk diputar."
+
+msgid "Discard"
+msgstr "Membuang"
+
+msgid "Discard unsaved edits and reload the saved track list?"
+msgstr "Buang hasil editan yang belum disimpan dan muat ulang daftar lagu yang disimpan?"
+
+msgid "Display name"
+msgstr "Nama tampilan"
+
+msgid "Document information"
+msgstr "Informasi dokumen"
+
+msgid "Document page exceeds texture upload limit"
+msgstr "Halaman dokumen melebihi batas unggah tekstur"
+
+msgid "Done"
+msgstr "Selesai"
+
+msgid "Double speed (muted)"
+msgstr "Kecepatan ganda (tidak bersuara)"
+
+msgid "Download artwork for this game"
+msgstr "Unduh karya seni untuk game ini"
+
+msgid "Edit Selected Track"
+msgstr "Edit Trek yang Dipilih"
+
+msgid "Emulation"
+msgstr "Emulasi"
+
+msgid "Emulation session finished. Save RAM is stored automatically."
+msgstr "Sesi emulasi selesai. Simpan RAM disimpan secara otomatis."
+
+msgid "Enable the provider and configure its key first; no request was made"
+msgstr "Aktifkan penyedia dan konfigurasikan kuncinya terlebih dahulu; tidak ada permintaan yang dibuat"
+
+msgid "Enabled and key is configured"
+msgstr "Diaktifkan dan kunci dikonfigurasi"
+
+msgid "End of queue"
+msgstr "Akhir antrian"
+
+msgid "Enter"
+msgstr "Masuk"
+
+msgid "Enter Address"
+msgstr "Masukkan Alamat"
+
+msgid "Enter Text"
+msgstr "Masukkan Teks"
+
+msgid "Executable"
+msgstr "Dapat dieksekusi"
+
+msgid "Executable path or command"
+msgstr "Jalur atau perintah yang dapat dieksekusi"
+
+msgid "Exit"
+msgstr "Keluar"
+
+msgid "Export selected theme..."
+msgstr "Ekspor tema yang dipilih..."
+
+msgid "Export theme ZIP (new filename)"
+msgstr "Ekspor tema ZIP (nama file baru)"
+
+msgid "Exporting theme..."
+msgstr "Mengekspor tema..."
+
+msgid "FPS: {:.2f}"
+msgstr "FPS: {:.2f}"
+
+msgid "Failed to get file size"
+msgstr "Gagal mendapatkan ukuran file"
+
+msgid "Failed to map file"
+msgstr "Gagal memetakan file"
+
+msgid "Failed to open file"
+msgstr "Gagal membuka file"
+
+msgid "Failed to open video"
+msgstr "Gagal membuka video"
+
+msgid "Failed to read file"
+msgstr "Gagal membaca file"
+
+msgid "Favorites are kept in your local profile"
+msgstr "Favorit disimpan di profil lokal Anda"
+
+msgid "First page"
+msgstr "Halaman pertama"
+
+msgid "Fit page"
+msgstr "Halaman pas"
+
+msgid "Folder"
+msgstr "Map"
+
+msgid "Folder does not exist"
+msgstr "Foldernya tidak ada"
+
+msgid "Font file"
+msgstr "berkas huruf"
+
+msgid "For more information, see the Licenses section."
+msgstr "Untuk informasi lebih lanjut, lihat bagian Lisensi."
+
+msgid "Forward"
+msgstr "Maju"
+
+msgid "Frame cap    "
+msgstr "Tutup bingkai    "
+
+msgid "Friend display name"
+msgstr "Nama tampilan teman"
+
+msgid "Friends - local simulation"
+msgstr "Teman - simulasi lokal"
+
+msgid "Full screen (stretch)"
+msgstr "Layar penuh (peregangan)"
+
+msgid "GPU Local Memory"
+msgstr "GPU Memori Lokal"
+
+msgid "Game Library"
+msgstr "Perpustakaan Permainan"
+
+msgid "Game details"
+msgstr "Detail permainan"
+
+msgid "Game folder path"
+msgstr "Jalur folder permainan"
+
+msgid "Game library"
+msgstr "Perpustakaan permainan"
+
+msgid "Game library folders"
+msgstr "Folder perpustakaan permainan"
+
+msgid "Game title"
+msgstr "Judul permainan"
+
+msgid "Game/content file (empty for no-content cores)"
+msgstr "File game/konten (kosong untuk inti tanpa konten)"
+
+msgid "Genre"
+msgstr "Aliran"
+
+msgid "Genre: "
+msgstr "Aliran: "
+
+msgid "Glass icons    "
+msgstr "Ikon kaca    "
+
+msgid "Grade"
+msgstr "Kelas"
+
+msgid "Graphics Driver"
+msgstr "Pengemudi Grafis"
+
+msgid "Graphics Processor"
+msgstr "Prosesor Grafis"
+
+msgid "Home"
+msgstr "Rumah"
+
+msgid "IF YOU HAVE A HISTORY OF EPILEPSY OR SEIZURES, CONSULT A DOCTOR BEFORE USE. CERTAIN PATTERNS MAY TRIGGER SEIZURES WITH NO PRIOR HISTORY. BEFORE USING THIS PRODUCT, CAREFULLY READ THE INSTRUCTION MANUAL."
+msgstr "JIKA ANDA MEMILIKI RIWAYAT EPILEPSI ATAU KEjang, KONSULTASIKAN DENGAN DOKTER SEBELUM PENGGUNAAN. POLA TERTENTU MUNGKIN MEMICU KEJANG TANPA RIWAYAT SEBELUMNYA. SEBELUM MENGGUNAKAN PRODUK INI, BACALAH PETUNJUK INSTRUKSI DENGAN SEKSAMA."
+
+msgid "Icon"
+msgstr "Ikon"
+
+msgid "Icon image"
+msgstr "Gambar ikon"
+
+msgid "Icons"
+msgstr "Ikon"
+
+msgid "Image exceeds texture upload limit"
+msgstr "Gambar melebihi batas unggah tekstur"
+
+msgid "Import .p3t, .zip or theme folder"
+msgstr "Impor folder .p3t, .zip atau tema"
+
+msgid "Import inbox ("
+msgstr "Impor kotak masuk ("
+
+msgid "Import theme or icon pack..."
+msgstr "Impor paket tema atau ikon..."
+
+msgid "Imported "
+msgstr "Diimpor "
+
+msgid "Importing inbox..."
+msgstr "Mengimpor kotak masuk..."
+
+msgid "Importing theme..."
+msgstr "Mengimpor tema..."
+
+msgid "Imports game manifests, desktop entries and native executables"
+msgstr "Mengimpor manifes game, entri desktop, dan executable asli"
+
+msgid "Install / manage themes..."
+msgstr "Instal / kelola tema..."
+
+msgid "Install CUPS client tools (lp or lpr), configure a printer, and add the tools to PATH."
+msgstr "Instal alat klien CUPS (lp atau lpr), konfigurasikan printer, dan tambahkan alat ke PATH."
+
+msgid "Installed Memory"
+msgstr "Memori Terpasang"
+
+msgid "Installed copy removed. Original import source was kept."
+msgstr "Salinan yang terpasang dihapus. Sumber impor asli disimpan."
+
+msgid "InterfaceFX TEXT PROBE: The quick brown fox jumps over the lazy dog."
+msgstr "InterfaceFX PROBE TEKS: Rubah coklat yang cepat melompati anjing pemalas."
+
+msgid "Keep current data"
+msgstr "Simpan data terkini"
+
+msgid "Keeps all game files"
+msgstr "Menyimpan semua file game"
+
+msgid "Keeps its folder and files"
+msgstr "Menyimpan folder dan filenya"
+
+msgid "Keeps the executable and source media"
+msgstr "Menyimpan media yang dapat dieksekusi dan sumber"
+
+msgid "Keyboard Controls"
+msgstr "Kontrol Papan Ketik"
+
+msgid "Keyboard bindings"
+msgstr "Ikatan keyboard"
+
+msgid "Last page"
+msgstr "Halaman terakhir"
+
+msgid "Launch "
+msgstr "Peluncuran "
+
+msgid "Launch arguments"
+msgstr "Luncurkan argumen"
+
+msgid "Left/Right page · Home/End first/last · Up/Down or wheel zoom · Drag to pan · P print · Tab options"
+msgstr "Halaman Kiri/Kanan · Beranda/Akhir pertama/terakhir · Atas/Bawah atau zoom roda · Seret untuk menggeser · P mencetak · Opsi tab"
+
+msgid "Library"
+msgstr "Perpustakaan"
+
+msgid "Libretro core library"
+msgstr "Libretro perpustakaan inti"
+
+msgid "Loading page…"
+msgstr "Memuat halaman…"
+
+msgid "Loading…"
+msgstr "Memuat…"
+
+msgid "Local Account"
+msgstr "Akun Lokal"
+
+msgid "Local Friends"
+msgstr "Teman Lokal"
+
+msgid "Local Profiles"
+msgstr "Profil Lokal"
+
+msgid "Local account - no online sign-in"
+msgstr "Akun lokal - tidak ada login online"
+
+msgid "Local account display name"
+msgstr "Nama tampilan akun lokal"
+
+msgid "Local account status"
+msgstr "Status akun lokal"
+
+msgid "Local biography"
+msgstr "biografi lokal"
+
+msgid "Local friend"
+msgstr "Teman lokal"
+
+msgid "Local friend's name"
+msgstr "Nama teman lokal"
+
+msgid "Local friends"
+msgstr "Teman lokal"
+
+msgid "Local library updated"
+msgstr "Perpustakaan lokal diperbarui"
+
+msgid "Local profile"
+msgstr "Profil lokal"
+
+msgid "Local status"
+msgstr "Status lokal"
+
+msgid "Local status text"
+msgstr "Teks status lokal"
+
+msgid "Local trophies"
+msgstr "Piala lokal"
+
+msgid "Local trophy"
+msgstr "Piala lokal"
+
+msgid "Local users"
+msgstr "Pengguna lokal"
+
+msgid "Locked: "
+msgstr "Terkunci: "
+
+msgid "Looking up game artwork..."
+msgstr "Mencari karya seni game..."
+
+msgid "Makes HTTPS requests only when provider and key are configured"
+msgstr "Membuat permintaan HTTPS hanya ketika penyedia dan kunci dikonfigurasi"
+
+msgid "Manage game folders"
+msgstr "Kelola folder permainan"
+
+msgid "Manage offline simulated friend records"
+msgstr "Kelola catatan teman simulasi offline"
+
+msgid "Manage offline trophy records"
+msgstr "Kelola catatan piala offline"
+
+msgid "Mark favorite"
+msgstr "Tandai favorit"
+
+msgid "Mark locked"
+msgstr "Tandai terkunci"
+
+msgid "Media folder"
+msgstr "map media"
+
+msgid "Memory Transfer Rate"
+msgstr "Kecepatan Transfer Memori"
+
+msgid "Menu"
+msgstr "Tidak bisa"
+
+msgid "Mounted optical-disc directory or device"
+msgstr "Direktori atau perangkat cakram optik terpasang"
+
+msgid "Move Down"
+msgstr "Pindah ke Bawah"
+
+msgid "Move Selected Down"
+msgstr "Pindahkan yang Dipilih ke Bawah"
+
+msgid "Move Selected Up"
+msgstr "Pindahkan yang Dipilih ke Atas"
+
+msgid "Move Up"
+msgstr "Pindah ke Atas"
+
+msgid "Move photo to OpenXMB Trash?"
+msgstr "Pindahkan foto ke OpenXMB Sampah?"
+
+msgid "Move to Trash"
+msgstr "Pindah ke Sampah"
+
+msgid "Music Player"
+msgstr "Pemutar Musik"
+
+msgid "Music folder"
+msgstr "Folder musik"
+
+msgid "My Section"
+msgstr "Bagian saya"
+
+msgid "My Theme"
+msgstr "Tema saya"
+
+msgid "Native YUV GPU conversion"
+msgstr "Konversi YUV GPU asli"
+
+msgid "Native libretro software cores. Provide your own core, content and BIOS files."
+msgstr "Inti perangkat lunak libretro asli. Berikan file inti, konten, dan BIOS Anda sendiri."
+
+msgid "New Game"
+msgstr "Permainan Baru"
+
+msgid "New Playlist"
+msgstr "Daftar Putar Baru"
+
+msgid "New Playlist..."
+msgstr "Daftar Putar Baru..."
+
+msgid "New User"
+msgstr "Pengguna Baru"
+
+msgid "New user name"
+msgstr "Nama pengguna baru"
+
+msgid "Next frame"
+msgstr "Bingkai berikutnya"
+
+msgid "Next page"
+msgstr "Halaman berikutnya"
+
+msgid "Next video"
+msgstr "Video selanjutnya"
+
+msgid "No RPCS3 data folder detected. Add your disc or installed-game folder manually."
+msgstr "Tidak ada folder data RPCS3 yang terdeteksi. Tambahkan disk atau folder game yang diinstal secara manual."
+
+msgid "No audio CD, mounted DVD, or mounted Blu-ray was found."
+msgstr "Tidak ditemukan audio CD, DVD terpasang, atau Blu-ray terpasang."
+
+msgid "No audio tracks"
+msgstr "Tidak ada trek audio"
+
+msgid "No entries yet. Use the actions above to add one."
+msgstr "Belum ada entri. Gunakan tindakan di atas untuk menambahkannya."
+
+msgid "No native viewer is registered for this file type"
+msgstr "Tidak ada penampil asli yang terdaftar untuk jenis file ini"
+
+msgid "No playable disc structure was found at that path."
+msgstr "Tidak ditemukan struktur disk yang dapat diputar pada jalur tersebut."
+
+msgid "No print service is available"
+msgstr "Tidak ada layanan pencetakan yang tersedia"
+
+msgid "No viewer is available for "
+msgstr "Tidak ada pemirsa yang tersedia untuk "
+
+msgid "None (no-content core)"
+msgstr "Tidak ada (inti tanpa konten)"
+
+msgid "Normal (fit)"
+msgstr "Biasa (sesuai)"
+
+msgid "Normal speed"
+msgstr "Kecepatan biasa"
+
+msgid "Offline simulation; no messages or remote requests are sent"
+msgstr "Simulasi luring; tidak ada pesan atau permintaan jarak jauh yang dikirim"
+
+msgid "Offline tracking; does not connect to a console account"
+msgstr "Pelacakan offline; tidak terhubung ke akun konsol"
+
+msgid "Only this local profile is changed"
+msgstr "Hanya profil lokal ini yang diubah"
+
+msgid "Open "
+msgstr "Buka "
+
+msgid "Open / Resume"
+msgstr "Buka / Lanjutkan"
+
+msgid "Open Link"
+msgstr "Buka Tautan"
+
+msgid "Open a dedicated browser window first."
+msgstr "Buka jendela browser khusus terlebih dahulu."
+
+msgid "Open browser window"
+msgstr "Buka jendela peramban"
+
+msgid "Open disc directory/device..."
+msgstr "Buka direktori/perangkat disk..."
+
+msgid "Open in native viewer"
+msgstr "Buka di penampil asli"
+
+msgid "OpenXMB "
+msgstr "OpenXMB "
+
+msgid "OpenXMB Settings"
+msgstr "OpenXMB Pengaturan"
+
+msgid "Opening Internet Browser…"
+msgstr "Membuka Peramban Internet…"
+
+msgid "Opening video…"
+msgstr "Video pembuka…"
+
+msgid "Operating System"
+msgstr "Sistem Operasi"
+
+msgid "Optical Media"
+msgstr "Media Optik"
+
+msgid "Optional RAWG artwork provider"
+msgstr "Penyedia karya seni RAWG opsional"
+
+msgid "Options: save / add to playlist / reorder / remove"
+msgstr "Pilihan: simpan / tambahkan ke playlist / susun ulang / hapus"
+
+msgid "Original appearance restored."
+msgstr "Penampilan aslinya dipulihkan."
+
+msgid "Original size"
+msgstr "Ukuran asli"
+
+msgid "Overlay layers"
+msgstr "Lapisan hamparan"
+
+msgid "PHOTOSENSITIVE EPILEPSY"
+msgstr "EPILEPSI FOTOSENSITIF"
+
+msgid "Page Information"
+msgstr "Informasi Halaman"
+
+msgid "Page loaded"
+msgstr "Halaman dimuat"
+
+msgid "Paused"
+msgstr "Dijeda"
+
+msgid "Photo Playlists"
+msgstr "Daftar Putar Foto"
+
+msgid "Photo copy saved"
+msgstr "Salinan foto disimpan"
+
+msgid "Photo information"
+msgstr "Informasi foto"
+
+msgid "Photo moved to OpenXMB Trash"
+msgstr "Foto dipindahkan ke OpenXMB Sampah"
+
+msgid "Photo operation failed"
+msgstr "Operasi foto gagal"
+
+msgid "Photo sent to print service"
+msgstr "Foto dikirim ke layanan cetak"
+
+msgid "Pictures folder"
+msgstr "Folder gambar"
+
+msgid "Play Next"
+msgstr "Mainkan Berikutnya"
+
+msgid "Play Now"
+msgstr "Mainkan Sekarang"
+
+msgid "Play Queue"
+msgstr "Mainkan Antrian"
+
+msgid "Play from beginning"
+msgstr "Mainkan dari awal"
+
+msgid "Play preview music"
+msgstr "Putar musik pratinjau"
+
+msgid "Play video preview"
+msgstr "Putar pratinjau video"
+
+msgid "Playback error"
+msgstr "Kesalahan pemutaran"
+
+msgid "Playback speed"
+msgstr "Kecepatan pemutaran"
+
+msgid "Playing"
+msgstr "Bermain"
+
+msgid "Playing "
+msgstr "Bermain "
+
+msgid "Playing game preview music"
+msgstr "Memutar musik pratinjau game"
+
+msgid "Playing playlist"
+msgstr "Memutar daftar putar"
+
+msgid "Playlist"
+msgstr "Daftar putar"
+
+msgid "Playlist Created"
+msgstr "Daftar Putar Dibuat"
+
+msgid "Playlist renamed"
+msgstr "Daftar putar diganti namanya"
+
+msgid "Playlist saved"
+msgstr "Daftar putar disimpan"
+
+msgid "Present locally"
+msgstr "Hadir secara lokal"
+
+msgid "Preset applied."
+msgstr "Prasetel diterapkan."
+
+msgid "Preset deleted."
+msgstr "Prasetel dihapus."
+
+msgid "Preset kept."
+msgstr "Preset disimpan."
+
+msgid "Preset saved."
+msgstr "Prasetel disimpan."
+
+msgid "Preset: "
+msgstr "Prasetel: "
+
+msgid "Preview music"
+msgstr "Pratinjau musik"
+
+msgid "Preview video"
+msgstr "Pratinjau video"
+
+msgid "Previous frame"
+msgstr "Bingkai sebelumnya"
+
+msgid "Previous page"
+msgstr "Halaman sebelumnya"
+
+msgid "Previous video"
+msgstr "Video sebelumnya"
+
+msgid "Print current page…"
+msgstr "Cetak halaman saat ini…"
+
+msgid "Print document?"
+msgstr "Cetak dokumen?"
+
+msgid "Print entire PDF…"
+msgstr "Cetak seluruh PDF…"
+
+msgid "Print job submitted"
+msgstr "Pekerjaan pencetakan telah dikirimkan"
+
+msgid "Printing failed"
+msgstr "Pencetakan gagal"
+
+msgid "Printing unavailable"
+msgstr "Pencetakan tidak tersedia"
+
+msgid "Processor"
+msgstr "Prosesor"
+
+msgid "Profile: "
+msgstr "Profil: "
+
+msgid "Provider enabled. Supply the key securely in environment settings."
+msgstr "Penyedia diaktifkan. Berikan kunci dengan aman di pengaturan lingkungan."
+
+msgid "Queue added; choose Save to keep changes"
+msgstr "Antrean ditambahkan; pilih Simpan untuk menyimpan perubahan"
+
+msgid "RGBA upload"
+msgstr "Unggahan RGBA"
+
+msgid "Refresh"
+msgstr "Segarkan"
+
+msgid "Refresh installed cores (Left/Right cycles core)"
+msgstr "Segarkan inti yang terpasang (inti siklus Kiri/Kanan)"
+
+msgid "Refresh optical media"
+msgstr "Segarkan media optik"
+
+msgid "Release year (0 if unknown)"
+msgstr "Tahun rilis (0 jika tidak diketahui)"
+
+msgid "Reload"
+msgstr "Muat ulang"
+
+msgid "Reload Saved Playlist"
+msgstr "Muat Ulang Daftar Putar Tersimpan"
+
+msgid "Reload Saved Playlist?"
+msgstr "Muat Ulang Daftar Putar Tersimpan?"
+
+msgid "Reload this playlist before saving; its contents could not be read."
+msgstr "Muat ulang daftar putar ini sebelum menyimpan; isinya tidak dapat dibaca."
+
+msgid "Remove Selected"
+msgstr "Hapus yang Dipilih"
+
+msgid "Remove favorite"
+msgstr "Hapus favorit"
+
+msgid "Remove from Queue"
+msgstr "Hapus dari Antrean"
+
+msgid "Remove from game library"
+msgstr "Hapus dari perpustakaan game"
+
+msgid "Remove installed theme..."
+msgstr "Hapus tema yang terpasang..."
+
+msgid "Remove installed theme? Type DELETE to confirm"
+msgstr "Hapus tema yang terpasang? Ketik DELETE untuk mengonfirmasi"
+
+msgid "Remove local friend"
+msgstr "Hapus teman lokal"
+
+msgid "Remove local friend?"
+msgstr "Hapus teman lokal?"
+
+msgid "Remove local trophy"
+msgstr "Hapus piala lokal"
+
+msgid "Remove local trophy?"
+msgstr "Hapus piala lokal?"
+
+msgid "Remove section"
+msgstr "Hapus bagian"
+
+msgid "Remove this custom section?"
+msgstr "Hapus bagian khusus ini?"
+
+msgid "Remove this game entry?"
+msgstr "Hapus entri game ini?"
+
+msgid "Remove this scan root?"
+msgstr "Hapus root pemindaian ini?"
+
+msgid "Removes this offline record"
+msgstr "Menghapus catatan offline ini"
+
+msgid "Rename Playlist"
+msgstr "Ganti nama Daftar Putar"
+
+msgid "Rename Playlist..."
+msgstr "Ganti nama Daftar Putar..."
+
+msgid "Rename section"
+msgstr "Ganti nama bagian"
+
+msgid "Rename user"
+msgstr "Ganti nama pengguna"
+
+msgid "Repeat all"
+msgstr "Ulangi semuanya"
+
+msgid "Repeat off"
+msgstr "Ulangi"
+
+msgid "Repeat one"
+msgstr "Ulangi satu"
+
+msgid "Repeat: "
+msgstr "Ulangi: "
+
+msgid "Replay 10 seconds"
+msgstr "Putar ulang 10 detik"
+
+msgid "Reported CPU Clock"
+msgstr "Jam CPU yang Dilaporkan"
+
+msgid "Reset"
+msgstr "Setel ulang"
+
+msgid "Reset current profile settings"
+msgstr "Setel ulang pengaturan profil saat ini"
+
+msgid "Reset settings?"
+msgstr "Setel ulang pengaturan?"
+
+msgid "Resize"
+msgstr "Ubah ukuran"
+
+msgid "Restore default bindings"
+msgstr "Kembalikan pengikatan default"
+
+msgid "Restore the current profile's default shell preferences? Media files and other profiles are preserved."
+msgstr "Pulihkan preferensi shell default profil saat ini? File media dan profil lainnya dipertahankan."
+
+msgid "Restore the original appearance."
+msgstr "Kembalikan tampilan aslinya."
+
+msgid "Return"
+msgstr "Kembali"
+
+msgid "SDL scancode for "
+msgstr "SDL kode pindaian untuk "
+
+msgid "Save"
+msgstr "Simpan"
+
+msgid "Save Playlist Changes?"
+msgstr "Simpan Perubahan Daftar Putar?"
+
+msgid "Save Queue as Playlist..."
+msgstr "Simpan Antrean sebagai Daftar Putar..."
+
+msgid "Save component preset"
+msgstr "Simpan preset komponen"
+
+msgid "Save component preset..."
+msgstr "Simpan preset komponen..."
+
+msgid "Save crop"
+msgstr "Simpan hasil panen"
+
+msgid "Saved"
+msgstr "Disimpan"
+
+msgid "Saved playlist loaded"
+msgstr "Daftar putar yang disimpan dimuat"
+
+msgid "Saving…"
+msgstr "Menyimpan…"
+
+msgid "Scan configured folders"
+msgstr "Pindai folder yang dikonfigurasi"
+
+msgid "Scan game folders"
+msgstr "Pindai folder permainan"
+
+msgid "Scene search"
+msgstr "Pencarian adegan"
+
+msgid "Screen mode"
+msgstr "Modus layar"
+
+msgid "Scroll Down"
+msgstr "Gulir ke Bawah"
+
+msgid "Scroll Up"
+msgstr "Gulir ke Atas"
+
+msgid "Section folder path"
+msgstr "Jalur folder bagian"
+
+msgid "Section icon path"
+msgstr "Jalur ikon bagian"
+
+msgid "Section name"
+msgstr "Nama bagian"
+
+msgid "Select"
+msgstr "Pilih"
+
+msgid "Select / Edit"
+msgstr "Pilih / Sunting"
+
+msgid "Select a core library"
+msgstr "Pilih perpustakaan inti"
+
+msgid "Separate settings, themes, game library and local social data"
+msgstr "Pisahkan pengaturan, tema, perpustakaan game, dan data sosial lokal"
+
+msgid "Shift"
+msgstr "Pergeseran"
+
+msgid "Show FPS    "
+msgstr "Tampilkan FPS    "
+
+msgid "Show GPU memory    "
+msgstr "Tampilkan memori GPU    "
+
+msgid "Slideshow saved: "
+msgstr "Tayangan slide disimpan: "
+
+msgid "Sound effects"
+msgstr "Efek suara"
+
+msgid "Space"
+msgstr "Luar angkasa"
+
+msgid "Start OpenXMB at login: "
+msgstr "Mulai OpenXMB saat masuk: "
+
+msgid "Start emulation"
+msgstr "Mulai emulasi"
+
+msgid "Started "
+msgstr "Dimulai "
+
+msgid "Status"
+msgstr "Status"
+
+msgid "Stick: pointer  A: click  X: Tab  Y: text  Start: address  Shoulder: Enter  B: return"
+msgstr "Tongkat: penunjuk A: klik X: Tab Y: teks Mulai: alamat Bahu: Masukkan B: kembali"
+
+msgid "Stop emulation"
+msgstr "Hentikan emulasi"
+
+msgid "Stopped"
+msgstr "Berhenti"
+
+msgid "Stops optional provider lookups"
+msgstr "Menghentikan pencarian penyedia opsional"
+
+msgid "Submit page "
+msgstr "Kirim halaman "
+
+msgid "Submit the entire PDF to the default printer?"
+msgstr "Kirim seluruh PDF ke printer default?"
+
+msgid "Submitting print job…"
+msgstr "Mengirimkan pekerjaan pencetakan…"
+
+msgid "Subtitles"
+msgstr "Subtitle"
+
+msgid "Supported manifest: openxmb-game.json"
+msgstr "Manifes yang didukung: openxmb-game.json"
+
+msgid "Switch to "
+msgstr "Beralih ke "
+
+msgid "System Tools"
+msgstr "Alat Sistem"
+
+msgid "Take screenshot"
+msgstr "Ambil tangkapan layar"
+
+msgid "Text"
+msgstr "Teks"
+
+msgid "Text for the focused browser field"
+msgstr "Teks untuk bidang browser yang difokuskan"
+
+msgid "The GNU General Public License version 3 or later applies to OpenXMB. License files could not be found in this installation."
+msgstr "GNU General Public License versi 3 atau lebih baru berlaku untuk OpenXMB. File lisensi tidak dapat ditemukan dalam instalasi ini."
+
+msgid "The Syndromatic Open Xross Media Bar shell experience."
+msgstr "Pengalaman cangkang Syndromatic Open Xross Media Bar."
+
+msgid "The browser exited unexpectedly. Reopen Internet Browser; check the WebView2 Runtime if this continues."
+msgstr "Browser keluar secara tidak terduga. Buka kembali Peramban Internet; periksa WebView2 Runtime jika ini terus berlanjut."
+
+msgid "The core session could not continue. Check the selected core/content and its BIOS requirements."
+msgstr "Sesi inti tidak dapat dilanjutkan. Periksa inti/konten yang dipilih dan persyaratan BIOS-nya."
+
+msgid "The document was accepted by the configured print command."
+msgstr "Dokumen diterima dengan perintah cetak yang dikonfigurasi."
+
+msgid "The original is recoverable at:\n"
+msgstr "Dokumen asli dapat diperoleh kembali di:\n"
+
+msgid "The play queue is empty"
+msgstr "Antrian pemutaran kosong"
+
+msgid "The scanner reads files; it never launches discovered games"
+msgstr "Pemindai membaca file; itu tidak pernah meluncurkan game yang ditemukan"
+
+msgid "The selected local item no longer exists"
+msgstr "Item lokal yang dipilih sudah tidak ada lagi"
+
+msgid "Theme Library"
+msgstr "Perpustakaan Tema"
+
+msgid "Theme applied. Your component choices were saved."
+msgstr "Tema diterapkan. Pilihan komponen Anda telah disimpan."
+
+msgid "Theme colors"
+msgstr "Warna tema"
+
+msgid "Theme exported to "
+msgstr "Tema diekspor ke "
+
+msgid "Theme kept."
+msgstr "Tema dipertahankan."
+
+msgid "Theme library refreshed."
+msgstr "Pustaka tema disegarkan."
+
+msgid "Theme manager is not attached to the shell yet"
+msgstr "Manajer tema belum melekat pada shell"
+
+msgid "Theme operation in progress. Originals remain unchanged."
+msgstr "Operasi tema sedang berlangsung. Yang asli tetap tidak berubah."
+
+msgid "This folder is empty."
+msgstr "Folder ini kosong."
+
+msgid "This playlist is empty. Open Options to add tracks or a folder."
+msgstr "Daftar putar ini kosong. Buka Opsi untuk menambahkan trek atau folder."
+
+msgid "This program is licensed to you under the GNU General Public License version 3.0."
+msgstr "Program ini dilisensikan kepada Anda di bawah GNU General Public License versi 3.0."
+
+msgid "This setting is not supported by this build."
+msgstr "Pengaturan ini tidak didukung oleh build ini."
+
+msgid "This video"
+msgstr "Video ini"
+
+msgid "Title"
+msgstr "Judul"
+
+msgid "Toggle simulated presence"
+msgstr "Alihkan kehadiran yang disimulasikan"
+
+msgid "Track"
+msgstr "Lacak"
+
+msgid "Track added to queue"
+msgstr "Lacak ditambahkan ke antrean"
+
+msgid "Track will play next"
+msgstr "Lagu akan diputar berikutnya"
+
+msgid "Track, Folder or Playlist Path"
+msgstr "Jalur Lagu, Folder, atau Daftar Putar"
+
+msgid "Track: "
+msgstr "Jalur: "
+
+msgid "Trophy description"
+msgstr "Deskripsi piala"
+
+msgid "Trophy title"
+msgstr "Judul piala"
+
+msgid "Type into browser field..."
+msgstr "Ketik di kolom browser..."
+
+msgid "Unavailable"
+msgstr "Tidak tersedia"
+
+msgid "Unlock local trophy"
+msgstr "Buka kunci piala lokal"
+
+msgid "Unlocked: "
+msgstr "Tidak terkunci: "
+
+msgid "Up/Down: select    Confirm: change    Cancel: back"
+msgstr "Atas/Bawah: pilih Konfirmasi: ubah Batal: kembali"
+
+msgid "Use an SDL scancode from 4 to 512"
+msgstr "Gunakan kode pindaian SDL dari 4 hingga 512"
+
+msgid "User name"
+msgstr "Nama pengguna"
+
+msgid "User profile"
+msgstr "Profil pengguna"
+
+msgid "Uses installed RPCS3 data roots; custom disc folders can be added normally"
+msgstr "Menggunakan akar data RPCS3 yang terinstal; folder disk khusus dapat ditambahkan secara normal"
+
+msgid "VSync    "
+msgstr "VSync    "
+
+msgid "Video Memory: {:.2f}/{:.2f} MB"
+msgstr "Memori Video: {:.2f}/{:.2f} MB"
+
+msgid "Video could not be loaded"
+msgstr "Video tidak dapat dimuat"
+
+msgid "Video information"
+msgstr "Informasi video"
+
+msgid "Video list"
+msgstr "Daftar video"
+
+msgid "Video playback failed"
+msgstr "Pemutaran video gagal"
+
+msgid "Video upload failed: "
+msgstr "Gagal mengunggah video: "
+
+msgid "Videos folder"
+msgstr "Folder video"
+
+msgid "View background artwork"
+msgstr "Lihat karya seni latar belakang"
+
+msgid "Volume"
+msgstr "Volume"
+
+msgid "Volume  "
+msgstr "Volume  "
+
+msgid "Volume +"
+msgstr "Jilid +"
+
+msgid "Volume −"
+msgstr "Jilid -"
+
+msgid "Wait for the photo to finish loading"
+msgstr "Tunggu hingga foto selesai dimuat"
+
+msgid "Wallpaper updated"
+msgstr "Wallpaper diperbarui"
+
+msgid "Web address"
+msgstr "Alamat web"
+
+msgid "Working directory"
+msgstr "Direktori kerja"
+
+msgid "Year"
+msgstr "Tahun"
+
+msgid "Year must be 0-9999"
+msgstr "Tahun harus 0-9999"
+
+msgid "Zoom in"
+msgstr "Perbesar"
+
+msgid "Zoom must be between 0.25 and 5.0"
+msgstr "Zoom harus antara 0,25 dan 5,0"
+
+msgid "Zoom out"
+msgstr "Perkecil"
+
+msgid "open "
+msgstr "terbuka "
+
+msgid "version "
+msgstr "versi "
+
+msgid "¼ speed (muted)"
+msgstr "¼ kecepatan (tidak bersuara)"
+
+msgid "½ speed (muted)"
+msgstr "½ kecepatan (tidak bersuara)"
+
+msgid "← More text →"
+msgstr "← Lebih banyak teks →"
+
+msgid "✓ Off"
+msgstr "✓ Mati"
+
+msgid "Vulkan"
+msgstr "Vulkan"
+
+msgid "OK"
+msgstr "Oke"
+
+# Native player metadata labels; preserve dynamic metadata separately.
+
+msgid "Album:"
+msgstr "Album:"
+
+msgid "Artist:"
+msgstr "Artis:"
+
+msgid "Genre:"
+msgstr "Aliran:"
+
+msgid "Date:"
+msgstr "Tanggal:"
+
+msgid "Track:"
+msgstr "Lacak:"
+
+msgid "Codec:"
+msgstr "Kodek:"
+
+msgid "Channels:"
+msgstr "Saluran:"
+
+msgid "Use system language"
+msgstr "Gunakan bahasa sistem"
+
+msgid "Import inbox"
+msgstr "Kotak impor"
+
+msgid "Preset:"
+msgstr "Prasetel:"

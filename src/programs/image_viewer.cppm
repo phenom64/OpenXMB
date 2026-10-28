@@ -17,6 +17,8 @@
  */
 
 module;
+#include "../localization/ui_literal_text.hpp"
+#include "../localization/shell_locale.hpp"
 
 #include "../app/components/dialog_input.hpp"
 #include <openxmb/photos/photo_library.hpp>
@@ -212,7 +214,7 @@ public:
             while(std::getline(lines,line)) {canvas.text(line,1140,y,23);y+=40;}
         }
         if(!message.empty()) canvas.text(message,100,922,24,{1,0.84f,0.65f,1});
-        if(busy()) canvas.text(operation.valid()?"Saving…":"Loading…",1600,107,24);
+        if(busy()) canvas.text(::openxmb::localization::shell_locale::translate(operation.valid()?"Saving…":"Loading…"),1600,107,24);
         if(cropping) {
             canvas.text("Trimming",960,170,30,{1,1,1,1},0,true);
             render_controller_buttons(xmb,renderer,0.5f,0.94f,std::array{
@@ -348,7 +350,7 @@ private:
                 icons.draw(c,names[index],514+(column-(count-1)*0.5f)*64,440+row*65,72,focus?1:0.85f,focus?1.3f:1);
             }
         }
-        c.text(labels[selected],514,648,26,{0.83f,0.68f,0.36f,1},app::xmb_canvas::pulse(),true);
+        c.text(::openxmb::localization::shell_locale::translate(labels[selected]),514,648,26,{0.83f,0.68f,0.36f,1},app::xmb_canvas::pulse(),true);
     }
     void activate_control() {
         const int selected=control_row<2?control_row*8+control_column:16+control_column;
@@ -393,7 +395,7 @@ private:
             crop_region=photo::centered_crop(image_width,image_height,selected==command::crop_square?1.0:selected==command::crop_landscape?16.0/9.0:4.0/3.0);
         } else if(selected==command::interval) {
             modal_open=true;
-            xmb->emplace_overlay<choice_overlay>(std::vector<std::string>{"3 seconds","5 seconds","10 seconds","15 seconds"},1,
+            xmb->emplace_overlay<choice_overlay>(::app::detail::localize_ui_choices(std::vector<std::string>{"3 seconds","5 seconds","10 seconds","15 seconds"}),1,
                 [this](unsigned int selected) { constexpr std::array values{3,5,10,15}; slide_interval=std::chrono::seconds(values.at(selected)); modal_open=false; last_slide=clock::now(); },
                 [this]() { modal_open=false; });
         } else if(selected==command::trash) {

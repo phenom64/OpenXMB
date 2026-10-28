@@ -98,7 +98,7 @@ msgid "Animated Wave"
 msgstr "Animated Wave"
 
 msgid "Static Color"
-msgstr "Static Color"
+msgstr "Static Colour"
 
 msgid "Static Image"
 msgstr "Static Image"
@@ -190,10 +190,10 @@ msgid "Enable controller rumble as feedback for actions"
 msgstr "Enable controller rumble as feedback for actions"
 
 msgid "Navigate Menus with Analog Stick"
-msgstr "Navigate Menus with Analog Stick"
+msgstr "Navigate Menus with Analogue Stick"
 
 msgid "Allow navigating all menus using the analog stick in addition to the D-Pad"
-msgstr "Allow navigating all menus using the analog stick in addition to the D-Pad"
+msgstr "Allow navigating all menus using the analogue stick in addition to the D-Pad"
 
 msgid "Debug Settings"
 msgstr "Debug Settings"
@@ -226,13 +226,13 @@ msgid "Open website in browser"
 msgstr "Open website in browser"
 
 msgid "View License Text"
-msgstr "View License Text"
+msgstr "View Licence Text"
 
 msgid "License for {}"
-msgstr "License for {}"
+msgstr "Licence for {}"
 
 msgid "Licenses"
-msgstr "Licenses"
+msgstr "Licences"
 
 # Users menu
 msgid "Quit"
@@ -305,3 +305,5033 @@ msgstr "No matching program found for file of type \"{}\": {}"
 #: src/app/components/desktop_settings.cppm
 msgid "This feature is not available yet. This will be implemented in a future beta. Sorry!"
 msgstr "This feature is not available yet. This will be implemented in a future beta. Sorry!"
+
+msgid "\nSample rate: "
+msgstr "\nSample rate: "
+
+msgid "\nVideo decoder details are available in the video player's information display."
+msgstr "\nVideo decoder details are available in the video player's information display."
+
+msgid " Hz\nChannels: "
+msgstr " Hz\nChannels: "
+
+msgid " for "
+msgstr " for "
+
+msgid " games to the library."
+msgstr " games to the library."
+
+msgid "(No registered devices)"
+msgstr "(No registered devices)"
+
+msgid "*User"
+msgstr "*User"
+
+msgid "+1"
+msgstr "+1"
+
+msgid "+2"
+msgstr "+2"
+
+msgid "+3"
+msgstr "+3"
+
+msgid "+4"
+msgstr "+4"
+
+msgid "-1"
+msgstr "-1"
+
+msgid "-2"
+msgstr "-2"
+
+msgid "-3"
+msgstr "-3"
+
+msgid "-4"
+msgstr "-4"
+
+msgid "1"
+msgstr "1"
+
+msgid "1 minute"
+msgstr "1 minute"
+
+msgid "1. Transfer data from this system to the other PS3™ system."
+msgstr "1. Transfer data from this system to the other PS3™ system."
+
+msgid "10"
+msgstr "10"
+
+msgid "10 Images"
+msgstr "10 Images"
+
+msgid "10 minutes"
+msgstr "10 minutes"
+
+msgid "10 seconds"
+msgstr "10 seconds"
+
+msgid "1000BASE-T Full-Duplex"
+msgstr "1000BASE-T Full-Duplex"
+
+msgid "1000BASE-T Half-Duplex"
+msgstr "1000BASE-T Half-Duplex"
+
+msgid "100BASE-TX Full-Duplex"
+msgstr "100BASE-TX Full-Duplex"
+
+msgid "100BASE-TX Half-Duplex"
+msgstr "100BASE-TX Half-Duplex"
+
+msgid "106481"
+msgstr "106481"
+
+msgid "1080i"
+msgstr "1080i"
+
+msgid "1080p"
+msgstr "1080p"
+
+msgid "1080p 24 Hz Output (HDMI)"
+msgstr "1080p 24 Hz Output (HDMI)"
+
+msgid "10BASE-T Full-Duplex"
+msgstr "10BASE-T Full-Duplex"
+
+msgid "10BASE-T Half-Duplex"
+msgstr "10BASE-T Half-Duplex"
+
+msgid "11"
+msgstr "11"
+
+msgid "12-Hour Clock"
+msgstr "12-Hour Clock"
+
+msgid "1245403"
+msgstr "1245403"
+
+msgid "1308922"
+msgstr "1308922"
+
+msgid "15 minutes"
+msgstr "15 minutes"
+
+msgid "15 seconds of video starting from this scene will be set as the icon.\nIf an icon has already been set, it will be overwritten.\nDo you want to continue?"
+msgstr "15 seconds of video starting from this scene will be set as the icon.\nIf an icon has already been set, it will be overwritten.\nDo you want to continue?"
+
+msgid "2"
+msgstr "2"
+
+msgid "2 minutes"
+msgstr "2 minutes"
+
+msgid "2. Transfer data from the other PS3™ system to this system."
+msgstr "2. Transfer data from the other PS3™ system to this system."
+
+msgid "24-Hour Clock"
+msgstr "24-Hour Clock"
+
+msgid "3"
+msgstr "3"
+
+msgid "30 minutes"
+msgstr "30 minutes"
+
+msgid "35 Tracks  28:00"
+msgstr "35 Tracks  28:00"
+
+msgid "358972"
+msgstr "358972"
+
+msgid "3D Display (PSP Remasters)"
+msgstr "3D Display (PSP Remasters)"
+
+msgid "4"
+msgstr "4"
+
+msgid "44.1 kHz"
+msgstr "44.1 kHz"
+
+msgid "48 kHz"
+msgstr "48 kHz"
+
+msgid "480p"
+msgstr "480p"
+
+msgid "5"
+msgstr "5"
+
+msgid "5 minutes"
+msgstr "5 minutes"
+
+msgid "5 seconds"
+msgstr "5 seconds"
+
+msgid "50 Hz Video Output"
+msgstr "50 Hz Video Output"
+
+msgid "509987"
+msgstr "509987"
+
+msgid "551537"
+msgstr "551537"
+
+msgid "576p"
+msgstr "576p"
+
+msgid "586388"
+msgstr "586388"
+
+msgid "6"
+msgstr "6"
+
+msgid "677357"
+msgstr "677357"
+
+msgid "7"
+msgstr "7"
+
+msgid "720p"
+msgstr "720p"
+
+msgid "8"
+msgstr "8"
+
+msgid "88.2 kHz"
+msgstr "88.2 kHz"
+
+msgid "893848"
+msgstr "893848"
+
+msgid "9"
+msgstr "9"
+
+msgid "96 kHz"
+msgstr "96 kHz"
+
+msgid "976156"
+msgstr "976156"
+
+msgid "A-B Repeat"
+msgstr "A-B Repeat"
+
+msgid "AAC"
+msgstr "AAC"
+
+msgid "AOSS"
+msgstr "AOSS"
+
+msgid "ATERM-5F3C2A-G"
+msgstr "ATERM-5F3C2A-G"
+
+msgid "AV MULTI / S Video"
+msgstr "AV MULTI / S Video"
+
+msgid "AV MULTI / SCART"
+msgstr "AV MULTI / SCART"
+
+msgid "AV Settings"
+msgstr "AV Settings"
+
+msgid "AVC  640x360"
+msgstr "AVC  640x360"
+
+msgid "Accessory"
+msgstr "Accessory"
+
+msgid "Accessory Settings"
+msgstr "Accessory Settings"
+
+msgid "Ad Hoc Channel (PSP Remasters)"
+msgstr "Ad Hoc Channel (PSP Remasters)"
+
+msgid "Ad Hoc Mode (PSP Remasters)"
+msgstr "Ad Hoc Mode (PSP Remasters)"
+
+msgid "Add Term"
+msgstr "Add Term"
+
+msgid "Add a Friend"
+msgstr "Add a Friend"
+
+msgid "Add a player to your Friends list using their PlayStation®Network ID."
+msgstr "Add a player to your Friends list using their PlayStation®Network ID."
+
+msgid "Add to Playlist"
+msgstr "Add to Playlist"
+
+msgid "Add words to be displayed as options for predictive text entry when using the on-screen keyboard.\nSelect an option."
+msgstr "Add words to be displayed as options for predictive text entry when using the on-screen keyboard.\nSelect an option."
+
+msgid "Add words to be displayed as options for predictive text entry.\nSelect an option."
+msgstr "Add words to be displayed as options for predictive text entry.\nSelect an option."
+
+msgid "Add/Edit Term"
+msgstr "Add/Edit Term"
+
+msgid "Added "
+msgstr "Added "
+
+msgid "Address"
+msgstr "Address"
+
+msgid "Adjust settings for connection to the Internet.\nIf making a wired connection, you must have an Ethernet cable connected."
+msgstr "Adjust settings for connection to the Internet.\nIf making a wired connection, you must have an Ethernet cable connected."
+
+msgid "Adjust the OpenXMB scene brightness."
+msgstr "Adjust the OpenXMB scene brightness."
+
+msgid "Adjusts date and time settings."
+msgstr "Adjusts date and time settings."
+
+msgid "Adjusts parental control settings."
+msgstr "Adjusts parental control settings."
+
+msgid "Adjusts settings for accessories that are connected to this system."
+msgstr "Adjusts settings for accessories that are connected to this system."
+
+msgid "Adjusts settings for audio output."
+msgstr "Adjusts settings for audio output."
+
+msgid "Adjusts settings for chat."
+msgstr "Adjusts settings for chat."
+
+msgid "Adjusts settings for games."
+msgstr "Adjusts settings for games."
+
+msgid "Adjusts settings for music."
+msgstr "Adjusts settings for music."
+
+msgid "Adjusts settings for printers that are connected to this system."
+msgstr "Adjusts settings for printers that are connected to this system."
+
+msgid "Adjusts settings for printers that are connected to this system.\n\nNo printer is connected to the system."
+msgstr "Adjusts settings for printers that are connected to this system.\n\nNo printer is connected to the system."
+
+msgid "Adjusts settings for remote play. Remote play enables you to use a device that supports the remote play feature (such as a PSP™ system) to operate this system over a network."
+msgstr "Adjusts settings for remote play. Remote play enables you to use a device that supports the remote play feature (such as a PSP™ system) to operate this system over a network."
+
+msgid "Adjusts settings for the Internet connection."
+msgstr "Adjusts settings for the Internet connection."
+
+msgid "Adjusts settings for this PS3™ system."
+msgstr "Adjusts settings for this PS3™ system."
+
+msgid "Adjusts settings for video output."
+msgstr "Adjusts settings for video output."
+
+msgid "Adjusts settings for video."
+msgstr "Adjusts settings for video."
+
+msgid "Adjusts settings related to the appearance of the XMB™ screen."
+msgstr "Adjusts settings related to the appearance of the XMB™ screen."
+
+msgid "Adjusts settings to reduce power usage by this system."
+msgstr "Adjusts settings to reduce power usage by this system."
+
+msgid "Advanced"
+msgstr "Advanced"
+
+msgid "After 1 hour"
+msgstr "After 1 hour"
+
+msgid "After 10 Minutes"
+msgstr "After 10 Minutes"
+
+msgid "After 10 min."
+msgstr "After 10 min."
+
+msgid "After 2 hours"
+msgstr "After 2 hours"
+
+msgid "After 20 Minutes"
+msgstr "After 20 Minutes"
+
+msgid "After 3 hours"
+msgstr "After 3 hours"
+
+msgid "After 30 Minutes"
+msgstr "After 30 Minutes"
+
+msgid "After 30 min."
+msgstr "After 30 min."
+
+msgid "After 5 Minutes"
+msgstr "After 5 Minutes"
+
+msgid "After 5 hours"
+msgstr "After 5 hours"
+
+msgid "After 60 min."
+msgstr "After 60 min."
+
+msgid "After Launching a Game"
+msgstr "After Launching a Game"
+
+msgid "Album Artwork"
+msgstr "Album Artwork"
+
+msgid "Albums"
+msgstr "Albums"
+
+msgid "All"
+msgstr "All"
+
+msgid "All data on the system storage will be erased.\nAre you sure you want to continue?"
+msgstr "All data on the system storage will be erased.\nAre you sure you want to continue?"
+
+msgid "All terms that were added will be deleted.\nAre you sure you want to continue?"
+msgstr "All terms that were added will be deleted.\nAre you sure you want to continue?"
+
+msgid "Analog Navigation"
+msgstr "Analogue Navigation"
+
+msgid "Anti-aliasing"
+msgstr "Anti-aliasing"
+
+msgid "Apply a saved appearance preset."
+msgstr "Apply a saved appearance preset."
+
+msgid "Apply upscaling to PlayStation® format software."
+msgstr "Apply upscaling to PlayStation® format software."
+
+msgid "Are you sure you want to delete the track?"
+msgstr "Are you sure you want to delete the track?"
+
+msgid "Artist ▲"
+msgstr "Artist ▲"
+
+msgid "Artist ▼"
+msgstr "Artist ▼"
+
+msgid "Artists"
+msgstr "Artists"
+
+msgid "Audio Device Settings"
+msgstr "Audio Device Settings"
+
+msgid "Audio Input Connector / SCART / AV MULTI"
+msgstr "Audio Input Connector / SCART / AV MULTI"
+
+msgid "Audio Language"
+msgstr "Audio Language"
+
+msgid "Audio Multi-Output"
+msgstr "Audio Multi-Output"
+
+msgid "Audio Options"
+msgstr "Audio Options"
+
+msgid "Audio Output Device"
+msgstr "Audio Output Device"
+
+msgid "Audio Output Settings"
+msgstr "Audio Output Settings"
+
+msgid "Authentication"
+msgstr "Authentication"
+
+msgid "Authentication Setting"
+msgstr "Authentication Setting"
+
+msgid "Auto"
+msgstr "Auto"
+
+msgid "Auto (Time of Day)"
+msgstr "Auto (Time of Day)"
+
+msgid "Auto-Detect"
+msgstr "Auto-Detect"
+
+msgid "Automatic Update"
+msgstr "Automatic Update"
+
+msgid "Automatic detection or a preferred button style."
+msgstr "Automatic detection or a preferred button style."
+
+msgid "Automatic setup by access point type."
+msgstr "Automatic setup by access point type."
+
+msgid "Automatically use hardware decoding when available."
+msgstr "Automatically use hardware decoding when available."
+
+msgid "BD Audio Language"
+msgstr "BD Audio Language"
+
+msgid "BD Audio Output Format (HDMI)"
+msgstr "BD Audio Output Format (HDMI)"
+
+msgid "BD Data Utility"
+msgstr "BD Data Utility"
+
+msgid "BD Parental Control"
+msgstr "BD Parental Control"
+
+msgid "BD Remote Control Registration"
+msgstr "BD Remote Control Registration"
+
+msgid "BD/DVD - Video Output Format (HDMI)"
+msgstr "BD/DVD - Video Output Format (HDMI)"
+
+msgid "BD/DVD Auto-start"
+msgstr "BD/DVD Auto-start"
+
+msgid "BT Stereo Headphones"
+msgstr "BT Stereo Headphones"
+
+msgid "Back"
+msgstr "Back"
+
+msgid "Back Up"
+msgstr "Back Up"
+
+msgid "Back up completed."
+msgstr "Back up completed."
+
+msgid "Back up or restore data on the system storage.\nSelect the operation you want to perform."
+msgstr "Back up or restore data on the system storage.\nSelect the operation you want to perform."
+
+msgid "Background"
+msgstr "Background"
+
+msgid "Background Audio"
+msgstr "Background Audio"
+
+msgid "Background File"
+msgstr "Background File"
+
+msgid "Background Frame Limit"
+msgstr "Background Frame Limit"
+
+msgid "Background Music"
+msgstr "Background Music"
+
+msgid "Background file not found."
+msgstr "Background file not found."
+
+msgid "Backing up...\nDo not remove the storage media."
+msgstr "Backing up...\nDo not remove the storage media."
+
+msgid "Backs up data saved on the system storage to storage media, or restores data that has been backed up.\nSelect an option."
+msgstr "Backs up data saved on the system storage to storage media, or restores data that has been backed up.\nSelect an option."
+
+msgid "Backup Utility"
+msgstr "Backup Utility"
+
+msgid "Baltic"
+msgstr "Baltic"
+
+msgid "Before the Storm"
+msgstr "Before the Storm"
+
+msgid "Beneath the Ashes"
+msgstr "Beneath the Ashes"
+
+msgid "Bing"
+msgstr "Bing"
+
+msgid "Bitstream"
+msgstr "Bitstream"
+
+msgid "Black"
+msgstr "Black"
+
+msgid "Block Noise Reduction"
+msgstr "Block Noise Reduction"
+
+msgid "Blue"
+msgstr "Blue"
+
+msgid "Bluetooth Keyboard"
+msgstr "Bluetooth Keyboard"
+
+msgid "Bluetooth Mouse"
+msgstr "Bluetooth Mouse"
+
+msgid "Bluetooth® Headset"
+msgstr "Bluetooth® Headset"
+
+msgid "Borderless"
+msgstr "Borderless"
+
+msgid "Breathtaking Vision"
+msgstr "Breathtaking Vision"
+
+msgid "Bright"
+msgstr "Bright"
+
+msgid "Brightness"
+msgstr "Brightness"
+
+msgid "Brown"
+msgstr "Brown"
+
+msgid "Browse and purchase games, add-ons, movies, and more for your PS3™ system.\n\nDownload demos, full games, themes, wallpapers, and exclusive content.\n\nA broadband Internet connection and a PlayStation®Network account are required to use PlayStation®Store."
+msgstr "Browse and purchase games, add-ons, movies, and more for your PS3™ system.\n\nDownload demos, full games, themes, wallpapers, and exclusive content.\n\nA broadband Internet connection and a PlayStation®Network account are required to use PlayStation®Store."
+
+msgid "Browse folders, songs, albums, artists or saved playlists."
+msgstr "Browse folders, songs, albums, artists or saved playlists."
+
+msgid "Browser"
+msgstr "Browser"
+
+msgid "Buffalo-A1B2C3"
+msgstr "Buffalo-A1B2C3"
+
+msgid "By Album"
+msgstr "By Album"
+
+msgid "By Artist"
+msgstr "By Artist"
+
+msgid "By Genre"
+msgstr "By Genre"
+
+msgid "By Month"
+msgstr "By Month"
+
+msgid "By Release Year"
+msgstr "By Release Year"
+
+msgid "By Track"
+msgstr "By Track"
+
+msgid "By Year"
+msgstr "By Year"
+
+msgid "Calibrate Motion Controller"
+msgstr "Calibrate Motion Controller"
+
+msgid "Calibrates the magnetic sensor of a motion controller. Use this setting when the motion controller does not control on-screen movement as expected."
+msgstr "Calibrates the magnetic sensor of a motion controller. Use this setting when the motion controller does not control on-screen movement as expected."
+
+msgid "Calibrates the magnetic sensor of a motion controller. Use this setting when the motion controller does not control on-screen movement as expected.\n\nPlace the controller on a flat surface, then press the X button."
+msgstr "Calibrates the magnetic sensor of a motion controller. Use this setting when the motion controller does not control on-screen movement as expected.\n\nPlace the controller on a flat surface, then press the X button."
+
+msgid "Camera Device Settings"
+msgstr "Camera Device Settings"
+
+msgid "Can you read this screen?\nSelect [Yes] if you can.\n\nIf you do not press any buttons, the system will automatically go back to the previous setting."
+msgstr "Can you read this screen?\nSelect [Yes] if you can.\n\nIf you do not press any buttons, the system will automatically go back to the previous setting."
+
+msgid "Cancel"
+msgstr "Cancel"
+
+msgid "Canyon"
+msgstr "Canyon"
+
+msgid "Caution-Echidnas May Eat Your Brain"
+msgstr "Caution-Echidnas May Eat Your Brain"
+
+msgid "Central European"
+msgstr "Central European"
+
+msgid "Change Binding"
+msgstr "Change Binding"
+
+msgid "Change Effect"
+msgstr "Change Effect"
+
+msgid "Change Icon"
+msgstr "Change Icon"
+
+msgid "Change Password"
+msgstr "Change Password"
+
+msgid "Change the number assigned to the controller that is currently in use."
+msgstr "Change the number assigned to the controller that is currently in use."
+
+msgid "Change the number assigned to the controller that is currently in use.\n\nPress the PS button on the controller you want to reassign."
+msgstr "Change the number assigned to the controller that is currently in use.\n\nPress the PS button on the controller you want to reassign."
+
+msgid "Change the password required to play games or videos, or to use the Internet browser.\n\nEnter your current password."
+msgstr "Change the password required to play games or videos, or to use the Internet browser.\n\nEnter your current password."
+
+msgid "Channel 1"
+msgstr "Channel 1"
+
+msgid "Channel 11"
+msgstr "Channel 11"
+
+msgid "Channel 6"
+msgstr "Channel 6"
+
+msgid "Chapters"
+msgstr "Chapters"
+
+msgid "Character Set"
+msgstr "Character Set"
+
+msgid "Chat Rooms"
+msgstr "Chat Rooms"
+
+msgid "Chat Settings"
+msgstr "Chat Settings"
+
+msgid "Checking for the latest version of the system software..."
+msgstr "Checking for the latest version of the system software..."
+
+msgid "Checking network configuration...\nPlease wait."
+msgstr "Checking network configuration...\nPlease wait."
+
+msgid "Chinese"
+msgstr "Chinese"
+
+msgid "Chinese (simplified)"
+msgstr "Chinese (simplified)"
+
+msgid "Chinese (traditional)"
+msgstr "Chinese (traditional)"
+
+msgid "Choose a 12-hour or 24-hour clock."
+msgstr "Choose a 12-hour or 24-hour clock."
+
+msgid "Choose a TrueType or OpenType font file."
+msgstr "Choose a TrueType or OpenType font file."
+
+msgid "Choose a photo or video background."
+msgstr "Choose a photo or video background."
+
+msgid "Choose an action, then press its controller button."
+msgstr "Choose an action, then press its controller button."
+
+msgid "Choose an action, then press its keyboard key."
+msgstr "Choose an action, then press its keyboard key."
+
+msgid "Choose an existing folder."
+msgstr "Choose an existing folder."
+
+msgid "Choose how OpenXMB uses the display."
+msgstr "Choose how OpenXMB uses the display."
+
+msgid "Choose how the shell behaves while a game runs."
+msgstr "Choose how the shell behaves while a game runs."
+
+msgid "Choose the folder scanned for games."
+msgstr "Choose the folder scanned for games."
+
+msgid "Choose the full-screen music presentation."
+msgstr "Choose the full-screen music presentation."
+
+msgid "Choose the fullscreen display resolution."
+msgstr "Choose the fullscreen display resolution."
+
+msgid "Choose the icon material."
+msgstr "Choose the icon material."
+
+msgid "Choose the root folder for music and playlists."
+msgstr "Choose the root folder for music and playlists."
+
+msgid "Choose the root folder for photos."
+msgstr "Choose the root folder for photos."
+
+msgid "Choose the root folder for videos."
+msgstr "Choose the root folder for videos."
+
+msgid "Classic"
+msgstr "Classic"
+
+msgid "Clear Browsing Data"
+msgstr "Clear Browsing Data"
+
+msgid "Clear Browsing Data?"
+msgstr "Clear Browsing Data?"
+
+msgid "Clear Thumbnail Cache?"
+msgstr "Clear Thumbnail Cache?"
+
+msgid "Colour"
+msgstr "Colour"
+
+msgid "Component / D-Terminal"
+msgstr "Component / D-Terminal"
+
+msgid "Compose and send a new message."
+msgstr "Compose and send a new message."
+
+msgid "Composite / S Video"
+msgstr "Composite / S Video"
+
+msgid "Configure Ad Hoc Mode settings for PSP® Remasters."
+msgstr "Configure Ad Hoc Mode settings for PSP® Remasters."
+
+msgid "Configure BD/DVD auto-start settings."
+msgstr "Configure BD/DVD auto-start settings."
+
+msgid "Configure audio output settings."
+msgstr "Configure audio output settings."
+
+msgid "Configure the screen saver settings."
+msgstr "Configure the screen saver settings."
+
+msgid "Configure the screen size for PSP® Remasters."
+msgstr "Configure the screen size for PSP® Remasters."
+
+msgid "Configure video output settings according to your TV."
+msgstr "Configure video output settings according to your TV."
+
+msgid "Confirm"
+msgstr "Confirm"
+
+msgid "Connect"
+msgstr "Connect"
+
+msgid "Connect PS Vita System Using Network"
+msgstr "Connect PS Vita System Using Network"
+
+msgid "Connecting...\nPlease wait."
+msgstr "Connecting...\nPlease wait."
+
+msgid "Connection test completed."
+msgstr "Connection test completed."
+
+msgid "Continue after the last photograph."
+msgstr "Continue after the last photograph."
+
+msgid "Continue audio when OpenXMB loses focus."
+msgstr "Continue audio when OpenXMB loses focus."
+
+msgid "Continue music after closing the player."
+msgstr "Continue music after closing the player."
+
+msgid "Control for HDMI"
+msgstr "Control for HDMI"
+
+msgid "Controller Auto-Off"
+msgstr "Controller Auto-Off"
+
+msgid "Controller Bindings"
+msgstr "Controller Bindings"
+
+msgid "Controller Prompts"
+msgstr "Controller Prompts"
+
+msgid "Controller Vibration"
+msgstr "Controller Vibration"
+
+msgid "Controller Vibration Function"
+msgstr "Controller Vibration Function"
+
+msgid "Copy Multiple"
+msgstr "Copy Multiple"
+
+msgid "Corrupted Data"
+msgstr "Corrupted Data"
+
+msgid "Create New Internal Memory Card"
+msgstr "Create New Internal Memory Card"
+
+msgid "Create New User"
+msgstr "Create New User"
+
+msgid "Create a new internal memory card."
+msgstr "Create a new internal memory card."
+
+msgid "Crimson"
+msgstr "Crimson"
+
+msgid "Cross Color Reduction Filter"
+msgstr "Cross Colour Reduction Filter"
+
+msgid "Crossfade"
+msgstr "Crossfade"
+
+msgid "Custom"
+msgstr "Custom"
+
+msgid "Cyan"
+msgstr "Cyan"
+
+msgid "Cyrillic"
+msgstr "Cyrillic"
+
+msgid "DD/MM/YYYY"
+msgstr "DD/MM/YYYY"
+
+msgid "DHCP Host Name"
+msgstr "DHCP Host Name"
+
+msgid "DNS Setting"
+msgstr "DNS Setting"
+
+msgid "DNS Setting\nIn most cases, select [Automatic]."
+msgstr "DNS Setting\nIn most cases, select [Automatic]."
+
+msgid "DTS 5.1 Ch."
+msgstr "DTS 5.1 Ch."
+
+msgid "DVD Audio Language"
+msgstr "DVD Audio Language"
+
+msgid "DVD Parental Control"
+msgstr "DVD Parental Control"
+
+msgid "Danish"
+msgstr "Danish"
+
+msgid "Dark Blue"
+msgstr "Dark Blue"
+
+msgid "Dark Green"
+msgstr "Dark Green"
+
+msgid "Data Transfer Utility"
+msgstr "Data Transfer Utility"
+
+msgid "Date"
+msgstr "Date"
+
+msgid "Date (YYYY/MM/DD)"
+msgstr "Date (YYYY/MM/DD)"
+
+msgid "Date Format"
+msgstr "Date Format"
+
+msgid "Date and Time"
+msgstr "Date and Time"
+
+msgid "Date and Time Settings"
+msgstr "Date and Time Settings"
+
+msgid "Day"
+msgstr "Day"
+
+msgid "Day/Night"
+msgstr "Day/Night"
+
+msgid "Daylight Saving"
+msgstr "Daylight Saving"
+
+msgid "Dead Batteries"
+msgstr "Dead Batteries"
+
+msgid "Decoder Information"
+msgstr "Decoder Information"
+
+msgid "Deep Color Output (HDMI)"
+msgstr "Deep Color Output (HDMI)"
+
+msgid "Default"
+msgstr "Default"
+
+msgid "Default Repeat"
+msgstr "Default Repeat"
+
+msgid "Default Router"
+msgstr "Default Router"
+
+msgid "Default Screen Fit"
+msgstr "Default Screen Fit"
+
+msgid "Default Shuffle"
+msgstr "Default Shuffle"
+
+msgid "Default Sort"
+msgstr "Default Sort"
+
+msgid "Default browser page scale."
+msgstr "Default browser page scale."
+
+msgid "Default volume for music playback."
+msgstr "Default volume for music playback."
+
+msgid "Default volume for video playback."
+msgstr "Default volume for video playback."
+
+msgid "Delay between held directional inputs in milliseconds."
+msgstr "Delay between held directional inputs in milliseconds."
+
+msgid "Delete All"
+msgstr "Delete All"
+
+msgid "Delete BD data saved on the system storage."
+msgstr "Delete BD data saved on the system storage."
+
+msgid "Delete Backup Data"
+msgstr "Delete Backup Data"
+
+msgid "Delete Multiple"
+msgstr "Delete Multiple"
+
+msgid "Delete PS Vita System's Backup Files"
+msgstr "Delete PS Vita System's Backup Files"
+
+msgid "Delete Predictive Text Dictionary"
+msgstr "Delete Predictive Text Dictionary"
+
+msgid "Delete Registered Device"
+msgstr "Delete Registered Device"
+
+msgid "Delete Term"
+msgstr "Delete Term"
+
+msgid "Deletes backup files for the PS Vita system saved on this system."
+msgstr "Deletes backup files for the PS Vita system saved on this system."
+
+msgid "Deletes backup files for the PS Vita system saved on this system.\n\nThe backup files for the PS Vita system will be deleted.\nYou can only delete the backup files for your account.\n\nDo you want to delete the backup files?"
+msgstr "Deletes backup files for the PS Vita system saved on this system.\n\nThe backup files for the PS Vita system will be deleted.\nYou can only delete the backup files for your account.\n\nDo you want to delete the backup files?"
+
+msgid "Deletes registered remote play devices from this system.\nSelect a device to delete."
+msgstr "Deletes registered remote play devices from this system.\nSelect a device to delete."
+
+msgid "Deletes words that were added automatically to the dictionary when using the on-screen keyboard."
+msgstr "Deletes words that were added automatically to the dictionary when using the on-screen keyboard."
+
+msgid "Deletes words that were added automatically to the dictionary when using the on-screen keyboard.\n\nThe predictive text dictionary will be deleted.\nAre you sure you want to continue?"
+msgstr "Deletes words that were added automatically to the dictionary when using the on-screen keyboard.\n\nThe predictive text dictionary will be deleted.\nAre you sure you want to continue?"
+
+msgid "Deletion completed."
+msgstr "Deletion completed."
+
+msgid "Device List"
+msgstr "Device List"
+
+msgid "Dictionary Type"
+msgstr "Dictionary Type"
+
+msgid "Dim"
+msgstr "Dim"
+
+msgid "Dim the scene after inactivity."
+msgstr "Dim the scene after inactivity."
+
+msgid "Directory for browser downloads."
+msgstr "Directory for browser downloads."
+
+msgid "Disable"
+msgstr "Disable"
+
+msgid "Disabled"
+msgstr "Disabled"
+
+msgid "Disc Auto-Start"
+msgstr "Disc Auto-Start"
+
+msgid "Disconnect"
+msgstr "Disconnect"
+
+msgid "Disconnect All"
+msgstr "Disconnect All"
+
+msgid "Display"
+msgstr "Display"
+
+msgid "Display GPU memory use."
+msgstr "Display GPU memory use."
+
+msgid "Display Mode"
+msgstr "Display Mode"
+
+msgid "Display PSP® Remasters in 3D."
+msgstr "Display PSP® Remasters in 3D."
+
+msgid "Display Settings"
+msgstr "Display Settings"
+
+msgid "Display [What's New]"
+msgstr "Display [What's New]"
+
+msgid "Display available cover artwork."
+msgstr "Display available cover artwork."
+
+msgid "Display information about the selected content."
+msgstr "Display information about the selected content."
+
+msgid "Display the shell frame rate."
+msgstr "Display the shell frame rate."
+
+msgid "Displays a list of PS Vita systems registered with this system.\n\nNo PS Vita systems are currently registered."
+msgstr "Displays a list of PS Vita systems registered with this system.\n\nNo PS Vita systems are currently registered."
+
+msgid "Displays a list of devices registered with this system.\n\nNo devices are currently registered for remote play."
+msgstr "Displays a list of devices registered with this system.\n\nNo devices are currently registered for remote play."
+
+msgid "Displays current network settings and connection status."
+msgstr "Displays current network settings and connection status."
+
+msgid "Displays current network settings and the Internet connection status.\n\nConnection Name    Default\nConnection Type    Wired\nIP Address         192.168.1.10\nSubnet Mask        255.255.255.0\nDefault Gateway    192.168.1.1\nPrimary DNS        8.8.8.8\nSecondary DNS      8.8.4.4"
+msgstr "Displays current network settings and the Internet connection status.\n\nConnection Name    Default\nConnection Type    Wired\nIP Address         192.168.1.10\nSubnet Mask        255.255.255.0\nDefault Gateway    192.168.1.1\nPrimary DNS        8.8.8.8\nSecondary DNS      8.8.4.4"
+
+msgid "Displays manuals for the software installed on the PS3™ system."
+msgstr "Displays manuals for the software installed on the PS3™ system."
+
+msgid "Displays the messages you have received."
+msgstr "Displays the messages you have received."
+
+msgid "Displays the messages you have sent."
+msgstr "Displays the messages you have sent."
+
+msgid "Displays the registration code that is required to play DivX® VOD content."
+msgstr "Displays the registration code that is required to play DivX® VOD content."
+
+msgid "Displays the registration code that is required to play DivX® VOD content.\n\nRegistration Code:\n\n8C9D7E1F\n\nVisit http://www.divx.com/vod/ for instructions on how to register the code."
+msgstr "Displays the registration code that is required to play DivX® VOD content.\n\nRegistration Code:\n\n8C9D7E1F\n\nVisit http://www.divx.com/vod/ for instructions on how to register the code."
+
+msgid "DivX® VOD Registration Code"
+msgstr "DivX® VOD Registration Code"
+
+msgid "Divided from Grace"
+msgstr "Divided from Grace"
+
+msgid "Do Not Display"
+msgstr "Do Not Display"
+
+msgid "Do Not Set"
+msgstr "Do Not Set"
+
+msgid "Do Not Use"
+msgstr "Do Not Use"
+
+msgid "Do you want to back up data on the system storage to other storage media?\n\nLimitations may apply when backing up certain copyright-protected content."
+msgstr "Do you want to back up data on the system storage to other storage media?\n\nLimitations may apply when backing up certain copyright-protected content."
+
+msgid "Do you want to cancel?\nThe settings you have made so far will not be saved if you cancel."
+msgstr "Do you want to cancel?\nThe settings you have made so far will not be saved if you cancel."
+
+msgid "Do you want to overwrite the wallpaper?\nIf you do, the current wallpaper will be lost.\nOnly one wallpaper image can be saved."
+msgstr "Do you want to overwrite the wallpaper?\nIf you do, the current wallpaper will be lost.\nOnly one wallpaper image can be saved."
+
+msgid "Do you want to perform advanced settings?"
+msgstr "Do you want to perform advanced settings?"
+
+msgid "Dolby Digital 5.1 Ch."
+msgstr "Dolby Digital 5.1 Ch."
+
+msgid "Double Scale"
+msgstr "Double Scale"
+
+msgid "Down"
+msgstr "Down"
+
+msgid "Downloads Folder"
+msgstr "Downloads Folder"
+
+msgid "DuckDuckGo"
+msgstr "DuckDuckGo"
+
+msgid "Dusk"
+msgstr "Dusk"
+
+msgid "Dutch"
+msgstr "Dutch"
+
+msgid "EAP Authentication"
+msgstr "EAP Authentication"
+
+msgid "EAP-MD5"
+msgstr "EAP-MD5"
+
+msgid "Easy"
+msgstr "Easy"
+
+msgid "Echo Cancellation"
+msgstr "Echo Cancellation"
+
+msgid "Edit"
+msgstr "Edit"
+
+msgid "Edit Term"
+msgstr "Edit Term"
+
+msgid "Elevator Music"
+msgstr "Elevator Music"
+
+msgid "Emulation Configuration"
+msgstr "Emulation Configuration"
+
+msgid "Enable"
+msgstr "Enable"
+
+msgid "Enable ATRAC"
+msgstr "Enable ATRAC"
+
+msgid "Enable WMA Playback"
+msgstr "Enable WMA Playback"
+
+msgid "Enable analog controller navigation."
+msgstr "Enable analogue controller navigation."
+
+msgid "Enable controller feedback."
+msgstr "Enable controller feedback."
+
+msgid "Enabled"
+msgstr "Enabled"
+
+msgid "English (UK)"
+msgstr "British English"
+
+msgid "English (US)"
+msgstr "English (US)"
+
+msgid "English (United Kingdom)"
+msgstr "English (United Kingdom)"
+
+msgid "English (United States)"
+msgstr "English (United States)"
+
+msgid "Enter Manually"
+msgstr "Enter Manually"
+
+msgid "Enter a new 4-digit password."
+msgstr "Enter a new 4-digit password."
+
+msgid "Enter the new password again to confirm."
+msgstr "Enter the new password again to confirm."
+
+msgid "Eternal Excavation"
+msgstr "Eternal Excavation"
+
+msgid "Evening"
+msgstr "Evening"
+
+msgid "External Subtitle"
+msgstr "External Subtitle"
+
+msgid "Extra"
+msgstr "Extra"
+
+msgid "FON_FREE_INTERNET"
+msgstr "FON_FREE_INTERNET"
+
+msgid "FREE* to access, PlayStation®Store is the only place to download new and exclusive PS3™ games, FREE playable demos, add-on packs, and high-definition videos.\n\nGet more for your PS3™ and visit PlayStation®Store today.\n\n* Broadband Internet connection required."
+msgstr "FREE* to access, PlayStation®Store is the only place to download new and exclusive PS3™ games, FREE playable demos, add-on packs, and high-definition videos.\n\nGet more for your PS3™ and visit PlayStation®Store today.\n\n* Broadband Internet connection required."
+
+msgid "Fade"
+msgstr "Fade"
+
+msgid "Fast"
+msgstr "Fast"
+
+msgid "Fast Forward"
+msgstr "Fast Forward"
+
+msgid "Fast Reverse"
+msgstr "Fast Reverse"
+
+msgid "File logging is unavailable on this platform."
+msgstr "File logging is unavailable on this platform."
+
+msgid "Fill"
+msgstr "Fill"
+
+msgid "Film Date ▲"
+msgstr "Film Date ▲"
+
+msgid "Film Date ▼"
+msgstr "Film Date ▼"
+
+msgid "Finish"
+msgstr "Finish"
+
+msgid "Finnish"
+msgstr "Finnish"
+
+msgid "Fit"
+msgstr "Fit"
+
+msgid "Flow"
+msgstr "Flow"
+
+msgid "Flow visualizer"
+msgstr "Flow visualiser"
+
+msgid "Folder Repeat"
+msgstr "Folder Repeat"
+
+msgid "Folders"
+msgstr "Folders"
+
+msgid "Follow the on-screen instructions on your PlayStation®Vita system."
+msgstr "Follow the on-screen instructions on your PlayStation®Vita system."
+
+msgid "Font"
+msgstr "Font"
+
+msgid "Font File"
+msgstr "Font File"
+
+msgid "Font file not found."
+msgstr "Font file not found."
+
+msgid "Format Hard Disk"
+msgstr "Format Hard Disk"
+
+msgid "Format System Storage"
+msgstr "Format System Storage"
+
+msgid "Format Utility"
+msgstr "Format Utility"
+
+msgid "Format completed."
+msgstr "Format completed."
+
+msgid "Formats the system storage and restores the system software to its default settings.\n\nAll data on the hard disk will be deleted, and the system software will be reinstalled.\nDo you want to continue?"
+msgstr "Formats the system storage and restores the system software to its default settings.\n\nAll data on the hard disk will be deleted, and the system software will be reinstalled.\nDo you want to continue?"
+
+msgid "Formats the system storage and restores the system software to its default settings.\nAre you sure you want to continue?"
+msgstr "Formats the system storage and restores the system software to its default settings.\nAre you sure you want to continue?"
+
+msgid "Formats the system storage. All data on the system storage will be deleted during formatting."
+msgstr "Formats the system storage. All data on the system storage will be deleted during formatting."
+
+msgid "Formats the system storage. All data on the system storage will be deleted during formatting.\nSelect an option."
+msgstr "Formats the system storage. All data on the system storage will be deleted during formatting.\nSelect an option."
+
+msgid "Formatting...\nDo not remove the storage media."
+msgstr "Formatting...\nDo not remove the storage media."
+
+msgid "Formatting...\nDo not turn off the system."
+msgstr "Formatting...\nDo not turn off the system."
+
+msgid "Fractal Dive"
+msgstr "Fractal Dive"
+
+msgid "Frame Advance"
+msgstr "Frame Advance"
+
+msgid "Frame Limit"
+msgstr "Frame Limit"
+
+msgid "Frame Noise Reduction"
+msgstr "Frame Noise Reduction"
+
+msgid "Frame Reverse"
+msgstr "Frame Reverse"
+
+msgid "French"
+msgstr "French"
+
+msgid "Full"
+msgstr "Full"
+
+msgid "Full Format"
+msgstr "Full Format"
+
+msgid "Full Screen"
+msgstr "Full Screen"
+
+msgid "Fullscreen"
+msgstr "Fullscreen"
+
+msgid "GMT"
+msgstr "GMT"
+
+msgid "GMT+00:00 Casablanca"
+msgstr "GMT+00:00 Casablanca"
+
+msgid "GMT+00:00 Dublin"
+msgstr "GMT+00:00 Dublin"
+
+msgid "GMT+00:00 Lisbon"
+msgstr "GMT+00:00 Lisbon"
+
+msgid "GMT+00:00 London"
+msgstr "GMT+00:00 London"
+
+msgid "GMT+00:00 Reykjavik"
+msgstr "GMT+00:00 Reykjavik"
+
+msgid "GMT+01:00"
+msgstr "GMT+01:00"
+
+msgid "GMT+01:00 Amsterdam"
+msgstr "GMT+01:00 Amsterdam"
+
+msgid "GMT+01:00 Berlin"
+msgstr "GMT+01:00 Berlin"
+
+msgid "GMT+01:00 Madrid"
+msgstr "GMT+01:00 Madrid"
+
+msgid "GMT+01:00 Paris"
+msgstr "GMT+01:00 Paris"
+
+msgid "GMT+01:00 Rome"
+msgstr "GMT+01:00 Rome"
+
+msgid "GMT+01:00 Stockholm"
+msgstr "GMT+01:00 Stockholm"
+
+msgid "GMT+02:00"
+msgstr "GMT+02:00"
+
+msgid "GMT+02:00 Athens"
+msgstr "GMT+02:00 Athens"
+
+msgid "GMT+02:00 Cairo"
+msgstr "GMT+02:00 Cairo"
+
+msgid "GMT+02:00 Helsinki"
+msgstr "GMT+02:00 Helsinki"
+
+msgid "GMT+02:00 Johannesburg"
+msgstr "GMT+02:00 Johannesburg"
+
+msgid "GMT+03:00"
+msgstr "GMT+03:00"
+
+msgid "GMT+03:00 Istanbul"
+msgstr "GMT+03:00 Istanbul"
+
+msgid "GMT+03:00 Moscow"
+msgstr "GMT+03:00 Moscow"
+
+msgid "GMT+03:00 Nairobi"
+msgstr "GMT+03:00 Nairobi"
+
+msgid "GMT+03:30 Tehran"
+msgstr "GMT+03:30 Tehran"
+
+msgid "GMT+04:00"
+msgstr "GMT+04:00"
+
+msgid "GMT+04:00 Dubai"
+msgstr "GMT+04:00 Dubai"
+
+msgid "GMT+04:30 Kabul"
+msgstr "GMT+04:30 Kabul"
+
+msgid "GMT+05:00"
+msgstr "GMT+05:00"
+
+msgid "GMT+05:00 Karachi"
+msgstr "GMT+05:00 Karachi"
+
+msgid "GMT+05:30"
+msgstr "GMT+05:30"
+
+msgid "GMT+05:30 New Delhi"
+msgstr "GMT+05:30 New Delhi"
+
+msgid "GMT+05:45 Kathmandu"
+msgstr "GMT+05:45 Kathmandu"
+
+msgid "GMT+06:00"
+msgstr "GMT+06:00"
+
+msgid "GMT+06:00 Dhaka"
+msgstr "GMT+06:00 Dhaka"
+
+msgid "GMT+07:00"
+msgstr "GMT+07:00"
+
+msgid "GMT+07:00 Bangkok"
+msgstr "GMT+07:00 Bangkok"
+
+msgid "GMT+07:00 Jakarta"
+msgstr "GMT+07:00 Jakarta"
+
+msgid "GMT+08:00"
+msgstr "GMT+08:00"
+
+msgid "GMT+08:00 Beijing"
+msgstr "GMT+08:00 Beijing"
+
+msgid "GMT+08:00 Hong Kong"
+msgstr "GMT+08:00 Hong Kong"
+
+msgid "GMT+08:00 Singapore"
+msgstr "GMT+08:00 Singapore"
+
+msgid "GMT+09:00"
+msgstr "GMT+09:00"
+
+msgid "GMT+09:00 Seoul"
+msgstr "GMT+09:00 Seoul"
+
+msgid "GMT+09:00 Tokyo"
+msgstr "GMT+09:00 Tokyo"
+
+msgid "GMT+09:30 Adelaide"
+msgstr "GMT+09:30 Adelaide"
+
+msgid "GMT+10:00"
+msgstr "GMT+10:00"
+
+msgid "GMT+10:00 Guam"
+msgstr "GMT+10:00 Guam"
+
+msgid "GMT+10:00 Sydney"
+msgstr "GMT+10:00 Sydney"
+
+msgid "GMT+11:00"
+msgstr "GMT+11:00"
+
+msgid "GMT+11:00 Solomon Islands"
+msgstr "GMT+11:00 Solomon Islands"
+
+msgid "GMT+12:00"
+msgstr "GMT+12:00"
+
+msgid "GMT+12:00 Auckland"
+msgstr "GMT+12:00 Auckland"
+
+msgid "GMT+13:00 Samoa"
+msgstr "GMT+13:00 Samoa"
+
+msgid "GMT-01:00"
+msgstr "GMT-01:00"
+
+msgid "GMT-01:00 Azores"
+msgstr "GMT-01:00 Azores"
+
+msgid "GMT-02:00"
+msgstr "GMT-02:00"
+
+msgid "GMT-03:00"
+msgstr "GMT-03:00"
+
+msgid "GMT-03:00 Buenos Aires"
+msgstr "GMT-03:00 Buenos Aires"
+
+msgid "GMT-03:00 Sao Paulo"
+msgstr "GMT-03:00 Sao Paulo"
+
+msgid "GMT-03:30 Newfoundland"
+msgstr "GMT-03:30 Newfoundland"
+
+msgid "GMT-04:00"
+msgstr "GMT-04:00"
+
+msgid "GMT-04:00 Atlantic (Canada)"
+msgstr "GMT-04:00 Atlantic (Canada)"
+
+msgid "GMT-04:00 Caracas"
+msgstr "GMT-04:00 Caracas"
+
+msgid "GMT-04:00 Santiago"
+msgstr "GMT-04:00 Santiago"
+
+msgid "GMT-05:00"
+msgstr "GMT-05:00"
+
+msgid "GMT-05:00 Bogota"
+msgstr "GMT-05:00 Bogota"
+
+msgid "GMT-05:00 Eastern Time (US & Canada)"
+msgstr "GMT-05:00 Eastern Time (US & Canada)"
+
+msgid "GMT-05:00 Lima"
+msgstr "GMT-05:00 Lima"
+
+msgid "GMT-06:00"
+msgstr "GMT-06:00"
+
+msgid "GMT-06:00 Central Time (US & Canada)"
+msgstr "GMT-06:00 Central Time (US & Canada)"
+
+msgid "GMT-06:00 Mexico City"
+msgstr "GMT-06:00 Mexico City"
+
+msgid "GMT-07:00"
+msgstr "GMT-07:00"
+
+msgid "GMT-07:00 Chihuahua"
+msgstr "GMT-07:00 Chihuahua"
+
+msgid "GMT-07:00 Mountain Time (US & Canada)"
+msgstr "GMT-07:00 Mountain Time (US & Canada)"
+
+msgid "GMT-08:00"
+msgstr "GMT-08:00"
+
+msgid "GMT-08:00 Pacific Time (US & Canada)"
+msgstr "GMT-08:00 Pacific Time (US & Canada)"
+
+msgid "GMT-08:00 Tijuana"
+msgstr "GMT-08:00 Tijuana"
+
+msgid "GMT-09:00"
+msgstr "GMT-09:00"
+
+msgid "GMT-09:00 Alaska"
+msgstr "GMT-09:00 Alaska"
+
+msgid "GMT-10:00"
+msgstr "GMT-10:00"
+
+msgid "GMT-10:00 Hawaii"
+msgstr "GMT-10:00 Hawaii"
+
+msgid "GMT-11:00"
+msgstr "GMT-11:00"
+
+msgid "GMT-11:00 Samoa"
+msgstr "GMT-11:00 Samoa"
+
+msgid "GMT-12:00"
+msgstr "GMT-12:00"
+
+msgid "Game Data Utility"
+msgstr "Game Data Utility"
+
+msgid "Game Library Folder"
+msgstr "Game Library Folder"
+
+msgid "Game Settings"
+msgstr "Game Settings"
+
+msgid "Generated thumbnails will be recreated when needed. Original media is preserved."
+msgstr "Generated thumbnails will be recreated when needed. Original media is preserved."
+
+msgid "Genre ▲"
+msgstr "Genre ▲"
+
+msgid "Genre ▼"
+msgstr "Genre ▼"
+
+msgid "Glass Icons"
+msgstr "Glass Icons"
+
+msgid "Globe"
+msgstr "Globe"
+
+msgid "Go To"
+msgstr "Go To"
+
+msgid "Gold"
+msgstr "Gold"
+
+msgid "Google"
+msgstr "Google"
+
+msgid "Gray"
+msgstr "Grey"
+
+msgid "Greek"
+msgstr "Greek"
+
+msgid "Green"
+msgstr "Green"
+
+msgid "Groove Basin"
+msgstr "Groove Basin"
+
+msgid "Group Content"
+msgstr "Group Content"
+
+msgid "HDD Audio Language"
+msgstr "HDD Audio Language"
+
+msgid "HDMI"
+msgstr "HDMI"
+
+msgid "Heads Up for Tails"
+msgstr "Heads Up for Tails"
+
+msgid "Heat Blur"
+msgstr "Heat Blur"
+
+msgid "Helium Stairways"
+msgstr "Helium Stairways"
+
+msgid "High"
+msgstr "High"
+
+msgid "High Pitch"
+msgstr "High Pitch"
+
+msgid "Hindi"
+msgstr "Hindi"
+
+msgid "Home directory unavailable."
+msgstr "Home directory unavailable."
+
+msgid "Homepage"
+msgstr "Homepage"
+
+msgid "Hours added to local system time for display."
+msgstr "Hours added to local system time for display."
+
+msgid "How photographs fit on screen."
+msgstr "How photographs fit on screen."
+
+msgid "How video fits on the screen."
+msgstr "How video fits on the screen."
+
+msgid "Hydrochill"
+msgstr "Hydrochill"
+
+msgid "IP Address"
+msgstr "IP Address"
+
+msgid "IP Address Setting"
+msgstr "IP Address Setting"
+
+msgid "Ice Cap 4 Life"
+msgstr "Ice Cap 4 Life"
+
+msgid "Icon Colour"
+msgstr "Icon Colour"
+
+msgid "Icon Style"
+msgstr "Icon Style"
+
+msgid "Idle Dimming"
+msgstr "Idle Dimming"
+
+msgid "If you format, all data on the system storage will be deleted.\nThis data cannot be restored.\nAre you sure you want to continue?"
+msgstr "If you format, all data on the system storage will be deleted.\nThis data cannot be restored.\nAre you sure you want to continue?"
+
+msgid "If you perform a connection test, the current connection will be terminated and the system will be disconnected.\nDo you want to continue?"
+msgstr "If you perform a connection test, the current connection will be terminated and the system will be disconnected.\nDo you want to continue?"
+
+msgid "Image Name"
+msgstr "Image Name"
+
+msgid "Import Date ▲"
+msgstr "Import Date ▲"
+
+msgid "Import Date ▼"
+msgstr "Import Date ▼"
+
+msgid "Import a theme archive or theme folder."
+msgstr "Import a theme archive or theme folder."
+
+msgid "Inbox"
+msgstr "Inbox"
+
+msgid "Information"
+msgstr "Information"
+
+msgid "Input Device"
+msgstr "Input Device"
+
+msgid "Install"
+msgstr "Install"
+
+msgid "Install Theme"
+msgstr "Install Theme"
+
+msgid "Instant Advance"
+msgstr "Instant Advance"
+
+msgid "Instant Replay"
+msgstr "Instant Replay"
+
+msgid "Interface Text Size"
+msgstr "Interface Text Size"
+
+msgid "Interface Volume"
+msgstr "Interface Volume"
+
+msgid "Internal Memory Card"
+msgstr "Internal Memory Card"
+
+msgid "Internal memory card for PS/PS2 saved data."
+msgstr "Internal memory card for PS/PS2 saved data."
+
+msgid "Internet Browser"
+msgstr "Internet Browser"
+
+msgid "Internet Browser Start Control"
+msgstr "Internet Browser Start Control"
+
+msgid "Internet Connection"
+msgstr "Internet Connection"
+
+msgid "Internet Connection Settings"
+msgstr "Internet Connection Settings"
+
+msgid "Internet Connection Test"
+msgstr "Internet Connection Test"
+
+msgid "Internet Search"
+msgstr "Internet Search"
+
+msgid "Internet connection settings have been completed.\n\nSave completed."
+msgstr "Internet connection settings have been completed.\n\nSave completed."
+
+msgid "It will take about 10 seconds for the access point to be ready.\nPlease wait..."
+msgstr "It will take about 10 seconds for the access point to be ready.\nPlease wait..."
+
+msgid "Italian"
+msgstr "Italian"
+
+msgid "Ivory Gadget"
+msgstr "Ivory Gadget"
+
+msgid "Japanese"
+msgstr "Japanese"
+
+msgid "Keep Running"
+msgstr "Keep Running"
+
+msgid "Keep this computer awake while media plays."
+msgstr "Keep this computer awake while media plays."
+
+msgid "Key Repeat Delay"
+msgstr "Key Repeat Delay"
+
+msgid "Key Repeat Rate"
+msgstr "Key Repeat Rate"
+
+msgid "Key Tone"
+msgstr "Key Tone"
+
+msgid "Keyboard Bindings"
+msgstr "Keyboard Bindings"
+
+msgid "Keyboard Entry Method"
+msgstr "Keyboard Entry Method"
+
+msgid "Keyboard Type"
+msgstr "Keyboard Type"
+
+msgid "Knuckleduster"
+msgstr "Knuckleduster"
+
+msgid "Korean"
+msgstr "Korean"
+
+msgid "Language 1"
+msgstr "Language 1"
+
+msgid "Launch at Login"
+msgstr "Launch at Login"
+
+msgid "Lava Passion"
+msgstr "Lava Passion"
+
+msgid "Left"
+msgstr "Left"
+
+msgid "Left + Right"
+msgstr "Left + Right"
+
+msgid "Left-handed"
+msgstr "Left-handed"
+
+msgid "Level 1"
+msgstr "Level 1"
+
+msgid "Level 2"
+msgstr "Level 2"
+
+msgid "Level 3"
+msgstr "Level 3"
+
+msgid "Level 4"
+msgstr "Level 4"
+
+msgid "Level 5"
+msgstr "Level 5"
+
+msgid "Level 6"
+msgstr "Level 6"
+
+msgid "Level 7"
+msgstr "Level 7"
+
+msgid "Level 8"
+msgstr "Level 8"
+
+msgid "Library View"
+msgstr "Library View"
+
+msgid "Light Purple"
+msgstr "Light Purple"
+
+msgid "Lime"
+msgstr "Lime"
+
+msgid "Limited"
+msgstr "Limited"
+
+msgid "Linear PCM"
+msgstr "Linear PCM"
+
+msgid "Linear PCM 2 Ch. 44.1 kHz"
+msgstr "Linear PCM 2 Ch. 44.1 kHz"
+
+msgid "Linear PCM 5.1 Ch."
+msgstr "Linear PCM 5.1 Ch."
+
+msgid "Linear PCM 7.1 Ch."
+msgstr "Linear PCM 7.1 Ch."
+
+msgid "List of Registered PS Vita Systems"
+msgstr "List of Registered PS Vita Systems"
+
+msgid "Live at the Sandopolis"
+msgstr "Live at the Sandopolis"
+
+msgid "Long"
+msgstr "Long"
+
+msgid "Low"
+msgstr "Low"
+
+msgid "Low Pitch"
+msgstr "Low Pitch"
+
+msgid "MM/DD/YYYY"
+msgstr "MM/DD/YYYY"
+
+msgid "MTU"
+msgstr "MTU"
+
+msgid "Magenta"
+msgstr "Magenta"
+
+msgid "Malicious Fingers"
+msgstr "Malicious Fingers"
+
+msgid "Manage Bluetooth® Devices"
+msgstr "Manage Bluetooth® Devices"
+
+msgid "Manage Bluetooth® devices."
+msgstr "Manage Bluetooth® devices."
+
+msgid "Manage your PlayStation®Network account."
+msgstr "Manage your PlayStation®Network account."
+
+msgid "Manages game data installed on the PS3™ system. To delete a game data item, select it and then press the @T button."
+msgstr "Manages game data installed on the PS3™ system. To delete a game data item, select it and then press the @T button."
+
+msgid "Manages internal memory cards for use with PlayStation® and PlayStation®2 format software."
+msgstr "Manages internal memory cards for use with PlayStation® and PlayStation®2 format software."
+
+msgid "Manual"
+msgstr "Manual"
+
+msgid "Master Volume"
+msgstr "Master Volume"
+
+msgid "Maximum shell rendering rate."
+msgstr "Maximum shell rendering rate."
+
+msgid "Media Server Connection"
+msgstr "Media Server Connection"
+
+msgid "Memory Card Utility (PS/PS2)"
+msgstr "Memory Card Utility (PS/PS2)"
+
+msgid "Message Box"
+msgstr "Message Box"
+
+msgid "Microphone Level"
+msgstr "Microphone Level"
+
+msgid "Microphone Volume"
+msgstr "Microphone Volume"
+
+msgid "Minimise"
+msgstr "Minimise"
+
+msgid "Momentary Standstill"
+msgstr "Momentary Standstill"
+
+msgid "Morning"
+msgstr "Morning"
+
+msgid "Mosquito Noise Reduction"
+msgstr "Mosquito Noise Reduction"
+
+msgid "Mouse Type"
+msgstr "Mouse Type"
+
+msgid "Move OpenXMB to a connected display."
+msgstr "Move OpenXMB to a connected display."
+
+msgid "Multisample anti-aliasing for supported graphics hardware."
+msgstr "Multisample anti-aliasing for supported graphics hardware."
+
+msgid "Music Folder"
+msgstr "Music Folder"
+
+msgid "Music Settings"
+msgstr "Music Settings"
+
+msgid "Music Visualiser"
+msgstr "Music Visualiser"
+
+msgid "Music Volume"
+msgstr "Music Volume"
+
+msgid "Music codec: "
+msgstr "Music codec: "
+
+msgid "My PlayStation®Network Account"
+msgstr "My PlayStation®Network Account"
+
+msgid "MyHome_5GHz (Private Networks Only)"
+msgstr "MyHome_5GHz (Private Networks Only)"
+
+msgid "NETGEAR-Guest"
+msgstr "NETGEAR-Guest"
+
+msgid "Name"
+msgstr "Name"
+
+msgid "Navigation Repeat"
+msgstr "Navigation Repeat"
+
+msgid "Network Settings"
+msgstr "Network Settings"
+
+msgid "Next"
+msgstr "Next"
+
+msgid "Night"
+msgstr "Night"
+
+msgid "No saved theme presets."
+msgstr "No saved theme presets."
+
+msgid "No wireless stereo headset is connected."
+msgstr "No wireless stereo headset is connected."
+
+msgid "Normal"
+msgstr "Normal"
+
+msgid "Norwegian"
+msgstr "Norwegian"
+
+msgid "Notification Messages"
+msgstr "Notification Messages"
+
+msgid "Obtaining the date and time via the Internet..."
+msgstr "Obtaining the date and time via the Internet..."
+
+msgid "Obtains the correct date and time automatically via the Internet when you sign in to PSN, and sets them on your system."
+msgstr "Obtains the correct date and time automatically via the Internet when you sign in to PSN, and sets them on your system."
+
+msgid "Obtains the correct date and time automatically via the Internet when you sign in to PSN, and sets them on your system.\n\nA network connection is required for this feature."
+msgstr "Obtains the correct date and time automatically via the Internet when you sign in to PSN, and sets them on your system.\n\nA network connection is required for this feature."
+
+msgid "On-Screen Keyboard"
+msgstr "On-Screen Keyboard"
+
+msgid "One"
+msgstr "One"
+
+msgid "Online Instruction Manuals"
+msgstr "Online Instruction Manuals"
+
+msgid "Open Log Folder"
+msgstr "Open Log Folder"
+
+msgid "Open the location of diagnostic logs."
+msgstr "Open the location of diagnostic logs."
+
+msgid "OpenXMB version and information about this computer."
+msgstr "OpenXMB version and information about this computer."
+
+msgid "Operate other devices on the network from this system."
+msgstr "Operate other devices on the network from this system."
+
+msgid "Optical Digital"
+msgstr "Optical Digital"
+
+msgid "Orange"
+msgstr "Orange"
+
+msgid "Order of year, month and day."
+msgstr "Order of year, month and day."
+
+msgid "Original"
+msgstr "Original"
+
+msgid "Output Device"
+msgstr "Output Device"
+
+msgid "Output Frequency"
+msgstr "Output Frequency"
+
+msgid "Outputs Deep Color video signal. If the video output is not clean or the colors do not look right, set this option to [Off]."
+msgstr "Outputs Deep Color video signal. If the video output is not clean or the colours do not look right, set this option to [Off]."
+
+msgid "PLAYSTATION(R)3 Headset"
+msgstr "PLAYSTATION(R)3 Headset"
+
+msgid "PPPoE"
+msgstr "PPPoE"
+
+msgid "PPPoE Password"
+msgstr "PPPoE Password"
+
+msgid "PPPoE User Name"
+msgstr "PPPoE User Name"
+
+msgid "PS Upscaler"
+msgstr "PS Upscaler"
+
+msgid "PS Vita System Application Utility"
+msgstr "PS Vita System Application Utility"
+
+msgid "PS/PS2 Smoothing"
+msgstr "PS/PS2 Smoothing"
+
+msgid "PS3-625"
+msgstr "PS3-625"
+
+msgid "PS3-HOME-NET"
+msgstr "PS3-HOME-NET"
+
+msgid "PSN is all about entertainment and interaction.\nEnjoy FREE* online gaming, download amazing new games, game expansion packs for a host of top titles, watch trailers and get your hands on exclusive content, chat with friends, and compare Trophies.\n\nSign up today – it's easy and it's FREE!\n\n* Broadband Internet connection required."
+msgstr "PSN is all about entertainment and interaction.\nEnjoy FREE* online gaming, download amazing new games, game expansion packs for a host of top titles, watch trailers and get your hands on exclusive content, chat with friends, and compare Trophies.\n\nSign up today – it's easy and it's FREE!\n\n* Broadband Internet connection required."
+
+msgid "Page Zoom"
+msgstr "Page Zoom"
+
+msgid "Page opened when launching the browser."
+msgstr "Page opened when launching the browser."
+
+msgid "Parental Control"
+msgstr "Parental Control"
+
+msgid "Password"
+msgstr "Password"
+
+msgid "Pause"
+msgstr "Pause"
+
+msgid "Photo Album"
+msgstr "Photo Album"
+
+msgid "Photo Album 2"
+msgstr "Photo Album 2"
+
+msgid "Photo Gallery"
+msgstr "Photo Gallery"
+
+msgid "Photos"
+msgstr "Photos"
+
+msgid "Photosensitivity Warning"
+msgstr "Photosensitivity Warning"
+
+msgid "Pictures Folder"
+msgstr "Pictures Folder"
+
+msgid "Pink"
+msgstr "Pink"
+
+msgid "Play"
+msgstr "Play"
+
+msgid "Play Remote Devices"
+msgstr "Play Remote Devices"
+
+msgid "Play from Beginning"
+msgstr "Play from Beginning"
+
+msgid "Play the startup cue in full."
+msgstr "Play the startup cue in full."
+
+msgid "Play the startup sequence."
+msgstr "Play the startup sequence."
+
+msgid "PlayStation®Network"
+msgstr "PlayStation®Network"
+
+msgid "PlayStation®Plus"
+msgstr "PlayStation®Plus"
+
+msgid "PlayStation®Store"
+msgstr "PlayStation®Store"
+
+msgid "Players Blocked"
+msgstr "Players Blocked"
+
+msgid "Players Met"
+msgstr "Players Met"
+
+msgid "Playlists"
+msgstr "Playlists"
+
+msgid "Please wait..."
+msgstr "Please wait..."
+
+msgid "Pointer Speed"
+msgstr "Pointer Speed"
+
+msgid "Pop"
+msgstr "Pop"
+
+msgid "Port Number"
+msgstr "Port Number"
+
+msgid "Portrait"
+msgstr "Portrait"
+
+msgid "Portuguese"
+msgstr "Portuguese"
+
+msgid "Portuguese (Brazil)"
+msgstr "Portuguese (Brazil)"
+
+msgid "Portuguese (Portugal)"
+msgstr "Portuguese (Portugal)"
+
+msgid "Power Indicator"
+msgstr "Power Indicator"
+
+msgid "Power Save"
+msgstr "Power Save"
+
+msgid "Power Save Settings"
+msgstr "Power Save Settings"
+
+msgid "Predictive Input"
+msgstr "Predictive Input"
+
+msgid "Preferred audio track language."
+msgstr "Preferred audio track language."
+
+msgid "Preferred interface language."
+msgstr "Preferred interface language."
+
+msgid "Preferred subtitle track language."
+msgstr "Preferred subtitle track language."
+
+msgid "Preparing...\nPlease wait."
+msgstr "Preparing...\nPlease wait."
+
+msgid "Preset name"
+msgstr "Preset name"
+
+msgid "Press and hold the \"AOSS Button\" of the access point until the AOSS indicator starts blinking.\nIf you don't press the button within 2 minutes, the operation will be canceled."
+msgstr "Press and hold the \"AOSS Button\" of the access point until the AOSS indicator starts blinking.\nIf you don't press the button within 2 minutes, the operation will be canceled."
+
+msgid "Press and hold the \"Rakuraku Start Button\" of the access point until the \"POWER\" LED blinks in [Green].\nIf you don't press the button within 1 minute, the operation will be canceled."
+msgstr "Press and hold the \"Rakuraku Start Button\" of the access point until the \"POWER\" LED blinks in [Green].\nIf you don't press the button within 1 minute, the operation will be canceled."
+
+msgid "Press the \"Rakuraku Start Button\" again. Press and hold until the \"POWER\" LED turns [Orange].\nIf you don't press the button within 30 seconds, the operation will be canceled."
+msgstr "Press the \"Rakuraku Start Button\" again. Press and hold until the \"POWER\" LED turns [Orange].\nIf you don't press the button within 30 seconds, the operation will be canceled."
+
+msgid "Press the START button and ENTER button of the BD remote control you want to register at the same time, and hold down until the screen changes."
+msgstr "Press the START button and ENTER button of the BD remote control you want to register at the same time, and hold down until the screen changes."
+
+msgid "Prevent Sleep During Playback"
+msgstr "Prevent Sleep During Playback"
+
+msgid "Previous"
+msgstr "Previous"
+
+msgid "Primary DNS"
+msgstr "Primary DNS"
+
+msgid "Print"
+msgstr "Print"
+
+msgid "Printer Settings"
+msgstr "Printer Settings"
+
+msgid "Proxy Server"
+msgstr "Proxy Server"
+
+msgid "Quick Format"
+msgstr "Quick Format"
+
+msgid "Quiet Interface During Music"
+msgstr "Quiet Interface During Music"
+
+msgid "RGB"
+msgstr "RGB"
+
+msgid "RGB Full Range (HDMI)"
+msgstr "RGB Full Range (HDMI)"
+
+msgid "Rakuraku WLAN Start"
+msgstr "Rakuraku WLAN Start"
+
+msgid "Randomise slideshow order."
+msgstr "Randomise slideshow order."
+
+msgid "Read the program and third-party license notices."
+msgstr "Read the program and third-party licence notices."
+
+msgid "Reading"
+msgstr "Reading"
+
+msgid "Reassign Controllers"
+msgstr "Reassign Controllers"
+
+msgid "Red"
+msgstr "Red"
+
+msgid "Red Sphere, Blue Sphere"
+msgstr "Red Sphere, Blue Sphere"
+
+msgid "Reduce background movement and sparkles."
+msgstr "Reduce background movement and sparkles."
+
+msgid "Reduce navigation sound volume while music is playing."
+msgstr "Reduce navigation sound volume while music is playing."
+
+msgid "Reduce rendering while unfocused."
+msgstr "Reduce rendering while unfocused."
+
+msgid "Reduced Motion"
+msgstr "Reduced Motion"
+
+msgid "Reduces rainbow-effect artifacts. This setting is used when the system outputs composite signal to a VIDEO IN or SCART connector."
+msgstr "Reduces rainbow-effect artifacts. This setting is used when the system outputs composite signal to a VIDEO IN or SCART connector."
+
+msgid "Refresh folders and metadata from your music location."
+msgstr "Refresh folders and metadata from your music location."
+
+msgid "Refresh the configured game library."
+msgstr "Refresh the configured game library."
+
+msgid "Register BD Remote Control"
+msgstr "Register BD Remote Control"
+
+msgid "Register Bluetooth® Device"
+msgstr "Register Bluetooth® Device"
+
+msgid "Register Device"
+msgstr "Register Device"
+
+msgid "Register New Device"
+msgstr "Register New Device"
+
+msgid "Register PlayStation®Vita"
+msgstr "Register PlayStation®Vita"
+
+msgid "Register a BD remote control for use with the PS3™ system.\n\nPress the START button and ENTER button of the BD remote control you want to register at the same time, and hold down until the screen changes."
+msgstr "Register a BD remote control for use with the PS3™ system.\n\nPress the START button and ENTER button of the BD remote control you want to register at the same time, and hold down until the screen changes."
+
+msgid "Register a device (such as a PS Vita or a PSP™ system) to be used for remote play with this system. Select this option to register a device for remote play if using it for the first time.\n\nEnter the following number on the remote device:\n\n12345678"
+msgstr "Register a device (such as a PS Vita or a PSP™ system) to be used for remote play with this system. Select this option to register a device for remote play if using it for the first time.\n\nEnter the following number on the remote device:\n\n12345678"
+
+msgid "Register a remote play device with this system."
+msgstr "Register a remote play device with this system."
+
+msgid "Register completed."
+msgstr "Register completed."
+
+msgid "Register or manage Bluetooth® devices such as headsets, keyboards and mouse devices.\nSelect an option."
+msgstr "Register or manage Bluetooth® devices such as headsets, keyboards and mouse devices.\nSelect an option."
+
+msgid "Register the BD Remote Control."
+msgstr "Register the BD Remote Control."
+
+msgid "Registered Device:  "
+msgstr "Registered Device:  "
+
+msgid "Registering...\nPlease wait."
+msgstr "Registering...\nPlease wait."
+
+msgid "Registration completed."
+msgstr "Registration completed."
+
+msgid "Registration with the selected device will be deleted.\nAre you sure you want to continue?"
+msgstr "Registration with the selected device will be deleted.\nAre you sure you want to continue?"
+
+msgid "Release Year ▲"
+msgstr "Release Year ▲"
+
+msgid "Release Year ▼"
+msgstr "Release Year ▼"
+
+msgid "Release the controls, then press a "
+msgstr "Release the controls, then press a "
+
+msgid "Remember the last playback position."
+msgstr "Remember the last playback position."
+
+msgid "Remote Play Device"
+msgstr "Remote Play Device"
+
+msgid "Remote Play Settings"
+msgstr "Remote Play Settings"
+
+msgid "Remote Start"
+msgstr "Remote Start"
+
+msgid "Remove browser cookies and cached site data."
+msgstr "Remove browser cookies and cached site data."
+
+msgid "Remove browser cookies, site storage and cached pages?"
+msgstr "Remove browser cookies, site storage and cached pages?"
+
+msgid "Remove from Playlist"
+msgstr "Remove from Playlist"
+
+msgid "Repeat"
+msgstr "Repeat"
+
+msgid "Repeat All"
+msgstr "Repeat All"
+
+msgid "Repeat Off"
+msgstr "Repeat Off"
+
+msgid "Repeat On"
+msgstr "Repeat On"
+
+msgid "Repeat One"
+msgstr "Repeat One"
+
+msgid "Repeat Slideshow"
+msgstr "Repeat Slideshow"
+
+msgid "Repeat setting when opening the player."
+msgstr "Repeat setting when opening the player."
+
+msgid "Rescan Game Library"
+msgstr "Rescan Game Library"
+
+msgid "Rescan Music Library"
+msgstr "Rescan Music Library"
+
+msgid "Resolution"
+msgstr "Resolution"
+
+msgid "Restore"
+msgstr "Restore"
+
+msgid "Restore Default Settings"
+msgstr "Restore Default Settings"
+
+msgid "Restore Default Settings?"
+msgstr "Restore Default Settings?"
+
+msgid "Restore Defaults"
+msgstr "Restore Defaults"
+
+msgid "Restore Original Theme"
+msgstr "Restore Original Theme"
+
+msgid "Restore Original Theme?"
+msgstr "Restore Original Theme?"
+
+msgid "Restore PS3™ System"
+msgstr "Restore PS3™ System"
+
+msgid "Restore completed.\nThe default settings have been restored."
+msgstr "Restore completed.\nThe default settings have been restored."
+
+msgid "Restore the original OpenXMB appearance."
+msgstr "Restore the original OpenXMB appearance."
+
+msgid "Restore the original theme appearance?"
+msgstr "Restore the original theme appearance?"
+
+msgid "Restore this profile's preferences? Your media files will be preserved."
+msgstr "Restore this profile's preferences? Your media files will be preserved."
+
+msgid "Restore this profile's shell settings; preserve media."
+msgstr "Restore this profile's shell settings; preserve media."
+
+msgid "Restores the system software to its default settings.\n\nAll system settings will be restored to their default values.\nDo you want to continue?"
+msgstr "Restores the system software to its default settings.\n\nAll system settings will be restored to their default values.\nDo you want to continue?"
+
+msgid "Restores the system software to its default settings.\nAre you sure you want to continue?"
+msgstr "Restores the system software to its default settings.\nAre you sure you want to continue?"
+
+msgid "Resume"
+msgstr "Resume"
+
+msgid "Resume Playback"
+msgstr "Resume Playback"
+
+msgid "Return to Beginning"
+msgstr "Return to Beginning"
+
+msgid "Right"
+msgstr "Right"
+
+msgid "Right-handed"
+msgstr "Right-handed"
+
+msgid "Robotnik Radio"
+msgstr "Robotnik Radio"
+
+msgid "Rotate Left"
+msgstr "Rotate Left"
+
+msgid "Rotate Right"
+msgstr "Rotate Right"
+
+msgid "Rounded"
+msgstr "Rounded"
+
+msgid "Russian"
+msgstr "Russian"
+
+msgid "SSID"
+msgstr "SSID"
+
+msgid "Save Theme Preset"
+msgstr "Save Theme Preset"
+
+msgid "Save completed.\nIt may take 1 minute or longer to restart the access point."
+msgstr "Save completed.\nIt may take 1 minute or longer to restart the access point."
+
+msgid "Save the current appearance with a name."
+msgstr "Save the current appearance with a name."
+
+msgid "Saved Data Utility (PS2)"
+msgstr "Saved Data Utility (PS2)"
+
+msgid "Saved Data Utility (PS3™)"
+msgstr "Saved Data Utility (PS3™)"
+
+msgid "Saved Data Utility (minis/PSP™)"
+msgstr "Saved Data Utility (minis/PSP™)"
+
+msgid "Saved Theme Presets"
+msgstr "Saved Theme Presets"
+
+msgid "Scale subtitle text."
+msgstr "Scale subtitle text."
+
+msgid "Scale text throughout OpenXMB."
+msgstr "Scale text throughout OpenXMB."
+
+msgid "Scan"
+msgstr "Scan"
+
+msgid "Scanning...\nPlease wait."
+msgstr "Scanning...\nPlease wait."
+
+msgid "Scans the network and connects to a media server. To use this function, a media server must be set up to allow connections from the PS3™ system."
+msgstr "Scans the network and connects to a media server. To use this function, a media server must be set up to allow connections from the PS3™ system."
+
+msgid "Scene Search"
+msgstr "Scene Search"
+
+msgid "Schumacher Bar"
+msgstr "Schumacher Bar"
+
+msgid "Scrambled Eggman"
+msgstr "Scrambled Eggman"
+
+msgid "Screen Mode"
+msgstr "Screen Mode"
+
+msgid "Screen Saver"
+msgstr "Screen Saver"
+
+msgid "Search Engine"
+msgstr "Search Engine"
+
+msgid "Search for Media Servers"
+msgstr "Search for Media Servers"
+
+msgid "Search provider used for non-address text."
+msgstr "Search provider used for non-address text."
+
+msgid "Search the Internet."
+msgstr "Search the Internet."
+
+msgid "Searching for the other PS3™ system..."
+msgstr "Searching for the other PS3™ system..."
+
+msgid "Secondary DNS"
+msgstr "Secondary DNS"
+
+msgid "Seconds each photograph remains visible."
+msgstr "Seconds each photograph remains visible."
+
+msgid "Security"
+msgstr "Security"
+
+msgid "Security Settings"
+msgstr "Security Settings"
+
+msgid "Select a connection method."
+msgstr "Select a connection method."
+
+msgid "Select a setting method."
+msgstr "Select a setting method."
+
+msgid "Select a theme."
+msgstr "Select a theme."
+
+msgid "Select all resolutions that are supported by your TV."
+msgstr "Select all resolutions that are supported by your TV."
+
+msgid "Select an available playback device."
+msgstr "Select an available playback device."
+
+msgid "Select an existing playlist or create a new playlist."
+msgstr "Select an existing playlist or create a new playlist."
+
+msgid "Select an installed core and game content."
+msgstr "Select an installed core and game content."
+
+msgid "Select an output format supported by the TV or AV amplifier (receiver) in use."
+msgstr "Select an output format supported by the TV or AV amplifier (receiver) in use."
+
+msgid "Select an update method."
+msgstr "Select an update method."
+
+msgid "Select the Bluetooth® device to register."
+msgstr "Select the Bluetooth® device to register."
+
+msgid "Select the access point to be used."
+msgstr "Select the access point to be used."
+
+msgid "Select the connector on the TV or AV amplifier (receiver)."
+msgstr "Select the connector on the TV or AV amplifier (receiver)."
+
+msgid "Select the connector on the TV."
+msgstr "Select the connector on the TV."
+
+msgid "Select the destination for the selected items."
+msgstr "Select the destination for the selected items."
+
+msgid "Select the keyboard type."
+msgstr "Select the keyboard type."
+
+msgid "Select the method for setting the output format."
+msgstr "Select the method for setting the output format."
+
+msgid "Select the operation mode of the network device."
+msgstr "Select the operation mode of the network device."
+
+msgid "Select the operation mode of the network device.\nIn most cases, select Auto-Detect."
+msgstr "Select the operation mode of the network device.\nIn most cases, select Auto-Detect."
+
+msgid "Select the system you are using."
+msgstr "Select the system you are using."
+
+msgid "Select the type of connector on your TV."
+msgstr "Select the type of connector on your TV."
+
+msgid "Send a Message"
+msgstr "Send a Message"
+
+msgid "Sent Items"
+msgstr "Sent Items"
+
+msgid "Set"
+msgstr "Set"
+
+msgid "Set Audio Output Settings"
+msgstr "Set Audio Output Settings"
+
+msgid "Set Manually"
+msgstr "Set Manually"
+
+msgid "Set as Wallpaper"
+msgstr "Set as Wallpaper"
+
+msgid "Set the Ad Hoc Mode channel for PSP® Remasters."
+msgstr "Set the Ad Hoc Mode channel for PSP® Remasters."
+
+msgid "Set the BD audio output format."
+msgstr "Set the BD audio output format."
+
+msgid "Set the DHCP host name.\nIn most cases this setting does not need to be changed."
+msgstr "Set the DHCP host name.\nIn most cases this setting does not need to be changed."
+
+msgid "Set the default BD audio language."
+msgstr "Set the default BD audio language."
+
+msgid "Set the default DVD audio language."
+msgstr "Set the default DVD audio language."
+
+msgid "Set the default audio language for content on the HDD."
+msgstr "Set the default audio language for content on the HDD."
+
+msgid "Set the time and date.\n\nUse the arrow keys to adjust each field, then press the X button to apply."
+msgstr "Set the time and date.\n\nUse the arrow keys to adjust each field, then press the X button to apply."
+
+msgid "Set via Internet"
+msgstr "Set via Internet"
+
+msgid "Sets for daylight saving time."
+msgstr "Sets for daylight saving time."
+
+msgid "Sets for use of a preset combination of elements such as colour, background or icons."
+msgstr "Sets for use of a preset combination of elements such as colour, background or icons."
+
+msgid "Sets the audio input and output devices for voice/video chat and other communication features."
+msgstr "Sets the audio input and output devices for voice/video chat and other communication features."
+
+msgid "Sets the audio input and output devices for voice/video chat and other communication features.\nSelect an audio device."
+msgstr "Sets the audio input and output devices for voice/video chat and other communication features.\nSelect an audio device."
+
+msgid "Sets the audio input and output devices.\nSelect an option."
+msgstr "Sets the audio input and output devices.\nSelect an option."
+
+msgid "Sets the audio output device for use during remote play. To output audio from a PS Vita system, a PSP™ system, a PC or a mobile phone, select [Remote Play Device]."
+msgstr "Sets the audio output device for use during remote play. To output audio from a PS Vita system, a PSP™ system, a PC or a mobile phone, select [Remote Play Device]."
+
+msgid "Sets the background of the XMB™ screen."
+msgstr "Sets the background of the XMB™ screen."
+
+msgid "Sets the colour of the background and options menu."
+msgstr "Sets the colour of the background and options menu."
+
+msgid "Sets the date and time for this system."
+msgstr "Sets the date and time for this system."
+
+msgid "Sets the date and time for this system.\nSelect how to set the date and time."
+msgstr "Sets the date and time for this system.\nSelect how to set the date and time."
+
+msgid "Sets the delay before key repeat starts."
+msgstr "Sets the delay before key repeat starts."
+
+msgid "Sets the font displayed on the XMB™ screen."
+msgstr "Sets the font displayed on the XMB™ screen."
+
+msgid "Sets the method for connecting the system to the Internet.\nSelect a connection method."
+msgstr "Sets the method for connecting the system to the Internet.\nSelect a connection method."
+
+msgid "Sets the method for connecting the system to the Internet. Select this option to connect to a wireless LAN or to change the settings."
+msgstr "Sets the method for connecting the system to the Internet. Select this option to connect to a wireless LAN or to change the settings."
+
+msgid "Sets the mouse type. Set this option based on which hand you use to operate the mouse."
+msgstr "Sets the mouse type. Set this option based on which hand you use to operate the mouse."
+
+msgid "Sets the order of display for year, month and day."
+msgstr "Sets the order of display for year, month and day."
+
+msgid "Sets the output format of video content recorded in a wide color range. Set this option as necessary for the TV in use."
+msgstr "Sets the output format of video content recorded in a wide colour range. Set this option as necessary for the TV in use."
+
+msgid "Sets the output method for color signals when playing BDs or DVDs."
+msgstr "Sets the output method for colour signals when playing BDs or DVDs."
+
+msgid "Sets the playback method for content items recorded at 24 Hz (frames/second)."
+msgstr "Sets the playback method for content items recorded at 24 Hz (frames/second)."
+
+msgid "Sets the playback method for content recorded at 50 Hz. This setting is used when playing content saved on the system storage or storage media."
+msgstr "Sets the playback method for content recorded at 50 Hz. This setting is used when playing content saved on the system storage or storage media."
+
+msgid "Sets the range of RGB output signals for an HDMI connection."
+msgstr "Sets the range of RGB output signals for an HDMI connection."
+
+msgid "Sets the rate at which a held key repeats."
+msgstr "Sets the rate at which a held key repeats."
+
+msgid "Sets the speed at which the mouse pointer moves. The mouse pointer is displayed in the Internet browser and in games and other software that support use of a mouse."
+msgstr "Sets the speed at which the mouse pointer moves. The mouse pointer is displayed in the Internet browser and in games and other software that support use of a mouse."
+
+msgid "Sets the text entry method for a connected keyboard."
+msgstr "Sets the text entry method for a connected keyboard."
+
+msgid "Sets the time display to either a 12-hour or 24-hour clock."
+msgstr "Sets the time display to either a 12-hour or 24-hour clock."
+
+msgid "Sets the time-of-day lighting (day, dusk, night or automatic)."
+msgstr "Sets the time-of-day lighting (day, dusk, night or automatic)."
+
+msgid "Sets the time-of-day lighting of the XMB™ screen."
+msgstr "Sets the time-of-day lighting of the XMB™ screen."
+
+msgid "Sets to output audio through multiple connectors simultaneously. Audio output to connectors that are not selected in [Audio Output Settings] is downscaled to 2 Ch."
+msgstr "Sets to output audio through multiple connectors simultaneously. Audio output to connectors that are not selected in [Audio Output Settings] is downscaled to 2 Ch."
+
+msgid "Sets whether or not to automatically turn off controllers. If you do not use a controller for a set amount of time, it will turn off automatically."
+msgstr "Sets whether or not to automatically turn off controllers. If you do not use a controller for a set amount of time, it will turn off automatically."
+
+msgid "Sets whether or not to automatically turn off this system. If you do not operate the system for a set amount of time, the system will turn off automatically."
+msgstr "Sets whether or not to automatically turn off this system. If you do not operate the system for a set amount of time, the system will turn off automatically."
+
+msgid "Sets whether or not to connect this system to the Internet. Select this option if you want to temporarily disable the Internet connection."
+msgstr "Sets whether or not to connect this system to the Internet. Select this option if you want to temporarily disable the Internet connection."
+
+msgid "Sets whether or not to connect to media servers."
+msgstr "Sets whether or not to connect to media servers."
+
+msgid "Sets whether or not to output all audio to the headset."
+msgstr "Sets whether or not to output all audio to the headset."
+
+msgid "Sets whether or not to turn on this system automatically when a registered device is connected for remote play."
+msgstr "Sets whether or not to turn on this system automatically when a registered device is connected for remote play."
+
+msgid "Sets whether or not to use key tones on the XMB™ menu."
+msgstr "Sets whether or not to use key tones on the XMB™ menu."
+
+msgid "Sets whether or not to use the vibration function. This setting will be applied to all controllers that support the vibration function."
+msgstr "Sets whether or not to use the vibration function. This setting will be applied to all controllers that support the vibration function."
+
+msgid "Settings List"
+msgstr "Settings List"
+
+msgid "Settings and Connection Status List"
+msgstr "Settings and Connection Status List"
+
+msgid "Short"
+msgstr "Short"
+
+msgid "Show GPU Memory"
+msgstr "Show GPU Memory"
+
+msgid "Show Seconds"
+msgstr "Show Seconds"
+
+msgid "Show background particles."
+msgstr "Show background particles."
+
+msgid "Show seconds in the clock."
+msgstr "Show seconds in the clock."
+
+msgid "Show the animated background ribbon."
+msgstr "Show the animated background ribbon."
+
+msgid "Show the controller keyboard during text entry."
+msgstr "Show the controller keyboard during text entry."
+
+msgid "Show the dismissible startup warning."
+msgstr "Show the dismissible startup warning."
+
+msgid "Shuffle"
+msgstr "Shuffle"
+
+msgid "Shuffle Slideshow"
+msgstr "Shuffle Slideshow"
+
+msgid "Shuffle tracks in the play queue."
+msgstr "Shuffle tracks in the play queue."
+
+msgid "Sign Up"
+msgstr "Sign Up"
+
+msgid "Sign in to PlayStation®Network to add friends, exchange messages and join chat rooms."
+msgstr "Sign in to PlayStation®Network to add friends, exchange messages and join chat rooms."
+
+msgid "Sign in to use Friends features"
+msgstr "Sign in to use Friends features"
+
+msgid "Sign up for a PlayStation®Network account.\nA broadband Internet connection is required."
+msgstr "Sign up for a PlayStation®Network account.\nA broadband Internet connection is required."
+
+msgid "Size"
+msgstr "Size"
+
+msgid "Slide"
+msgstr "Slide"
+
+msgid "Slideshow"
+msgstr "Slideshow"
+
+msgid "Slideshow Duration"
+msgstr "Slideshow Duration"
+
+msgid "Slideshow Speed"
+msgstr "Slideshow Speed"
+
+msgid "Slideshow Style"
+msgstr "Slideshow Style"
+
+msgid "Slideshow Transition"
+msgstr "Slideshow Transition"
+
+msgid "Slow"
+msgstr "Slow"
+
+msgid "Slow (Forward)"
+msgstr "Slow (Forward)"
+
+msgid "Slow (Reverse)"
+msgstr "Slow (Reverse)"
+
+msgid "Smooth"
+msgstr "Smooth"
+
+msgid "Smooth out the rough edges of images of PlayStation® and PlayStation®2 format software."
+msgstr "Smooth out the rough edges of images of PlayStation® and PlayStation®2 format software."
+
+msgid "So Long and Thanks for All the..."
+msgstr "So Long and Thanks for All the..."
+
+msgid "Software Instruction Manuals"
+msgstr "Software Instruction Manuals"
+
+msgid "Songs"
+msgstr "Songs"
+
+msgid "Sonic the Hedgehog and Knuckles"
+msgstr "Sonic the Hedgehog and Knuckles"
+
+msgid "Sort By"
+msgstr "Sort By"
+
+msgid "Sort tracks in each folder."
+msgstr "Sort tracks in each folder."
+
+msgid "Sound"
+msgstr "Sound"
+
+msgid "Sound Set Folder"
+msgstr "Sound Set Folder"
+
+msgid "Sound Settings"
+msgstr "Sound Settings"
+
+msgid "Sound folder not found."
+msgstr "Sound folder not found."
+
+msgid "Sound set needs a playable "
+msgstr "Sound set needs a playable "
+
+msgid "Spanish"
+msgstr "Spanish"
+
+msgid "Sparkle Colour"
+msgstr "Sparkle Colour"
+
+msgid "Sparkles"
+msgstr "Sparkles"
+
+msgid "Speed and Duplex"
+msgstr "Speed and Duplex"
+
+msgid "Standard Input"
+msgstr "Standard Input"
+
+msgid "Start OpenXMB when you sign in."
+msgstr "Start OpenXMB when you sign in."
+
+msgid "Start a Chat"
+msgstr "Start a Chat"
+
+msgid "Start a new text chat with a friend or a group."
+msgstr "Start a new text chat with a friend or a group."
+
+msgid "Starts the system automatically and downloads game patches, uploads new saved data to online storage and syncs trophy information with the server."
+msgstr "Starts the system automatically and downloads game patches, uploads new saved data to online storage and syncs trophy information with the server."
+
+msgid "Startup Intro"
+msgstr "Startup Intro"
+
+msgid "Startup Sound"
+msgstr "Startup Sound"
+
+msgid "Status of Registered Devices"
+msgstr "Status of Registered Devices"
+
+msgid "Stereo Headset Audio Extension"
+msgstr "Stereo Headset Audio Extension"
+
+msgid "Stop"
+msgstr "Stop"
+
+msgid "Stranger to Closure"
+msgstr "Stranger to Closure"
+
+msgid "Subnet Mask"
+msgstr "Subnet Mask"
+
+msgid "Subscribe to PlayStation®Plus and get your hands on all the benefits that come with membership."
+msgstr "Subscribe to PlayStation®Plus and get your hands on all the benefits that come with membership."
+
+msgid "Subtitle Language"
+msgstr "Subtitle Language"
+
+msgid "Subtitle Options"
+msgstr "Subtitle Options"
+
+msgid "Subtitle Size"
+msgstr "Subtitle Size"
+
+msgid "Swedish"
+msgstr "Swedish"
+
+msgid "Synchronise presentation to the display."
+msgstr "Synchronise presentation to the display."
+
+msgid "System"
+msgstr "System"
+
+msgid "System Auto-Off"
+msgstr "System Auto-Off"
+
+msgid "System Default"
+msgstr "System Default"
+
+msgid "System Default Device"
+msgstr "System Default Device"
+
+msgid "System Information"
+msgstr "System Information"
+
+msgid "System Language"
+msgstr "System Language"
+
+msgid "System Name"
+msgstr "System Name"
+
+msgid "System Settings"
+msgstr "System Settings"
+
+msgid "System Software\nVersion 4.91\n\nMAC Address (Wired)\n00:1F:A7:00:00:00\n\nMAC Address (Wi-Fi)\n00:1F:A7:00:00:01\n\nIP Address\n192.168.1.10\n\nSystem Storage\n466 GB free of 500 GB"
+msgstr "System Software\nVersion 4.91\n\nMAC Address (Wired)\n00:1F:A7:00:00:00\n\nMAC Address (Wi-Fi)\n00:1F:A7:00:00:01\n\nIP Address\n192.168.1.10\n\nSystem Storage\n466 GB free of 500 GB"
+
+msgid "Teal"
+msgstr "Teal"
+
+msgid "Term"
+msgstr "Term"
+
+msgid "Tests the Internet connection and displays the results."
+msgstr "Tests the Internet connection and displays the results."
+
+msgid "Tests the Internet connection and displays the results.\n\nObtain IP Address    Succeeded\nInternet Connection  Succeeded\nPlayStation™Network  Succeeded\nNAT Type             Type 2\nUPnP                 Available\nConnection Speed (Download)  85.4 Mbps\nConnection Speed (Upload)    24.7 Mbps"
+msgstr "Tests the Internet connection and displays the results.\n\nObtain IP Address    Succeeded\nInternet Connection  Succeeded\nPlayStation™Network  Succeeded\nNAT Type             Type 2\nUPnP                 Available\nConnection Speed (Download)  85.4 Mbps\nConnection Speed (Upload)    24.7 Mbps"
+
+msgid "Tests the image from a camera that is connected to the system using a USB cable. You can adjust settings to reduce flickering for some cameras."
+msgstr "Tests the image from a camera that is connected to the system using a USB cable. You can adjust settings to reduce flickering for some cameras."
+
+msgid "Tests the image from a camera that is connected to the system using a USB cable. You can adjust settings to reduce flickering for some cameras.\n\nNo camera is currently connected."
+msgstr "Tests the image from a camera that is connected to the system using a USB cable. You can adjust settings to reduce flickering for some cameras.\n\nNo camera is currently connected."
+
+msgid "Text Colour"
+msgstr "Text Colour"
+
+msgid "That Freezing Feeling"
+msgstr "That Freezing Feeling"
+
+msgid "The Doomsday"
+msgstr "The Doomsday"
+
+msgid "The Secluded Stronghold"
+msgstr "The Secluded Stronghold"
+
+msgid "The Wait is Over!"
+msgstr "The Wait is Over!"
+
+msgid "The audio output settings have been updated."
+msgstr "The audio output settings have been updated."
+
+msgid "The date and time have been set."
+msgstr "The date and time have been set."
+
+msgid "The image will be deleted.\nAre you sure you want to continue?"
+msgstr "The image will be deleted.\nAre you sure you want to continue?"
+
+msgid "The name displayed by OpenXMB."
+msgstr "The name displayed by OpenXMB."
+
+msgid "The other PS3™ system was not found.\nCheck that both systems are connected to the same network."
+msgstr "The other PS3™ system was not found.\nCheck that both systems are connected to the same network."
+
+msgid "The password has been changed."
+msgstr "The password has been changed."
+
+msgid "The passwords do not match.\nTry again."
+msgstr "The passwords do not match.\nTry again."
+
+msgid "The selected items will be deleted.\nAre you sure you want to continue?"
+msgstr "The selected items will be deleted.\nAre you sure you want to continue?"
+
+msgid "The system and devices connected via HDMI can operate each other."
+msgstr "The system and devices connected via HDMI can operate each other."
+
+msgid "The system has been restored to its default settings."
+msgstr "The system has been restored to its default settings."
+
+msgid "The system software is up to date.\n\nThe latest version of the system software has already been installed."
+msgstr "The system software is up to date.\n\nThe latest version of the system software has already been installed."
+
+msgid "The term has been added."
+msgstr "The term has been added."
+
+msgid "The title that is currently playing will be deleted.\nAre you sure you want to continue?"
+msgstr "The title that is currently playing will be deleted.\nAre you sure you want to continue?"
+
+msgid "The video output settings have been updated."
+msgstr "The video output settings have been updated."
+
+msgid "Theme"
+msgstr "Theme"
+
+msgid "Theme Settings"
+msgstr "Theme Settings"
+
+msgid "Theme archive or folder"
+msgstr "Theme archive or folder"
+
+msgid "There are no registered devices."
+msgstr "There are no registered devices."
+
+msgid "There are no subtitle options available."
+msgstr "There are no subtitle options available."
+
+msgid "There is no audio."
+msgstr "There is no audio."
+
+msgid "There is no backup data.\nConnect storage media that contains the backup data."
+msgstr "There is no backup data.\nConnect storage media that contains the backup data."
+
+msgid "This file is not a supported image or video."
+msgstr "This file is not a supported image or video."
+
+msgid "This is the system to transfer data from"
+msgstr "This is the system to transfer data from"
+
+msgid "This is the system to transfer data to"
+msgstr "This is the system to transfer data to"
+
+msgid "This sample count is unavailable on the active GPU."
+msgstr "This sample count is unavailable on the active GPU."
+
+msgid "This video cannot be opened."
+msgstr "This video cannot be opened."
+
+msgid "Three Ring Nightfall"
+msgstr "Three Ring Nightfall"
+
+msgid "Time"
+msgstr "Time"
+
+msgid "Time (HH:MM)"
+msgstr "Time (HH:MM)"
+
+msgid "Time Format"
+msgstr "Time Format"
+
+msgid "Time Zone"
+msgstr "Time Zone"
+
+msgid "Time Zone Offset"
+msgstr "Time Zone Offset"
+
+msgid "Title Repeat"
+msgstr "Title Repeat"
+
+msgid "Title ▲"
+msgstr "Title ▲"
+
+msgid "Title ▼"
+msgstr "Title ▼"
+
+msgid "To register (pair), you will need to prepare the Bluetooth® device.\nFor information on preparing the device, refer to the instructions supplied with the Bluetooth® device."
+msgstr "To register (pair), you will need to prepare the Bluetooth® device.\nFor information on preparing the device, refer to the instructions supplied with the Bluetooth® device."
+
+msgid "Transfers data from your current PS3™ system to a new PS3™ system over a network.\n\nConnect both systems to the same network, then follow the on-screen instructions on each system."
+msgstr "Transfers data from your current PS3™ system to a new PS3™ system over a network.\n\nConnect both systems to the same network, then follow the on-screen instructions on each system."
+
+msgid "Transfers data that is saved on one PS3™ system to another PS3™ system. You can use this feature when replacing the PS3™ system that you usually use with another PS3™ system."
+msgstr "Transfers data that is saved on one PS3™ system to another PS3™ system. You can use this feature when replacing the PS3™ system that you usually use with another PS3™ system."
+
+msgid "Transition between photographs."
+msgstr "Transition between photographs."
+
+msgid "Trimming"
+msgstr "Trimming"
+
+msgid "Trophy Collection"
+msgstr "Trophy Collection"
+
+msgid "Trophy Notifications"
+msgstr "Trophy Notifications"
+
+msgid "Turkish"
+msgstr "Turkish"
+
+msgid "Turn Off System"
+msgstr "Turn Off System"
+
+msgid "Turn Off System Automatically After Background Download"
+msgstr "Turn Off System Automatically After Background Download"
+
+msgid "UPnP"
+msgstr "UPnP"
+
+msgid "USB Headset"
+msgstr "USB Headset"
+
+msgid "Unable to update launch at login."
+msgstr "Unable to update launch at login."
+
+msgid "Unlimited"
+msgstr "Unlimited"
+
+msgid "Unregister All"
+msgstr "Unregister All"
+
+msgid "Up"
+msgstr "Up"
+
+msgid "Update the PS3™ system software."
+msgstr "Update the PS3™ system software."
+
+msgid "Update via Internet"
+msgstr "Update via Internet"
+
+msgid "Update via Storage Media"
+msgstr "Update via Storage Media"
+
+msgid "Upscale"
+msgstr "Upscale"
+
+msgid "Use"
+msgstr "Use"
+
+msgid "Use a folder containing ok.wav, confirm.wav, cancel.wav and back.wav."
+msgstr "Use a folder containing ok.wav, confirm.wav, cancel.wav and back.wav."
+
+msgid "Use a hexadecimal colour such as #ffeefc."
+msgstr "Use a hexadecimal colour such as #ffeefc."
+
+msgid "Use a hexadecimal colour."
+msgstr "Use a hexadecimal colour."
+
+msgid "Use a six-digit hexadecimal colour such as #ffeefc."
+msgstr "Use a six-digit hexadecimal colour such as #ffeefc."
+
+msgid "Use auto or a hexadecimal colour."
+msgstr "Use auto or a hexadecimal colour."
+
+msgid "Use refractive icon materials."
+msgstr "Use refractive icon materials."
+
+msgid "Use the selected Bluetooth® device to enter the pass key shown below and press the Enter key within 30 seconds.\\n\\nPass Key:  0000"
+msgstr "Use the selected Bluetooth® device to enter the pass key shown below and press the Enter key within 30 seconds.\\n\\nPass Key:  0000"
+
+msgid "User Name"
+msgstr "User Name"
+
+msgid "Using the device you want to register, select [Settings] > [Network Settings] > [Internet Connection], and then enter the numbers shown below.\n\nRegistration code:  2461-8053\n\nThe registration code is valid for 5 minutes."
+msgstr "Using the device you want to register, select [Settings] > [Network Settings] > [Internet Connection], and then enter the numbers shown below.\n\nRegistration code:  2461-8053\n\nThe registration code is valid for 5 minutes."
+
+msgid "Video Decoding"
+msgstr "Video Decoding"
+
+msgid "Video Editor & Uploader"
+msgstr "Video Editor & Uploader"
+
+msgid "Video Output Settings"
+msgstr "Video Output Settings"
+
+msgid "Video Volume"
+msgstr "Video Volume"
+
+msgid "Videos Folder"
+msgstr "Videos Folder"
+
+msgid "View"
+msgstr "View"
+
+msgid "View Mode (PSP Remasters)"
+msgstr "View Mode (PSP Remasters)"
+
+msgid "View Web pages on the Internet."
+msgstr "View Web pages on the Internet."
+
+msgid "View active audio and video playback diagnostics."
+msgstr "View active audio and video playback diagnostics."
+
+msgid "View and join active chat rooms."
+msgstr "View and join active chat rooms."
+
+msgid "View messages you have received and sent."
+msgstr "View messages you have received and sent."
+
+msgid "View the list of players you have blocked. You will not receive messages from blocked players."
+msgstr "View the list of players you have blocked. You will not receive messages from blocked players."
+
+msgid "View the list of players you have met during online play."
+msgstr "View the list of players you have met during online play."
+
+msgid "View the online instruction manuals.\nThe latest version of the manual will be available."
+msgstr "View the online instruction manuals.\nThe latest version of the manual will be available."
+
+msgid "View trophies that you have earned."
+msgstr "View trophies that you have earned."
+
+msgid "Violet"
+msgstr "Violet"
+
+msgid "Visual Player"
+msgstr "Visual Player"
+
+msgid "Voice Changer"
+msgstr "Voice Changer"
+
+msgid "Volume Control"
+msgstr "Volume Control"
+
+msgid "Volume for all OpenXMB audio."
+msgstr "Volume for all OpenXMB audio."
+
+msgid "Volume of navigation and confirmation sounds."
+msgstr "Volume of navigation and confirmation sounds."
+
+msgid "WEP"
+msgstr "WEP"
+
+msgid "WEP Key"
+msgstr "WEP Key"
+
+msgid "WLAN Security Setting"
+msgstr "WLAN Security Setting"
+
+msgid "WLAN Settings"
+msgstr "WLAN Settings"
+
+msgid "WPA Key"
+msgstr "WPA Key"
+
+msgid "WPA-PSK (AES)"
+msgstr "WPA-PSK (AES)"
+
+msgid "WPA-PSK (TKIP)"
+msgstr "WPA-PSK (TKIP)"
+
+msgid "WPA-PSK / WPA2-PSK"
+msgstr "WPA-PSK / WPA2-PSK"
+
+msgid "WPA2-PSK (AES)"
+msgstr "WPA2-PSK (AES)"
+
+msgid "WPA2-PSK (TKIP)"
+msgstr "WPA2-PSK (TKIP)"
+
+msgid "Waiting for the device to connect..."
+msgstr "Waiting for the device to connect..."
+
+msgid "Walk on Water"
+msgstr "Walk on Water"
+
+msgid "Wallpaper"
+msgstr "Wallpaper"
+
+msgid "Water on the Dancefloor"
+msgstr "Water on the Dancefloor"
+
+msgid "Wave"
+msgstr "Wave"
+
+msgid "Wave visualizer"
+msgstr "Wave visualiser"
+
+msgid "Welcome Clip"
+msgstr "Welcome Clip"
+
+msgid "Welcome to PlayStation®3.\nThe \"What's New\" screen is where to find all the latest PlayStation® news, updates, plus easy access to the games you've most recently played.\nTo access the \"What's New\" screen, connect to PSN* – it's free to join and it's your gateway to a world of entertainment, so sign up today!\n\n* Broadband Internet connection required."
+msgstr "Welcome to PlayStation®3.\nThe \"What's New\" screen is where to find all the latest PlayStation® news, updates, plus easy access to the games you've most recently played.\nTo access the \"What's New\" screen, connect to PSN* – it's free to join and it's your gateway to a world of entertainment, so sign up today!\n\n* Broadband Internet connection required."
+
+msgid "Welcome to PlayStation®Network"
+msgstr "Welcome to PlayStation®Network"
+
+msgid "Western (Latin)"
+msgstr "Western (Latin)"
+
+msgid "What's New"
+msgstr "What's New"
+
+msgid "White"
+msgstr "White"
+
+msgid "Window Mode"
+msgstr "Window Mode"
+
+msgid "Windowed"
+msgstr "Windowed"
+
+msgid "Wired Connection"
+msgstr "Wired Connection"
+
+msgid "Wireless"
+msgstr "Wireless"
+
+msgid "Wireless Headset 2.0"
+msgstr "Wireless Headset 2.0"
+
+msgid "Wireless Stereo Headset Settings"
+msgstr "Wireless Stereo Headset Settings"
+
+msgid "XMB Waves"
+msgstr "XMB Waves"
+
+msgid "Y Cb Cr"
+msgstr "Y Cb Cr"
+
+msgid "Y Pb/Cb Pr/Cr Super-White (HDMI)"
+msgstr "Y Pb/Cb Pr/Cr Super-White (HDMI)"
+
+msgid "YYYY/MM/DD"
+msgstr "YYYY/MM/DD"
+
+msgid "Yellow"
+msgstr "Yellow"
+
+msgid "You can change the voice that is input using an audio input device."
+msgstr "You can change the voice that is input using an audio input device."
+
+msgid "You can edit a video that you like, upload it to a video sharing website, and then invite your friends to view the video."
+msgstr "You can edit a video that you like, upload it to a video sharing website, and then invite your friends to view the video."
+
+msgid "You cannot create an icon less than 15 seconds in length."
+msgstr "You cannot create an icon less than 15 seconds in length."
+
+msgid "Zoom"
+msgstr "Zoom"
+
+msgid "Zoom In"
+msgstr "Zoom In"
+
+msgid "Zoom Out"
+msgstr "Zoom Out"
+
+msgid "auto"
+msgstr "auto"
+
+msgid "category.settings.accessory.settings"
+msgstr "category.settings.accessory.settings"
+
+msgid "category.settings.display.settings"
+msgstr "category.settings.display.settings"
+
+msgid "category.settings.music.settings"
+msgstr "category.settings.music.settings"
+
+msgid "category.settings.network.settings"
+msgstr "category.settings.network.settings"
+
+msgid "category.settings.power.save.settings"
+msgstr "category.settings.power.save.settings"
+
+msgid "controller button"
+msgstr "controller button"
+
+msgid "corp-eap"
+msgstr "corp-eap"
+
+msgid "en"
+msgstr "en"
+
+msgid "fr"
+msgstr "fr"
+
+msgid "hi"
+msgstr "hi"
+
+msgid "http://s3k.ocremix.org - Project Chaos - Bonus Tracks"
+msgstr "http://s3k.ocremix.org - Project Chaos - Bonus Tracks"
+
+msgid "iMushroom"
+msgstr "iMushroom"
+
+msgid "keyboard key"
+msgstr "keyboard key"
+
+msgid "linksys"
+msgstr "linksys"
+
+msgid "1. Transfer data from this system to the other OpenXMB system."
+msgstr "1. Transfer data from this system to the other OpenXMB system."
+
+msgid "2. Transfer data from the other OpenXMB system to this system."
+msgstr "2. Transfer data from the other OpenXMB system to this system."
+
+msgid "Adjusts settings for this OpenXMB system."
+msgstr "Adjusts settings for this OpenXMB system."
+
+msgid "Browse and purchase games, add-ons, movies, and more for your OpenXMB system.\n\nDownload demos, full games, themes, wallpapers, and exclusive content.\n\nA broadband Internet connection and a PlayStation®Network account are required to use PlayStation®Store."
+msgstr "Browse and purchase games, add-ons, movies, and more for your OpenXMB system.\n\nDownload demos, full games, themes, wallpapers, and exclusive content.\n\nA broadband Internet connection and a PlayStation®Network account are required to use PlayStation®Store."
+
+msgid "Displays manuals for the software installed on the OpenXMB system."
+msgstr "Displays manuals for the software installed on the OpenXMB system."
+
+msgid "Manages game data installed on the OpenXMB system. To delete a game data item, select it and then press the @T button."
+msgstr "Manages game data installed on the OpenXMB system. To delete a game data item, select it and then press the @T button."
+
+msgid "OpenXMB system"
+msgstr "OpenXMB system"
+
+msgid "Register a BD remote control for use with the OpenXMB system.\n\nPress the START button and ENTER button of the BD remote control you want to register at the same time, and hold down until the screen changes."
+msgstr "Register a BD remote control for use with the OpenXMB system.\n\nPress the START button and ENTER button of the BD remote control you want to register at the same time, and hold down until the screen changes."
+
+msgid "Restore OpenXMB System"
+msgstr "Restore OpenXMB System"
+
+msgid "Scans the network and connects to a media server. To use this function, a media server must be set up to allow connections from the OpenXMB system."
+msgstr "Scans the network and connects to a media server. To use this function, a media server must be set up to allow connections from the OpenXMB system."
+
+msgid "Searching for the other OpenXMB system..."
+msgstr "Searching for the other OpenXMB system..."
+
+msgid "The other OpenXMB system was not found.\nCheck that both systems are connected to the same network."
+msgstr "The other OpenXMB system was not found.\nCheck that both systems are connected to the same network."
+
+msgid "Transfers data from your current OpenXMB system to a new OpenXMB system over a network.\n\nConnect both systems to the same network, then follow the on-screen instructions on each system."
+msgstr "Transfers data from your current OpenXMB system to a new OpenXMB system over a network.\n\nConnect both systems to the same network, then follow the on-screen instructions on each system."
+
+msgid "Transfers data that is saved on one OpenXMB system to another OpenXMB system. You can use this feature when replacing the OpenXMB system that you usually use with another OpenXMB system."
+msgstr "Transfers data that is saved on one OpenXMB system to another OpenXMB system. You can use this feature when replacing the OpenXMB system that you usually use with another OpenXMB system."
+
+msgid "Update the OpenXMB system software."
+msgstr "Update the OpenXMB system software."
+
+msgid "British English"
+msgstr "British English"
+
+msgid "Flow visualiser"
+msgstr "Flow visualiser"
+
+msgid "Wave visualiser"
+msgstr "Wave visualiser"
+
+msgid "Indonesian"
+msgstr "Indonesian"
+
+msgid "Simplified Chinese"
+msgstr "Simplified Chinese"
+
+msgid "Traditional Chinese"
+msgstr "Traditional Chinese"
+
+msgid "Automatic"
+msgstr "Automatic"
+
+msgid "None"
+msgstr "None"
+
+msgid "Color"
+msgstr "Colour"
+
+msgid "Visualizer"
+msgstr "Visualiser"
+
+msgid "\nThe original was preserved."
+msgstr "\nThe original was preserved."
+
+msgid "   Off"
+msgstr "   Off"
+
+msgid "   On"
+msgstr "   On"
+
+msgid "  Played "
+msgstr "  Played "
+
+msgid "  Select to cycle"
+msgstr "  Select to cycle"
+
+msgid "  Select to remove scan root"
+msgstr "  Select to remove scan root"
+
+msgid " (active)"
+msgstr " (active)"
+
+msgid " (away locally)"
+msgstr " (away locally)"
+
+msgid " (present locally)"
+msgstr " (present locally)"
+
+msgid " Last error: "
+msgstr " Last error: "
+
+msgid " RPCS3 root(s)."
+msgstr " RPCS3 root(s)."
+
+msgid " Settings"
+msgstr " Settings"
+
+msgid " cores / "
+msgstr " cores / "
+
+msgid " cores found. Left/Right cycles the core field."
+msgstr " cores found. Left/Right cycles the core field."
+
+msgid " game(s)."
+msgstr " game(s)."
+
+msgid " path"
+msgstr " path"
+
+msgid " playable discs found."
+msgstr " playable discs found."
+
+msgid " theme(s)."
+msgstr " theme(s)."
+
+msgid " threads"
+msgstr " threads"
+
+msgid " times"
+msgstr " times"
+
+msgid " to the default printer?"
+msgstr " to the default printer?"
+
+msgid " tracks"
+msgstr " tracks"
+
+msgid " tracks added to "
+msgstr " tracks added to "
+
+msgid " upload bytes"
+msgstr " upload bytes"
+
+msgid " will be moved to a recovery folder. It will not be permanently deleted."
+msgstr " will be moved to a recovery folder. It will not be permanently deleted."
+
+msgid "& © 2025-2026. Syndromatic Limited Britannia. All rights reserved."
+msgstr "& © 2025-2026. Syndromatic Limited Britannia. All rights reserved."
+
+msgid ". Select it to apply."
+msgstr ". Select it to apply."
+
+msgid "12-hour"
+msgstr "12-hour"
+
+msgid "15 seconds"
+msgstr "15 seconds"
+
+msgid "1½ speed (muted)"
+msgstr "1½ speed (muted)"
+
+msgid "24-hour"
+msgstr "24-hour"
+
+msgid "3 seconds"
+msgstr "3 seconds"
+
+msgid "? Music files are preserved."
+msgstr "? Music files are preserved."
+
+msgid "A core is already running. Return to its window or stop the session."
+msgstr "A core is already running. Return to its window or stop the session."
+
+msgid "About"
+msgstr "About"
+
+msgid "Active local user changed. Settings and themes use this profile."
+msgstr "Active local user changed. Settings and themes use this profile."
+
+msgid "Add Current Play Queue"
+msgstr "Add Current Play Queue"
+
+msgid "Add Selected to Playlist..."
+msgstr "Add Selected to Playlist..."
+
+msgid "Add Track / Folder / Playlist..."
+msgstr "Add Track / Folder / Playlist..."
+
+msgid "Add custom section"
+msgstr "Add custom section"
+
+msgid "Add detected RPCS3 game folders"
+msgstr "Add detected RPCS3 game folders"
+
+msgid "Add game folder"
+msgstr "Add game folder"
+
+msgid "Add game manually"
+msgstr "Add game manually"
+
+msgid "Add local friend"
+msgstr "Add local friend"
+
+msgid "Add local trophy"
+msgstr "Add local trophy"
+
+msgid "Add to Queue"
+msgstr "Add to Queue"
+
+msgid "Added to Playlist"
+msgstr "Added to Playlist"
+
+msgid "Address: "
+msgstr "Address: "
+
+msgid "Adjust settings for the OpenXMB system."
+msgstr "Adjust settings for the OpenXMB system."
+
+msgid "Album"
+msgstr "Album"
+
+msgid "Album art exceeds texture upload capacity"
+msgstr "Album art exceeds texture upload capacity"
+
+msgid "Album: "
+msgstr "Album: "
+
+msgid "All videos"
+msgstr "All videos"
+
+msgid "An artwork request is already in progress"
+msgstr "An artwork request is already in progress"
+
+msgid "Animated Theme"
+msgstr "Animated Theme"
+
+msgid "Anti-aliasing    "
+msgstr "Anti-aliasing    "
+
+msgid "Apply a theme first, then use this action."
+msgstr "Apply a theme first, then use this action."
+
+msgid "Apply this change to local library data"
+msgstr "Apply this change to local library data"
+
+msgid "Archive this user profile?"
+msgstr "Archive this user profile?"
+
+msgid "Archives the user's data; at least one profile is retained"
+msgstr "Archives the user's data; at least one profile is retained"
+
+msgid "Arguments (quote values containing spaces)"
+msgstr "Arguments (quote values containing spaces)"
+
+msgid "Arrows + Z/X/A/S: play   Space: pause   F5/F8: save/load   F12: screenshot"
+msgstr "Arrows + Z/X/A/S: play   Space: pause   F5/F8: save/load   F12: screenshot"
+
+msgid "Artist"
+msgstr "Artist"
+
+msgid "Artist: "
+msgstr "Artist: "
+
+msgid "Artwork key environment variable (no key values)"
+msgstr "Artwork key environment variable (no key values)"
+
+msgid "Artwork provider disabled"
+msgstr "Artwork provider disabled"
+
+msgid "Artwork saved: "
+msgstr "Artwork saved: "
+
+msgid "Audio CDs, DVD and Blu-ray folders/devices. Playback uses an installed desktop player."
+msgstr "Audio CDs, DVD and Blu-ray folders/devices. Playback uses an installed desktop player."
+
+msgid "Audio is muted during speed playback"
+msgstr "Audio is muted during speed playback"
+
+msgid "Audio output active"
+msgstr "Audio output active"
+
+msgid "Audio track"
+msgstr "Audio track"
+
+msgid "Avatar"
+msgstr "Avatar"
+
+msgid "Avatar image"
+msgstr "Avatar image"
+
+msgid "Avatar image path"
+msgstr "Avatar image path"
+
+msgid "Away locally"
+msgstr "Away locally"
+
+msgid "Background / animation"
+msgstr "Background / animation"
+
+msgid "Background image"
+msgstr "Background image"
+
+msgid "Binding saved"
+msgstr "Binding saved"
+
+msgid "Biography"
+msgstr "Biography"
+
+msgid "Browse in a separate system-browser window with your own keyboard and mouse."
+msgstr "Browse in a separate system-browser window with your own keyboard and mouse."
+
+msgid "Browser address"
+msgstr "Browser address"
+
+msgid "CPU Cores / Threads"
+msgstr "CPU Cores / Threads"
+
+msgid "CPU Threads"
+msgstr "CPU Threads"
+
+msgid "Cannot Add Tracks"
+msgstr "Cannot Add Tracks"
+
+msgid "Cannot Create Playlist"
+msgstr "Cannot Create Playlist"
+
+msgid "Cannot open file"
+msgstr "Cannot open file"
+
+msgid "Cannot save video position: "
+msgstr "Cannot save video position: "
+
+msgid "Capture your desktop or start OpenXMB automatically when you log in."
+msgstr "Capture your desktop or start OpenXMB automatically when you log in."
+
+msgid "Channels"
+msgstr "Channels"
+
+msgid "Channels: "
+msgstr "Channels: "
+
+msgid "Choose Font File..."
+msgstr "Choose Font File..."
+
+msgid "Choose executable, arguments, artwork, preview video and music"
+msgstr "Choose executable, arguments, artwork, preview video and music"
+
+msgid "Close"
+msgstr "Close"
+
+msgid "Close dedicated browser session"
+msgstr "Close dedicated browser session"
+
+msgid "Close menu"
+msgstr "Close menu"
+
+msgid "Codec"
+msgstr "Codec"
+
+msgid "Codec: "
+msgstr "Codec: "
+
+msgid "Configure scan roots without moving your games"
+msgstr "Configure scan roots without moving your games"
+
+msgid "Confirm: play from track    Options: playlist    Extra: edit track    Back: close"
+msgstr "Confirm: play from track    Options: playlist    Extra: edit track    Back: close"
+
+msgid "Content: "
+msgstr "Content: "
+
+msgid "Control browser with gamepad"
+msgstr "Control browser with gamepad"
+
+msgid "Controller prompts    "
+msgstr "Controller prompts    "
+
+msgid "Controller rumble    "
+msgstr "Controller rumble    "
+
+msgid "Core started in its own window. Escape returns here; F5 saves and F8 loads."
+msgstr "Core started in its own window. Escape returns here; F5 saves and F8 loads."
+
+msgid "Core: "
+msgstr "Core: "
+
+msgid "Could not save slideshow"
+msgstr "Could not save slideshow"
+
+msgid "Create Custom Theme"
+msgstr "Create Custom Theme"
+
+msgid "Create Custom Theme..."
+msgstr "Create Custom Theme..."
+
+msgid "Create a named category backed by a local folder"
+msgstr "Create a named category backed by a local folder"
+
+msgid "Create local user"
+msgstr "Create local user"
+
+msgid "Creating custom theme..."
+msgstr "Creating custom theme..."
+
+msgid "Custom Sections"
+msgstr "Custom Sections"
+
+msgid "Custom category"
+msgstr "Custom category"
+
+msgid "Custom category name"
+msgstr "Custom category name"
+
+msgid "Custom section"
+msgstr "Custom section"
+
+msgid "Custom section saved"
+msgstr "Custom section saved"
+
+msgid "Custom sections"
+msgstr "Custom sections"
+
+msgid "Custom theme created. Export it as a ZIP to share."
+msgstr "Custom theme created. Export it as a ZIP to share."
+
+msgid "Date: "
+msgstr "Date: "
+
+msgid "Dedicated Graphics Memory"
+msgstr "Dedicated Graphics Memory"
+
+msgid "Defaults restored"
+msgstr "Defaults restored"
+
+msgid "Delete "
+msgstr "Delete "
+
+msgid "Delete Playlist..."
+msgstr "Delete Playlist..."
+
+msgid "Delete Playlist?"
+msgstr "Delete Playlist?"
+
+msgid "Delete local user"
+msgstr "Delete local user"
+
+msgid "Delete preset? Type DELETE to confirm"
+msgstr "Delete preset? Type DELETE to confirm"
+
+msgid "Description"
+msgstr "Description"
+
+msgid "Designed by Kavish Krishnakumar in Manchester."
+msgstr "Designed by Kavish Krishnakumar in Manchester."
+
+msgid "Desktop Tools"
+msgstr "Desktop Tools"
+
+msgid "Developer"
+msgstr "Developer"
+
+msgid "Disable artwork provider"
+msgstr "Disable artwork provider"
+
+msgid "Disabled or key absent; local artwork remains available"
+msgstr "Disabled or key absent; local artwork remains available"
+
+msgid "Disc Media"
+msgstr "Disc Media"
+
+msgid "Disc ready. Select it to play."
+msgstr "Disc ready. Select it to play."
+
+msgid "Discard"
+msgstr "Discard"
+
+msgid "Discard unsaved edits and reload the saved track list?"
+msgstr "Discard unsaved edits and reload the saved track list?"
+
+msgid "Display name"
+msgstr "Display name"
+
+msgid "Document information"
+msgstr "Document information"
+
+msgid "Document page exceeds texture upload limit"
+msgstr "Document page exceeds texture upload limit"
+
+msgid "Done"
+msgstr "Done"
+
+msgid "Double speed (muted)"
+msgstr "Double speed (muted)"
+
+msgid "Download artwork for this game"
+msgstr "Download artwork for this game"
+
+msgid "Edit Selected Track"
+msgstr "Edit Selected Track"
+
+msgid "Emulation"
+msgstr "Emulation"
+
+msgid "Emulation session finished. Save RAM is stored automatically."
+msgstr "Emulation session finished. Save RAM is stored automatically."
+
+msgid "Enable the provider and configure its key first; no request was made"
+msgstr "Enable the provider and configure its key first; no request was made"
+
+msgid "Enabled and key is configured"
+msgstr "Enabled and key is configured"
+
+msgid "End of queue"
+msgstr "End of queue"
+
+msgid "Enter"
+msgstr "Enter"
+
+msgid "Enter Address"
+msgstr "Enter Address"
+
+msgid "Enter Text"
+msgstr "Enter Text"
+
+msgid "Executable"
+msgstr "Executable"
+
+msgid "Executable path or command"
+msgstr "Executable path or command"
+
+msgid "Exit"
+msgstr "Exit"
+
+msgid "Export selected theme..."
+msgstr "Export selected theme..."
+
+msgid "Export theme ZIP (new filename)"
+msgstr "Export theme ZIP (new filename)"
+
+msgid "Exporting theme..."
+msgstr "Exporting theme..."
+
+msgid "FPS: {:.2f}"
+msgstr "FPS: {:.2f}"
+
+msgid "Failed to get file size"
+msgstr "Failed to get file size"
+
+msgid "Failed to map file"
+msgstr "Failed to map file"
+
+msgid "Failed to open file"
+msgstr "Failed to open file"
+
+msgid "Failed to open video"
+msgstr "Failed to open video"
+
+msgid "Failed to read file"
+msgstr "Failed to read file"
+
+msgid "Favorites are kept in your local profile"
+msgstr "Favourites are kept in your local profile"
+
+msgid "First page"
+msgstr "First page"
+
+msgid "Fit page"
+msgstr "Fit page"
+
+msgid "Folder"
+msgstr "Folder"
+
+msgid "Folder does not exist"
+msgstr "Folder does not exist"
+
+msgid "Font file"
+msgstr "Font file"
+
+msgid "For more information, see the Licenses section."
+msgstr "For more information, see the Licences section."
+
+msgid "Forward"
+msgstr "Forward"
+
+msgid "Frame cap    "
+msgstr "Frame cap    "
+
+msgid "Friend display name"
+msgstr "Friend display name"
+
+msgid "Friends - local simulation"
+msgstr "Friends - local simulation"
+
+msgid "Full screen (stretch)"
+msgstr "Full screen (stretch)"
+
+msgid "GPU Local Memory"
+msgstr "GPU Local Memory"
+
+msgid "Game Library"
+msgstr "Game Library"
+
+msgid "Game details"
+msgstr "Game details"
+
+msgid "Game folder path"
+msgstr "Game folder path"
+
+msgid "Game library"
+msgstr "Game library"
+
+msgid "Game library folders"
+msgstr "Game library folders"
+
+msgid "Game title"
+msgstr "Game title"
+
+msgid "Game/content file (empty for no-content cores)"
+msgstr "Game/content file (empty for no-content cores)"
+
+msgid "Genre"
+msgstr "Genre"
+
+msgid "Genre: "
+msgstr "Genre: "
+
+msgid "Glass icons    "
+msgstr "Glass icons    "
+
+msgid "Grade"
+msgstr "Grade"
+
+msgid "Graphics Driver"
+msgstr "Graphics Driver"
+
+msgid "Graphics Processor"
+msgstr "Graphics Processor"
+
+msgid "Home"
+msgstr "Home"
+
+msgid "IF YOU HAVE A HISTORY OF EPILEPSY OR SEIZURES, CONSULT A DOCTOR BEFORE USE. CERTAIN PATTERNS MAY TRIGGER SEIZURES WITH NO PRIOR HISTORY. BEFORE USING THIS PRODUCT, CAREFULLY READ THE INSTRUCTION MANUAL."
+msgstr "IF YOU HAVE A HISTORY OF EPILEPSY OR SEIZURES, CONSULT A DOCTOR BEFORE USE. CERTAIN PATTERNS MAY TRIGGER SEIZURES WITH NO PRIOR HISTORY. BEFORE USING THIS PRODUCT, CAREFULLY READ THE INSTRUCTION MANUAL."
+
+msgid "Icon"
+msgstr "Icon"
+
+msgid "Icon image"
+msgstr "Icon image"
+
+msgid "Icons"
+msgstr "Icons"
+
+msgid "Image exceeds texture upload limit"
+msgstr "Image exceeds texture upload limit"
+
+msgid "Import .p3t, .zip or theme folder"
+msgstr "Import .p3t, .zip or theme folder"
+
+msgid "Import inbox ("
+msgstr "Import inbox ("
+
+msgid "Import theme or icon pack..."
+msgstr "Import theme or icon pack..."
+
+msgid "Imported "
+msgstr "Imported "
+
+msgid "Importing inbox..."
+msgstr "Importing inbox..."
+
+msgid "Importing theme..."
+msgstr "Importing theme..."
+
+msgid "Imports game manifests, desktop entries and native executables"
+msgstr "Imports game manifests, desktop entries and native executables"
+
+msgid "Install / manage themes..."
+msgstr "Install / manage themes..."
+
+msgid "Install CUPS client tools (lp or lpr), configure a printer, and add the tools to PATH."
+msgstr "Install CUPS client tools (lp or lpr), configure a printer, and add the tools to PATH."
+
+msgid "Installed Memory"
+msgstr "Installed Memory"
+
+msgid "Installed copy removed. Original import source was kept."
+msgstr "Installed copy removed. Original import source was kept."
+
+msgid "InterfaceFX TEXT PROBE: The quick brown fox jumps over the lazy dog."
+msgstr "InterfaceFX TEXT PROBE: The quick brown fox jumps over the lazy dog."
+
+msgid "Keep current data"
+msgstr "Keep current data"
+
+msgid "Keeps all game files"
+msgstr "Keeps all game files"
+
+msgid "Keeps its folder and files"
+msgstr "Keeps its folder and files"
+
+msgid "Keeps the executable and source media"
+msgstr "Keeps the executable and source media"
+
+msgid "Keyboard Controls"
+msgstr "Keyboard Controls"
+
+msgid "Keyboard bindings"
+msgstr "Keyboard bindings"
+
+msgid "Last page"
+msgstr "Last page"
+
+msgid "Launch "
+msgstr "Launch "
+
+msgid "Launch arguments"
+msgstr "Launch arguments"
+
+msgid "Left/Right page · Home/End first/last · Up/Down or wheel zoom · Drag to pan · P print · Tab options"
+msgstr "Left/Right page · Home/End first/last · Up/Down or wheel zoom · Drag to pan · P print · Tab options"
+
+msgid "Library"
+msgstr "Library"
+
+msgid "Libretro core library"
+msgstr "Libretro core library"
+
+msgid "Loading page…"
+msgstr "Loading page…"
+
+msgid "Loading…"
+msgstr "Loading…"
+
+msgid "Local Account"
+msgstr "Local Account"
+
+msgid "Local Friends"
+msgstr "Local Friends"
+
+msgid "Local Profiles"
+msgstr "Local Profiles"
+
+msgid "Local account - no online sign-in"
+msgstr "Local account - no online sign-in"
+
+msgid "Local account display name"
+msgstr "Local account display name"
+
+msgid "Local account status"
+msgstr "Local account status"
+
+msgid "Local biography"
+msgstr "Local biography"
+
+msgid "Local friend"
+msgstr "Local friend"
+
+msgid "Local friend's name"
+msgstr "Local friend's name"
+
+msgid "Local friends"
+msgstr "Local friends"
+
+msgid "Local library updated"
+msgstr "Local library updated"
+
+msgid "Local profile"
+msgstr "Local profile"
+
+msgid "Local status"
+msgstr "Local status"
+
+msgid "Local status text"
+msgstr "Local status text"
+
+msgid "Local trophies"
+msgstr "Local trophies"
+
+msgid "Local trophy"
+msgstr "Local trophy"
+
+msgid "Local users"
+msgstr "Local users"
+
+msgid "Locked: "
+msgstr "Locked: "
+
+msgid "Looking up game artwork..."
+msgstr "Looking up game artwork..."
+
+msgid "Makes HTTPS requests only when provider and key are configured"
+msgstr "Makes HTTPS requests only when provider and key are configured"
+
+msgid "Manage game folders"
+msgstr "Manage game folders"
+
+msgid "Manage offline simulated friend records"
+msgstr "Manage offline simulated friend records"
+
+msgid "Manage offline trophy records"
+msgstr "Manage offline trophy records"
+
+msgid "Mark favorite"
+msgstr "Mark favourite"
+
+msgid "Mark locked"
+msgstr "Mark locked"
+
+msgid "Media folder"
+msgstr "Media folder"
+
+msgid "Memory Transfer Rate"
+msgstr "Memory Transfer Rate"
+
+msgid "Menu"
+msgstr "Menu"
+
+msgid "Mounted optical-disc directory or device"
+msgstr "Mounted optical-disc directory or device"
+
+msgid "Move Down"
+msgstr "Move Down"
+
+msgid "Move Selected Down"
+msgstr "Move Selected Down"
+
+msgid "Move Selected Up"
+msgstr "Move Selected Up"
+
+msgid "Move Up"
+msgstr "Move Up"
+
+msgid "Move photo to OpenXMB Trash?"
+msgstr "Move photo to OpenXMB Trash?"
+
+msgid "Move to Trash"
+msgstr "Move to Trash"
+
+msgid "Music Player"
+msgstr "Music Player"
+
+msgid "Music folder"
+msgstr "Music folder"
+
+msgid "My Section"
+msgstr "My Section"
+
+msgid "My Theme"
+msgstr "My Theme"
+
+msgid "Native YUV GPU conversion"
+msgstr "Native YUV GPU conversion"
+
+msgid "Native libretro software cores. Provide your own core, content and BIOS files."
+msgstr "Native libretro software cores. Provide your own core, content and BIOS files."
+
+msgid "New Game"
+msgstr "New Game"
+
+msgid "New Playlist"
+msgstr "New Playlist"
+
+msgid "New Playlist..."
+msgstr "New Playlist..."
+
+msgid "New User"
+msgstr "New User"
+
+msgid "New user name"
+msgstr "New user name"
+
+msgid "Next frame"
+msgstr "Next frame"
+
+msgid "Next page"
+msgstr "Next page"
+
+msgid "Next video"
+msgstr "Next video"
+
+msgid "No RPCS3 data folder detected. Add your disc or installed-game folder manually."
+msgstr "No RPCS3 data folder detected. Add your disc or installed-game folder manually."
+
+msgid "No audio CD, mounted DVD, or mounted Blu-ray was found."
+msgstr "No audio CD, mounted DVD, or mounted Blu-ray was found."
+
+msgid "No audio tracks"
+msgstr "No audio tracks"
+
+msgid "No entries yet. Use the actions above to add one."
+msgstr "No entries yet. Use the actions above to add one."
+
+msgid "No native viewer is registered for this file type"
+msgstr "No native viewer is registered for this file type"
+
+msgid "No playable disc structure was found at that path."
+msgstr "No playable disc structure was found at that path."
+
+msgid "No print service is available"
+msgstr "No print service is available"
+
+msgid "No viewer is available for "
+msgstr "No viewer is available for "
+
+msgid "None (no-content core)"
+msgstr "None (no-content core)"
+
+msgid "Normal (fit)"
+msgstr "Normal (fit)"
+
+msgid "Normal speed"
+msgstr "Normal speed"
+
+msgid "Offline simulation; no messages or remote requests are sent"
+msgstr "Offline simulation; no messages or remote requests are sent"
+
+msgid "Offline tracking; does not connect to a console account"
+msgstr "Offline tracking; does not connect to a console account"
+
+msgid "Only this local profile is changed"
+msgstr "Only this local profile is changed"
+
+msgid "Open "
+msgstr "Open "
+
+msgid "Open / Resume"
+msgstr "Open / Resume"
+
+msgid "Open Link"
+msgstr "Open Link"
+
+msgid "Open a dedicated browser window first."
+msgstr "Open a dedicated browser window first."
+
+msgid "Open browser window"
+msgstr "Open browser window"
+
+msgid "Open disc directory/device..."
+msgstr "Open disc directory/device..."
+
+msgid "Open in native viewer"
+msgstr "Open in native viewer"
+
+msgid "OpenXMB "
+msgstr "OpenXMB "
+
+msgid "OpenXMB Settings"
+msgstr "OpenXMB Settings"
+
+msgid "Opening Internet Browser…"
+msgstr "Opening Internet Browser…"
+
+msgid "Opening video…"
+msgstr "Opening video…"
+
+msgid "Operating System"
+msgstr "Operating System"
+
+msgid "Optical Media"
+msgstr "Optical Media"
+
+msgid "Optional RAWG artwork provider"
+msgstr "Optional RAWG artwork provider"
+
+msgid "Options: save / add to playlist / reorder / remove"
+msgstr "Options: save / add to playlist / reorder / remove"
+
+msgid "Original appearance restored."
+msgstr "Original appearance restored."
+
+msgid "Original size"
+msgstr "Original size"
+
+msgid "Overlay layers"
+msgstr "Overlay layers"
+
+msgid "PHOTOSENSITIVE EPILEPSY"
+msgstr "PHOTOSENSITIVE EPILEPSY"
+
+msgid "Page Information"
+msgstr "Page Information"
+
+msgid "Page loaded"
+msgstr "Page loaded"
+
+msgid "Paused"
+msgstr "Paused"
+
+msgid "Photo Playlists"
+msgstr "Photo Playlists"
+
+msgid "Photo copy saved"
+msgstr "Photo copy saved"
+
+msgid "Photo information"
+msgstr "Photo information"
+
+msgid "Photo moved to OpenXMB Trash"
+msgstr "Photo moved to OpenXMB Trash"
+
+msgid "Photo operation failed"
+msgstr "Photo operation failed"
+
+msgid "Photo sent to print service"
+msgstr "Photo sent to print service"
+
+msgid "Pictures folder"
+msgstr "Pictures folder"
+
+msgid "Play Next"
+msgstr "Play Next"
+
+msgid "Play Now"
+msgstr "Play Now"
+
+msgid "Play Queue"
+msgstr "Play Queue"
+
+msgid "Play from beginning"
+msgstr "Play from beginning"
+
+msgid "Play preview music"
+msgstr "Play preview music"
+
+msgid "Play video preview"
+msgstr "Play video preview"
+
+msgid "Playback error"
+msgstr "Playback error"
+
+msgid "Playback speed"
+msgstr "Playback speed"
+
+msgid "Playing"
+msgstr "Playing"
+
+msgid "Playing "
+msgstr "Playing "
+
+msgid "Playing game preview music"
+msgstr "Playing game preview music"
+
+msgid "Playing playlist"
+msgstr "Playing playlist"
+
+msgid "Playlist"
+msgstr "Playlist"
+
+msgid "Playlist Created"
+msgstr "Playlist Created"
+
+msgid "Playlist renamed"
+msgstr "Playlist renamed"
+
+msgid "Playlist saved"
+msgstr "Playlist saved"
+
+msgid "Present locally"
+msgstr "Present locally"
+
+msgid "Preset applied."
+msgstr "Preset applied."
+
+msgid "Preset deleted."
+msgstr "Preset deleted."
+
+msgid "Preset kept."
+msgstr "Preset kept."
+
+msgid "Preset saved."
+msgstr "Preset saved."
+
+msgid "Preset: "
+msgstr "Preset: "
+
+msgid "Preview music"
+msgstr "Preview music"
+
+msgid "Preview video"
+msgstr "Preview video"
+
+msgid "Previous frame"
+msgstr "Previous frame"
+
+msgid "Previous page"
+msgstr "Previous page"
+
+msgid "Previous video"
+msgstr "Previous video"
+
+msgid "Print current page…"
+msgstr "Print current page…"
+
+msgid "Print document?"
+msgstr "Print document?"
+
+msgid "Print entire PDF…"
+msgstr "Print entire PDF…"
+
+msgid "Print job submitted"
+msgstr "Print job submitted"
+
+msgid "Printing failed"
+msgstr "Printing failed"
+
+msgid "Printing unavailable"
+msgstr "Printing unavailable"
+
+msgid "Processor"
+msgstr "Processor"
+
+msgid "Profile: "
+msgstr "Profile: "
+
+msgid "Provider enabled. Supply the key securely in environment settings."
+msgstr "Provider enabled. Supply the key securely in environment settings."
+
+msgid "Queue added; choose Save to keep changes"
+msgstr "Queue added; choose Save to keep changes"
+
+msgid "RGBA upload"
+msgstr "RGBA upload"
+
+msgid "Refresh installed cores (Left/Right cycles core)"
+msgstr "Refresh installed cores (Left/Right cycles core)"
+
+msgid "Refresh optical media"
+msgstr "Refresh optical media"
+
+msgid "Release year (0 if unknown)"
+msgstr "Release year (0 if unknown)"
+
+msgid "Reload"
+msgstr "Reload"
+
+msgid "Reload Saved Playlist"
+msgstr "Reload Saved Playlist"
+
+msgid "Reload Saved Playlist?"
+msgstr "Reload Saved Playlist?"
+
+msgid "Reload this playlist before saving; its contents could not be read."
+msgstr "Reload this playlist before saving; its contents could not be read."
+
+msgid "Remove Selected"
+msgstr "Remove Selected"
+
+msgid "Remove favorite"
+msgstr "Remove favourite"
+
+msgid "Remove from Queue"
+msgstr "Remove from Queue"
+
+msgid "Remove from game library"
+msgstr "Remove from game library"
+
+msgid "Remove installed theme..."
+msgstr "Remove installed theme..."
+
+msgid "Remove installed theme? Type DELETE to confirm"
+msgstr "Remove installed theme? Type DELETE to confirm"
+
+msgid "Remove local friend"
+msgstr "Remove local friend"
+
+msgid "Remove local friend?"
+msgstr "Remove local friend?"
+
+msgid "Remove local trophy"
+msgstr "Remove local trophy"
+
+msgid "Remove local trophy?"
+msgstr "Remove local trophy?"
+
+msgid "Remove section"
+msgstr "Remove section"
+
+msgid "Remove this custom section?"
+msgstr "Remove this custom section?"
+
+msgid "Remove this game entry?"
+msgstr "Remove this game entry?"
+
+msgid "Remove this scan root?"
+msgstr "Remove this scan root?"
+
+msgid "Removes this offline record"
+msgstr "Removes this offline record"
+
+msgid "Rename Playlist"
+msgstr "Rename Playlist"
+
+msgid "Rename Playlist..."
+msgstr "Rename Playlist..."
+
+msgid "Rename section"
+msgstr "Rename section"
+
+msgid "Rename user"
+msgstr "Rename user"
+
+msgid "Repeat all"
+msgstr "Repeat all"
+
+msgid "Repeat off"
+msgstr "Repeat off"
+
+msgid "Repeat one"
+msgstr "Repeat one"
+
+msgid "Repeat: "
+msgstr "Repeat: "
+
+msgid "Replay 10 seconds"
+msgstr "Replay 10 seconds"
+
+msgid "Reported CPU Clock"
+msgstr "Reported CPU Clock"
+
+msgid "Reset"
+msgstr "Reset"
+
+msgid "Reset current profile settings"
+msgstr "Reset current profile settings"
+
+msgid "Reset settings?"
+msgstr "Reset settings?"
+
+msgid "Resize"
+msgstr "Resize"
+
+msgid "Restore default bindings"
+msgstr "Restore default bindings"
+
+msgid "Restore the current profile's default shell preferences? Media files and other profiles are preserved."
+msgstr "Restore the current profile's default shell preferences? Media files and other profiles are preserved."
+
+msgid "Restore the original appearance."
+msgstr "Restore the original appearance."
+
+msgid "Return"
+msgstr "Return"
+
+msgid "SDL scancode for "
+msgstr "SDL scancode for "
+
+msgid "Save"
+msgstr "Save"
+
+msgid "Save Playlist Changes?"
+msgstr "Save Playlist Changes?"
+
+msgid "Save Queue as Playlist..."
+msgstr "Save Queue as Playlist..."
+
+msgid "Save component preset"
+msgstr "Save component preset"
+
+msgid "Save component preset..."
+msgstr "Save component preset..."
+
+msgid "Save crop"
+msgstr "Save crop"
+
+msgid "Saved"
+msgstr "Saved"
+
+msgid "Saved playlist loaded"
+msgstr "Saved playlist loaded"
+
+msgid "Saving…"
+msgstr "Saving…"
+
+msgid "Scan configured folders"
+msgstr "Scan configured folders"
+
+msgid "Scan game folders"
+msgstr "Scan game folders"
+
+msgid "Scene search"
+msgstr "Scene search"
+
+msgid "Screen mode"
+msgstr "Screen mode"
+
+msgid "Scroll Down"
+msgstr "Scroll Down"
+
+msgid "Scroll Up"
+msgstr "Scroll Up"
+
+msgid "Section folder path"
+msgstr "Section folder path"
+
+msgid "Section icon path"
+msgstr "Section icon path"
+
+msgid "Section name"
+msgstr "Section name"
+
+msgid "Select"
+msgstr "Select"
+
+msgid "Select / Edit"
+msgstr "Select / Edit"
+
+msgid "Select a core library"
+msgstr "Select a core library"
+
+msgid "Separate settings, themes, game library and local social data"
+msgstr "Separate settings, themes, game library and local social data"
+
+msgid "Shift"
+msgstr "Shift"
+
+msgid "Show FPS    "
+msgstr "Show FPS    "
+
+msgid "Show GPU memory    "
+msgstr "Show GPU memory    "
+
+msgid "Slideshow saved: "
+msgstr "Slideshow saved: "
+
+msgid "Sound effects"
+msgstr "Sound effects"
+
+msgid "Space"
+msgstr "Space"
+
+msgid "Start OpenXMB at login: "
+msgstr "Start OpenXMB at login: "
+
+msgid "Start emulation"
+msgstr "Start emulation"
+
+msgid "Started "
+msgstr "Started "
+
+msgid "Status"
+msgstr "Status"
+
+msgid "Stick: pointer  A: click  X: Tab  Y: text  Start: address  Shoulder: Enter  B: return"
+msgstr "Stick: pointer  A: click  X: Tab  Y: text  Start: address  Shoulder: Enter  B: return"
+
+msgid "Stop emulation"
+msgstr "Stop emulation"
+
+msgid "Stopped"
+msgstr "Stopped"
+
+msgid "Stops optional provider lookups"
+msgstr "Stops optional provider lookups"
+
+msgid "Submit page "
+msgstr "Submit page "
+
+msgid "Submit the entire PDF to the default printer?"
+msgstr "Submit the entire PDF to the default printer?"
+
+msgid "Submitting print job…"
+msgstr "Submitting print job…"
+
+msgid "Subtitles"
+msgstr "Subtitles"
+
+msgid "Supported manifest: openxmb-game.json"
+msgstr "Supported manifest: openxmb-game.json"
+
+msgid "Switch to "
+msgstr "Switch to "
+
+msgid "System Tools"
+msgstr "System Tools"
+
+msgid "Take screenshot"
+msgstr "Take screenshot"
+
+msgid "Text"
+msgstr "Text"
+
+msgid "Text for the focused browser field"
+msgstr "Text for the focused browser field"
+
+msgid "The GNU General Public License version 3 or later applies to OpenXMB. License files could not be found in this installation."
+msgstr "The GNU General Public License version 3 or later applies to OpenXMB. Licence files could not be found in this installation."
+
+msgid "The Syndromatic Open Xross Media Bar shell experience."
+msgstr "The Syndromatic Open Xross Media Bar shell experience."
+
+msgid "The browser exited unexpectedly. Reopen Internet Browser; check the WebView2 Runtime if this continues."
+msgstr "The browser exited unexpectedly. Reopen Internet Browser; check the WebView2 Runtime if this continues."
+
+msgid "The core session could not continue. Check the selected core/content and its BIOS requirements."
+msgstr "The core session could not continue. Check the selected core/content and its BIOS requirements."
+
+msgid "The document was accepted by the configured print command."
+msgstr "The document was accepted by the configured print command."
+
+msgid "The original is recoverable at:\n"
+msgstr "The original is recoverable at:\n"
+
+msgid "The play queue is empty"
+msgstr "The play queue is empty"
+
+msgid "The scanner reads files; it never launches discovered games"
+msgstr "The scanner reads files; it never launches discovered games"
+
+msgid "The selected local item no longer exists"
+msgstr "The selected local item no longer exists"
+
+msgid "Theme Library"
+msgstr "Theme Library"
+
+msgid "Theme applied. Your component choices were saved."
+msgstr "Theme applied. Your component choices were saved."
+
+msgid "Theme colors"
+msgstr "Theme colours"
+
+msgid "Theme exported to "
+msgstr "Theme exported to "
+
+msgid "Theme kept."
+msgstr "Theme kept."
+
+msgid "Theme library refreshed."
+msgstr "Theme library refreshed."
+
+msgid "Theme manager is not attached to the shell yet"
+msgstr "Theme manager is not attached to the shell yet"
+
+msgid "Theme operation in progress. Originals remain unchanged."
+msgstr "Theme operation in progress. Originals remain unchanged."
+
+msgid "This folder is empty."
+msgstr "This folder is empty."
+
+msgid "This playlist is empty. Open Options to add tracks or a folder."
+msgstr "This playlist is empty. Open Options to add tracks or a folder."
+
+msgid "This program is licensed to you under the GNU General Public License version 3.0."
+msgstr "This program is licensed to you under the GNU General Public License version 3.0."
+
+msgid "This setting is not supported by this build."
+msgstr "This setting is not supported by this build."
+
+msgid "This video"
+msgstr "This video"
+
+msgid "Title"
+msgstr "Title"
+
+msgid "Toggle simulated presence"
+msgstr "Toggle simulated presence"
+
+msgid "Track"
+msgstr "Track"
+
+msgid "Track added to queue"
+msgstr "Track added to queue"
+
+msgid "Track will play next"
+msgstr "Track will play next"
+
+msgid "Track, Folder or Playlist Path"
+msgstr "Track, Folder or Playlist Path"
+
+msgid "Track: "
+msgstr "Track: "
+
+msgid "Trophy description"
+msgstr "Trophy description"
+
+msgid "Trophy title"
+msgstr "Trophy title"
+
+msgid "Type into browser field..."
+msgstr "Type into browser field..."
+
+msgid "Unavailable"
+msgstr "Unavailable"
+
+msgid "Unlock local trophy"
+msgstr "Unlock local trophy"
+
+msgid "Unlocked: "
+msgstr "Unlocked: "
+
+msgid "Up/Down: select    Confirm: change    Cancel: back"
+msgstr "Up/Down: select    Confirm: change    Cancel: back"
+
+msgid "Use an SDL scancode from 4 to 512"
+msgstr "Use an SDL scancode from 4 to 512"
+
+msgid "User name"
+msgstr "User name"
+
+msgid "User profile"
+msgstr "User profile"
+
+msgid "Uses installed RPCS3 data roots; custom disc folders can be added normally"
+msgstr "Uses installed RPCS3 data roots; custom disc folders can be added normally"
+
+msgid "VSync    "
+msgstr "VSync    "
+
+msgid "Video Memory: {:.2f}/{:.2f} MB"
+msgstr "Video Memory: {:.2f}/{:.2f} MB"
+
+msgid "Video could not be loaded"
+msgstr "Video could not be loaded"
+
+msgid "Video information"
+msgstr "Video information"
+
+msgid "Video list"
+msgstr "Video list"
+
+msgid "Video playback failed"
+msgstr "Video playback failed"
+
+msgid "Video upload failed: "
+msgstr "Video upload failed: "
+
+msgid "Videos folder"
+msgstr "Videos folder"
+
+msgid "View background artwork"
+msgstr "View background artwork"
+
+msgid "Volume"
+msgstr "Volume"
+
+msgid "Volume  "
+msgstr "Volume  "
+
+msgid "Volume +"
+msgstr "Volume +"
+
+msgid "Volume −"
+msgstr "Volume −"
+
+msgid "Wait for the photo to finish loading"
+msgstr "Wait for the photo to finish loading"
+
+msgid "Wallpaper updated"
+msgstr "Wallpaper updated"
+
+msgid "Web address"
+msgstr "Web address"
+
+msgid "Working directory"
+msgstr "Working directory"
+
+msgid "Year"
+msgstr "Year"
+
+msgid "Year must be 0-9999"
+msgstr "Year must be 0-9999"
+
+msgid "Zoom in"
+msgstr "Zoom in"
+
+msgid "Zoom must be between 0.25 and 5.0"
+msgstr "Zoom must be between 0.25 and 5.0"
+
+msgid "Zoom out"
+msgstr "Zoom out"
+
+msgid "open "
+msgstr "open "
+
+msgid "version "
+msgstr "version "
+
+msgid "¼ speed (muted)"
+msgstr "¼ speed (muted)"
+
+msgid "½ speed (muted)"
+msgstr "½ speed (muted)"
+
+msgid "← More text →"
+msgstr "← More text →"
+
+msgid "✓ Off"
+msgstr "✓ Off"
+
+msgid "Vulkan"
+msgstr "Vulkan"
+
+# Native player metadata labels; preserve dynamic metadata separately.
+
+msgid "Album:"
+msgstr "Album:"
+
+msgid "Artist:"
+msgstr "Artist:"
+
+msgid "Genre:"
+msgstr "Genre:"
+
+msgid "Date:"
+msgstr "Date:"
+
+msgid "Track:"
+msgstr "Track:"
+
+msgid "Codec:"
+msgstr "Codec:"
+
+msgid "Channels:"
+msgstr "Channels:"
+
+msgid "Import inbox"
+msgstr "Import inbox"
+
+msgid "Preset:"
+msgstr "Preset:"

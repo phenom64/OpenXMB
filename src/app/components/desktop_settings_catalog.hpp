@@ -1,6 +1,8 @@
 #pragma once
 #include "openxmb/xmb/catalog.hpp"
+#include "../../localization/language_options.hpp"
 #include <initializer_list>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -25,7 +27,7 @@ inline const std::vector<Entry>& entries() {
         {"Theme","theme.preset.load","Saved Theme Presets","Apply a saved appearance preset."},
         {"Theme","theme.reset","Restore Original Theme","Restore the original OpenXMB appearance."},
         {"System","system.name","System Name","The name displayed by OpenXMB."},
-        {"System","language","Language","Preferred interface language.",{"auto","en","de","fr","hi","pl"}},
+        {"System","language","Language","Preferred interface language.",openxmb::localization::shell_locale::language_values()},
         {"System","startup.intro","Startup Intro","Play the startup sequence.",{"On","Off"}},
         {"System","startup.warning","Photosensitivity Warning","Show the dismissible startup warning.",{"On","Off"}},
         {"System","autostart","Launch at Login","Start OpenXMB when you sign in.",{"Off","On"}},
@@ -102,7 +104,9 @@ inline const std::vector<Entry>& entries() {
     };
     return data;
 }
-inline void populate(openxmb::xmb::Catalog& catalog) {
+inline void populate(openxmb::xmb::Catalog& catalog,
+    const std::function<std::string(std::string_view)>& translate =
+        [](std::string_view text){return std::string(text);}) {
     using namespace openxmb::xmb;
     auto& root=catalog.nodes.at("category.settings");
     root.children={"category.settings.system.update","category.settings.theme.settings"};root.default_selection=1;
@@ -129,10 +133,22 @@ inline void populate(openxmb::xmb::Catalog& catalog) {
         catalog.strings[node.label_key]=entry.label;catalog.strings[node.description_key]=entry.description;
         for(std::size_t i=0;i<entry.values.size();++i) {
             const auto key=node.id+".choice."+std::to_string(i);catalog.strings[key]=entry.values[i];
+            if(entry.key=="language") {
+                catalog.strings[key]=openxmb::localization::shell_locale::languages[i].second;
+            }
             node.choices.push_back({key,key,entry.values[i]});
         }
         catalog.nodes.at(group).children.push_back(node.id);catalog.nodes.emplace(node.id,std::move(node));
     }
     catalog.strings["category.settings.system.settings.description"]="Adjust settings for the OpenXMB system.";
+    // Replace the legacy console language selector with actual shipped locales.
+    for(auto& [id,node]:catalog.nodes) if(node.action_id=="simulate.system.language") {
+        node.action_id="desktop.language"; node.choices.clear(); node.default_selection=0;
+        for(const auto& [value,name]:openxmb::localization::shell_locale::languages) {
+            const auto key=id+".choice."+std::string(value);catalog.strings[key]=name;
+            node.choices.push_back({key,key,std::string(value)});
+        }
+    }
+    for(auto& [key,text]:catalog.strings) text=translate(text);
 }
 }

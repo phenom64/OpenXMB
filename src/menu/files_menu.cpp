@@ -17,6 +17,7 @@
  */
 
 module;
+#include "../localization/ui_literal_text.hpp"
 
 #include <algorithm>
 #include <array>
@@ -587,7 +588,7 @@ namespace menu {
         std::vector<std::string> choices{"Play Now","Play Next","Add to Queue","Add to Playlist..."};
         const bool playlist=openxmb::music::supported_playlist(source);
         if(playlist) choices.push_back("Edit Playlist...");
-        xmb->emplace_overlay<app::choice_overlay>(choices,0,[this,source,grouped=std::move(grouped),playlist](unsigned index) {
+        xmb->emplace_overlay<app::choice_overlay>(::app::detail::localize_ui_choices(choices),0,[this,source,grouped=std::move(grouped),playlist](unsigned index) {
             try {
                 if(playlist && index==4) {xmb->emplace_overlay<programs::playlist_editor>(source,loader);return;}
                 auto tracks=grouped.empty()?openxmb::music::collect_tracks(source):grouped;
@@ -1001,11 +1002,11 @@ namespace menu {
 
     void files_menu::show_sort_filter_options() {
         if(profile == files_menu_profile::music) {
-            xmb->emplace_overlay<app::choice_overlay>(std::vector<std::string>{"View: " + config::CONFIG.preference("music.group","Folders"),"Sort: " + config::CONFIG.preference("music.sort","Name"),"Create Playlist...","Save Queue as Playlist...","Refresh"},0,[this](unsigned index) {
+            xmb->emplace_overlay<app::choice_overlay>(::app::detail::localize_ui_choices(std::vector<std::string>{openxmb::localization::shell_locale::translate("View")+": "+openxmb::localization::shell_locale::translate(config::CONFIG.preference("music.group","Folders")),openxmb::localization::shell_locale::translate("Sort")+": "+openxmb::localization::shell_locale::translate(config::CONFIG.preference("music.sort","Name")),"Create Playlist...","Save Queue as Playlist...","Refresh"}),0,[this](unsigned index) {
                 if(index==0 || index==1) {
                     const std::vector<std::string> values=index==0?std::vector<std::string>{"Folders","Songs","Albums","Artists","Playlists"}:std::vector<std::string>{"Name","Date","Size"};
                     const auto key=index==0?"music.group":"music.sort";
-                    xmb->emplace_overlay<app::choice_overlay>(values,0,[this,key,values](unsigned choice) {
+                    xmb->emplace_overlay<app::choice_overlay>(::app::detail::localize_ui_choices(values),0,[this,key,values](unsigned choice) {
                         if(choice>=values.size()) return;
                         config::CONFIG.preferences[key]=values[choice];config::CONFIG.save_config();
                         {std::lock_guard lock(cache_mutex);last_scanned_path.clear();}

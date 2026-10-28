@@ -12,6 +12,7 @@ layout(push_constant) uniform Push {
     vec4 effect;
     vec4 audio;
     vec4 flow;
+    vec4 camera_motion;
 } pc;
 layout(location=0) in vec3 position;
 layout(location=1) in vec2 edge_sprite;
@@ -67,11 +68,16 @@ void main() {
         color=vec4(rgb*(1.0+pc.effect.y*0.15+pc.audio.w*0.22),1);return;
     }
     if (pc.mode_motion.x>0.5) {
+        if(pc.effect.z>0.5) {
+            float box=max(abs(edge_sprite.x),abs(edge_sprite.y));
+            float glow=1.0-smoothstep(0.25,1.0,box);
+            float alpha=particle_alpha*glow*flowScene().wash*0.32;
+            color=vec4(vec3(0.91,0.94,1.0)*alpha,alpha);return;
+        }
         float distanceSquared=dot(edge_sprite,edge_sprite);
         if(distanceSquared>1.0) discard;
         float glow=(1.0-distanceSquared)*(1.0-distanceSquared);
         float a=clamp(particle_alpha*wave.settings[9].x*glow*pc.resolution_time_gain.w,0.0,1.0);
-        if(pc.effect.z>0.5) a*=flowScene().wash;
         color=vec4(pc.particle_tint.rgb*a,a);
         return;
     }

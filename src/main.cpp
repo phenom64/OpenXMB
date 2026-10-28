@@ -33,6 +33,7 @@
 #endif
 
 #include <libintl.h>
+#include "localization/shell_locale.hpp"
 #include "openxmb/desktop/library.hpp"
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -251,9 +252,7 @@ int main(int argc, char *argv[]) try {
     config::CONFIG.forcedMediaDirectory=std::move(forced_media_directory);
     // Note: even without compiled translations, gettext will fall back to the
     // original strings, so text should still render in English.
-    bindtextdomain(constants::name, config::CONFIG.locale_directory.string().c_str());
-    bind_textdomain_codeset(constants::name, "UTF-8");
-    textdomain(constants::name);
+    openxmb::localization::shell_locale::apply(config::CONFIG.language, config::CONFIG.locale_directory);
     spdlog::debug("Config loaded");
 
     SDL_SetMainReady();

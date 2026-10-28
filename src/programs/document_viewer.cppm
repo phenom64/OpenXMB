@@ -16,6 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 module;
+#include "../localization/ui_literal_text.hpp"
 #include <openxmb/documents/document.hpp>
 #include <openxmb/photos/photo_library.hpp>
 #include <algorithm>
@@ -195,7 +196,7 @@ private:
         modal_open=true;
         std::vector<std::string> choices{"Previous page","Next page","First page","Last page","Document information","Print current page…"};
         if(document->kind==documents::Kind::pdf) choices.push_back("Print entire PDF…");
-        xmb->emplace_overlay<choice_overlay>(std::move(choices),0,[this](unsigned int selected) { modal_open=false; if(selected<=6) pending=static_cast<command>(selected); },[this]() { modal_open=false; });
+        xmb->emplace_overlay<choice_overlay>(::app::detail::localize_ui_choices(std::move(choices)),0,[this](unsigned int selected) { modal_open=false; if(selected<=6) pending=static_cast<command>(selected); },[this]() { modal_open=false; });
     }
     void perform(command action) {
         if(!document || !xmb) return;
