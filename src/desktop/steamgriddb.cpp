@@ -258,7 +258,7 @@ struct SteamGridDB::Impl {
   std::function<std::uint64_t()> clock;
   std::mutex mutex;
   std::map<std::string, std::uint64_t> retry_after;
-  struct Query { bool success{}, cached{}, stale{}; json data; std::string message; };
+  struct Query { bool success{}, cached{}, stale{}; json data; std::string message; std::optional<std::size_t> raw_count{}; };
   Impl(fs::path value, HttpTransport client, std::function<std::uint64_t()> now) : root(cache_root(std::move(value))), transport(std::move(client)), clock(std::move(now)) {
     if (!transport) transport = http_get;
     if (!clock) clock = wall_time;
@@ -268,8 +268,18 @@ struct SteamGridDB::Impl {
     try {
       const auto value = parse_json(read_file(destination, query_limit));
       const auto stamp = positive(value.at("fetched_at"));
-      if (value.value("version", 0) != 1 || value.at("key") != key || stamp > now + 300) throw std::runtime_error("Invalid query cache");
-      cached = {true, true, now < stamp || now - stamp >= ttl, clean(value.at("data")), "Using cached SteamGridDB results"};
+      const auto version = value.value("version", 0);
+      if ((version != 1 && version != 2) || value.at("key") != key || stamp > now + 300) throw std::runtime_error("Invalid query cache");
+      auto data = clean(value.at("data"));
+      std::optional<std::size_t> raw_count;
+      if (version == 2) {
+        const auto& count = value.at("raw_count");
+        if (!count.is_number_integer() || count < 0 || count > (key.starts_with("search/") ? 128 : 50) || count < value.at("data").size()) throw std::runtime_error("Invalid cached page cardinality");
+        raw_count = count.get<std::size_t>();
+      } else if (key.starts_with("search/")) raw_count = value.at("data").size();
+      // Version 1 asset caches lost the raw page length. Keep their offline
+      // choices, but require refresh and leave Next available while unknown.
+      cached = {true, true, now < stamp || now - stamp >= ttl || !raw_count, std::move(data), "Using cached SteamGridDB results", raw_count};
       if (!cached.stale) return cached;
     } catch (...) { cached = {}; }
     const auto fail = [&](std::string message) { if (cached.success) { cached.message = "Using stale cached SteamGridDB results; " + message; return cached; } return Query{false, false, false, {}, std::move(message)}; };
@@ -288,8 +298,8 @@ struct SteamGridDB::Impl {
       const auto body = parse_json(response.body);
       if (!body.is_object() || !body.value("success", false)) return fail("SteamGridDB returned an unsuccessful response");
       auto data = clean(body.at("data"));
-      Query result{true, false, false, std::move(data), "SteamGridDB results ready; choose the game and asset explicitly"};
-      const auto encoded = json{{"version", 1}, {"key", key}, {"fetched_at", now}, {"data", result.data}}.dump();
+      Query result{true, false, false, std::move(data), "SteamGridDB results ready; choose the game and asset explicitly", body.at("data").size()};
+      const auto encoded = json{{"version", 2}, {"key", key}, {"fetched_at", now}, {"data", result.data}, {"raw_count", *result.raw_count}}.dump();
       if (encoded.find(credential) == std::string::npos) {
         try { atomic_write(root, destination, encoded); } catch (...) { result.message += "; local cache could not be saved"; }
       }
@@ -319,7 +329,7 @@ SteamGridDBAssetsResult SteamGridDB::assets(std::uint64_t game_id, SteamGridDBRo
     const auto query = impl_->query(path, family + '/' + std::to_string(game_id) + '/' + std::to_string(page), key, [role](const json& data) { return clean_assets(data, role); });
     result.success = query.success; result.from_cache = query.cached; result.stale = query.stale; result.message = query.message;
     if (query.success) for (const auto& asset : query.data) result.assets.push_back({positive(asset.at("id")), game_id, role, asset.at("url"), asset.at("mime"), asset.at("width"), asset.at("height")});
-    result.has_more = query.success && query.data.size() == 50;
+    result.has_more = query.success && query.raw_count.value_or(50) == 50;
   } catch (...) { result.success = false; result.message = "Choose a supported artwork role, provider game ID and page between 0 and 1000"; }
   return result;
 }

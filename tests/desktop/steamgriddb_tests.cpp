@@ -165,9 +165,57 @@ void roles_and_bounds(const fs::path& root) {
   require(!deep.search("Fixture", secret), "excessive provider JSON nesting must be rejected before cache parsing");
   no_secret(root);
 }
+void pagination(const fs::path& root) {
+  std::uint64_t now=4000000;unsigned calls=0;bool offline=false;
+  const auto page=[](unsigned accepted,unsigned raw) {auto data=json::array();for(unsigned i=0;i<raw;++i)data.push_back(i<accepted?asset(i+1):asset(i+1,600,900));return data;};
+  HttpTransport transport=[&](const HttpRequest& request) {
+    ++calls;if(offline)return HttpResponse{false,503,{},{}};
+    if(request.url.find("/search/")!=std::string::npos)return success(json::array({{{"id",1},{"name","Legacy"}}}));
+    if(request.url.find("page=1")!=std::string::npos)return success(json::array({asset(1000)}));
+    if(request.url.find("/game/43?")!=std::string::npos)return success(page(0,50));
+    if(request.url.find("/game/44?")!=std::string::npos)return success(page(48,49));
+    return success(page(49,50));
+  };
+  const auto cache=root/"cache";SteamGridDB client(cache,transport,[&]{return now;});
+  const auto first=client.assets(42,SteamGridDBRole::horizontal_grid,secret);
+  require(bool(first)&&first.assets.size()==49&&first.has_more,"a filtered full provider page hid the next asset page");
+  const auto next=first.has_more?client.assets(42,SteamGridDBRole::horizontal_grid,secret,1):SteamGridDBAssetsResult{};
+  require(bool(next)&&next.page==1&&next.assets.size()==1&&next.assets.front().id==1000&&!next.has_more,"the next provider page was not reachable after filtering");
+  const auto all_filtered=client.assets(43,SteamGridDBRole::horizontal_grid,secret);
+  require(bool(all_filtered)&&all_filtered.assets.empty()&&all_filtered.has_more,"a fully filtered full provider page hid later valid assets");
+  require(client.assets(43,SteamGridDBRole::horizontal_grid,secret,1).assets.size()==1,"valid assets after an empty filtered page were unreachable");
+  const auto short_page=client.assets(44,SteamGridDBRole::horizontal_grid,secret);
+  require(bool(short_page)&&short_page.assets.size()==48&&!short_page.has_more,"a short raw provider page incorrectly offered another page");
+  const auto cached_file=[&](std::string_view key) {for(const auto& entry:fs::directory_iterator(cache))if(entry.path().extension()==".json"&&json::parse(read(entry.path())).value("key","")==key)return entry.path();throw std::runtime_error("pagination cache fixture missing");};
+  const auto first_file=cached_file("grids/42/0");const auto stored=json::parse(read(first_file));
+  require(stored.value("version",0)==2&&stored.at("raw_count")==50&&stored.at("data").size()==49,"cache did not preserve raw provider page cardinality beside filtered assets");
+  const auto before=calls;SteamGridDB restarted(cache,transport,[&]{return now;});
+  const auto fresh=restarted.assets(42,SteamGridDBRole::horizontal_grid);
+  require(bool(fresh)&&fresh.from_cache&&!fresh.stale&&fresh.has_more&&fresh.assets.size()==49&&calls==before,"fresh offline cache lost raw-page pagination metadata");
+  const auto fresh_next=restarted.assets(42,SteamGridDBRole::horizontal_grid,{},1);
+  require(bool(fresh_next)&&fresh_next.assets.size()==1&&fresh_next.assets.front().id==1000&&calls==before,"fresh cached next-page choice was unreachable offline");
+  require(restarted.assets(43,SteamGridDBRole::horizontal_grid).has_more,"empty filtered page lost pagination after cache reload");
+  now+=86401;offline=true;
+  const auto stale=restarted.assets(42,SteamGridDBRole::horizontal_grid,secret);
+  require(bool(stale)&&stale.from_cache&&stale.stale&&stale.has_more&&stale.assets.size()==49,"failed refresh lost stale pagination metadata");
+  const auto stale_empty=restarted.assets(43,SteamGridDBRole::horizontal_grid,secret);
+  require(bool(stale_empty)&&stale_empty.from_cache&&stale_empty.stale&&stale_empty.assets.empty()&&stale_empty.has_more,"fully filtered stale provider page lost its next page");
+  const auto attempts=calls;const auto offline_page=restarted.assets(42,SteamGridDBRole::horizontal_grid);
+  require(bool(offline_page)&&offline_page.from_cache&&offline_page.stale&&offline_page.has_more&&calls==attempts,"credential-free stale cache lost pagination or performed I/O");
+  require(restarted.assets(43,SteamGridDBRole::horizontal_grid).has_more&&calls==attempts,"fully filtered credential-free stale page lost pagination");
+  auto legacy=stored;legacy["version"]=1;legacy["fetched_at"]=now;legacy.erase("raw_count");{std::ofstream output(first_file);output<<legacy.dump();}
+  const auto legacy_page=restarted.assets(42,SteamGridDBRole::horizontal_grid);
+  require(bool(legacy_page)&&legacy_page.from_cache&&legacy_page.stale&&legacy_page.has_more&&legacy_page.assets.size()==49,"legacy filtered asset cache lost offline choices or guessed that pagination ended");
+  offline=false;const auto refreshed=restarted.assets(42,SteamGridDBRole::horizontal_grid,secret);
+  require(bool(refreshed)&&!refreshed.from_cache&&refreshed.has_more&&json::parse(read(first_file)).at("raw_count")==50,"legacy asset cache did not refresh into cardinality-aware format");
+  require(bool(client.search("Legacy",secret)),"legacy search cache fixture could not be seeded");const auto search_file=cached_file("search/legacy");auto legacy_search=json::parse(read(search_file));legacy_search["version"]=1;legacy_search.erase("raw_count");{std::ofstream output(search_file);output<<legacy_search.dump();}
+  const auto cached_search=restarted.search("Legacy");require(bool(cached_search)&&cached_search.from_cache&&!cached_search.stale,"cache migration unnecessarily discarded a valid legacy offline search");
+  for(const auto& invalid:std::vector<json>{0,-1,51,true,"50"}) {auto corrupt=stored;corrupt["raw_count"]=invalid;{std::ofstream output(first_file);output<<corrupt.dump();}require(!restarted.assets(42,SteamGridDBRole::horizontal_grid),"incoherent cached raw cardinality was accepted");}
+  no_secret(root);
+}
 }
 int main() {
   const auto root = fs::weakly_canonical(fs::temp_directory_path()) / ("openxmb-sgdb-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
-  try { provider(root / "provider"); failures(root / "failures"); image_formats(root / "formats"); roles_and_bounds(root / "bounds"); fs::remove_all(root); std::cout << "SteamGridDB selection, cache and native-priority checks passed\n"; }
+  try { provider(root / "provider"); failures(root / "failures"); image_formats(root / "formats"); roles_and_bounds(root / "bounds"); pagination(root / "pagination"); fs::remove_all(root); std::cout << "SteamGridDB selection, cache and native-priority checks passed\n"; }
   catch (const std::exception& error) { fs::remove_all(root); std::cerr << error.what() << '\n'; return 1; }
 }
