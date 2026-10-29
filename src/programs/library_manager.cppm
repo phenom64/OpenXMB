@@ -12,6 +12,7 @@ module;
 export module openxmb.app:library_manager;
 
 import :component;
+import :game_presentation;
 import openxmb.utils;
 import auroreengine;
 import vulkan_hpp;
@@ -32,7 +33,7 @@ public:
   bool is_opaque() const override { return false; }
 
 private:
-  enum class Page { users, profile, games, game, roots, custom, section, friends,
+  enum class Page { users, profile, games, game, roots, runners, custom, section, friends,
                     person, account, trophies, trophy, folder, confirm };
   struct Row {
     std::string title, detail;
@@ -52,8 +53,7 @@ private:
                   std::function<void(openxmb::desktop::Game &, std::string)> set);
   std::string heading() const;
   void attempt(std::function<void()> action);
-  struct Preview;
-  std::unique_ptr<Preview> preview_;
+  std::unique_ptr<app::game_presentation> preview_;
   bool preview_suspended_{}, closing_{}, menu_dirty_{};
   auroreengine::resource_loader &loader_;
   profile_callback switch_profile_;

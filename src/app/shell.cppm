@@ -37,6 +37,7 @@ module;
 #include <vector>
 #include <map>
 namespace openxmb::themes { class ThemeLibrary; struct AppliedTheme; }
+namespace openxmb::desktop { struct Game; }
 
 #include <glm/vec2.hpp>
 #include "openxmb/xmb/boot_timeline.hpp"
@@ -82,6 +83,7 @@ namespace app
             void prepare(std::vector<vk::Image> swapchainImages, std::vector<vk::ImageView> swapchainViews) override;
             void render(int frame, vk::Semaphore imageAvailable, vk::Semaphore renderFinished, vk::Fence fence) override;
             void tick();
+            void after_events() override;
             openxmb::xmb::BootSample startup_sample();
             void dismiss_startup_warning(const event& input);
 
@@ -103,6 +105,17 @@ namespace app
             void reload_theme_sounds();
             void reload_language();
             void reload_menu();
+            void queue_menu_reload() { menu_reload_pending = true; }
+            void highlight_game(std::shared_ptr<const openxmb::desktop::Game> game);
+            const texture* game_preview_icon(std::string_view identity) const;
+            result launch_game(const openxmb::desktop::Game& game);
+            void show_game_information(const openxmb::desktop::Game& game);
+            bool has_running_session() const;
+            bool session_is_application() const;
+            std::string session_title() const;
+            void toggle_session_xmb();
+            void quit_session();
+            void save_session_screenshot();
             void open_panel(const std::string& name);
             bool set_audio_device(const std::string& device);
             std::string audio_device_name() const { return active_audio_device; }
@@ -356,6 +369,10 @@ namespace app
             // Keep JSON-heavy theme state out of the exported shell BMI.
             struct theme_state;
             std::unique_ptr<theme_state> theme;
+            struct game_state;
+            std::unique_ptr<game_state> games;
+            bool menu_reload_pending = false;
+            void tick_games();
             std::string pending_panel;
             std::filesystem::path pending_media;
             main_menu menu{this};

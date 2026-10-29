@@ -3,6 +3,7 @@ get_filename_component(_openxmb_integrations_root "${CMAKE_CURRENT_LIST_DIR}/.."
 add_library(openxmb_integrations STATIC
   "${_openxmb_integrations_root}/src/integrations/desktop.cpp"
   "${_openxmb_integrations_root}/src/integrations/owned_process.cpp"
+  "${_openxmb_integrations_root}/src/integrations/session_window.cpp"
   "${_openxmb_integrations_root}/src/integrations/browser_input.cpp"
   "${_openxmb_integrations_root}/src/integrations/disc.cpp")
 add_library(OpenXMB::Integrations ALIAS openxmb_integrations)
@@ -11,7 +12,7 @@ target_compile_features(openxmb_integrations PUBLIC cxx_std_23)
 target_link_libraries(openxmb_integrations PRIVATE nlohmann_json::nlohmann_json)
 set_target_properties(openxmb_integrations PROPERTIES CXX_SCAN_FOR_MODULES OFF)
 if(WIN32)
-  target_link_libraries(openxmb_integrations PUBLIC advapi32 gdiplus gdi32 user32)
+  target_link_libraries(openxmb_integrations PUBLIC advapi32 gdiplus gdi32 user32 dwmapi)
 elseif(APPLE)
   target_link_libraries(openxmb_integrations PUBLIC "-framework ApplicationServices")
 else()
@@ -35,6 +36,13 @@ else()
 endif()
 install(TARGETS openxmb-integrations openxmb-retro RUNTIME DESTINATION bin)
 if(OPENXMB_BUILD_NATIVE_TESTS)
+  if(WIN32)
+    add_executable(openxmb_session_window_child EXCLUDE_FROM_ALL "${_openxmb_integrations_root}/tests/integrations/session_window_child.cpp")
+    add_executable(openxmb_session_window_tests EXCLUDE_FROM_ALL "${_openxmb_integrations_root}/tests/integrations/session_window_tests.cpp")
+    target_link_libraries(openxmb_session_window_child PRIVATE user32 gdi32)
+    target_link_libraries(openxmb_session_window_tests PRIVATE OpenXMB::Integrations)
+    set_target_properties(openxmb_session_window_child openxmb_session_window_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  endif()
   add_executable(openxmb_integrations_tests "${_openxmb_integrations_root}/tests/integrations/integration_tests.cpp")
   target_link_libraries(openxmb_integrations_tests PRIVATE OpenXMB::Integrations)
   set_target_properties(openxmb_integrations_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)

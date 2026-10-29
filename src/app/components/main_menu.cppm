@@ -46,6 +46,7 @@ class main_menu : public action_receiver {
     public:
         main_menu(class shell* xmb);
         void preload(vk::Device device, vma::Allocator allocator, auroreengine::resource_loader& loader);
+        void prepare_icons();
         void render(auroreengine::gui_renderer& renderer);
         [[nodiscard]] float background_blur_px() const;
         // 0..1 presence of the Users-style options panel (hides the clock).

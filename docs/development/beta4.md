@@ -110,6 +110,51 @@ in-game XMB references, provider credentials supplied through supported settings
 and Windows/Linux/macOS runtime testing. Synthetic metadata fixtures do not prove
 actual game boot, genuine unlock decoding, overlay compatibility or focus recovery.
 
+## Session and launcher development increment
+
+Native Game entries launch through seven reusable runner plans. Game Settings
+exposes installed runner detection and executable overrides; existing explicit
+per-game arguments remain literal. Native game artwork keeps its colour and
+aspect ratio. Selection shares the library's PIC1/PAM/AT3 presentation service.
+Background discovery produces read-only candidates and imports them on the UI
+thread only when the originating profile is still active.
+
+The session observer continues while OpenXMB is minimized. Its profile journal
+records direct-child lifetime and actual exit status; a forwarding Steam launcher
+does not establish game lifetime or accrue playtime. No process is adopted by PID
+for termination. Closing OpenXMB leaves a running game alive and records detachment.
+
+The current in-game adapter is a **switch-to-XMB fallback**. Windows registers
+the configurable Ctrl+Shift+F1 shortcut while a session is observed; SDL Guide
+events can also wake the shell when the OS/Steam permits them. Ordinary controller
+input is gated while OpenXMB is unfocused. OS foreground denial is reported.
+Transparent composition, exclusive fullscreen, anti-cheat compatibility, and
+physical Guide/controller behavior are not verified by these fixtures.
+
+The user's original PS3 references establish **Quit Game under Game** and
+**Save Screenshot under Photo**. Applications use Quit App. The current Windows
+screenshot adapter requires a live, directly owned, unique foreground window,
+hidden/minimized OpenXMB, stable client bounds and no detected occluding window.
+It captures the client at native resolution to the launching profile's Photo
+folder, grouped by title. Protected, black, obscured and unavailable surfaces fail
+with a message. Transient system overlays and live GPU frame content cannot be
+guaranteed by this desktop sampling backend. Linux/macOS focus/capture adapters
+remain unavailable; they must not be presented as supported native overlays.
+
+AuroreEngine `dev` revision `f7396a2` adds an event-loop lifecycle hook before
+frame throttling/minimized skips and defers minimized/zero-sized swapchain
+recreation. The actual Windows fixture found and then verified the minimize-during-
+render defect. Both 900 ms and 1 ms session exit/return cases pass. The separate
+window fixture verifies identity rejection, granted focus, PNG dimensions and
+known client pixels. These fixtures are opt-in because they open desktop windows:
+
+```powershell
+cmake --build build/native-c --target openxmb_session_window_tests openxmb_session_window_child
+& build/native-c/openxmb_session_window_tests.exe (Resolve-Path build/native-c/openxmb_session_window_child.exe).Path
+python tests/desktop/native_session_smoke.py --app build/native-c/XMS.bin.exe --child build/native-c/openxmb_session_window_child.exe
+python tests/desktop/native_game_smoke.py --app build/native-c/XMS.bin.exe --child build/native-c/openxmb_session_child.exe
+```
+
 ## First discovery increment
 
 Existing library scans now include RPCS3's registered `games.yml` paths and

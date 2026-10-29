@@ -66,6 +66,7 @@ import :settings_menu;
 import :users_menu;
 import :user_information;
 import :files_menu;
+import :games_menu;
 import :desktop_settings;
 import :message_overlay;
 import :text_entry;
@@ -618,7 +619,8 @@ void draw_icon(
     double center_x,
     double center_y,
     double extent,
-    double alpha
+    double alpha,
+    bool preserve_colour = false
 ) {
     if(alpha <= 0.001 || extent <= 0.0) {
         return;
@@ -628,8 +630,9 @@ void draw_icon(
     const auto y = layout.y(center_y - extent * 0.5);
     const auto width = layout.width(extent);
     const auto height = layout.height(extent);
+    const auto colour = preserve_colour ? glm::vec3(1.0F) : utils::xmb_icon_colour(openxmb::xmb::wall_clock_now());
     const auto tint =
-        glm::vec4(utils::xmb_icon_colour(openxmb::xmb::wall_clock_now()),
+        glm::vec4(colour,
             static_cast<float>(alpha * xmb_web_icon_glass_alpha));
     if(config::CONFIG.iconGlassRefraction && glass_texture != nullptr && glass_texture->loaded) {
         renderer.draw_image_glass(*glass_texture, x, y, width, height, tint);
@@ -639,7 +642,7 @@ void draw_icon(
                 ? alpha * xmb_web_flat_active_icon_alpha
                 : alpha;
         const auto flat_tint =
-            glm::vec4(utils::xmb_icon_colour(openxmb::xmb::wall_clock_now()), static_cast<float>(flat_alpha));
+            glm::vec4(colour, static_cast<float>(flat_alpha));
         renderer.draw_image_a(texture, x, y, width, height, flat_tint);
     }
 }
@@ -683,6 +686,10 @@ main_menu::main_menu(app::shell* xmb) : xmb(xmb) {
 
 }
 
+void main_menu::prepare_icons() {
+    for(auto& value : menus) value->prepare_icons();
+}
+
 void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengine::resource_loader& loader) {
     using ::menu::make_simple;
     using ::menu::make_simple_of;
@@ -721,9 +728,15 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
     }
     menus.push_back(make_simple<menu::settings_menu>("Settings"_(),
         preferred_icon(asset_directory, "xmb_icon_001.png", "icon_category_settings.png"), loader, xmb, loader));
-    menus.push_back(make_simple<menu::files_menu>("Photo"_(),
+    auto photo_menu=make_simple<menu::files_menu>("Photo"_(),
         preferred_icon(asset_directory, "xmb_icon_002.png", "icon_category_photo.png"), loader, xmb,
-        config::CONFIG.pictures_path(), loader, menu::files_menu_profile::photo));
+        config::CONFIG.pictures_path(), loader, menu::files_menu_profile::photo);
+    if(xmb->has_running_session()) {
+        std::vector<std::unique_ptr<menu::menu_entry>> actions;
+        actions.push_back(make_simple<menu::action_menu_entry>("Save Screenshot",asset_directory/"icons/icon_category_photo.png",loader,
+            [host=xmb] {host->save_session_screenshot();return result::success;},std::function<result(action)>{},xmb->session_title()));
+        menus.push_back(std::make_unique<menu::prefixed_menu>(std::move(photo_menu),std::move(actions)));
+    } else menus.push_back(std::move(photo_menu));
     menus.push_back(make_simple<menu::files_menu>("Music"_(),
         preferred_icon(asset_directory, "xmb_icon_003.png", "icon_category_music.png"), loader, xmb,
         config::CONFIG.music_path(), loader, menu::files_menu_profile::music));
@@ -741,7 +754,16 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
         rows.push_back(panel_entry("Emulation", "emulation", "icon_category_game.png"));
         rows.push_back(panel_entry("Disc Media", "discs", "icon_category_video.png"));
         rows.push_back(make_simple<menu::applications_menu>("Installed Applications", asset_directory/"icons/icon_category_application.png", loader, xmb,loader,::menu::categoryFilter("Game")));
-        menus.push_back(panel_menu("Game",preferred_icon(asset_directory,"xmb_icon_005.png","icon_category_game.png"),std::move(rows)));
+        std::vector<openxmb::desktop::Game> games;
+        try { games = openxmb::desktop::Library{}.games(); }
+        catch(const std::exception& error) { spdlog::warn("Could not load games: {}",error.what()); }
+        auto games_menu=make_simple<menu::games_menu>("Game",preferred_icon(asset_directory,"xmb_icon_005.png","icon_category_game.png"),loader,xmb,loader,std::move(games),std::move(rows));
+        if(xmb->has_running_session()) {
+            std::vector<std::unique_ptr<menu::menu_entry>> actions;
+            actions.push_back(make_simple<menu::action_menu_entry>(xmb->session_is_application()?"Quit App":"Quit Game",asset_directory/"icons/icon_action_poweroff.png",loader,
+                [host=xmb] {host->quit_session();return result::success;},std::function<result(action)>{},xmb->session_title()));
+            menus.push_back(std::make_unique<menu::prefixed_menu>(std::move(games_menu),std::move(actions)));
+        } else menus.push_back(std::move(games_menu));
     }
     {
         std::vector<std::unique_ptr<menu::menu_entry>> rows;
@@ -1777,7 +1799,7 @@ void main_menu::render_crossbar(auroreengine::gui_renderer& renderer, time_point
                 (focused ? 1.0 : 1.0 - 0.55 * options_here);
             auto& entry = menu.get_submenu(static_cast<unsigned int>(index));
             draw_icon(renderer, entry.get_icon(), entry.get_glass_icon(), layout,
-                kItemIconX + x_shift, center_y, extent, alpha);
+                kItemIconX + x_shift, center_y, extent, alpha, entry.preserve_icon_colour());
             if(users != nullptr && users->is_signed_in_user(static_cast<unsigned int>(index))) {
                 const auto k = static_cast<float>(extent / kActiveItemIconExtent);
                 draw_user_diamond(canvas, static_cast<float>(kItemIconX + x_shift) - 130.0F * k,

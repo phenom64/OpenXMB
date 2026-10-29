@@ -100,6 +100,8 @@ inline const std::vector<Entry>& entries() {
         {"Game","games.rescan","Rescan Game Library","Refresh the configured game library."},
         {"Game","games.launch","After Launching a Game","Choose how the shell behaves while a game runs.",{"Keep Running","Minimise"}},
         {"Game","games.emulation","Emulation Configuration","Select an installed core and game content."},
+        {"Game","games.runners","Game Runners","Detect installed emulators and configure executable paths."},
+        {"Game","session.hotkey","In-Game XMB Shortcut","Switch to OpenXMB during an owned session. Guide also works when the system allows it.",{"Ctrl+Shift+F1","Ctrl+Shift+F2","Ctrl+Shift+F3","Ctrl+Shift+F4"}},
         {"Advanced","debug.fps","Show FPS","Display the shell frame rate.",{"Off","On"}},
         {"Advanced","debug.memory","Show GPU Memory","Display GPU memory use.",{"Off","On"}},
         {"Advanced","debug.logs","Open Log Folder","Open the location of diagnostic logs."},

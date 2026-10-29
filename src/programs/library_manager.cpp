@@ -2,10 +2,7 @@ module;
 
 #include "openxmb/desktop/library.hpp"
 #include "openxmb/music/player.hpp"
-#include "openxmb/desktop/preview_audio.hpp"
-#if OPENXMB_ENABLE_VIDEO_PLAYER
-#include "openxmb/video_worker.hpp"
-#endif
+#include "openxmb/desktop/runners.hpp"
 
 #include <SDL2/SDL.h>
 #undef main
@@ -17,8 +14,6 @@ module;
 #include <functional>
 #include <future>
 #include <memory>
-#include <optional>
-#include <tuple>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -27,13 +22,13 @@ module;
 module openxmb.app;
 
 import :library_manager;
+import :game_presentation;
 import :main;
 import :text_entry;
 import :programs;
 import glm;
 import auroreengine;
 import vulkan_hpp;
-import vma;
 import openxmb.utils;
 
 namespace programs {
@@ -50,160 +45,16 @@ template<typename T> T find(const std::vector<T> &values, const std::string &id)
   throw std::runtime_error("The selected local item no longer exists");
 }
 }
-struct library_manager::Preview {
-  auroreengine::resource_loader &loader;
-  vk::Device device;
-  vma::Allocator allocator;
-  auroreengine::window *window{};
-  std::shared_ptr<const desktop::Game> selected;
-  std::string selection_key;
-  std::chrono::steady_clock::time_point selected_at{};
-  std::shared_ptr<auroreengine::texture> background;
-  std::future<void> background_ready;
-  fs::path background_path;
-  desktop::PreviewAudio audio;
-  bool started{}, owns_duck{};
-#if OPENXMB_ENABLE_VIDEO_PLAYER
-  openxmb::video::worker movie;
-  std::optional<openxmb::video::frame> pending;
-  std::unique_ptr<auroreengine::texture> movie_texture;
-  std::vector<vma::UniqueAllocation> allocations;
-  std::vector<vma::UniqueBuffer> buffers;
-  bool movie_initialized{}, movie_current{};
-  double movie_aspect{16.0 / 9.0};
-#endif
-  explicit Preview(auroreengine::resource_loader &value)
-      : loader(value), device(value.getDevice()), allocator(value.getAllocator()) {}
-  ~Preview() {
-    stop();
-    if (background_ready.valid()) background_ready.wait();
-    try { wait_gpu(); } catch (...) {}
-  }
-  void wait_gpu() {
-    if (window) window->waitIdle(); else device.waitIdle();
-  }
-  void duck(bool enabled) {
-    if (enabled) { openxmb::music::service().set_external_duck(true); owns_duck = true; }
-    else if (owns_duck) { openxmb::music::service().set_external_duck(false); owns_duck = false; }
-  }
-  void stop() {
-    audio.stop(); duck(false);
-#if OPENXMB_ENABLE_VIDEO_PLAYER
-    movie.set_path({}); pending.reset(); movie_current = false;
-#endif
-    selected.reset(); selection_key.clear(); started = false;
-  }
-  void choose(std::shared_ptr<const desktop::Game> game) {
-    const std::string key = game ? game->id + '\n' + game->background.string() + '\n' + game->preview.string() + '\n' + game->music.string() : "";
-    if (key == selection_key) return;
-    stop(); selected = std::move(game); selection_key = key;
-    selected_at = std::chrono::steady_clock::now();
-    if (!selected) return;
-    if (selected->background != background_path) {
-      if (background_ready.valid()) background_ready.wait();
-      if (background) wait_gpu();
-      background.reset(); background_path = selected->background;
-      std::error_code error;
-      if (!background_path.empty() && fs::is_regular_file(background_path, error)) {
-        background = std::make_shared<auroreengine::texture>(device, allocator);
-        background_ready = loader.loadTexture(background.get(), background_path);
-      }
-    }
-  }
-  void tick(auroreengine::window *value) {
-    window = value;
-    if (!selected) return;
-    if (!started && std::chrono::steady_clock::now() - selected_at >= std::chrono::milliseconds(350)) {
-      started = true;
-      if (!selected->music.empty()) audio.set_path(selected->music, 0.45f);
-#if OPENXMB_ENABLE_VIDEO_PLAYER
-      if (!selected->preview.empty()) {
-        openxmb::video::options options;
-        options.hardware_acceleration = "off";
-        options.audio_output = selected->music.empty();
-        movie.set_path(selected->preview, options);
-        movie.set_repeat(true);
-        movie.set_volume(0.45f);
-      }
-#endif
-    }
-    audio.tick();
-    bool audible = audio.active();
-#if OPENXMB_ENABLE_VIDEO_PLAYER
-    if (started && !selected->preview.empty()) {
-      const auto snapshot = movie.snapshot();
-      if (snapshot->ready && snapshot->status != openxmb::video::state::failed) {
-        if (auto frame = movie.take_frame()) pending = std::move(frame);
-        audible = audible || (selected->music.empty() && !snapshot->info.audio_tracks.empty());
-      }
-    }
-#endif
-    duck(audible);
-  }
-  void upload(vk::CommandBuffer command, int frame, auroreengine::window *value) {
-    window = value;
-#if OPENXMB_ENABLE_VIDEO_PLAYER
-    if (!pending) return;
-    const auto &image = *pending;
-    if (!movie_texture || movie_texture->width != image.width || movie_texture->height != image.height || buffers.size() != window->swapchainImageCount) {
-      wait_gpu(); movie_texture.reset(); buffers.clear(); allocations.clear();
-      movie_texture = std::make_unique<auroreengine::texture>(device, allocator, image.width, image.height);
-      buffers.resize(window->swapchainImageCount); allocations.resize(window->swapchainImageCount);
-      const vk::BufferCreateInfo info({}, image.rgba.size(), vk::BufferUsageFlagBits::eTransferSrc, vk::SharingMode::eExclusive);
-      const vma::AllocationCreateInfo memory({}, vma::MemoryUsage::eCpuToGpu);
-      for (std::size_t i = 0; i < buffers.size(); ++i) std::tie(buffers[i], allocations[i]) = allocator.createBufferUnique(info, memory);
-      movie_initialized = false;
-    }
-    if (frame < 0 || static_cast<std::size_t>(frame) >= buffers.size()) return;
-    allocator.copyMemoryToAllocation(image.rgba.data(), allocations[frame].get(), 0, image.rgba.size());
-    const vk::ImageSubresourceRange range(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
-    command.pipelineBarrier(movie_initialized ? vk::PipelineStageFlagBits::eFragmentShader : vk::PipelineStageFlagBits::eTopOfPipe,
-      vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, vk::ImageMemoryBarrier(movie_initialized ? vk::AccessFlags{vk::AccessFlagBits::eShaderRead} : vk::AccessFlags{},
-        vk::AccessFlagBits::eTransferWrite, movie_initialized ? vk::ImageLayout::eShaderReadOnlyOptimal : vk::ImageLayout::eUndefined,
-        vk::ImageLayout::eTransferDstOptimal, vk::QueueFamilyIgnored, vk::QueueFamilyIgnored, movie_texture->image, range));
-    command.copyBufferToImage(buffers[frame].get(), movie_texture->image, vk::ImageLayout::eTransferDstOptimal,
-      vk::BufferImageCopy(0, 0, 0, vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1), vk::Offset3D(0, 0, 0),
-        vk::Extent3D(static_cast<std::uint32_t>(image.width), static_cast<std::uint32_t>(image.height), 1)));
-    command.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader, {}, {}, {},
-      vk::ImageMemoryBarrier(vk::AccessFlagBits::eTransferWrite, vk::AccessFlagBits::eShaderRead, vk::ImageLayout::eTransferDstOptimal,
-        vk::ImageLayout::eShaderReadOnlyOptimal, vk::QueueFamilyIgnored, vk::QueueFamilyIgnored, movie_texture->image, range));
-    movie_initialized = movie_current = true; movie_aspect = image.aspect_ratio; pending.reset();
-#else
-    (void)command; (void)frame;
-#endif
-  }
-  bool has_movie() const {
-#if OPENXMB_ENABLE_VIDEO_PLAYER
-    return selected && movie_texture && movie_current;
-#else
-    return false;
-#endif
-  }
-  void draw_background(auroreengine::gui_renderer &r) {
-    if (selected && background && background->loaded)
-      r.draw_image(background->imageView.get(), 0.0f, 0.0f, static_cast<float>(r.aspect_ratio), 1.0f, {1.0f, 1.0f, 1.0f, 0.80f});
-  }
-  void draw_movie(auroreengine::gui_renderer &r) {
-#if OPENXMB_ENABLE_VIDEO_PLAYER
-    if (!has_movie()) return;
-    const float width = 0.25f * static_cast<float>(r.aspect_ratio);
-    const float height = std::min(0.33f, width / static_cast<float>(std::max(0.1, movie_aspect)));
-    r.draw_rect({0.665f, 0.275f}, {0.26f, height + 0.02f}, {0.0f, 0.0f, 0.0f, 0.65f});
-    r.draw_image(movie_texture->imageView.get(), 0.67f, 0.285f, width, height);
-#else
-    (void)r;
-#endif
-  }
-};
 
 library_manager::library_manager(std::string section,
     auroreengine::resource_loader &loader, profile_callback callback)
-    : preview_(std::make_unique<Preview>(loader)), loader_(loader), switch_profile_(std::move(callback)) {
+    : preview_(std::make_unique<app::game_presentation>(loader)), loader_(loader), switch_profile_(std::move(callback)) {
   if (section == "users" || section == "profiles") page_ = Page::users;
   else if (section == "custom" || section == "sections") page_ = Page::custom;
   else if (section == "friends") page_ = Page::friends;
   else if (section == "account" || section == "network") page_ = Page::account;
   else if (section == "trophies") page_ = Page::trophies;
+  else if (section == "runners") page_ = Page::runners;
   root_page_ = page_;
   attempt([&] { library_ = std::make_unique<desktop::Library>(); refresh(); });
 }
@@ -250,7 +101,7 @@ void library_manager::open_file(fs::path file) {
 result library_manager::tick(app::shell *shell) {
   if (closing_) {
     preview_->stop();
-    if (menu_dirty_) shell->reload_menu();
+    if (menu_dirty_) shell->queue_menu_reload();
     return result::close | result::back_sound;
   }
   preview_->choose(!preview_suspended_ && selected_ < rows_.size() ? rows_[selected_].game : nullptr);
@@ -294,7 +145,8 @@ result library_manager::on_event(const app::event &event) {
 std::string library_manager::heading() const {
   switch (page_) {
   case Page::users: return "Local users"; case Page::profile: return "User profile";
-  case Page::games: return "Game library"; case Page::game: return "Game details"; case Page::roots: return "Game library folders";
+    case Page::games: return "Game library"; case Page::game: return "Game details"; case Page::roots: return "Game library folders";
+    case Page::runners: return "Game runners";
   case Page::custom: return "Custom sections"; case Page::section: return "Custom section";
   case Page::friends: return "Friends - local simulation"; case Page::person: return "Local friend";
   case Page::account: return "Local account - no online sign-in"; case Page::trophies: return "Local trophies";
@@ -303,7 +155,7 @@ std::string library_manager::heading() const {
   return "Library";
 }
 void library_manager::render(auroreengine::gui_renderer &r, app::shell *shell) {
-  preview_->draw_background(r);
+  preview_->draw_background(r, 0.80f);
   r.draw_rect({0.06f, 0.08f}, {0.88f, 0.84f}, {0.025f, 0.035f, 0.065f, 0.82f});
   preview_->draw_movie(r);
   r.draw_text(heading(), 0.10f, 0.14f, 0.048f);
@@ -369,7 +221,22 @@ void library_manager::refresh() {
     });
     break;
   }
+  case Page::runners: {
+    for(const auto& runner:desktop::discover_runners(desktop::runner_options_from_preferences(config::CONFIG.preferences))) {
+      const auto key="runner."+runner.id+".path";
+      add(runner.name,runner?runner.executable.string():runner.message,[this,key,runner] {
+        ask(runner.name+" executable (empty for automatic)",config::CONFIG.preference(key),[key](std::string value) {
+          if(!value.empty()&&!fs::is_regular_file(fs::u8path(value)))throw std::runtime_error("Choose an existing executable file, or leave empty for automatic discovery.");
+          const auto previous=config::CONFIG.preferences;
+          if(value.empty())config::CONFIG.preferences.erase(key);else config::CONFIG.preferences[key]=std::move(value);
+          if(!config::CONFIG.save_config_checked()) {config::CONFIG.preferences=previous;throw std::runtime_error("Could not save runner settings.");}
+        });
+      });
+    }
+    break;
+  }
   case Page::games:
+    add("Game runners", "Detected emulators and executable overrides", [this] {enter(Page::runners);});
     add("Add game manually", "Choose executable, arguments, artwork, preview video and music", [this] { desktop::Game value; value.title = "New Game"; edit_game(library_->save_game(std::move(value)).id); });
     add("Manage game folders", "Configure scan roots without moving your games", [this] { enter(Page::roots); });
     add("Scan game folders", "Imports game manifests, desktop entries and native executables", [this] { message_ = "Added " + std::to_string(library_->scan_games()) + " game(s)."; refresh(); });
@@ -377,8 +244,17 @@ void library_manager::refresh() {
     break;
   case Page::game: {
     auto game = find(library_->games(), chosen_id_);
-    add("Launch " + game.title, game.executable.string(), [this, game] { preview_suspended_ = true; preview_->stop(); desktop::launch_game(game); pending_=[](app::shell* shell){if(config::CONFIG.preference("games.launch","Keep Running")=="Minimise")SDL_MinimizeWindow(shell->get_window()->win.get());}; library_->mark_played(game.id); message_ = "Started " + game.title; refresh(); }, game.icon);
+    add("Launch " + game.title, game.executable.string(), [this, game] {
+      preview_suspended_=true; preview_->stop();
+      pending_=[game](app::shell* shell) {static_cast<void>(shell->launch_game(game));};
+    }, game.icon);
     add("Title", game.title, [this, game] { game_field("Game title", game.title, [](auto &g, auto v) { g.title = std::move(v); }); });
+    add("Runner",game.runner.empty()?"native":game.runner,[this,game] {game_field("Runner: native, rpcs3, pcsx2, steam, retroarch, dolphin, duckstation, ppsspp",game.runner,[](auto& g,auto value) {
+      const std::array<std::string_view,8> names{"native","rpcs3","pcsx2","steam","retroarch","dolphin","duckstation","ppsspp"};
+      if(!value.empty()&&std::ranges::find(names,value)==names.end())throw std::runtime_error("Choose a supported runner.");g.runner=std::move(value);
+    });});
+    add(game.runner=="steam"?"Steam app ID":"Game content",game.content.string(),[this,game] {game_field("Game content or Steam app ID",game.content.string(),[](auto& g,const auto& value) {g.content=fs::u8path(value);});});
+    if(game.runner=="retroarch")add("Libretro core",game.core.string(),[this,game] {game_field("Libretro core path",game.core.string(),[](auto& g,const auto& value) {g.core=fs::u8path(value);});});
     add("Executable", game.executable.string(), [this, game] { game_field("Executable path or command", game.executable.string(), [](auto &g, auto v) { g.executable = std::move(v); }); });
     add("Launch arguments", desktop::format_arguments(game.arguments), [this, game] { game_field("Arguments (quote values containing spaces)", desktop::format_arguments(game.arguments), [](auto &g, auto v) { g.arguments = desktop::parse_arguments(v); }); });
     add("Working directory", game.working_directory.string(), [this, game] { game_field("Working directory", game.working_directory.string(), [](auto &g, auto v) { g.working_directory = std::move(v); }); });

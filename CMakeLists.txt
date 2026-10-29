@@ -289,7 +289,7 @@ if(AUROREENGINE_LOCAL)
 else()
   FetchContent_Declare(auroreengine
     GIT_REPOSITORY https://github.com/phenom64/AuroreEngine.git
-    GIT_TAG        19d2fc1161b6ee8c8fe23f1d8b56c8d63acb853c
+    GIT_TAG        f7396a256fc0dbc23c42334708c7d5a5622d807e
     OVERRIDE_FIND_PACKAGE
   )
   FetchContent_GetProperties(auroreengine)
@@ -606,6 +606,8 @@ add_executable(XMS ${XMS_SOURCES})
 target_sources(XMS PRIVATE src/localization/font_selection.cpp)
 target_sources(XMS PRIVATE src/setup/model.cpp)
 target_sources(XMS PUBLIC FILE_SET CXX_MODULES BASE_DIRS src FILES
+  src/app/components/game_presentation.cppm
+  src/menu/games_menu.cppm
   src/app/components/setup_controls.cppm
   src/app/components/initial_setup.cppm)
 if(TARGET openxmb_compat_assets)

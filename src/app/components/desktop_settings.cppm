@@ -242,6 +242,7 @@ export void activate(shell* shell,const openxmb::xmb::CatalogNode& node) {
     if(key=="music.rescan") {shell->reload_menu();return;}
     if(key=="games.rescan") {openxmb::desktop::Library library;const auto count=library.scan_games();show_error(shell,"Added "+std::to_string(count)+" games to the library.");return;}
     if(key=="games.emulation") {shell->open_panel("emulation");return;}
+    if(key=="games.runners") {shell->open_panel("runners");return;}
     if(key=="cache.clear") {shell->emplace_overlay<message_overlay>("Clear Thumbnail Cache?","Generated thumbnails will be recreated when needed. Original media is preserved.",std::vector<std::string>{"No","Yes"},[shell](unsigned i){if(i) {const auto root=openxmb::integrations::user_data_directory()/"thumbnails";std::error_code error;std::filesystem::remove_all(root,error);if(error)show_error(shell,error.message());}});return;}
     if(key=="debug.logs") {
 #ifdef _WIN32

@@ -24,6 +24,7 @@
 module;
 
 #include <array>
+#include <algorithm>
 #include <concepts>
 #include <ranges>
 #include <stdexcept>
@@ -48,6 +49,7 @@ class menu_entry {
         virtual const auroreengine::texture* get_glass_icon() const {
             return nullptr;
         }
+        virtual bool preserve_icon_colour() const { return false; }
         virtual result activate(action action) {
             return result::unsupported;
         }
@@ -55,6 +57,7 @@ class menu_entry {
 
 class menu : public menu_entry {
     public:
+        virtual void prepare_icons() {}
         virtual unsigned int get_submenus_count() const {
             return 0;
         }
@@ -73,6 +76,34 @@ class menu : public menu_entry {
         virtual void get_button_actions(std::vector<std::pair<action, std::string>>& v) {
 
         }
+};
+
+// Adds contextual rows without changing the wrapped menu's scan or lifecycle.
+class prefixed_menu final : public menu {
+    std::unique_ptr<menu> body;
+    std::vector<std::unique_ptr<menu_entry>> prefix;
+    unsigned int selected{};
+    bool opened{};
+public:
+    prefixed_menu(std::unique_ptr<menu> value, std::vector<std::unique_ptr<menu_entry>> rows)
+        : body(std::move(value)), prefix(std::move(rows)) {}
+    std::string_view get_name() const override { return body->get_name(); }
+    std::string_view get_description() const override { return body->get_description(); }
+    const auroreengine::texture& get_icon() const override { return body->get_icon(); }
+    const auroreengine::texture* get_glass_icon() const override { return body->get_glass_icon(); }
+    unsigned int get_submenus_count() const override { return static_cast<unsigned int>(prefix.size())+body->get_submenus_count(); }
+    unsigned int get_selected_submenu() const override { const auto count=get_submenus_count(); return count?std::min(selected,count-1):0; }
+    void select_submenu(unsigned int index) override { selected=index; if(index>=prefix.size()) body->select_submenu(index-static_cast<unsigned int>(prefix.size())); }
+    menu_entry& get_submenu(unsigned int index) const override { return index<prefix.size()?*prefix.at(index):body->get_submenu(index-static_cast<unsigned int>(prefix.size())); }
+    void on_open() override { opened=true; body->on_open(); }
+    void on_close() override { opened=false; body->on_close(); }
+    void prepare_icons() override { body->prepare_icons(); }
+    void get_button_actions(std::vector<std::pair<action,std::string>>& actions) override { if(selected>=prefix.size()) body->get_button_actions(actions); }
+    result activate(action input) override {
+        if(!opened) return result::submenu;
+        if(selected<prefix.size()) return prefix.at(selected)->activate(input);
+        return body->activate(input);
+    }
 };
 
 template<typename T>
