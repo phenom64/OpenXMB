@@ -14,6 +14,21 @@ struct Entry {
     std::string group, key, label, description;
     std::vector<std::string> values{};
 };
+inline std::string trophy_sound_file_label(std::string_view path) {
+    if(path.empty())return "Not selected";
+    const auto slash=path.find_last_of("/\\");
+    const auto name=path.substr(slash==std::string_view::npos?0:slash+1);
+    if(name.empty())return "Not selected";
+    std::size_t end=0;unsigned points=0;
+    while(end<name.size()&&points<24) {
+        ++end;while(end<name.size()&&(static_cast<unsigned char>(name[end])&0xc0)==0x80)++end;
+        ++points;
+    }
+    std::string label(name.substr(0,end));
+    for(auto& c:label)if(static_cast<unsigned char>(c)<32||c==127)c='?';
+    if(end<name.size())label+="...";
+    return label;
+}
 inline const std::vector<Entry>& entries() {
     static const std::vector<Entry> data{
         {"Theme","theme.install","Install Theme","Import a theme archive or theme folder."},
@@ -52,6 +67,8 @@ inline const std::vector<Entry>& entries() {
         {"Sound","audio.device","Audio Output Device","Select an available playback device."},
         {"Sound","audio.master","Master Volume","Volume for all OpenXMB audio.",{"0","25","50","75","100"}},
         {"Sound","audio.effects","Interface Volume","Volume of navigation and confirmation sounds.",{"0","25","50","75","100"}},
+        {"Sound","audio.trophy.mode","Trophy Notification Sound","Play your own WAV with OpenXMB trophy notices. Leave Off if RPCS3 already plays a trophy sound.",{"Off","User-supplied"}},
+        {"Sound","audio.trophy.file","Trophy Sound File","Choose your own PCM WAV (up to 5 seconds and 2 MiB). No original PS3 sound is included."},
         {"Sound","audio.music","Music Volume","Default volume for music playback.",{"0","25","50","75","100"}},
         {"Sound","audio.video","Video Volume","Default volume for video playback.",{"0","25","50","75","100"}},
         {"Sound","audio.startup","Startup Sound","Play the startup cue in full.",{"On","Off"}},

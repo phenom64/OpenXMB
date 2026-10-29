@@ -3,8 +3,10 @@ module;
 #include "openxmb/xmb/catalog.hpp"
 #include "../../localization/shell_locale.hpp"
 #include "../input_bindings.hpp"
+#include "desktop_settings_catalog.hpp"
 #include "openxmb/music/player.hpp"
 #include "openxmb/desktop/library.hpp"
+#include "openxmb/desktop/trophy_sound.hpp"
 #include "openxmb/themes/library.hpp"
 #include "../../desktop/log_path.hpp"
 #include <SDL2/SDL_mixer.h>
@@ -123,8 +125,10 @@ export std::string value(const std::string& key,shell* host=nullptr) {
     if(key=="about") return "OpenXMB " OPENXMB_VERSION_STRING;
     if(key=="system.name") return c.preference(key,"OpenXMB system");
     if(key=="autostart") return c.autostart?"On":"Off";
+    if(key=="audio.trophy.file")return trophy_sound_file_label(c.preference(key));
     const auto saved=c.preference(key);if(!saved.empty()) return saved;
     if(key=="audio.device") return "System Default";
+    if(key=="audio.trophy.mode") return "Off";
     if(key=="browser.homepage") return "https://duckduckgo.com";
     if(key=="browser.downloads") return (openxmb::integrations::user_data_directory()/"downloads").string();
     if(key=="games.folder") return (openxmb::integrations::user_data_directory()/"games").string();
@@ -170,6 +174,17 @@ void show_error(shell* shell,const std::string& message) {
 }
 void apply(shell* shell,const std::string& key,const std::string& selected) {
     auto& c=config::CONFIG;auto* window=shell->get_window();
+    if(key=="audio.trophy.mode") {
+        if(selected!="Off"&&selected!="User-supplied") {show_error(shell,"Choose Off or User-supplied.");return;}
+        if(selected=="User-supplied") {
+            const auto checked=openxmb::desktop::TrophySound::inspect(c.preference("audio.trophy.file"));
+            if(!checked.ok()){show_error(shell,openxmb::desktop::TrophySound::describe(checked.status));return;}
+        }
+    }
+    if(key=="audio.trophy.file"&&!selected.empty()) {
+        const auto checked=openxmb::desktop::TrophySound::inspect(selected);
+        if(!checked.ok()){show_error(shell,openxmb::desktop::TrophySound::describe(checked.status));return;}
+    }
     if(key=="theme.icon.color"||key=="theme.text.color"||key=="theme.particle.color") {
         const bool automatic=key=="theme.icon.color"&&(selected=="auto"||selected=="original");
         const bool hex=selected.size()==7&&selected.front()=='#'&&std::all_of(selected.begin()+1,selected.end(),[](unsigned char c){return std::isxdigit(c)!=0;});
@@ -240,6 +255,7 @@ void apply(shell* shell,const std::string& key,const std::string& selected) {
     if(key=="audio.device"&&!shell->set_audio_device(selected=="System Default"?std::string{}:selected)) {show_error(shell,openxmb::music::service().snapshot().error);return;}
     c.preferences[key]=selected;c.save_config();
     if(key=="theme.sounds")shell->reload_theme_sounds();
+    if(key=="audio.trophy.mode"||key=="audio.trophy.file")shell->reload_trophy_sound();
     if(key=="music.group"||key=="music.sort"||key.ends_with(".folder")) shell->reload_menu();
 }
 export void activate(shell* shell,const openxmb::xmb::CatalogNode& node) {
@@ -290,6 +306,6 @@ export void activate(shell* shell,const openxmb::xmb::CatalogNode& node) {
     if(key=="display.resolution") {for(int i=0;i<SDL_GetNumDisplayModes(0);++i) {SDL_DisplayMode mode{};if(SDL_GetDisplayMode(0,i,&mode)==0) {const auto item=std::to_string(mode.w)+"x"+std::to_string(mode.h);if(std::find(values.begin(),values.end(),item)==values.end())values.push_back(item);}}}
     if(key=="audio.device") {values.push_back("System Default");for(int i=0;i<SDL_GetNumAudioDevices(0);++i) if(auto* name=SDL_GetAudioDeviceName(i,0))values.emplace_back(name);}
     if(!values.empty()) {const auto current=value(key,shell);const auto it=std::find(values.begin(),values.end(),current);const auto selected=it==values.end()?0:static_cast<unsigned>(it-values.begin());auto labels=values;for(auto& label:labels)label=key=="audio.device"&&label!="System Default"?label:key=="language"?openxmb::localization::shell_locale::language_label(label):openxmb::localization::shell_locale::translate(label);shell->emplace_overlay<choice_overlay>(labels,selected,[shell,key,values](unsigned i){if(i<values.size())try{apply(shell,key,values[i]);}catch(const std::exception& e){show_error(shell,e.what());}});return;}
-    shell->emplace_overlay<text_entry_overlay>(node.id.substr(node.id.find_last_of('.')+1),value(key,shell),[shell,key](std::string text){try{apply(shell,key,text);}catch(const std::exception& e){show_error(shell,e.what());}});
+    shell->emplace_overlay<text_entry_overlay>(key=="audio.trophy.file"?"Trophy Sound File":node.id.substr(node.id.find_last_of('.')+1),key=="audio.trophy.file"?config::CONFIG.preference(key):value(key,shell),[shell,key](std::string text){try{apply(shell,key,text);}catch(const std::exception& e){show_error(shell,e.what());}});
 }
 }

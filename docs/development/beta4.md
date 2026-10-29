@@ -300,6 +300,13 @@ The banner identifies RPCS3 and uses genuine title/art/grade data. Its geometry
 has not been calibrated against an original PS3 trophy popup. A real earned
 in-game unlock and physical input during that notification remain acceptance gates.
 An outstanding focus request alone does not start a banner's visible hold time.
+Sound Settings now offers an Off-by-default user-supplied trophy WAV. The shell
+requests it only for the first visible genuine notice from the current exact
+session/profile/user; notice serials prevent replay on promotion or unmute.
+Master/Interface Volume, cancellation and shared audio-device changes are
+respected. No original recording or substitute is bundled. See
+[trophy sound research and playback](trophy-sound.md) for the firmware resource
+identification, unresolved redistribution permission and precise test boundaries.
 
 YouTube has a packaged menu icon, an installed-client detector and a native setup
 progress view. Information identifies the VacuumTube client. Windows managed

@@ -67,4 +67,13 @@ private:
   std::optional<double> started_;
   std::uint64_t serial_{};
 };
+// Only a presented notice from the still-current exact session/profile/user can
+// request audio. The audio service separately consumes each serial once.
+[[nodiscard]] inline bool trophy_notice_sound_ready(const TrophyNoticeQueue& queue,
+  const std::optional<desktop::TrophyWatchSession>& origin,bool visible,bool capture_busy,std::uint64_t unavailable_serial) {
+  const auto* entry=queue.current();
+  return entry&&entry->serial&&queue.started()&&visible&&!capture_busy&&entry->serial!=unavailable_serial&&origin&&
+    entry->event.session==*origin&&entry->event.provider=="rpcs3"&&entry->event.user_id==origin->rpcs3_user_id&&
+    entry->event.achievement.unlock_state_known&&entry->event.achievement.unlocked;
+}
 } // namespace openxmb::xmb

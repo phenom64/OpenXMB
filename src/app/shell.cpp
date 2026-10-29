@@ -67,6 +67,7 @@ module;
 #include "openxmb/desktop/session.hpp"
 #include "openxmb/desktop/rpcs3_session.hpp"
 #include "openxmb/desktop/trophy_watch.hpp"
+#include "openxmb/desktop/trophy_sound.hpp"
 #include "openxmb/xmb/trophy_notice.hpp"
 #include "openxmb/desktop/runners.hpp"
 #include "openxmb/desktop/youtube.hpp"
@@ -154,6 +155,11 @@ namespace app
         struct ArtworkResult {std::filesystem::path root,icon,cover,background;std::string profile,game_id;};
         openxmb::desktop::SessionManager sessions;
         openxmb::desktop::Rpcs3TrophyWatch trophy_watch;
+        openxmb::desktop::TrophySound trophy_sound;
+        static int audio_percent(const char* key) {
+            const auto value=config::CONFIG.number(key,100);
+            return std::isfinite(value)?static_cast<int>(std::clamp(value,0.0,100.0)):100;
+        }
         std::optional<openxmb::desktop::Rpcs3SessionConfig> rpcs3_config;
         std::string rpcs3_session_id;
         void retire_rpcs3_config() {
@@ -691,6 +697,7 @@ namespace app
             startup_timeline.reset();
             emplace_overlay<app::startup_overlay>();
         }
+        reload_trophy_sound();
         fixed_components_loaded = true;
     }
 
@@ -2030,7 +2037,7 @@ namespace app
             games->rpcs3_session_id=games->rpcs3_config?launched.session_id:std::string{};
             games->session_game=std::make_shared<const openxmb::desktop::Game>(game);
             games->trophy_watch.set_session({});games->trophy_origin.reset();
-            games->trophy_notices.clear();
+            games->trophy_sound.stop();games->trophy_notices.clear();
             if(games->rpcs3_config&&!game.game_directory.empty()) {
                 games->trophy_origin=openxmb::desktop::TrophyWatchSession{++games->trophy_generation,launched.session_id,
                     profile_directory,game.game_directory,
@@ -2087,7 +2094,7 @@ namespace app
             const auto launched=games->sessions.launch(std::move(descriptor),argv,cwd);
             if(!launched)throw std::runtime_error(launched.message);
             games->trophy_watch.set_session({});games->trophy_origin.reset();
-            games->trophy_notices.clear();
+            games->trophy_sound.stop();games->trophy_notices.clear();
             games->rpcs3_config.reset();games->session_game.reset();
             games->known_session_id=launched.session_id;games->tracking=tracking;
             games->photo_root=config::CONFIG.pictures_path();games->highlighted.reset();
@@ -2239,7 +2246,7 @@ namespace app
             } catch(const std::exception&) {current=false;}
             if(!current) {
                 games->trophy_watch.set_session({});games->trophy_origin.reset();
-                games->trophy_notices.clear();
+                games->trophy_sound.stop();games->trophy_notices.clear();
                 if(!active){games->retire_rpcs3_config();games->session_game.reset();}
             } else for(auto& event:events) {
                 static_cast<void>(games->trophy_notices.push(std::move(event),*games->trophy_origin));
@@ -2468,6 +2475,7 @@ namespace app
         // without focus or input. The host exists only while a notice is due,
         // so gameplay renders no OpenXMB frames once the queue drains.
         {
+            games->trophy_sound.set_volume(game_state::audio_percent("audio.master"),game_state::audio_percent("audio.effects"));
             auto& notices=games->trophy_notices;
             const auto now=app::session_xmb::seconds();
             static_cast<void>(notices.expire(now));
@@ -2527,6 +2535,11 @@ namespace app
                 } else if(const auto error=games->notice->take_error();!error.empty())unavailable(error);
                 else if(games->notice->presented())notices.start(now);
             }
+            const bool notice_visible=shell_visible?(overlays.empty()&&!old_overlay&&!games->screenshot_status):
+                (games->notice&&games->notice->active()&&games->notice->presented());
+            if(openxmb::xmb::trophy_notice_sound_ready(notices,games->trophy_origin,notice_visible,capture_busy,games->notice_unavailable))
+                static_cast<void>(games->trophy_sound.play_once(serial));
+            else if(!current||!games->trophy_origin||serial==games->notice_unavailable)games->trophy_sound.stop();
         }
         if(games->screenshot_requested&&games->overlay&&games->overlay->active()) {
             games->overlay->dismiss(config::CONFIG.enabled("power.reduced.motion",false));
@@ -2711,6 +2724,12 @@ namespace app
         load(cancel_sound,{"NSE.ui.Cancel.wav","NSE.ui.Cancel.ogg","cancel.wav"});
         load(back_sound,{"NSE.clicker.Cancel.wav","NSE.clicker.Cancel.ogg","back.wav"});
     }
+    void shell::reload_trophy_sound() {
+        const auto result=games->trophy_sound.configure({config::CONFIG.preference("audio.trophy.mode","Off")=="User-supplied",
+            config::CONFIG.preference("audio.trophy.file"),game_state::audio_percent("audio.master"),game_state::audio_percent("audio.effects")});
+        if(result.status!=openxmb::desktop::TrophySound::CueStatus::off&&!result.ok())
+            spdlog::warn("Trophy sound unavailable: {}",openxmb::desktop::TrophySound::describe(result.status));
+    }
     bool shell::set_audio_device(const std::string& name) {
         // Settings is reached after closing foreground playback; retire the
         // background decoder before resetting the shared SDL mixer device.
@@ -2718,7 +2737,9 @@ namespace app
         #if OPENXMB_ENABLE_VIDEO_PLAYER
         video_background_render.reset();
         #endif
+        games->trophy_sound.device_will_close();
         const bool changed=openxmb::music::service().set_output_device(name);
+        static_cast<void>(games->trophy_sound.prepare());
         if(changed)active_audio_device=name;
         #if OPENXMB_ENABLE_VIDEO_PLAYER
         video_background_render=std::make_unique<render::video_background>(device,allocator,win);
@@ -2763,6 +2784,7 @@ namespace app
     }
 
     void shell::refresh_desktop_preferences() {
+        reload_trophy_sound();
         desktop_preferences_applied=false;
         // Profile and reset callbacks run in input handling, before the engine
         // acquires a swapchain image. Rebuild here, never inside render/tick.
@@ -2774,6 +2796,7 @@ namespace app
     }
 
     void shell::reset_settings() {
+        games->trophy_sound.stop();
         win->waitIdle();
         static_cast<void>(theme_library()->revert());
         theme->active.reset();theme->frame={};theme->textures.clear();theme->library.reset();
@@ -2818,10 +2841,11 @@ namespace app
     }
 
     void shell::switch_profile(const std::filesystem::path& path) {
+        games->trophy_sound.stop();
         win->waitIdle();
         config::CONFIG.switch_profile(path);
         games->trophy_watch.set_session({});games->trophy_origin.reset();
-        games->trophy_notices.clear();
+        games->trophy_sound.stop();games->trophy_notices.clear();
         games->highlighted.reset();
         games->artwork.cancel();games->artwork_attempted.clear();
         if(games->presentation) games->presentation->stop();

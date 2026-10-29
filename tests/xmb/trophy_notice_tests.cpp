@@ -37,8 +37,18 @@ int main(){try{
   const auto first=queue.current()->serial;
   require(queue.current()->event.achievement.title=="First"&&first!=0,"queue order or serial changed");
   require(queue.opacity(10,false)==0&&!queue.expire(100),"an unstarted notice became visible or expired");
+  const std::optional<desktop::TrophyWatchSession> current_origin=session;
+  require(!xmb::trophy_notice_sound_ready(queue,current_origin,true,false,0),"unpresented notice could play audio");
 
   queue.start(10);queue.start(11);
+  require(xmb::trophy_notice_sound_ready(queue,current_origin,true,false,0),"visible genuine notice could not play audio");
+  require(!xmb::trophy_notice_sound_ready(queue,current_origin,false,false,0),"hidden notice could play audio");
+  require(!xmb::trophy_notice_sound_ready(queue,current_origin,true,true,0),"capture suppression allowed notice audio");
+  require(!xmb::trophy_notice_sound_ready(queue,current_origin,true,false,first),"unavailable banner could play audio");
+  require(!xmb::trophy_notice_sound_ready(queue,std::nullopt,true,false,0),"cancelled session could play audio");
+  for(auto changed:{origin(8),other_user})require(!xmb::trophy_notice_sound_ready(queue,changed,true,false,0),"stale session/user could play audio");
+  auto other_profile=session;other_profile.profile_directory="other-profile";
+  require(!xmb::trophy_notice_sound_ready(queue,other_profile,true,false,0),"another profile could play audio");
   require(queue.started()&&near(queue.opacity(10,false),0)&&near(queue.opacity(10.09,false),0.5F),"entrance fade incorrect");
   require(near(queue.opacity(12,false),1)&&near(queue.opacity(14.875,false),0.5F),"hold or exit fade incorrect; a second start reset time");
   require(near(queue.opacity(10,true),1)&&near(queue.opacity(14.99,true),1),"reduced motion must not fade");
@@ -52,6 +62,7 @@ int main(){try{
   require(queue.current()->event.achievement.title=="Second","overflow displaced a queued notice");
   queue.start(20);queue.clear();
   require(!queue.current()&&!queue.started()&&queue.opacity(20,false)==0,"cancellation retained a notice");
+  require(!xmb::trophy_notice_sound_ready(queue,current_origin,true,false,0),"empty queue could play audio");
   queue.start(21);require(!queue.started(),"an empty queue started a hold");
   require(queue.push(unlock(session,"After"),session)&&queue.current()->serial>first,"serials were reused after cancellation");
 

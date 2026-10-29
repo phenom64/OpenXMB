@@ -13,6 +13,13 @@ int main(int argc,char** argv) try {
     const auto system_icon=catalog.nodes.at("category.settings.system.settings").icon_ref;
     const auto update_icon=catalog.nodes.at("category.settings.system.update").icon_ref;
     app::desktop_settings::populate(catalog);
+    const auto& trophy_sound=catalog.nodes.at("category.settings.desktop.audio.trophy.mode");
+    require(trophy_sound.choices.size()==2&&trophy_sound.choices[0].value=="Off"&&trophy_sound.choices[1].value=="User-supplied","trophy sound exposes only Off and explicit user-supplied audio");
+    const auto& trophy_file=catalog.nodes.at("category.settings.desktop.audio.trophy.file");
+    require(trophy_file.action_id=="desktop.audio.trophy.file","trophy audio file has a real settings action");
+    require(app::desktop_settings::trophy_sound_file_label("C:\\Users\\Example\\Audio\\Trophy.wav")=="Trophy.wav","sound file row shows the name instead of an overlapping full path");
+    require(app::desktop_settings::trophy_sound_file_label("")=="Not selected","empty sound selection has a readable value");
+    require(app::desktop_settings::trophy_sound_file_label("/audio/abcdefghijklmnopqrstuvwxyz-long-file.wav")=="abcdefghijklmnopqrstuvwx...","long sound filename is bounded");
     const auto& root=catalog.nodes.at("category.settings");
     require(root.children.front()=="category.settings.system.update","System Update remains visible");
     require(catalog.nodes.at(root.children.front()).icon_ref==update_icon,"update artwork retained");

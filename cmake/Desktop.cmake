@@ -6,6 +6,7 @@ add_library(openxmb_desktop_core STATIC
   "${PROJECT_SOURCE_DIR}/src/desktop/http.cpp"
   "${PROJECT_SOURCE_DIR}/src/desktop/rpcs3_trophies.cpp"
   "${PROJECT_SOURCE_DIR}/src/desktop/trophy_watch.cpp"
+  "${PROJECT_SOURCE_DIR}/src/desktop/trophy_sound.cpp"
   "${PROJECT_SOURCE_DIR}/src/desktop/rpcs3_session.cpp"
   "${PROJECT_SOURCE_DIR}/src/desktop/retroachievements.cpp"
   "${PROJECT_SOURCE_DIR}/src/desktop/youtube.cpp"
@@ -31,13 +32,14 @@ if(CURL_FOUND)
   target_link_libraries(openxmb_desktop_core PRIVATE CURL::libcurl)
 endif()
 if(OPENXMB_BUILD_NATIVE_TESTS)
-  foreach(_feature IN ITEMS steam http rpcs3_trophy trophy_watch rpcs3_session retroachievements async_job youtube steamgriddb)
+  foreach(_feature IN ITEMS steam http rpcs3_trophy trophy_watch trophy_sound rpcs3_session retroachievements async_job youtube steamgriddb)
     add_executable(openxmb_${_feature}_tests "${PROJECT_SOURCE_DIR}/tests/desktop/${_feature}_tests.cpp")
     target_link_libraries(openxmb_${_feature}_tests PRIVATE OpenXMB::DesktopCore)
     set_target_properties(openxmb_${_feature}_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
     add_test(NAME openxmb_${_feature}_tests COMMAND openxmb_${_feature}_tests)
   endforeach()
   set_tests_properties(openxmb_async_job_tests PROPERTIES TIMEOUT 10)
+  set_tests_properties(openxmb_trophy_sound_tests PROPERTIES TIMEOUT 20 ENVIRONMENT "SDL_AUDIODRIVER=dummy")
   if(WIN32)
     target_link_libraries(openxmb_youtube_tests PRIVATE LibArchive::LibArchive)
   endif()

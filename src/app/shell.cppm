@@ -124,6 +124,7 @@ namespace app
             void save_session_screenshot();
             void open_panel(const std::string& name);
             bool set_audio_device(const std::string& device);
+            void reload_trophy_sound();
             std::string audio_device_name() const { return active_audio_device; }
             void open_media(const std::filesystem::path& path);
             void switch_profile(const std::filesystem::path& path);
