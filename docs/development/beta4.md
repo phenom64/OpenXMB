@@ -421,3 +421,52 @@ axis path and saves its resulting entry through first-time setup.
 ```powershell
 python tests/dialogs/native_keyboard_smoke.py --app build/native-c/XMS.bin.exe --output build/beta4-native-keyboard
 ```
+
+
+## Windows physical Guide focus repair (29 October 2026)
+
+A registered keyboard shortcut grants activation permission that a background
+SDL/GameInput Guide event does not provide. The earlier keyboard and mouse-move
+smoke tests could pass while a real Guide press failed. Focus logs now distinguish
+plain activation from the complete helper outcome, including relay and overlay
+activation, foreground handles and GUI state.
+
+When plain activation is denied, the Windows overlay starts its sibling
+`openxmb-integrations.exe` helper. It validates the parent and session creation
+identities, same desktop and exact foreground window, then probes responsiveness.
+The helper temporarily shares the session's input queue, activates its own
+invisible relay on that queue, and activates the XMB from the resulting foreground
+process. A direct attached call targeting the third, shell-owned queue reproduced
+the original denial. The shell UI thread never attaches. Its 1,500 ms budget
+includes message dispatch; an overrun terminates only the helper, with a bounded
+reap and an independent five-second watchdog. The parent requires the helper to
+exit and observes its own overlay in the foreground before accepting success.
+Windows may still refuse this route; the existing switch-to-XMB fallback remains.
+
+Physical SDL Guide was confirmed by the user on RPCS3 G-Force and YouTube.
+Both native traces explicitly verify the relay path on that physical press.
+Screenshot and graceful Quit Game/Quit App passed, along with YouTube relaunch
+and external-close cleanup. The copied snapshot008 also passed rendered entrance,
+transparency, Game/Photo navigation, Back focus, clean capture and exit checks.
+These are Windows results for those applications, not exclusive-fullscreen,
+protected-game, Steam Guide ownership, Linux or macOS acceptance.
+
+The opt-in denied-admission fixture uses a separate, nonactivating sibling process
+which injects and receives its own clicks. It checks capture/cursor drift and
+uses absolute move/down/up batches; it never clicks the game. Mouse movement
+alone did not revoke inherited helper admission. Negative controls with both
+unattached and directly attached helper activation failed before the relay
+candidate passed. Only a fresh run's first opening exercised the denied-admission
+helper; later openings often used plain activation. `--require-helper-strategy`
+rejects such a plain-activation pass when helper coverage is required.
+
+```powershell
+python tests/desktop/native_overlay_smoke.py --app build/native-c/XMS.bin.exe --child build/native-c/openxmb_session_window_child.exe --background-request --last-input-elsewhere --input-recipient-helper build/native-c/openxmb_focus_handoff_test_helper.exe --require-helper-strategy relay_activate --trace --output build/guide-admission-acceptance
+```
+
+Private-desktop tests cover identity/protocol rejection, watchdog containment,
+UI message responsiveness, missing/malformed helper output and false success
+reports. An opt-in `--focus-timeout-stage relay` fixture additionally holds an
+active foreground relay; its real-desktop run remains pending while the user
+is testing snapshot008. The general suite is not a substitute for physical
+Guide or application-specific acceptance.

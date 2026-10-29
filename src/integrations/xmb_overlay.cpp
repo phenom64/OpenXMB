@@ -4,7 +4,9 @@
 #include <chrono>
 #include <cmath>
 #include <limits>
+#include <optional>
 #include <string>
+#include <string_view>
 #ifdef __linux__
 #include "x11_support.hpp"
 #include <xcb/render.h>
@@ -19,6 +21,7 @@
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
+#include "focus_handoff.hpp"
 #include <windows.h>
 #include <windowsx.h>
 #include <mutex>
@@ -54,6 +57,12 @@ bool overlaps(std::span<const std::uint8_t> a,std::span<std::uint8_t> b) {
   const auto x=reinterpret_cast<std::uintptr_t>(a.data()),y=reinterpret_cast<std::uintptr_t>(b.data());
   return x<=y?y-x<a.size():x-y<b.size();
 }
+#if defined(_WIN32)||defined(__linux__)
+std::string size_mismatch(unsigned width,unsigned height,const OverlayBounds& bounds) {
+  return "The overlay frame is "+std::to_string(width)+"x"+std::to_string(height)+" but the host is prepared for "+
+    std::to_string(bounds.width)+"x"+std::to_string(bounds.height)+".";
+}
+#endif
 } // namespace
 Result convert_overlay_bgra(std::span<const std::uint8_t> input,unsigned width,unsigned height,std::size_t input_stride,
                             std::span<std::uint8_t> output,std::size_t output_stride) {
@@ -65,9 +74,98 @@ Result convert_overlay_bgra(std::span<const std::uint8_t> input,unsigned width,u
   return {true,{}};
 }
 #ifdef _WIN32
+namespace {
+using focus_handoff::windows_error;
+Result windows_failure(std::string_view action) {const DWORD code=GetLastError();return {false,windows_error(action,code)};}
+std::string hwnd_text(HWND window) {return focus_handoff::hwnd_text(reinterpret_cast<std::uintptr_t>(window));}
+// SetForegroundWindow documents no extended error (observed: a stale
+// ERROR_FILE_NOT_FOUND after SetLastError(0)), so only its BOOL is reported.
+std::string bool_call(const char* call,BOOL value) {return std::string(call)+(value?"=TRUE":"=FALSE");}
+struct ForegroundHolder {HWND window{};DWORD thread{},pid{};focus_handoff::ProcessFacts facts;};
+ForegroundHolder foreground_holder() {
+  ForegroundHolder holder;holder.window=GetForegroundWindow();
+  if(holder.window)holder.thread=GetWindowThreadProcessId(holder.window,&holder.pid);
+  if(holder.thread)holder.facts=focus_handoff::process_facts(holder.pid);
+  return holder;
+}
+std::string describe_holder(const ForegroundHolder& holder) {
+  const std::filesystem::path image{holder.facts.image};
+  const auto process=image.empty()?"process "+std::to_string(holder.pid):focus_handoff::narrow(image.filename().native())+" (process "+std::to_string(holder.pid)+")";
+  return process+" window "+hwnd_text(holder.window);
+}
+// The source must be the validated session window or a window it owns; other
+// windows of the same process never authorise a handoff.
+bool is_session(const ForegroundHolder& holder,const SessionWindowTarget& session) {
+  return holder.thread&&static_cast<std::int64_t>(holder.pid)==session.pid&&holder.facts.creation&&holder.facts.creation==session.process_creation&&
+    focus_handoff::session_window_or_owned(holder.window,reinterpret_cast<HWND>(session.handle));
+}
+// SetForegroundWindow admits a background process only when it received the
+// last input event (Microsoft Learn, SetForegroundWindow remarks). A Guide
+// press reaches OpenXMB through GameInput/SDL, never as window input, so plain
+// activation is refused while a game owns the foreground. The authorised
+// handoff runs in an isolated helper process (focus_handoff.hpp): this UI
+// thread never attaches its input queue and waits at most
+// focus_handoff::deadline while dispatching its own messages.
+Result activate_window(HWND window,const std::optional<SessionWindowTarget>& session) {
+  const HWND before=GetForegroundWindow();
+  const BOOL plain=SetForegroundWindow(window);
+  const auto holder=foreground_holder();
+  if(holder.window==window)return {true,"Overlay focus: plain SetForegroundWindow admitted the request."};
+  const std::string refused="Windows refused overlay focus ["+bool_call("SetForegroundWindow",plain)+
+    ", foreground "+hwnd_text(before)+" -> "+hwnd_text(holder.window)+"]";
+  // TRUE means Windows admitted the request; a different foreground is then a
+  // race with another activation, not a denial, so no handoff is attempted.
+  if(plain)return {false,refused+": Windows admitted the request but another window holds the foreground."};
+  if(!holder.thread)return {false,refused+": no foreground window exists to hand off from."};
+  const auto name=describe_holder(holder);
+  if(!session)return {false,refused+": "+name+" owns the foreground and OpenXMB did not receive the last input event; no handoff was authorised."};
+  if(!is_session(holder,*session)||session->pid<=0||session->pid>std::numeric_limits<DWORD>::max())
+    return {false,refused+": "+name+" is not the validated session window "+hwnd_text(reinterpret_cast<HWND>(session->handle))+" or a window it owns; no handoff was attempted."};
+  // Cheap local refusal; the helper repeats every check with its preflight.
+  if(IsHungAppWindow(holder.window))return {false,refused+": "+name+" is not responding; no handoff was attempted."};
+  const auto own=focus_handoff::process_facts(GetCurrentProcessId());
+  if(!own.creation)return {false,refused+": OpenXMB could not read its own process identity; no handoff was attempted."};
+  const focus_handoff::Request request{GetCurrentProcessId(),own.creation,reinterpret_cast<std::uintptr_t>(window),GetCurrentThreadId(),
+    static_cast<DWORD>(session->pid),session->process_creation,session->handle};
+  auto handed=focus_handoff::hand_off(window,request,focus_handoff::sibling_helper(),std::chrono::steady_clock::now()+focus_handoff::deadline);
+  if(!handed)handed.message=refused+": "+handed.message;
+  return handed;
+}
+std::optional<RECT> monitor_rect(HMONITOR monitor) {
+  MONITORINFO info{};info.cbSize=sizeof(info);
+  if(!monitor||!GetMonitorInfoW(monitor,&info))return std::nullopt;
+  return info.rcMonitor;
+}
+RECT monitor_of(OverlayBounds bounds) {
+  const RECT area{bounds.x,bounds.y,bounds.x+static_cast<LONG>(bounds.width),bounds.y+static_cast<LONG>(bounds.height)};
+  return monitor_rect(MonitorFromRect(&area,MONITOR_DEFAULTTONEAREST)).value_or(RECT{});
+}
+// A 32-bit top-down DIB selected into a memory DC; UpdateLayeredWindow's source.
+struct Surface {
+  HDC dc{};HBITMAP bitmap{};HGDIOBJ previous{};void* pixels{};
+  void release() noexcept {
+    if(dc&&previous&&previous!=HGDI_ERROR)SelectObject(dc,previous);
+    if(bitmap)DeleteObject(bitmap);
+    if(dc)DeleteDC(dc);
+    *this={};
+  }
+};
+// Replaces `out` only after every allocation succeeded.
+Result make_surface(unsigned width,unsigned height,Surface& out) {
+  Surface next;next.dc=CreateCompatibleDC(nullptr);
+  if(!next.dc)return windows_failure("Windows could not create the overlay device context");
+  BITMAPINFO info{};info.bmiHeader.biSize=sizeof(BITMAPINFOHEADER);info.bmiHeader.biWidth=static_cast<LONG>(width);
+  info.bmiHeader.biHeight=-static_cast<LONG>(height);info.bmiHeader.biPlanes=1;info.bmiHeader.biBitCount=32;info.bmiHeader.biCompression=BI_RGB;
+  next.bitmap=CreateDIBSection(nullptr,&info,DIB_RGB_COLORS,&next.pixels,nullptr,0);
+  if(!next.bitmap||!next.pixels){auto failure=windows_failure("Windows could not allocate the overlay frame buffer");next.release();return failure;}
+  next.previous=SelectObject(next.dc,next.bitmap);
+  if(!next.previous||next.previous==HGDI_ERROR){auto failure=windows_failure("Windows could not select the overlay frame buffer");next.release();return failure;}
+  out.release();out=next;return {true,{}};
+}
+} // namespace
 struct XmbOverlay::Impl {
-  OverlayBounds bounds{};OverlayCallback callback;OverlayStats stats{};DWORD owner{};
-  HWND window{};HDC dc{};HBITMAP bitmap{};HGDIOBJ previous{};void* pixels{};bool has_frame{},passive{};
+  OverlayBounds bounds{};RECT monitor{};OverlayCallback callback;OverlayStats stats{};DWORD owner{};
+  HWND window{};Surface surface;bool has_frame{},passive{};
   static unsigned modifiers() {
     unsigned value{};if(GetKeyState(VK_SHIFT)&0x8000)value|=MOD_SHIFT;if(GetKeyState(VK_CONTROL)&0x8000)value|=MOD_CONTROL;
     if(GetKeyState(VK_MENU)&0x8000)value|=MOD_ALT;if((GetKeyState(VK_LWIN)|GetKeyState(VK_RWIN))&0x8000)value|=MOD_WIN;return value;
@@ -107,16 +205,19 @@ struct XmbOverlay::Impl {
     case WM_NCDESTROY:SetWindowLongPtrW(hwnd,GWLP_USERDATA,0);break;
     }return DefWindowProcW(hwnd,message,wp,lp);
   }
-  static bool register_class() {
-    static std::once_flag once;static bool registered{};
-    std::call_once(once,[]{WNDCLASSEXW cls{};cls.cbSize=sizeof(cls);cls.hInstance=GetModuleHandleW(nullptr);cls.lpfnWndProc=procedure;cls.lpszClassName=L"OpenXMB.LayeredOverlay.v1";cls.hCursor=LoadCursorW(nullptr,MAKEINTRESOURCEW(32512));
-      if(RegisterClassExW(&cls))registered=true;else if(GetLastError()==ERROR_CLASS_ALREADY_EXISTS){WNDCLASSEXW existing{};existing.cbSize=sizeof(existing);registered=GetClassInfoExW(cls.hInstance,cls.lpszClassName,&existing)&&existing.lpfnWndProc==procedure;}});return registered;
+  static Result register_class() {
+    static std::once_flag once;static DWORD error{};static bool registered{};
+    std::call_once(once,[]{WNDCLASSEXW cls{};cls.cbSize=sizeof(cls);cls.hInstance=GetModuleHandleW(nullptr);cls.lpfnWndProc=procedure;cls.lpszClassName=focus_handoff::overlay_class;cls.hCursor=LoadCursorW(nullptr,MAKEINTRESOURCEW(32512));
+      if(RegisterClassExW(&cls)){registered=true;return;}
+      error=GetLastError();
+      if(error==ERROR_CLASS_ALREADY_EXISTS){WNDCLASSEXW existing{};existing.cbSize=sizeof(existing);registered=GetClassInfoExW(cls.hInstance,cls.lpszClassName,&existing)&&existing.lpfnWndProc==procedure;}});
+    if(registered)return {true,{}};
+    return {false,windows_error("Windows could not register the overlay window class",error)};
   }
   bool on_owner()const{return owner&&GetCurrentThreadId()==owner;}
   void release() noexcept {
     if(window){SetWindowLongPtrW(window,GWLP_USERDATA,0);DestroyWindow(window);window=nullptr;}
-    if(dc&&previous&&previous!=HGDI_ERROR)SelectObject(dc,previous);previous=nullptr;
-    if(bitmap)DeleteObject(bitmap);bitmap=nullptr;pixels=nullptr;if(dc)DeleteDC(dc);dc=nullptr;has_frame=false;passive=false;callback={};owner=0;
+    surface.release();has_frame=false;passive=false;callback={};owner=0;
   }
   ~Impl(){release();}
 };
@@ -162,25 +263,40 @@ bool overlay_empty_input(x11_detail::Connection& x,xcb_window_t window) {
   const auto sequence=xcb_send_request(x.c,XCB_REQUEST_CHECKED,parts+2,&protocol);
   return sequence&&x.check(xcb_void_cookie_t{sequence});
 }
+// Empty on success; otherwise the X11 error code and failing request opcodes.
+std::string x11_failure(x11_detail::Connection& x,xcb_void_cookie_t cookie) {
+  x11_detail::Reply<xcb_generic_error_t> error{xcb_request_check(x.c,cookie)};
+  if(error)return " (X11 error "+std::to_string(error->error_code)+", request "+std::to_string(error->major_code)+"."+std::to_string(error->minor_code)+")";
+  if(const int code=xcb_connection_has_error(x.c))return " (XCB connection error "+std::to_string(code)+")";
+  return {};
+}
 }
 struct XmbOverlay::Impl {
   std::unique_ptr<x11_detail::Connection> x;
   OverlayBounds bounds{};OverlayCallback callback;OverlayStats stats{};
   std::thread::id owner{};xcb_window_t window{};xcb_colormap_t colormap{};xcb_gcontext_t gc{};
-  std::vector<std::uint8_t> pixels;bool has_frame{},passive{};std::array<bool,256> held{};
+  std::vector<std::uint8_t> pixels;bool has_frame{},passive{},display_dirty{};std::array<bool,256> held{};
+  std::uint16_t root_width{},root_height{};
   bool on_owner()const{return owner==std::this_thread::get_id();}
   void emit(OverlayInput input)noexcept{if(callback)try{callback(input);}catch(...) {}}
-  bool upload(){
-    const auto row=static_cast<std::size_t>(bounds.width)*4;const auto maximum=static_cast<std::size_t>(xcb_get_maximum_request_length(x->c))*4;if(maximum<64+row)return false;
+  // Empty on success.
+  std::string upload(){
+    const auto row=static_cast<std::size_t>(bounds.width)*4;const auto maximum=static_cast<std::size_t>(xcb_get_maximum_request_length(x->c))*4;
+    if(maximum<64+row)return " (one "+std::to_string(row)+"-byte row exceeds the "+std::to_string(maximum)+"-byte X11 request limit)";
     const auto rows=std::min<std::size_t>(65535,(maximum-64)/row);
-    for(std::size_t y=0;y<bounds.height;y+=rows){const auto count=std::min<std::size_t>(rows,bounds.height-y);if(!x->check(xcb_put_image_checked(x->c,XCB_IMAGE_FORMAT_Z_PIXMAP,window,gc,bounds.width,count,0,y,0,32,count*row,pixels.data()+y*row)))return false;}
-    xcb_flush(x->c);return true;
+    for(std::size_t y=0;y<bounds.height;y+=rows){const auto count=std::min<std::size_t>(rows,bounds.height-y);
+      if(auto failure=x11_failure(*x,xcb_put_image_checked(x->c,XCB_IMAGE_FORMAT_Z_PIXMAP,window,gc,bounds.width,count,0,y,0,32,count*row,pixels.data()+y*row));!failure.empty())return failure;}
+    xcb_flush(x->c);return {};
   }
   void pump(){
     if(!x||!window||!on_owner())return;
     for(unsigned count=0;count<256;++count){x11_detail::Reply<xcb_generic_event_t> event{xcb_poll_for_event(x->c)};if(!event)break;
       const auto type=event->response_type&0x7f;
       if(type==XCB_EXPOSE){if(has_frame)(void)upload();continue;}
+      // Root StructureNotify: RandR mode, scale or layout changes resize the root.
+      if(type==XCB_CONFIGURE_NOTIFY){const auto* configure=reinterpret_cast<const xcb_configure_notify_event_t*>(event.get());
+        if(configure->window==x->screen->root&&(configure->width!=root_width||configure->height!=root_height)){root_width=configure->width;root_height=configure->height;display_dirty=true;}
+        continue;}
       // A passive host selects only Expose; nothing else may become input.
       if(passive)continue;
       switch(type){
@@ -201,7 +317,7 @@ struct XmbOverlay::Impl {
   // Passive hosts can be covered when the window manager raises a managed
   // game frame; restacking an override-redirect window never moves focus.
   void raise()const{const std::uint32_t above[]{XCB_STACK_MODE_ABOVE};xcb_configure_window(x->c,window,XCB_CONFIG_WINDOW_STACK_MODE,above);}
-  void release()noexcept{callback={};if(x){if(gc)xcb_free_gc(x->c,gc);if(window)xcb_destroy_window(x->c,window);if(colormap)xcb_free_colormap(x->c,colormap);xcb_flush(x->c);}x.reset();window=colormap=gc=0;pixels.clear();held.fill(false);has_frame=false;passive=false;owner={};}
+  void release()noexcept{callback={};if(x){if(gc)xcb_free_gc(x->c,gc);if(window)xcb_destroy_window(x->c,window);if(colormap)xcb_free_colormap(x->c,colormap);xcb_flush(x->c);}x.reset();window=colormap=gc=0;pixels.clear();held.fill(false);has_frame=false;passive=false;display_dirty=false;root_width=root_height=0;owner={};}
   ~Impl(){release();}
 };
 #else
@@ -216,18 +332,15 @@ Result XmbOverlay::prepare(OverlayBounds bounds,OverlayCallback callback,Overlay
   if(impl_->window&&!impl_->on_owner())return {false,"The overlay must be prepared on its owning UI thread."};
   const auto row=static_cast<std::size_t>(bounds.width)*4;
   if(!frame_bytes(bounds.width,bounds.height,row,frame_limit))return {false,"The overlay size is invalid or exceeds the supported memory limit."};
-  impl_->release();impl_->owner=GetCurrentThreadId();impl_->bounds=bounds;impl_->callback=std::move(callback);impl_->stats={};impl_->passive=passive;
-  if(!Impl::register_class()){impl_->release();return {false,"Windows could not register the overlay window."};}
+  impl_->release();impl_->owner=GetCurrentThreadId();impl_->bounds=bounds;impl_->monitor=monitor_of(bounds);impl_->callback=std::move(callback);impl_->stats={};impl_->passive=passive;
+  if(const auto registered=Impl::register_class();!registered){impl_->release();return registered;}
   // WS_EX_NOACTIVATE keeps the game foreground; layered WS_EX_TRANSPARENT
   // windows are skipped by hit testing, so clicks reach the game.
   const DWORD style=WS_EX_LAYERED|WS_EX_TOOLWINDOW|WS_EX_TOPMOST|(passive?WS_EX_NOACTIVATE|WS_EX_TRANSPARENT:0);
-  impl_->window=CreateWindowExW(style,L"OpenXMB.LayeredOverlay.v1",L"OpenXMB",WS_POPUP,
+  impl_->window=CreateWindowExW(style,focus_handoff::overlay_class,L"OpenXMB",WS_POPUP,
     bounds.x,bounds.y,static_cast<int>(bounds.width),static_cast<int>(bounds.height),nullptr,nullptr,GetModuleHandleW(nullptr),impl_.get());
-  if(!impl_->window){impl_->release();return {false,"Windows could not create the overlay window."};}
-  impl_->dc=CreateCompatibleDC(nullptr);BITMAPINFO info{};info.bmiHeader.biSize=sizeof(BITMAPINFOHEADER);info.bmiHeader.biWidth=static_cast<LONG>(bounds.width);info.bmiHeader.biHeight=-static_cast<LONG>(bounds.height);info.bmiHeader.biPlanes=1;info.bmiHeader.biBitCount=32;info.bmiHeader.biCompression=BI_RGB;
-  if(impl_->dc)impl_->bitmap=CreateDIBSection(nullptr,&info,DIB_RGB_COLORS,&impl_->pixels,nullptr,0);
-  if(impl_->dc&&impl_->bitmap)impl_->previous=SelectObject(impl_->dc,impl_->bitmap);
-  if(!impl_->dc||!impl_->bitmap||!impl_->pixels||!impl_->previous||impl_->previous==HGDI_ERROR){impl_->release();return {false,"Windows could not allocate the overlay frame buffer."};}
+  if(!impl_->window){auto failure=windows_failure("Windows could not create the overlay window");impl_->release();return failure;}
+  if(auto allocated=make_surface(bounds.width,bounds.height,impl_->surface);!allocated){impl_->release();return allocated;}
   (void)conversion_table();return {true,{}};
 #elif defined(__linux__)
   if(impl_->window&&!impl_->on_owner())return {false,"The overlay must be prepared on its owning UI thread."};
@@ -252,14 +365,24 @@ Result XmbOverlay::prepare(OverlayBounds bounds,OverlayCallback callback,Overlay
   }
   if(!visual){impl_->release();return {false,"The X11 compositor has no supported ARGB visual."};}
   impl_->colormap=xcb_generate_id(x.c);impl_->window=xcb_generate_id(x.c);impl_->gc=xcb_generate_id(x.c);impl_->passive=passive;
-  if(!x.check(xcb_create_colormap_checked(x.c,XCB_COLORMAP_ALLOC_NONE,impl_->colormap,x.screen->root,visual))){impl_->release();return {false,"X11 could not allocate the overlay colormap."};}
+  if(auto failure=x11_failure(x,xcb_create_colormap_checked(x.c,XCB_COLORMAP_ALLOC_NONE,impl_->colormap,x.screen->root,visual));!failure.empty()){impl_->release();return {false,"X11 could not allocate the overlay colormap"+failure+"."};}
   // The passive host is override-redirect so no window manager can focus it,
   // and it selects only Expose.
   const std::uint32_t values[]{0,0,XCB_EVENT_MASK_EXPOSURE|XCB_EVENT_MASK_KEY_PRESS|XCB_EVENT_MASK_KEY_RELEASE|XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE|XCB_EVENT_MASK_POINTER_MOTION|XCB_EVENT_MASK_FOCUS_CHANGE,impl_->colormap};
   const std::uint32_t passive_values[]{0,0,1,XCB_EVENT_MASK_EXPOSURE,impl_->colormap};
   const auto created=passive?xcb_create_window_checked(x.c,32,impl_->window,x.screen->root,bounds.x,bounds.y,bounds.width,bounds.height,0,XCB_WINDOW_CLASS_INPUT_OUTPUT,visual,XCB_CW_BACK_PIXEL|XCB_CW_BORDER_PIXEL|XCB_CW_OVERRIDE_REDIRECT|XCB_CW_EVENT_MASK|XCB_CW_COLORMAP,passive_values):
     xcb_create_window_checked(x.c,32,impl_->window,x.screen->root,bounds.x,bounds.y,bounds.width,bounds.height,0,XCB_WINDOW_CLASS_INPUT_OUTPUT,visual,XCB_CW_BACK_PIXEL|XCB_CW_BORDER_PIXEL|XCB_CW_EVENT_MASK|XCB_CW_COLORMAP,values);
-  if(!x.check(created)||!x.check(xcb_create_gc_checked(x.c,impl_->gc,impl_->window,0,nullptr))){impl_->release();return {false,"X11 could not create the ARGB overlay window."};}
+  if(auto failure=x11_failure(x,created);!failure.empty()){impl_->release();return {false,"X11 could not create the ARGB overlay window"+failure+"."};}
+  if(auto failure=x11_failure(x,xcb_create_gc_checked(x.c,impl_->gc,impl_->window,0,nullptr));!failure.empty()){impl_->release();return {false,"X11 could not create the overlay graphics context"+failure+"."};}
+  // Root StructureNotify on this private connection reports display geometry
+  // changes; it does not redirect or alter other clients' root selections.
+  const std::uint32_t root_mask[]{XCB_EVENT_MASK_STRUCTURE_NOTIFY};
+  if(auto failure=x11_failure(x,xcb_change_window_attributes_checked(x.c,x.screen->root,XCB_CW_EVENT_MASK,root_mask));!failure.empty()){impl_->release();return {false,"X11 could not observe display geometry"+failure+"."};}
+  {
+    x11_detail::Reply<xcb_get_geometry_reply_t> root{xcb_get_geometry_reply(x.c,xcb_get_geometry(x.c,x.screen->root),nullptr)};
+    if(!root){impl_->release();return {false,"X11 could not read the root window geometry."};}
+    impl_->root_width=root->width;impl_->root_height=root->height;
+  }
   const std::uint32_t pid[]{static_cast<std::uint32_t>(getpid())};
   if(passive) {
     const std::uint32_t type[]{x.atom("_NET_WM_WINDOW_TYPE_NOTIFICATION")};
@@ -274,50 +397,89 @@ Result XmbOverlay::prepare(OverlayBounds bounds,OverlayCallback callback,Overlay
   (void)bounds;(void)passive;return {false,"Transparent overlay is unavailable on this platform."};
 #endif
 }
+Result XmbOverlay::resize(OverlayBounds bounds) {
+  const auto row=static_cast<std::size_t>(bounds.width)*4;
+  if(!frame_bytes(bounds.width,bounds.height,row,frame_limit))return {false,"The overlay size is invalid or exceeds the supported memory limit."};
+#ifdef _WIN32
+  if(!impl_->window||!impl_->on_owner())return {false,"The overlay is not prepared on this UI thread."};
+  // The window keeps its old content and rectangle until the next present,
+  // whose UpdateLayeredWindow moves and resizes it atomically with the frame.
+  if(auto allocated=make_surface(bounds.width,bounds.height,impl_->surface);!allocated)return allocated;
+  impl_->bounds=bounds;impl_->monitor=monitor_of(bounds);impl_->has_frame=false;return {true,{}};
+#elif defined(__linux__)
+  if(!impl_->window||!impl_->on_owner())return {false,"The overlay is not prepared on this UI thread."};
+  auto& x=*impl_->x;
+  const std::uint32_t values[]{static_cast<std::uint32_t>(bounds.x),static_cast<std::uint32_t>(bounds.y),bounds.width,bounds.height};
+  if(auto failure=x11_failure(x,xcb_configure_window_checked(x.c,impl_->window,XCB_CONFIG_WINDOW_X|XCB_CONFIG_WINDOW_Y|XCB_CONFIG_WINDOW_WIDTH|XCB_CONFIG_WINDOW_HEIGHT,values));!failure.empty())
+    return {false,"X11 could not resize the overlay"+failure+"."};
+  impl_->pixels.resize(row*bounds.height);impl_->bounds=bounds;impl_->has_frame=false;impl_->display_dirty=false;return {true,{}};
+#else
+  return {false,"Transparent overlay is unavailable on this platform."};
+#endif
+}
 Result XmbOverlay::present(std::span<const std::uint8_t> bgra,unsigned width,unsigned height,std::size_t stride) {
 #ifdef _WIN32
   if(!impl_->window||!impl_->on_owner())return {false,"The overlay is not prepared on this UI thread."};
-  if(width!=impl_->bounds.width||height!=impl_->bounds.height)return {false,"The overlay frame dimensions do not match the prepared window."};
+  if(width!=impl_->bounds.width||height!=impl_->bounds.height)return {false,size_mismatch(width,height,impl_->bounds)};
   const auto begin=std::chrono::steady_clock::now();const auto output_size=static_cast<std::size_t>(width)*height*4;
-  const auto converted=convert_overlay_bgra(bgra,width,height,stride,{static_cast<std::uint8_t*>(impl_->pixels),output_size},static_cast<std::size_t>(width)*4);
+  const auto converted=convert_overlay_bgra(bgra,width,height,stride,{static_cast<std::uint8_t*>(impl_->surface.pixels),output_size},static_cast<std::size_t>(width)*4);
   if(!converted)return converted;
   const auto ready=std::chrono::steady_clock::now();POINT position{impl_->bounds.x,impl_->bounds.y},source{0,0};SIZE size{static_cast<LONG>(width),static_cast<LONG>(height)};BLENDFUNCTION blend{AC_SRC_OVER,0,255,AC_SRC_ALPHA};
-  if(!UpdateLayeredWindow(impl_->window,nullptr,&position,&size,impl_->dc,&source,0,&blend,ULW_ALPHA))return {false,"Windows could not present the transparent overlay."};
+  if(!UpdateLayeredWindow(impl_->window,nullptr,&position,&size,impl_->surface.dc,&source,0,&blend,ULW_ALPHA))return windows_failure("Windows could not present the transparent overlay (UpdateLayeredWindow)");
   if(IsWindowVisible(impl_->window)&&!SetWindowPos(impl_->window,HWND_TOPMOST,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE))
-    return {false,"Windows could not maintain the overlay above the application."};
+    return windows_failure("Windows could not keep the overlay above the application (SetWindowPos)");
   const auto end=std::chrono::steady_clock::now();++impl_->stats.frames;impl_->stats.conversion_ns+=static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(ready-begin).count());impl_->stats.present_ns+=static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(end-ready).count());impl_->has_frame=true;return {true,{}};
 #elif defined(__linux__)
   if(!impl_->window||!impl_->on_owner())return {false,"The overlay is not prepared on this UI thread."};
   auto& x=*impl_->x;impl_->pump();
   if(!x.compositor())return {false,"The X11 compositing manager is no longer available."};
-  if(width!=impl_->bounds.width||height!=impl_->bounds.height)return {false,"The overlay frame dimensions do not match the prepared window."};
+  if(width!=impl_->bounds.width||height!=impl_->bounds.height)return {false,size_mismatch(width,height,impl_->bounds)};
   const auto begin=std::chrono::steady_clock::now();const auto row=static_cast<std::size_t>(width)*4;
   const auto converted=convert_overlay_bgra(bgra,width,height,stride,impl_->pixels,row);if(!converted)return converted;
-  const auto ready=std::chrono::steady_clock::now();if(!impl_->upload())return {false,"X11 could not present the transparent overlay."};
+  const auto ready=std::chrono::steady_clock::now();
+  if(auto failure=impl_->upload();!failure.empty())return {false,"X11 could not present the transparent overlay"+failure+"."};
   if(impl_->passive&&impl_->mapped())impl_->raise();
   xcb_flush(x.c);const auto end=std::chrono::steady_clock::now();++impl_->stats.frames;impl_->stats.conversion_ns+=std::chrono::duration_cast<std::chrono::nanoseconds>(ready-begin).count();impl_->stats.present_ns+=std::chrono::duration_cast<std::chrono::nanoseconds>(end-ready).count();impl_->has_frame=true;return {true,{}};
 #else
   (void)bgra;(void)width;(void)height;(void)stride;return {false,"Transparent overlay is unavailable on this platform."};
 #endif
 }
-Result XmbOverlay::show(bool activate) {
+Result XmbOverlay::show(bool activate,const std::optional<SessionWindowTarget>& foreground_session) {
 #ifdef _WIN32
   if(!impl_->window||!impl_->on_owner())return {false,"The overlay is not prepared on this UI thread."};
   if(!impl_->has_frame)return {false,"The overlay needs a rendered frame before it can be shown."};
   if(activate&&impl_->passive)return {false,"A passive notification host cannot take focus."};
-  if(!SetWindowPos(impl_->window,HWND_TOPMOST,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE|SWP_SHOWWINDOW)||!IsWindowVisible(impl_->window))return {false,"Windows did not show the overlay."};
-  if(activate&&(!SetForegroundWindow(impl_->window)||GetForegroundWindow()!=impl_->window)){ShowWindow(impl_->window,SW_HIDE);return {false,"Windows did not grant overlay focus. Switch to OpenXMB manually."};}
+  if(!SetWindowPos(impl_->window,HWND_TOPMOST,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE|SWP_SHOWWINDOW))return windows_failure("Windows did not show the overlay (SetWindowPos)");
+  if(!IsWindowVisible(impl_->window))return {false,"Windows did not show the overlay: the window stayed hidden after SetWindowPos."};
+  if(activate) {
+    auto granted=activate_window(impl_->window,foreground_session);
+    if(!granted){ShowWindow(impl_->window,SW_HIDE);return granted;}
+    return granted;
+  }
   return {true,{}};
 #elif defined(__linux__)
+  (void)foreground_session;
   if(!impl_->window||!impl_->on_owner())return {false,"The overlay is not prepared on this UI thread."};
   if(!impl_->has_frame)return {false,"The overlay needs a rendered frame before it can be shown."};
   if(activate&&impl_->passive)return {false,"A passive notification host cannot take focus."};
-  auto& x=*impl_->x;if(!x.compositor()||!x.check(xcb_map_window_checked(x.c,impl_->window)))return {false,"The X11 compositor could not show the overlay."};
-  if(activate&&!x.activate(impl_->window)){hide();return {false,"The window manager could not request overlay focus."};}
-  for(unsigned tries=0;tries<20;++tries){impl_->pump();x11_detail::Reply<xcb_get_input_focus_reply_t> focus{xcb_get_input_focus_reply(x.c,xcb_get_input_focus(x.c),nullptr)};if(impl_->mapped()&&(!activate||(focus&&focus->focus==impl_->window&&x.active(impl_->window)))){if(impl_->passive)impl_->raise();if(impl_->upload())return {true,{}};hide();return {false,"The X11 overlay frame could not be restored after mapping."};}std::this_thread::sleep_for(std::chrono::milliseconds(5));}
-  hide();return {false,"The X11 window manager did not grant overlay focus. Switch to OpenXMB manually."};
+  auto& x=*impl_->x;if(!x.compositor())return {false,"The X11 compositing manager is no longer available."};
+  if(auto failure=x11_failure(x,xcb_map_window_checked(x.c,impl_->window));!failure.empty())return {false,"X11 could not map the overlay"+failure+"."};
+  if(activate&&!x.activate(impl_->window)){hide();return {false,"The window manager could not receive the _NET_ACTIVE_WINDOW request."};}
+  for(unsigned tries=0;tries<20;++tries){impl_->pump();x11_detail::Reply<xcb_get_input_focus_reply_t> focus{xcb_get_input_focus_reply(x.c,xcb_get_input_focus(x.c),nullptr)};if(impl_->mapped()&&(!activate||(focus&&focus->focus==impl_->window&&x.active(impl_->window)))){if(impl_->passive)impl_->raise();if(auto failure=impl_->upload();!failure.empty()){hide();return {false,"The X11 overlay frame could not be restored after mapping"+failure+"."};}return {true,{}};}std::this_thread::sleep_for(std::chrono::milliseconds(5));}
+  hide();return {false,activate?"The X11 window manager did not grant overlay focus within 100 ms of the _NET_ACTIVE_WINDOW request.":"The X11 overlay was not viewable within 100 ms of mapping."};
 #else
-  (void)activate;return {false,"Transparent overlay is unavailable on this platform."};
+  (void)activate;(void)foreground_session;return {false,"Transparent overlay is unavailable on this platform."};
+#endif
+}
+bool XmbOverlay::display_changed()const{
+#ifdef _WIN32
+  if(!impl_->window||!impl_->on_owner())return false;
+  const auto current=monitor_rect(MonitorFromWindow(impl_->window,MONITOR_DEFAULTTONEAREST));
+  return current&&!EqualRect(&*current,&impl_->monitor);
+#elif defined(__linux__)
+  if(!impl_->window||!impl_->on_owner())return false;impl_->pump();return impl_->display_dirty;
+#else
+  return false;
 #endif
 }
 void XmbOverlay::hide(){

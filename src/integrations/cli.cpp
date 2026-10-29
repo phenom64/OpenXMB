@@ -1,9 +1,22 @@
 #include "openxmb/integrations/desktop.hpp"
 #include "openxmb/integrations/disc.hpp"
 #include <iostream>
+#ifdef _WIN32
+#include "focus_handoff.hpp"
+#include <string_view>
+#include <vector>
+#endif
 
 int main(int argc, char** argv) {
   using namespace openxmb::integrations;
+#ifdef _WIN32
+  // Private overlay focus helper started by OpenXMB itself; see focus_handoff.hpp.
+  if (argc >= 2 && std::string_view{argv[1]} == focus_handoff::command) {
+    std::vector<std::string_view> args;
+    try { args.assign(argv + 2, argv + argc); } catch (...) { return static_cast<int>(focus_handoff::Outcome::internal); }
+    return focus_handoff::run_helper(args);
+  }
+#endif
   try {
     if (argc < 2) { std::cout << "openxmb-integrations probe [PATH] | browser URL | screenshot FILE | autostart on|off [EXECUTABLE]\n"; return 0; }
     const std::string_view command{argv[1]};

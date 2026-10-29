@@ -2,6 +2,7 @@
 """Opt-in Windows compositor/input/focus/capture test over an owned fixture."""
 import argparse
 import ctypes
+from contextlib import contextmanager, nullcontext
 import hashlib
 from ctypes import wintypes as w
 import json
@@ -27,14 +28,29 @@ def main():
     parser.add_argument('--capture-only', action='store_true', help='Skip the initial Back/reopen cycle while diagnosing capture')
     parser.add_argument('--check-transitions', action='store_true', help='Measure the rendered entrance over the controlled game')
     parser.add_argument('--trace', action='store_true', help='Record detailed keyboard and lifecycle diagnostics')
+    parser.add_argument('--windowed-shell', action='store_true', help='Opt in to a windowed shell; default matches the fullscreen user preview')
+    parser.add_argument('--physical-guide', action='store_true', help='Wait up to 120 seconds for a real Guide press on the first overlay opening; later openings test the keyboard shortcut')
+    parser.add_argument('--background-request', action='store_true', help='Request activation by window message without keyboard input; tests foreground admission separately from physical Guide delivery')
+    parser.add_argument('--last-input-elsewhere', action='store_true', help='Before each background request, a separate nonactivating fixture receives its own clicks while the game keeps focus')
+    parser.add_argument('--input-recipient-helper', type=Path, help='Test helper executable for the independent last-input recipient')
+    parser.add_argument('--require-helper-strategy', choices=('attached_activate', 'relay_activate', 'unattached_activate'), help='Reject an initial pass through plain foreground activation')
+    parser.add_argument('--expect-focus-timeout', action='store_true', help='Owned fixture with a staged test helper: verify an attached helper hang is contained')
+    parser.add_argument('--focus-timeout-stage', choices=('attached', 'relay'), default='attached')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--allow-other-previews', action='store_true', help='Explicitly allow independent previews; restore prior focus afterward')
     args = parser.parse_args()
     if args.settle_seconds is not None and not 0 <= args.settle_seconds <= 120:
         parser.error('--settle-seconds must be between 0 and 120')
+    if args.physical_guide and args.background_request:
+        parser.error('Choose physical Guide delivery or the background activation regression')
+    if args.last_input_elsewhere and not args.background_request:
+        parser.error('--last-input-elsewhere requires --background-request')
+    if args.last_input_elsewhere and not args.input_recipient_helper:
+        parser.error('--last-input-elsewhere requires --input-recipient-helper')
     if os.name != 'nt':
         raise SystemExit('This fixture requires Windows.')
     from PIL import Image, ImageGrab
+    from guide_focus_diagnostics import capture_snapshot, SnapshotError, write_snapshot
     actual_game = args.game_executable is not None
     actual_app = args.youtube_executable is not None
     actual_rpcs3 = args.rpcs3_executable is not None
@@ -47,6 +63,10 @@ def main():
         parser.error('Installed game tests require --steam-executable and --steam-app-id')
     if not actual_external and not args.child:
         parser.error('--child is required for the controlled fixture')
+    if args.expect_focus_timeout and (actual_external or not args.background_request):
+        parser.error('The focus-timeout test requires --background-request and the owned fixture')
+    if args.focus_timeout_stage != 'attached' and not args.expect_focus_timeout:
+        parser.error('--focus-timeout-stage requires --expect-focus-timeout')
     app, root = args.app.resolve(), args.output.resolve()
     child = (args.game_executable.resolve() if actual_game else args.youtube_executable.resolve() if actual_app
              else args.rpcs3_executable.resolve() if actual_rpcs3 else args.child.resolve())
@@ -96,7 +116,11 @@ def main():
         _fields_ = [('kind', w.DWORD), ('data', InputData)]
     user.SendInput.argtypes = [w.UINT, ctypes.POINTER(Input), ctypes.c_int]
     user.SendInput.restype = w.UINT
-    def shortcut():
+    def shortcut(force_keyboard=False):
+        if args.background_request and not force_keyboard:
+            if args.trace: print('Background activation requested without keyboard input:', time.time(), flush=True)
+            assert shell_hwnd and user.PostMessageW(shell_hwnd, 0x0312, 0x4f58, 0), 'Background activation request could not be posted'
+            return
         if args.trace: print('Shortcut sent:', time.time(), flush=True)
         events = (Input * 6)()
         for event, vk, flags in zip(events, (0x11, 0x10, 0x73, 0x73, 0x10, 0x11), (0, 0, 0, 2, 2, 2)):
@@ -105,17 +129,56 @@ def main():
 
     user.SetForegroundWindow.argtypes = [w.HWND]
     user.IsWindowVisible.argtypes = [w.HWND]
+    user.IsWindow.argtypes = [w.HWND]
     user.IsIconic.argtypes = [w.HWND]
     user.SetWindowLongPtrW.argtypes = [w.HWND, ctypes.c_int, ctypes.c_ssize_t]
     user.SetWindowPos.argtypes = [w.HWND, w.HWND, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, w.UINT]
     user.GetWindowRect.argtypes = [w.HWND, ctypes.POINTER(w.RECT)]
     user.GetClientRect.argtypes = [w.HWND, ctypes.POINTER(w.RECT)]
     user.ClientToScreen.argtypes = [w.HWND, ctypes.POINTER(w.POINT)]
+    user.GetCursorPos.argtypes = [ctypes.POINTER(w.POINT)]
+    user.SetCursorPos.argtypes = [ctypes.c_int, ctypes.c_int]
+    user.WindowFromPoint.argtypes = [w.POINT]
+    user.WindowFromPoint.restype = w.HWND
+    user.GetAncestor.argtypes = [w.HWND, w.UINT]
+    user.GetAncestor.restype = w.HWND
     user.MonitorFromWindow.argtypes = [w.HWND, w.DWORD]
     user.MonitorFromWindow.restype = w.HANDLE
     class Monitor(ctypes.Structure):
         _fields_ = [('size', w.DWORD), ('bounds', w.RECT), ('work', w.RECT), ('flags', w.DWORD)]
     user.GetMonitorInfoW.argtypes = [w.HANDLE, ctypes.POINTER(Monitor)]
+
+    @contextmanager
+    def mark_elsewhere():
+        """A separate sibling process sends and receives its own clicks.
+
+        Input injection from the harness can grant eligibility to descendants;
+        the receiver must also be independent of the shell's launch ancestry.
+        Keep it alive until activation completes to preserve the recipient.
+        """
+        nonlocal marker_cursor_before, marker_cursor_after
+        assert user.GetForegroundWindow() == game_hwnd
+        cursor = w.POINT()
+        assert user.GetCursorPos(ctypes.byref(cursor))
+        if marker_cursor_before is None:
+            marker_cursor_before = (cursor.x, cursor.y)
+        recipient_env = dict(os.environ)
+        recipient_env['OPENXMB_FOCUS_TEST_HELPER_MODE'] = 'input-recipient'
+        recipient = subprocess.Popen([str(args.input_recipient_helper.resolve()), str(game_hwnd)],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            env=recipient_env, creationflags=subprocess.CREATE_NO_WINDOW)
+        try:
+            assert recipient.stdout.readline() == b'recipient-ready\n', f'Independent recipient failed ({recipient.poll()})'
+            assert user.GetForegroundWindow() == game_hwnd, 'Independent marker changed game focus'
+            assert user.GetCursorPos(ctypes.byref(cursor))
+            marker_cursor_after = (cursor.x, cursor.y)
+            print('Independent sibling injected and received its own click; game retains foreground:',
+                {'pid': recipient.pid}, flush=True)
+            yield
+        finally:
+            if recipient.poll() is None:
+                recipient.communicate(b'close\n', timeout=12)
+            assert recipient.wait(timeout=1) == 0, 'Independent recipient did not shut down cleanly'
 
     def windows(pid, class_name=None):
         result = []
@@ -131,6 +194,20 @@ def main():
         user.EnumWindows(visit, 0)
         return result
 
+    focus_diagnostic_sequence = 0
+    def trace_focus(stage):
+        nonlocal focus_diagnostic_sequence
+        if not args.trace or not game_hwnd:
+            return
+        record = game_record()
+        try:
+            snapshot = capture_snapshot(process.pid, record.get('process_id', 0), game_hwnd)
+        except SnapshotError as error:
+            snapshot = {'available': False, 'detail': str(error)}
+        snapshot['stage'] = stage
+        write_snapshot(root / f'focus-{focus_diagnostic_sequence:03d}-{stage}.json', snapshot)
+        focus_diagnostic_sequence += 1
+
     def wait(predicate, message, seconds=20):
         deadline = time.monotonic() + seconds
         while time.monotonic() < deadline:
@@ -141,6 +218,7 @@ def main():
                 raise AssertionError(f'{message}: shell exited {process.returncode}')
             time.sleep(.02)
         foreground = user.GetForegroundWindow()
+        trace_focus('wait-failed')
         owner = w.DWORD()
         if foreground:
             user.GetWindowThreadProcessId(foreground, ctypes.byref(owner))
@@ -216,34 +294,109 @@ def main():
         'XMB_ASSET_DIR': str(app.parent / 'shell'), 'XMB_LOCALE_DIR': str(app.parent / 'locales'),
         'OPENXMB_FORCE_SETUP': '0', 'OPENXMB_INITIAL_CATEGORY': 'tv' if actual_app else 'game', 'OPENXMB_HARNESS_ACTIONS': '1:ok',
         'SDL_AUDIODRIVER': 'dummy', 'SPDLOG_LEVEL': 'trace' if args.trace else 'debug'})
+    # Every native test owns its logs as well as its configuration. Windows
+    # startup truncates openxmb.log, so inheriting LOCALAPPDATA would erase the
+    # user's last failure diagnostics even in a controlled-fixture run.
+    for environment_name, directory in (('APPDATA', 'appdata'), ('LOCALAPPDATA', 'localappdata')):
+        folder = root / directory
+        folder.mkdir()
+        env[environment_name] = str(folder)
     if actual_app:
         env['OPENXMB_HARNESS_YOUTUBE_PROFILE'] = str(root / 'youtube-profile')
-        for environment_name, directory in (('APPDATA', 'appdata'), ('LOCALAPPDATA', 'localappdata')):
-            folder = root / directory
-            folder.mkdir()
-            env[environment_name] = str(folder)
     if actual_rpcs3:
         env['RPCS3_CONFIG_DIR'] = str(child.parent) + os.sep
+    attach_marker = root / 'helper-attached'
+    if args.expect_focus_timeout:
+        env['OPENXMB_FOCUS_TEST_HELPER_MODE'] = 'relay-hang' if args.focus_timeout_stage == 'relay' else 'attach-hang'
+        env['OPENXMB_FOCUS_TEST_ATTACH_MARKER'] = str(attach_marker)
     shell_hwnd = game_hwnd = None
+    marker_cursor_before = marker_cursor_after = None
     with (root / 'native.log').open('w', encoding='utf-8') as log:
-        process = subprocess.Popen([str(app), '--no-fullscreen', '--width', '960', '--height', '540',
-            '--force-dir', str(root / 'media')], cwd=app.parent, env=env, stdout=log, stderr=log,
+        shell_arguments = [str(app), '--force-dir', str(root / 'media')]
+        if args.windowed_shell:
+            shell_arguments += ['--no-fullscreen', '--width', '960', '--height', '540']
+        print('Shell presentation:', 'windowed' if args.windowed_shell else 'fullscreen', flush=True)
+        process = subprocess.Popen(shell_arguments, cwd=app.parent, env=env, stdout=log, stderr=log,
             creationflags=subprocess.CREATE_NO_WINDOW)
 
-        def open_overlay():
-            shortcut()
-            return wait(lambda: next((hwnd for hwnd in windows(process.pid, 'OpenXMB.LayeredOverlay.v1')
-                if user.IsWindowVisible(hwnd) and user.GetForegroundWindow() == hwnd), None),
-                'Transparent XMB did not appear and take focus', seconds=8)
+        first_overlay_request = True
+        def open_overlay(force_keyboard=False):
+            nonlocal first_overlay_request
+            require_strategy = args.require_helper_strategy if first_overlay_request and not force_keyboard else None
+            physical = args.physical_guide and first_overlay_request and not force_keyboard
+            if not force_keyboard:
+                first_overlay_request = False
+            with mark_elsewhere() if args.last_input_elsewhere and not force_keyboard else nullcontext():
+                log_offset = (root / 'native.log').stat().st_size
+                if physical:
+                    trace_focus('before-guide')
+                    print('READY: You may press the physical Guide button now. No keyboard activation is being sent.', flush=True)
+                else:
+                    trace_focus('before-request')
+                    shortcut(force_keyboard)
+                host = wait(lambda: next((hwnd for hwnd in windows(process.pid, 'OpenXMB.LayeredOverlay.v1')
+                    if user.IsWindowVisible(hwnd) and user.GetForegroundWindow() == hwnd), None),
+                    'Transparent XMB did not appear and take focus', seconds=120 if physical else 8)
+                if require_strategy:
+                    with (root / 'native.log').open('rb') as route_log:
+                        route_log.seek(log_offset)
+                        route = route_log.read().decode('utf-8')
+                    assert 'Overlay focus: plain' not in route, 'Denied-admission precondition not met: plain activation succeeded'
+                    assert f'strategy {require_strategy},' in route, 'Expected helper admission path was not verified'
+            trace_focus('opened')
+            return host
 
         def focus_game():
+            nonlocal marker_cursor_before, marker_cursor_after
             user.SetForegroundWindow(game_hwnd)
             if user.GetForegroundWindow() != game_hwnd:
                 # A registered shortcut is genuine activation intent. Return
                 # through the XMB instead of trying to defeat foreground policy.
-                bootstrap = open_overlay()
+                bootstrap = open_overlay(force_keyboard=True)
                 key(bootstrap, 0x1b)
             wait(lambda: user.GetForegroundWindow() == game_hwnd, 'XMB could not return game focus')
+            if args.background_request and not args.last_input_elsewhere and not actual_external:
+                # Establish the regression's last-input precondition on the
+                # owned fixture after setup used a real hotkey. F24 has no
+                # behavior in this fixture; never send this marker to games.
+                marker = (Input * 2)()
+                for event, flags in zip(marker, (0, 2)):
+                    event.kind = 1; event.key.vk = 0x87; event.key.flags = flags
+                assert user.GetForegroundWindow() == game_hwnd
+                assert user.SendInput(2, marker, ctypes.sizeof(Input)) == 2
+                time.sleep(.05)
+                assert user.GetForegroundWindow() == game_hwnd, 'Owned last-input fixture lost focus'
+                if args.trace: print('Last keyboard input delivered only to the owned game fixture', flush=True)
+            elif args.background_request and not args.last_input_elsewhere:
+                # Real applications need the same last-input precondition as
+                # physical Guide. Merely returning from a setup hotkey can
+                # retain foreground admission. Move over the verified game,
+                # without clicking, pressing a key or changing a binding.
+                client = w.RECT(); origin = w.POINT(); cursor = w.POINT()
+                assert user.GetClientRect(game_hwnd, ctypes.byref(client))
+                assert user.ClientToScreen(game_hwnd, ctypes.byref(origin))
+                assert client.right > 2 and client.bottom > 2
+                point = w.POINT(origin.x + client.right // 2, origin.y + client.bottom // 3)
+                assert user.GetCursorPos(ctypes.byref(cursor))
+                if (cursor.x, cursor.y) == (point.x, point.y):
+                    point.x += 1
+                hit = user.WindowFromPoint(point)
+                assert hit and user.GetAncestor(hit, 2) == game_hwnd, 'Another window covers the last-input marker point'
+                if marker_cursor_before is None:
+                    marker_cursor_before = (cursor.x, cursor.y)
+                left, top = user.GetSystemMetrics(76), user.GetSystemMetrics(77)
+                width, height = user.GetSystemMetrics(78), user.GetSystemMetrics(79)
+                assert width > 1 and height > 1
+                motion = Input(); motion.kind = 0
+                motion.mouse.x = round((point.x - left) * 65535 / (width - 1))
+                motion.mouse.y = round((point.y - top) * 65535 / (height - 1))
+                motion.mouse.flags = 0x0001 | 0x8000 | 0x4000
+                assert user.SendInput(1, ctypes.byref(motion), ctypes.sizeof(Input)) == 1
+                time.sleep(.05)
+                assert user.GetForegroundWindow() == game_hwnd, 'Game lost foreground during the mouse-only marker'
+                assert user.GetCursorPos(ctypes.byref(cursor))
+                marker_cursor_after = (cursor.x, cursor.y)
+                if args.trace: print('Last input moved over the verified game without a key or click', flush=True)
 
         try:
             shell_hwnd = wait(lambda: next((hwnd for hwnd in windows(process.pid) if user.IsWindowVisible(hwnd)), None), 'Visible shell window missing')
@@ -297,6 +450,29 @@ def main():
             baseline = ImageGrab.grab(box)
             baseline.save(root / 'game.png')
 
+            if args.expect_focus_timeout:
+                shortcut()
+                wait(attach_marker.is_file, 'The test helper never reached its actual input attachment', seconds=8)
+                relay_hwnd = None
+                if args.focus_timeout_stage == 'relay':
+                    fields = attach_marker.read_text().split()
+                    assert len(fields) == 3 and fields[0] == 'relay', 'No active-relay marker was written'
+                    relay_hwnd = int(fields[2])
+                    assert user.IsWindow(relay_hwnd) and user.GetForegroundWindow() == relay_hwnd, 'The test never held an active foreground relay'
+                expected = 'terminated and reaped (exit code 1460)'
+                wait(lambda: expected in (root / 'native.log').read_text(encoding='utf-8'),
+                     'Attached focus helper was not contained by its deadline', seconds=8)
+                wait(lambda: not user.IsIconic(shell_hwnd), 'Timed-out focus handoff did not restore the shell')
+                if relay_hwnd:
+                    assert not user.IsWindow(relay_hwnd), 'Terminated helper left its foreground relay alive'
+                answer = ctypes.c_size_t()
+                user.SendMessageTimeoutW.argtypes = [w.HWND, w.UINT, w.WPARAM, w.LPARAM, w.UINT, w.UINT,
+                                                     ctypes.POINTER(ctypes.c_size_t)]
+                user.SendMessageTimeoutW.restype = w.LPARAM
+                assert user.SendMessageTimeoutW(game_hwnd, 0, 0, 0, 0x0002 | 0x0020, 250, ctypes.byref(answer)), 'The game input queue stayed attached or unresponsive after helper termination'
+                assert not any(user.IsWindowVisible(hwnd) for hwnd in windows(process.pid, 'OpenXMB.LayeredOverlay.v1')), 'A failed handoff left the overlay visible'
+                print('PASS actual attached-helper hang: deadline, exact helper termination/reap, game queue responsiveness and shell restoration', flush=True)
+                return
             overlay = open_overlay()
             assert user.IsIconic(shell_hwnd), 'Ordinary shell restored underneath transparent host'
             if args.check_transitions and not actual_external:
@@ -361,6 +537,7 @@ def main():
                 private = list(profile.glob('rpcs3-session-*/GuiConfigs/CurrentSettings.ini'))
                 assert len(private) == 1 and 'confirmationBoxExitGame=false' in private[0].read_text(encoding='utf-8'), 'Managed RPCS3 override was not applied'
                 private_base = private[0].parent.parent
+                assert 'Background input enabled: false' in (private_base / 'config/config.yml').read_text(encoding='utf-8-sig'), 'Managed RPCS3 still accepts controller navigation behind the XMB'
                 if had_original_cache:
                     assert (private_base / 'cache').resolve() == (child.parent / 'cache').resolve(), 'Managed RPCS3 did not reuse the original warm cache'
             if actual_external:
@@ -429,6 +606,12 @@ def main():
             except subprocess.TimeoutExpired:
                 process.terminate(); process.wait(timeout=5)
             if restore_focus and prior_focus: user.SetForegroundWindow(prior_focus)
+            if marker_cursor_before is not None:
+                cursor = w.POINT()
+                if user.GetCursorPos(ctypes.byref(cursor)) and (cursor.x, cursor.y) == marker_cursor_after:
+                    user.SetCursorPos(*marker_cursor_before)
+            if args.expect_focus_timeout:
+                assert process.returncode == 0, (root / 'native.log').read_text(encoding='utf-8')
         assert process.returncode == 0, (root / 'native.log').read_text(encoding='utf-8')
 
 

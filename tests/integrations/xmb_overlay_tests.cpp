@@ -5,6 +5,7 @@
 #include <iostream>
 #include <limits>
 #include <stdexcept>
+#include <string>
 #include <thread>
 #include <vector>
 #ifdef _WIN32
@@ -63,6 +64,49 @@ int main(){try{
   require(wrong_thread_rejected,"native presentation accepted another thread");
   overlay.hide();
   require(GetForegroundWindow()==foreground,"hidden compositor changed foreground ownership");
+  require(!overlay.display_changed(),"an unchanged monitor was reported as a display change");
+  {
+    // Monitor transitions re-target the same native window: focus and
+    // stacking survive, and stale-size frames from the old extent are refused.
+    const auto hwnd=overlay.native_handle();
+    require(bool(overlay.resize({-32000,-32000,48,24})),"resize of a prepared host failed");
+    require(overlay.native_handle()==hwnd,"resize recreated the native window");
+    require(!overlay.show(false),"a resized host could be shown before a frame of its new size");
+    require(!overlay.present(frame,32,16,32*4),"a frame of the previous extent was accepted after resize");
+    std::vector<std::uint8_t> larger(48*24*4);
+    require(bool(overlay.present(larger,48,24,48*4)),"a frame of the new extent was rejected");
+    RECT rect{};require(GetWindowRect(reinterpret_cast<HWND>(hwnd),&rect)&&rect.right-rect.left==48&&rect.bottom-rect.top==24,"present did not apply the resized geometry");
+    require(!overlay.display_changed()&&!overlay.visible(),"resize changed visibility or reported a display change");
+  }
+  {
+    // A private desktop is never the input desktop, so Windows refuses
+    // activation deterministically without touching the user's foreground.
+    const auto name=L"OpenXMBOverlayTest"+std::to_wstring(GetCurrentProcessId());
+    const HDESK desktop=CreateDesktopW(name.c_str(),nullptr,nullptr,0,DESKTOP_CREATEWINDOW|DESKTOP_READOBJECTS|DESKTOP_WRITEOBJECTS,nullptr);
+    if(!desktop)std::cout<<"Skipped refused-activation fixture: CreateDesktopW failed with "<<GetLastError()<<'\n';
+    else {
+      std::string failure;
+      std::thread isolated([&]{
+        if(!SetThreadDesktop(desktop)){failure="SetThreadDesktop failed";return;}
+        XmbOverlay refused;std::vector<std::uint8_t> pixels(32*16*4);
+        if(!refused.prepare({0,0,32,16},[](const OverlayInput&){})||!refused.present(pixels,32,16,32*4)){failure="private-desktop host could not be prepared";return;}
+        const auto shown=refused.show(true,SessionWindowTarget{static_cast<std::int64_t>(GetCurrentProcessId()),1,1});
+        if(shown||shown.message.empty())failure="refused activation reported success or no reason";
+        else if(refused.visible()||refused.focused())failure="refused activation left the host visible or focused";
+      });
+      isolated.join();CloseDesktop(desktop);
+      require(failure.empty(),failure.c_str());
+      require(GetForegroundWindow()==foreground,"refused activation changed the user's foreground");
+    }
+  }
+  {
+    // Native failures carry the platform error code.
+    XmbOverlay lost;std::vector<std::uint8_t> pixels(8*8*4);
+    require(bool(lost.prepare({-32000,-32000,8,8},{})),"error-code fixture prepare failed");
+    DestroyWindow(reinterpret_cast<HWND>(lost.native_handle()));
+    const auto presented=lost.present(pixels,8,8,8*4);
+    require(!presented&&presented.message.find("Windows error 1400")!=std::string::npos,"UpdateLayeredWindow failure lost ERROR_INVALID_WINDOW_HANDLE");
+  }
   {
     // Hit testing needs an on-screen rectangle; one alpha step keeps the
     // 32x16 fixture imperceptible. Nothing here activates a window.

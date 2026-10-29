@@ -2018,6 +2018,8 @@ namespace app
                     ("rpcs3-session-"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
                 const auto user=config::CONFIG.preference("trophies.rpcs3.user");
                 if(!user.empty())request.user_id=user;
+                request.foreground_input_only=true;
+                request.title_id=game.title_id;
                 const auto prepared=openxmb::desktop::prepare_rpcs3_session(request);
                 if(prepared) {
                     rpcs3_config=*prepared.config;
@@ -2205,7 +2207,7 @@ namespace app
             games->shell_is_session_xmb=shell_focused();
             if(!games->shell_is_session_xmb) games->shell_focus_requested=std::chrono::steady_clock::now();
         };
-        // Physical-pixel bounds of the monitor showing the session window.
+        // Monitor bounds in the UI thread's native window-coordinate space.
         const auto game_monitor=[&](const openxmb::integrations::SessionWindowTarget& target)->std::optional<openxmb::integrations::OverlayBounds> {
 #ifdef _WIN32
             MONITORINFO info{};info.cbSize=sizeof(info);
@@ -2264,7 +2266,9 @@ namespace app
                 games->guide_probe_at=now+std::chrono::seconds(2);
             }
             for(const auto& edge:games->guide.drain()) {
-                if(games->guide_edges.edge(GuideTiming::Source::native,edge.pressed,edge.steady_timestamp_us))toggle_session_xmb();
+                const bool accepted=games->guide_edges.edge(GuideTiming::Source::native,edge.pressed,edge.steady_timestamp_us);
+                spdlog::debug("Guide event: source=native pressed={} accepted={}",edge.pressed,accepted);
+                if(accepted)toggle_session_xmb();
             }
         } else if(!games->guide_session_id.empty()) {
             games->guide.stop();games->guide_edges.reset();games->guide_session_id.clear();
@@ -2360,11 +2364,24 @@ namespace app
                 games->pending_notice="The transparent XMB is unavailable for this window. OpenXMB has switched to its normal window.";
             }
         }
+        if(games->overlay && games->overlay->active() && games->target && games->overlay->display_changed()) {
+            if(const auto bounds=game_monitor(*games->target)) {
+                if(const auto resized=games->overlay->resize(*bounds);!resized) {
+                    spdlog::warn("Transparent XMB resize failed: {}",resized.message);
+                    restore_shell();games->pending_notice=resized.message;
+                }
+            }
+        }
         if(games->overlay && games->overlay->active()) {
             auto inputs=std::exchange(*games->overlay_input,{});
             for(const auto& input:inputs) {
                 using enum openxmb::integrations::OverlayInputKind;
+                if(input.kind==focus_lost && games->overlay && games->overlay->focused()) {
+                    spdlog::debug("Ignoring a queued overlay focus-loss event after native focus was restored");
+                    continue;
+                }
                 if(input.kind==close || input.kind==focus_lost) {
+                    spdlog::debug("In-game XMB dismissal: native event={}, focused={}",static_cast<unsigned>(input.kind),games->overlay&&games->overlay->focused());
                     games->overlay_dismiss=true;games->overlay_return=input.kind==close;continue;
                 }
                 if(input.kind==key_down || input.kind==key_up) {
@@ -2446,7 +2463,8 @@ namespace app
                                     else if(input.kind==openxmb::integrations::OverlayInputKind::focus_lost || input.kind==openxmb::integrations::OverlayInputKind::close) {
                                         queue->clear();queue->push_back(input);
                                     }
-                                },config::CONFIG.enabled("power.reduced.motion",false));
+                                },config::CONFIG.enabled("power.reduced.motion",false),
+                                openxmb::integrations::OverlayInteraction::interactive,games->target);
                             if(prepared) {
                                 SDL_MinimizeWindow(win->win.get());games->shell_is_session_xmb=true;games->launched_minimized=true;
                                 menu.refresh_session_entries(true,active->descriptor.kind==openxmb::desktop::SessionKind::application,active->descriptor.title);
@@ -2533,6 +2551,7 @@ namespace app
                         if(!opened)unavailable(opened.message);
                     }
                 } else if(const auto error=games->notice->take_error();!error.empty())unavailable(error);
+                else if(games->notice->display_changed())close_notice();
                 else if(games->notice->presented())notices.start(now);
             }
             const bool notice_visible=shell_visible?(overlays.empty()&&!old_overlay&&!games->screenshot_status):
@@ -3538,7 +3557,9 @@ namespace app
         if(win->config.headless&&controller)return;
         if(static_cast<int>(button)==SDL_CONTROLLER_BUTTON_GUIDE && has_running_session()) {
             note_input_device(controller);
-            if(games->guide_edges.edge(GuideTiming::Source::sdl,true,static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count())))toggle_session_xmb();
+            const bool accepted=games->guide_edges.edge(GuideTiming::Source::sdl,true,static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count()));
+            spdlog::debug("Guide event: source=SDL pressed=true accepted={}",accepted);
+            if(accepted)toggle_session_xmb();
             return;
         }
         if(!input_focused())return;
