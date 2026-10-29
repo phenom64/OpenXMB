@@ -2,7 +2,8 @@ param(
     [switch]$FirstTimeSetup,
     [switch]$Windowed,
     [string]$BuildDir = "",
-    [string]$ProfileDir = ""
+    [string]$ProfileDir = "",
+    [string]$MediaDir = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -18,9 +19,14 @@ if (-not (Test-Path -LiteralPath $configPath)) {
     $config | Add-Member -NotePropertyName preferences -NotePropertyValue ([pscustomobject]@{ 'setup.completed' = 'false' }) -Force
     $config | ConvertTo-Json -Depth 30 | Set-Content -LiteralPath $configPath -Encoding UTF8
 }
-$media = Join-Path $ProfileDir "media"
-foreach ($category in @("Music", "Pictures", "Videos")) {
-    New-Item -ItemType Directory -Force -Path (Join-Path $media $category) | Out-Null
+if ($MediaDir) {
+    if (-not (Test-Path -LiteralPath $MediaDir -PathType Container)) { throw "Media directory does not exist: $MediaDir" }
+    $media = (Resolve-Path -LiteralPath $MediaDir).Path
+} else {
+    $media = Join-Path $ProfileDir "media"
+    foreach ($category in @("Music", "Pictures", "Videos")) {
+        New-Item -ItemType Directory -Force -Path (Join-Path $media $category) | Out-Null
+    }
 }
 $values = @{
     OPENXMB_CONFIG = $configPath
