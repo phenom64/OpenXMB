@@ -85,6 +85,7 @@ with open(path, "r", encoding="utf-8") as handle:
 shell = config.setdefault("shell", {})
 render = config.setdefault("render", {})
 shell["background-type"] = "original"
+config.setdefault("preferences", {})["setup.completed"] = "true"
 shell["theme-colour-mode"] = "custom"
 shell["theme-custom-colour"] = "#3373f2"
 shell["font-path"] = "default"
@@ -111,6 +112,26 @@ elif [ -d "$BUILD_DIR/locales" ]; then
     export XMB_LOCALE_DIR=${XMB_LOCALE_DIR:-"$BUILD_DIR/locales"}
 fi
 
+# The smoke owns its profile: never inherit a personal config, data root, setup
+# override or harness script. main.cpp restores/creates the active profile only
+# when OPENXMB_CONFIG is unset, so pin the run-owned config read-only.
+for inherited in \
+    AUROREENGINE_HEADLESS \
+    OPENXMB_CONFIG OPENXMB_CONFIG_READ_ONLY OPENXMB_DATA_DIR \
+    OPENXMB_FORCE_SETUP OPENXMB_SETUP_PAGE OPENXMB_SETUP_EDIT \
+    OPENXMB_HEADLESS_STARTUP OPENXMB_HARNESS_ACTIONS OPENXMB_HARNESS_YOUTUBE_PROFILE \
+    OPENXMB_FIXED_WAVE_SECONDS OPENXMB_FIXED_BOOT_SECONDS OPENXMB_FIXED_UNIX_SECONDS \
+    OPENXMB_FIXED_SETUP_SECONDS OPENXMB_FIXED_VALUE_SECONDS \
+    OPENXMB_PREVIEW_MUSIC_SECONDS OPENXMB_PREVIEW_MUSIC_BEAT \
+    OPENXMB_INITIAL_CATEGORY OPENXMB_INITIAL_SETTINGS_MENU \
+    OPENXMB_INITIAL_SETTINGS_SELECTION OPENXMB_OPEN_INITIAL_SETTINGS_CHOICE; do
+    unset "$inherited"
+done
+DATA_DIR="$RUN_DIR/data"
+mkdir -p "$DATA_DIR"
+export OPENXMB_CONFIG="$CONFIG"
+export OPENXMB_CONFIG_READ_ONLY=1
+export OPENXMB_DATA_DIR="$DATA_DIR"
 export OPENXMB_IFXDEBUG=1
 export SDL_AUDIODRIVER=${SDL_AUDIODRIVER:-dummy}
 

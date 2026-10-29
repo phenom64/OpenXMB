@@ -36,6 +36,7 @@ def main():
     parser.add_argument('--app', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--invalid-executable', action='store_true', help='A moved executable must show a Settings error without exiting')
+    parser.add_argument('--return-to-game', action='store_true', help='Capture the Game category after closing the rescan result and Settings')
     args = parser.parse_args()
     app, root = args.app.resolve(), args.output.resolve()
     root.mkdir(parents=True, exist_ok=False)
@@ -76,6 +77,11 @@ def main():
         folder.mkdir()
         env[name] = str(folder)
     for iteration in range(2):
+        if args.return_to_game:
+            env['OPENXMB_HARNESS_ACTIONS'] = '0.25:ok;0.8:cancel;1.1:cancel;1.5:right;1.8:right;2.1:right;2.4:right;2.7:right'
+            env['AUROREENGINE_HEADLESS_FRAMES'] = '240'
+            env['AUROREENGINE_HEADLESS_OUTPUT_DIR'] = str(root / f'game-menu-{iteration}')
+            env['AUROREENGINE_HEADLESS_OUTPUT_PATTERN'] = 'final.png'
         result = subprocess.run([str(app)], cwd=app.parent, env=env, capture_output=True, timeout=90)
         (root / f'native-{iteration}.log').write_bytes(result.stdout + result.stderr)
         assert result.returncode == 0, 'Settings rescan exited the app: ' + (result.stdout + result.stderr).decode(errors='replace')

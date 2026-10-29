@@ -260,6 +260,7 @@ export void activate(shell* shell,const openxmb::xmb::CatalogNode& node) {
             openxmb::desktop::GameDiscoveryOptions options;
             options.rpcs3_executable=std::filesystem::u8path(config::CONFIG.preference("runner.rpcs3.path"));
             const auto count=library.scan_games(options);
+            shell->queue_menu_reload();
             show_error(shell,"Added "+std::to_string(count)+" games to the library.");
         } catch(const std::exception& error) {show_error(shell,error.what());}
         return;

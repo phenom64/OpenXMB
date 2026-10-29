@@ -117,6 +117,8 @@ result library_manager::tick(app::shell *shell) {
   const auto target = selected_ < rows_.size() ? rows_[selected_].artwork : fs::path{};
   if (target != loaded_artwork_) {
     if (artwork_ready_.valid()) artwork_ready_.wait();
+    // Submitted frames may still sample the old texture; drain before destroying it.
+    if (artwork_) shell->get_window()->waitIdle();
     artwork_.reset(); loaded_artwork_ = target;
     std::error_code error;
     if (!target.empty() && fs::is_regular_file(target, error)) {
