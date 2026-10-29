@@ -289,7 +289,7 @@ if(AUROREENGINE_LOCAL)
 else()
   FetchContent_Declare(auroreengine
     GIT_REPOSITORY https://github.com/phenom64/AuroreEngine.git
-    GIT_TAG        f7396a256fc0dbc23c42334708c7d5a5622d807e
+    GIT_TAG        419e82e5202261dcf678ae28c766c980585fc648
     OVERRIDE_FIND_PACKAGE
   )
   FetchContent_GetProperties(auroreengine)
@@ -323,6 +323,13 @@ FetchContent_Declare(fast_float
   GIT_TAG 50a80a73ab2ab256ba1c3bf86923ddd8b4202bc7
   EXCLUDE_FROM_ALL
 )
+set(PUGIXML_BUILD_TESTS OFF CACHE BOOL "Disable dependency tests" FORCE)
+set(PUGIXML_BUILD_SHARED_AND_STATIC_LIBS OFF CACHE BOOL "Build one XML parser library" FORCE)
+FetchContent_Declare(pugixml
+  GIT_REPOSITORY https://github.com/zeux/pugixml.git
+  GIT_TAG c8033ce9d039e7f9d134877c363397b3cfe20816
+  EXCLUDE_FROM_ALL
+)
 set(FASTFLOAT_INSTALL OFF CACHE BOOL "Do not install number-parser development files" FORCE)
 set(FASTFLOAT_TEST OFF CACHE BOOL "Disable dependency tests" FORCE)
 
@@ -336,7 +343,7 @@ set(BUILD_TESTING OFF CACHE BOOL "Disable i18n++ tests" FORCE)
 
 # make both dependencies available. CMake will use the options we just set
 # when it configures i18n++.
-FetchContent_MakeAvailable(i18n++ argparse nlohmann_json fast_float)
+FetchContent_MakeAvailable(i18n++ argparse nlohmann_json fast_float pugixml)
 
 add_library(i18nModule STATIC)
 target_sources(i18nModule PUBLIC FILE_SET CXX_MODULES FILES third_party/i18n.cppm)
@@ -1509,4 +1516,11 @@ if(OPENXMB_BUILD_NATIVE_TESTS)
     set(_openxmb_font_test_assets "${CMAKE_CURRENT_BINARY_DIR}/share/shell")
   endif()
   add_test(NAME openxmb_language_font_tests COMMAND openxmb_language_font_tests "${_openxmb_font_test_assets}" "${CMAKE_CURRENT_BINARY_DIR}/locales")
+endif()
+
+if(OPENXMB_BUILD_NATIVE_TESTS)
+  add_executable(openxmb_artwork_decode_tests tests/media/artwork_decode_tests.cpp)
+  target_link_libraries(openxmb_artwork_decode_tests PRIVATE SDL2::SDL2 SDL2_image::SDL2_image)
+  set_target_properties(openxmb_artwork_decode_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  add_test(NAME openxmb_artwork_decode_tests COMMAND openxmb_artwork_decode_tests "${PROJECT_SOURCE_DIR}/tests/media/artwork-fixtures")
 endif()

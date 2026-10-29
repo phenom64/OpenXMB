@@ -8,7 +8,10 @@
         "vulkan"
       ]
     },
-    "sdl2-image",
+    {
+      "name": "sdl2-image",
+      "features": ["libjpeg-turbo", "libwebp", "tiff"]
+    },
     "libxmp",
     {
       "name": "sdl2-mixer",

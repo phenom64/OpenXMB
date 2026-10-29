@@ -2,6 +2,12 @@ add_library(openxmb_desktop_core STATIC
   "${PROJECT_SOURCE_DIR}/src/desktop/library.cpp"
   "${PROJECT_SOURCE_DIR}/src/desktop/session.cpp"
   "${PROJECT_SOURCE_DIR}/src/desktop/runners.cpp"
+  "${PROJECT_SOURCE_DIR}/src/desktop/steam.cpp"
+  "${PROJECT_SOURCE_DIR}/src/desktop/http.cpp"
+  "${PROJECT_SOURCE_DIR}/src/desktop/rpcs3_trophies.cpp"
+  "${PROJECT_SOURCE_DIR}/src/desktop/retroachievements.cpp"
+  "${PROJECT_SOURCE_DIR}/src/desktop/youtube.cpp"
+  "${PROJECT_SOURCE_DIR}/src/desktop/steamgriddb.cpp"
   "${PROJECT_SOURCE_DIR}/src/desktop/preview_audio.cpp")
 add_library(OpenXMB::DesktopCore ALIAS openxmb_desktop_core)
 target_compile_features(openxmb_desktop_core PUBLIC cxx_std_23)
@@ -9,6 +15,10 @@ target_include_directories(openxmb_desktop_core PUBLIC "${PROJECT_SOURCE_DIR}/in
 target_include_directories(openxmb_desktop_core PRIVATE ${OPENXMB_FFMPEG_INCLUDE_DIRS})
 target_link_directories(openxmb_desktop_core PUBLIC ${OPENXMB_FFMPEG_LIBRARY_DIRS})
 target_link_libraries(openxmb_desktop_core PUBLIC nlohmann_json::nlohmann_json SDL2::SDL2 SDL2_mixer::SDL2_mixer ${OPENXMB_FFMPEG_LIBRARIES})
+target_link_libraries(openxmb_desktop_core PRIVATE pugixml::pugixml)
+if(WIN32)
+  target_link_libraries(openxmb_desktop_core PRIVATE LibArchive::LibArchive bcrypt version)
+endif()
 set_target_properties(openxmb_desktop_core PROPERTIES CXX_SCAN_FOR_MODULES OFF)
 find_package(Threads REQUIRED)
 target_link_libraries(openxmb_desktop_core PRIVATE Threads::Threads)
@@ -19,6 +29,16 @@ if(CURL_FOUND)
   target_link_libraries(openxmb_desktop_core PRIVATE CURL::libcurl)
 endif()
 if(OPENXMB_BUILD_NATIVE_TESTS)
+  foreach(_feature IN ITEMS steam http rpcs3_trophy retroachievements async_job youtube steamgriddb)
+    add_executable(openxmb_${_feature}_tests "${PROJECT_SOURCE_DIR}/tests/desktop/${_feature}_tests.cpp")
+    target_link_libraries(openxmb_${_feature}_tests PRIVATE OpenXMB::DesktopCore)
+    set_target_properties(openxmb_${_feature}_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+    add_test(NAME openxmb_${_feature}_tests COMMAND openxmb_${_feature}_tests)
+  endforeach()
+  set_tests_properties(openxmb_async_job_tests PROPERTIES TIMEOUT 10)
+  if(WIN32)
+    target_link_libraries(openxmb_youtube_tests PRIVATE LibArchive::LibArchive)
+  endif()
   add_executable(openxmb_runner_tests "${PROJECT_SOURCE_DIR}/tests/desktop/runner_tests.cpp")
   target_link_libraries(openxmb_runner_tests PRIVATE OpenXMB::DesktopCore)
   set_target_properties(openxmb_runner_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
