@@ -35,11 +35,18 @@ struct Game {
   std::string platform, title_id;
   std::filesystem::path executable, working_directory, icon, background, preview, music;
   std::filesystem::path game_directory;
+  std::string runner;
+  std::filesystem::path content, core;
   std::vector<std::string> arguments;
   int year{};
   bool favorite{};
   std::uint64_t play_count{}, last_played{};
 };
+struct GameCandidate { Game game; bool refresh_metadata{}; };
+using GameDiscovery = std::vector<GameCandidate>;
+// Read-only discovery can run off the UI thread. Import into the originating
+// profile only after its identity has been checked by the caller.
+GameDiscovery discover_games(const std::vector<std::filesystem::path>& roots = {});
 struct CustomSection {
   std::string id, title;
   std::filesystem::path folder, icon;
@@ -92,6 +99,7 @@ public:
   void add_game_root(const std::filesystem::path &path);
   void remove_game_root(const std::filesystem::path &path);
   std::size_t scan_games();
+  std::size_t import_games(const GameDiscovery& discovered);
   // Optional RAWG artwork lookup, invoked only by an explicit UI action. The
   // API key is read transiently from the named process variable, never saved.
   void set_artwork_provider(bool enabled, std::string key_variable = "RAWG_API_KEY");

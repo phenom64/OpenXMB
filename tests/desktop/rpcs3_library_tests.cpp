@@ -163,7 +163,9 @@ void registered_discovery(const fs::path &root) {
   contents += "ARCHIVE: " + quoted_path(root / "unsupported.iso", '"') + "\n";
   file(registry(data), contents);
   Library library(root / "library");
-  require(library.scan_games() == 5, "automatic discovery imports only bootable registered/native DG and HG titles");
+  const auto discovered=discover_games();
+  require(!discovered.empty()&&library.games().empty(),"background discovery reads games without writing the profile");
+  require(library.import_games(discovered) == 5, "automatic discovery imports only bootable registered/native DG and HG titles");
   auto games = library.games();
   require(games.size() == 5 && by_title(games, "TEST00003").game_directory == fs::weakly_canonical(unicode), "quoted Unicode registry paths decode without loss");
   require(by_title(games, "TEST00002").game_directory == fs::weakly_canonical(apostrophe), "single-quoted apostrophes and path punctuation decode");

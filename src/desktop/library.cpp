@@ -84,6 +84,12 @@ std::string path_identity(const fs::path &path) {
 #endif
 }
 std::atomic<std::uint64_t> serial{};
+std::string game_identity(const Game& game) {
+  if(!game.game_directory.empty()) return "rpcs3\n"+path_identity(game.game_directory);
+  if(!game.runner.empty() && game.runner!="native" && !game.content.empty())
+    return game.runner+'\n'+(game.runner=="steam"?path_text(game.content):path_identity(game.content))+'\n'+(game.core.empty()?std::string{}:path_identity(game.core));
+  return path_text(game.executable)+'\n'+format_arguments(game.arguments);
+}
 std::uint64_t now() {
   return static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 }
@@ -180,7 +186,7 @@ json game_json(const Game &g) {
   return {{"id", g.id}, {"title", g.title}, {"description", g.description}, {"genre", g.genre}, {"developer", g.developer}, {"category", g.category},
     {"executable", path_text(g.executable)}, {"arguments", g.arguments}, {"working_directory", path_text(g.working_directory)}, {"icon", path_text(g.icon)},
     {"background", path_text(g.background)}, {"preview", path_text(g.preview)}, {"music", path_text(g.music)}, {"year", g.year}, {"favorite", g.favorite},
-    {"play_count", g.play_count}, {"last_played", g.last_played}, {"platform", g.platform}, {"title_id", g.title_id}, {"game_directory", path_text(g.game_directory)}};
+    {"play_count", g.play_count}, {"last_played", g.last_played}, {"platform", g.platform}, {"title_id", g.title_id}, {"game_directory", path_text(g.game_directory)}, {"runner",g.runner}, {"content",path_text(g.content)}, {"core",path_text(g.core)}};
 }
 Game game(const json &value) {
   Game g;
@@ -190,6 +196,7 @@ Game game(const json &value) {
   g.working_directory = text_path(value.value("working_directory", "")); g.icon = text_path(value.value("icon", "")); g.background = text_path(value.value("background", ""));
   g.preview = text_path(value.value("preview", "")); g.music = text_path(value.value("music", "")); g.year = value.value("year", 0); g.favorite = value.value("favorite", false);
   g.play_count = value.value("play_count", std::uint64_t{}); g.last_played = value.value("last_played", std::uint64_t{});
+  g.runner=value.value("runner","");g.content=text_path(value.value("content",""));g.core=text_path(value.value("core",""));
   g.platform = value.value("platform", ""); g.title_id = value.value("title_id", ""); g.game_directory = text_path(value.value("game_directory", ""));
   return g;
 }
@@ -539,7 +546,7 @@ Game import_rpcs3_game(const fs::path &directory) {
   if ((value("CATEGORY") != "DG" && value("CATEGORY") != "HG") || !fs::is_regular_file(boot))
     throw std::runtime_error("RPCS3 import requires a bootable DG disc or HG HDD title with USRDIR/EBOOT.BIN");
   Game game;
-  game.platform = "PlayStation 3 (RPCS3)";
+  game.platform = "PlayStation 3 (RPCS3)"; game.runner="rpcs3";game.content=boot;
   game.title = value("TITLE").empty() ? path_text(folder.filename()) : value("TITLE");
   game.title_id = value("TITLE_ID");
   game.game_directory = folder;
@@ -681,19 +688,72 @@ void Library::remove_game_root(const fs::path &path) {
   auto state = library(root_); auto roots = state.value("game_roots", std::vector<std::string>{});
   const auto value = path_text(fs::weakly_canonical(path)); std::erase(roots, value); state["game_roots"] = roots; save_library(root_, state);
 }
-std::size_t Library::scan_games() {
+GameDiscovery discover_games(const std::vector<fs::path>& configured_roots) {
+  GameDiscovery result;
+  std::size_t examined=0;
+  std::set<std::string> seen;
+  const auto accept=[&](Game value,bool manifest=false) {
+    const auto identity=game_identity(value);
+    if(seen.insert(identity).second)result.push_back({std::move(value),manifest});
+  };
+  for (const auto &path : rpcs3_registered_paths()) {
+    if (++examined > 10000) throw std::runtime_error("Game scan exceeded 10000 entries; choose narrower roots");
+    Game found;
+    try { found = import_rpcs3_game(path); } catch (const std::exception &) { continue; }
+    accept(std::move(found));
+  }
+  auto roots = configured_roots;
+  const auto detected = rpcs3_game_roots(); roots.insert(roots.end(), detected.begin(), detected.end());
+  std::set<std::string> visited;
+  for (const auto &root : roots) {
+    if (!visited.insert(path_identity(root)).second) continue;
+    if (fs::is_regular_file(root / "PARAM.SFO") || fs::is_regular_file(root / "PS3_GAME/PARAM.SFO")) {
+      Game found;
+      try { found = import_rpcs3_game(root); } catch (const std::exception &) { continue; }
+      accept(std::move(found));
+      continue;
+    }
+    std::error_code error;
+    for (fs::recursive_directory_iterator it(root, fs::directory_options::skip_permission_denied, error), end; !error && it != end; it.increment(error)) {
+      if (++examined > 10000) throw std::runtime_error("Game scan exceeded 10000 entries; choose narrower roots");
+      if (it.depth() > 5) { it.disable_recursion_pending(); continue; }
+      if (it->is_symlink()) { it.disable_recursion_pending(); continue; }
+      Game found;
+      const auto path = it->path();
+      try {
+        if (it->is_directory() && (fs::is_regular_file(path / "PARAM.SFO") || fs::is_regular_file(path / "PS3_GAME/PARAM.SFO"))) {
+          it.disable_recursion_pending();
+          found = import_rpcs3_game(path);
+        } else if (path.filename() == "PARAM.SFO") found = import_rpcs3_game(path.parent_path());
+        else if (path.filename() == "openxmb-game.json" || path.filename().string().ends_with(".openxmb-game.json")) {
+          found = game(read(path));
+          if (!found.executable.empty() && found.executable.is_relative()) found.executable = path.parent_path() / found.executable;
+          for (auto *media : {&found.icon, &found.background, &found.preview, &found.music, &found.working_directory, &found.core})
+            if (!media->empty() && media->is_relative()) *media = path.parent_path() / *media;
+          if(found.runner!="steam" && !found.content.empty() && found.content.is_relative()) found.content=path.parent_path()/found.content;
+        } else if (path.extension() == ".desktop") found = desktop_file(path);
+        else if (executable_file(*it)) { found.title = path.stem().string(); found.executable = path; found.working_directory = path.parent_path(); }
+        else continue;
+      } catch (const std::exception &) { continue; }
+      accept(std::move(found), path.filename() == "openxmb-game.json" || path.filename().string().ends_with(".openxmb-game.json"));
+    }
+  }
+  return result;
+}
+
+std::size_t Library::import_games(const GameDiscovery& discovered) {
   auto existing = games();
   const auto native = [](const Game &game) { return game.platform == "PlayStation 3 (RPCS3)" && !game.game_directory.empty(); };
   const auto identity = [&](const Game &game) {
     // The installed emulator executable and launch options can change. A
     // canonical native metadata directory remains the same library title.
-    return native(game) ? "rpcs3\n" + path_identity(game.game_directory) : path_text(game.executable) + '\n' + format_arguments(game.arguments);
+    return game_identity(game);
   };
   std::map<std::string, std::size_t> paths;
   for (std::size_t i = 0; i < existing.size(); ++i) paths.emplace(identity(existing[i]), i);
-  std::size_t count = 0, examined = 0;
+  std::size_t count = 0;
   const auto accept = [&](Game found, bool manifest = false) {
-    if (found.title.empty() || found.executable.empty()) return;
+    if (found.title.empty() || (found.executable.empty() && (found.runner.empty() || found.content.empty()))) return;
     const auto key = identity(found);
     if (const auto match = paths.find(key); match != paths.end()) {
       if (!native(found) && !manifest) return;
@@ -719,48 +779,12 @@ std::size_t Library::scan_games() {
     auto saved = save_game(std::move(found));
     paths.emplace(key, existing.size()); existing.push_back(std::move(saved)); ++count;
   };
-  for (const auto &path : rpcs3_registered_paths()) {
-    if (++examined > 10000) throw std::runtime_error("Game scan exceeded 10000 entries; choose narrower roots");
-    Game found;
-    try { found = import_rpcs3_game(path); } catch (const std::exception &) { continue; }
-    accept(std::move(found));
-  }
-  auto roots = game_roots();
-  const auto detected = rpcs3_game_roots(); roots.insert(roots.end(), detected.begin(), detected.end());
-  std::set<std::string> visited;
-  for (const auto &root : roots) {
-    if (!visited.insert(path_identity(root)).second) continue;
-    if (fs::is_regular_file(root / "PARAM.SFO") || fs::is_regular_file(root / "PS3_GAME/PARAM.SFO")) {
-      Game found;
-      try { found = import_rpcs3_game(root); } catch (const std::exception &) { continue; }
-      accept(std::move(found));
-      continue;
-    }
-    std::error_code error;
-    for (fs::recursive_directory_iterator it(root, fs::directory_options::skip_permission_denied, error), end; !error && it != end; it.increment(error)) {
-      if (++examined > 10000) throw std::runtime_error("Game scan exceeded 10000 entries; choose narrower roots");
-      if (it.depth() > 5) { it.disable_recursion_pending(); continue; }
-      if (it->is_symlink()) { it.disable_recursion_pending(); continue; }
-      Game found;
-      const auto path = it->path();
-      try {
-        if (it->is_directory() && (fs::is_regular_file(path / "PARAM.SFO") || fs::is_regular_file(path / "PS3_GAME/PARAM.SFO"))) {
-          it.disable_recursion_pending();
-          found = import_rpcs3_game(path);
-        } else if (path.filename() == "PARAM.SFO") found = import_rpcs3_game(path.parent_path());
-        else if (path.filename() == "openxmb-game.json" || path.filename().string().ends_with(".openxmb-game.json")) {
-          found = game(read(path));
-          if (found.executable.is_relative()) found.executable = path.parent_path() / found.executable;
-          for (auto *media : {&found.icon, &found.background, &found.preview, &found.music, &found.working_directory})
-            if (!media->empty() && media->is_relative()) *media = path.parent_path() / *media;
-        } else if (path.extension() == ".desktop") found = desktop_file(path);
-        else if (executable_file(*it)) { found.title = path.stem().string(); found.executable = path; found.working_directory = path.parent_path(); }
-        else continue;
-      } catch (const std::exception &) { continue; }
-      accept(std::move(found), path.filename() == "openxmb-game.json" || path.filename().string().ends_with(".openxmb-game.json"));
-    }
-  }
+  for (const auto& candidate:discovered) accept(candidate.game,candidate.refresh_metadata);
   return count;
+}
+
+std::size_t Library::scan_games() {
+  return import_games(discover_games(game_roots()));
 }
 
 std::vector<CustomSection> Library::custom_sections() const {

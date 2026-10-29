@@ -24,6 +24,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <set>
 #include <stdexcept>
 #include <thread>
 
@@ -98,6 +99,20 @@ void games(const fs::path &root) {
   try { (void)library.fetch_artwork(game.id); } catch (const std::runtime_error &) { blocked = true; }
   require(blocked && !library.artwork_provider_available(), "optional artwork requests require explicit provider/key configuration");
 }
+void runner_manifests(const fs::path& root) {
+  Library library(root);
+  const auto folder=root/"manifests";fs::create_directories(folder);
+  for(const auto* id:{"100","200"}) {
+    const nlohmann::json manifest{{"title",std::string("Steam ")+id},{"runner","steam"},{"content",id}};
+    std::ofstream(folder/(std::string(id)+".openxmb-game.json"))<<manifest;
+  }
+  library.add_game_root(folder);
+  require(library.scan_games()==2,"runner manifests without an executable remain distinct");
+  const auto games=library.games();
+  require(games.size()==2 && games[0].runner=="steam" && games[0].executable.empty(),"runner manifests retain an absent executable for discovery");
+  require(std::set<fs::path>{games[0].content,games[1].content}==std::set<fs::path>{"100","200"},"Steam app ids are identities, not relative filesystem paths");
+  require(library.scan_games()==0 && library.games().size()==2,"runner discovery is idempotent");
+}
 void arguments() {
   const std::vector<std::string> values{"", "a path with spaces", "literal;$(value)", "a\\b\"c", "é"};
   require(parse_arguments(format_arguments(values)) == values, "argv formatting roundtrips empty, quoted, UTF-8, metacharacter and slash values");
@@ -112,6 +127,7 @@ int main() {
     profiles(root / "profiles");
     games(root / "games");
     arguments();
+    runner_manifests(root / "runner-manifests");
     fs::remove_all(root);
     std::cout << "Desktop profiles, game launch, custom sections and local social checks passed\n";
   } catch (const std::exception &error) {

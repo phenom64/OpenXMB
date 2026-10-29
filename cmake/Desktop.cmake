@@ -1,6 +1,7 @@
 add_library(openxmb_desktop_core STATIC
   "${PROJECT_SOURCE_DIR}/src/desktop/library.cpp"
   "${PROJECT_SOURCE_DIR}/src/desktop/session.cpp"
+  "${PROJECT_SOURCE_DIR}/src/desktop/runners.cpp"
   "${PROJECT_SOURCE_DIR}/src/desktop/preview_audio.cpp")
 add_library(OpenXMB::DesktopCore ALIAS openxmb_desktop_core)
 target_compile_features(openxmb_desktop_core PUBLIC cxx_std_23)
@@ -18,6 +19,10 @@ if(CURL_FOUND)
   target_link_libraries(openxmb_desktop_core PRIVATE CURL::libcurl)
 endif()
 if(OPENXMB_BUILD_NATIVE_TESTS)
+  add_executable(openxmb_runner_tests "${PROJECT_SOURCE_DIR}/tests/desktop/runner_tests.cpp")
+  target_link_libraries(openxmb_runner_tests PRIVATE OpenXMB::DesktopCore)
+  set_target_properties(openxmb_runner_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  add_test(NAME openxmb_runner_tests COMMAND openxmb_runner_tests)
   add_executable(openxmb_session_child "${PROJECT_SOURCE_DIR}/tests/desktop/session_child.cpp")
   target_compile_features(openxmb_session_child PRIVATE cxx_std_23)
   target_link_libraries(openxmb_session_child PRIVATE nlohmann_json::nlohmann_json)
