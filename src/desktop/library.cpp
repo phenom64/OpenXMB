@@ -261,12 +261,12 @@ Game desktop_file(const fs::path &path) {
   if (fs::path(fields["Icon"]).is_absolute()) result.icon = fields["Icon"];
   return result;
 }
-std::vector<fs::path> rpcs3_data_directories() {
+std::vector<fs::path> rpcs3_data_directories(const fs::path& selected_executable = {}) {
   std::vector<fs::path> candidates;
   // RPCS3_DATA_DIR is OpenXMB's explicit data-root override. The remaining
   // locations follow RPCS3's fs::get_config_dir(), plus its Flatpak sandbox.
   if (const auto value = environment_path("RPCS3_DATA_DIR")) candidates.emplace_back(*value);
-  const auto executable = rpcs3_executable();
+  const auto executable = rpcs3_executable(selected_executable);
   if (executable) candidates.emplace_back(executable->parent_path() / "portable");
 #ifdef _WIN32
   if (const auto value = environment_path("RPCS3_CONFIG_DIR")) candidates.emplace_back(*value);
@@ -420,9 +420,9 @@ std::vector<fs::path> read_rpcs3_registry(const fs::path &file) {
   }
   return paths;
 }
-std::vector<fs::path> rpcs3_registered_paths() {
+std::vector<fs::path> rpcs3_registered_paths(const fs::path& selected_executable = {}) {
   std::vector<fs::path> result;
-  for (const auto &directory : rpcs3_data_directories()) {
+  for (const auto &directory : rpcs3_data_directories(selected_executable)) {
     std::vector<fs::path> registries;
 #ifdef _WIN32
     registries.push_back(directory / "config/games.yml");
@@ -514,7 +514,7 @@ std::map<std::string, std::string> read_param_sfo(const fs::path &path) {
   }
   return result;
 }
-std::optional<fs::path> rpcs3_executable() {
+std::optional<fs::path> rpcs3_executable(const fs::path& selected_executable) {
   const auto usable = [](const fs::path &path) {
     std::error_code error;
     if (!fs::is_regular_file(path, error)) return false;
@@ -524,6 +524,11 @@ std::optional<fs::path> rpcs3_executable() {
     return ::access(path.c_str(), X_OK) == 0;
 #endif
   };
+  if(!selected_executable.empty()) {
+    if(selected_executable.native().size()>32768||selected_executable.native().find(fs::path::value_type{})!=fs::path::string_type::npos||!usable(selected_executable))
+      throw std::runtime_error("The selected RPCS3 executable is unavailable; choose its installed executable in Game Settings");
+    return fs::absolute(selected_executable);
+  }
   if (const auto configured = environment_path("RPCS3_EXECUTABLE"); configured && usable(*configured)) return fs::absolute(*configured);
   const auto search = environment_path("PATH");
   if (!search) return {};
@@ -544,9 +549,9 @@ std::optional<fs::path> rpcs3_executable() {
   }
   return {};
 }
-std::vector<fs::path> rpcs3_game_roots() {
+std::vector<fs::path> rpcs3_game_roots(const fs::path& selected_executable) {
   std::vector<fs::path> candidates;
-  for (const auto &directory : rpcs3_data_directories()) {
+  for (const auto &directory : rpcs3_data_directories(selected_executable)) {
     candidates.emplace_back(directory / "dev_hdd0/game");
     candidates.emplace_back(directory / "games");
   }
@@ -559,7 +564,7 @@ std::vector<fs::path> rpcs3_game_roots() {
   }
   return result;
 }
-Game import_rpcs3_game(const fs::path &directory) {
+Game import_rpcs3_game(const fs::path &directory,const fs::path& selected_executable) {
   auto folder = fs::absolute(directory).lexically_normal();
   if (folder.filename() == "PARAM.SFO") folder = folder.parent_path();
   else if (folder.filename() == "EBOOT.BIN" && folder.parent_path().filename() == "USRDIR") folder = folder.parent_path().parent_path();
@@ -577,7 +582,7 @@ Game import_rpcs3_game(const fs::path &directory) {
   game.game_directory = folder;
   game.description = game.platform + "  " + game.title_id + (value("APP_VER").empty() ? "" : "  v" + value("APP_VER"));
   game.category = "PlayStation 3";
-  game.executable = rpcs3_executable().value_or(fs::path("rpcs3"));
+  game.executable = rpcs3_executable(selected_executable).value_or(fs::path("rpcs3"));
   game.arguments = {"--no-gui", path_text(boot)};
   game.working_directory = folder;
   for (const auto &[name, target] : std::initializer_list<std::pair<const char *, fs::path *>>{{"ICON0.PNG", &game.icon}, {"PIC1.PNG", &game.background}, {"ICON1.PAM", &game.preview}, {"SND0.AT3", &game.music}})
@@ -752,6 +757,9 @@ void Library::remove_game_root(const fs::path &path) {
   const auto value = path_text(fs::weakly_canonical(path)); std::erase(roots, value); state["game_roots"] = roots; save_library(root_, state);
 }
 GameDiscovery discover_games(const std::vector<fs::path>& configured_roots, GameDiscoveryOptions options) {
+  // Validate an explicit selection before scanning. It never falls back to a
+  // different installation when the chosen emulator has moved or disappeared.
+  if(!options.rpcs3_executable.empty())options.rpcs3_executable=*rpcs3_executable(options.rpcs3_executable);
   GameDiscovery result;
   std::size_t examined=0;
   std::set<std::string> seen;
@@ -759,15 +767,15 @@ GameDiscovery discover_games(const std::vector<fs::path>& configured_roots, Game
     const auto identity=game_identity(value);
     if(seen.insert(identity).second)result.push_back({std::move(value),manifest});
   };
-  if(options.registered_rpcs3) for (const auto &path : rpcs3_registered_paths()) {
+  if(options.registered_rpcs3) for (const auto &path : rpcs3_registered_paths(options.rpcs3_executable)) {
     if (++examined > 10000) throw std::runtime_error("Game scan exceeded 10000 entries; choose narrower roots");
     Game found;
-    try { found = import_rpcs3_game(path); } catch (const std::exception &) { continue; }
+    try { found = import_rpcs3_game(path,options.rpcs3_executable); } catch (const std::exception &) { continue; }
     accept(std::move(found));
   }
   auto roots = configured_roots;
   if(options.registered_rpcs3) {
-    const auto detected = rpcs3_game_roots(); roots.insert(roots.end(), detected.begin(), detected.end());
+    const auto detected = rpcs3_game_roots(options.rpcs3_executable); roots.insert(roots.end(), detected.begin(), detected.end());
   }
   if(options.installed_steam)for(auto& candidate:discover_steam_games())accept(std::move(candidate.game),candidate.refresh_metadata);
   std::set<std::string> visited;
@@ -775,7 +783,7 @@ GameDiscovery discover_games(const std::vector<fs::path>& configured_roots, Game
     if (!visited.insert(path_identity(root)).second) continue;
     if (fs::is_regular_file(root / "PARAM.SFO") || fs::is_regular_file(root / "PS3_GAME/PARAM.SFO")) {
       Game found;
-      try { found = import_rpcs3_game(root); } catch (const std::exception &) { continue; }
+      try { found = import_rpcs3_game(root,options.rpcs3_executable); } catch (const std::exception &) { continue; }
       accept(std::move(found));
       continue;
     }
@@ -789,8 +797,8 @@ GameDiscovery discover_games(const std::vector<fs::path>& configured_roots, Game
       try {
         if (it->is_directory() && (fs::is_regular_file(path / "PARAM.SFO") || fs::is_regular_file(path / "PS3_GAME/PARAM.SFO"))) {
           it.disable_recursion_pending();
-          found = import_rpcs3_game(path);
-        } else if (path.filename() == "PARAM.SFO") found = import_rpcs3_game(path.parent_path());
+          found = import_rpcs3_game(path,options.rpcs3_executable);
+        } else if (path.filename() == "PARAM.SFO") found = import_rpcs3_game(path.parent_path(),options.rpcs3_executable);
         else if (path.filename() == "openxmb-game.json" || path.filename().string().ends_with(".openxmb-game.json")) {
           found = game(read(path));
           if (!found.executable.empty() && found.executable.is_relative()) found.executable = path.parent_path() / found.executable;

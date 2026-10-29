@@ -35,6 +35,11 @@ namespace programs {
 namespace desktop = openxmb::desktop;
 namespace fs = std::filesystem;
 namespace {
+desktop::GameDiscoveryOptions configured_discovery_options() {
+  desktop::GameDiscoveryOptions options;
+  options.rpcs3_executable=fs::u8path(config::CONFIG.preference("runner.rpcs3.path"));
+  return options;
+}
 std::string elide(std::string text, std::size_t length) {
   if (text.size() <= length) return text;
   while (length && (static_cast<unsigned char>(text[length]) & 0xc0) == 0x80) --length;
@@ -239,7 +244,7 @@ void library_manager::refresh() {
     add("Game runners", "Detected emulators and executable overrides", [this] {enter(Page::runners);});
     add("Add game manually", "Choose executable, arguments, artwork, preview video and music", [this] { desktop::Game value; value.title = "New Game"; edit_game(library_->save_game(std::move(value)).id); });
     add("Manage game folders", "Configure scan roots without moving your games", [this] { enter(Page::roots); });
-    add("Scan game folders", "Imports game manifests, desktop entries and native executables", [this] { message_ = "Added " + std::to_string(library_->scan_games()) + " game(s)."; refresh(); });
+    add("Scan game folders", "Imports game manifests, desktop entries and native executables", [this] { message_ = "Added " + std::to_string(library_->scan_games(configured_discovery_options())) + " game(s)."; refresh(); });
     for (const auto &game : library_->games()) add((game.favorite ? "* " : "") + game.title, game.genre + (game.year ? "  " + std::to_string(game.year) : "") + "  Played " + std::to_string(game.play_count) + " times", [this, id = game.id] { edit_game(id); }, game.icon.empty() ? game.background : game.icon, std::make_shared<const desktop::Game>(game));
     break;
   case Page::game: {
@@ -275,8 +280,8 @@ void library_manager::refresh() {
   }
   case Page::roots:
     add("Add game folder", "The scanner reads files; it never launches discovered games", [this] { ask("Game folder path", "", [this](std::string path) { library_->add_game_root(path); }); });
-    add("Add detected RPCS3 game folders", "Uses installed RPCS3 data roots; custom disc folders can be added normally", [this] { const auto roots = desktop::rpcs3_game_roots(); if (roots.empty()) message_ = "No RPCS3 data folder detected. Add your disc or installed-game folder manually."; else { for (const auto &root : roots) library_->add_game_root(root); message_ = "Added " + std::to_string(roots.size()) + " RPCS3 root(s)."; refresh(); } });
-    add("Scan configured folders", "Supported manifest: openxmb-game.json", [this] { message_ = "Added " + std::to_string(library_->scan_games()) + " game(s)."; refresh(); });
+    add("Add detected RPCS3 game folders", "Uses installed RPCS3 data roots; custom disc folders can be added normally", [this] { const auto roots = desktop::rpcs3_game_roots(configured_discovery_options().rpcs3_executable); if (roots.empty()) message_ = "No RPCS3 data folder detected. Add your disc or installed-game folder manually."; else { for (const auto &root : roots) library_->add_game_root(root); message_ = "Added " + std::to_string(roots.size()) + " RPCS3 root(s)."; refresh(); } });
+    add("Scan configured folders", "Supported manifest: openxmb-game.json", [this] { message_ = "Added " + std::to_string(library_->scan_games(configured_discovery_options())) + " game(s)."; refresh(); });
     for (const auto &root : library_->game_roots()) add(root.filename().string(), root.string() + "  Select to remove scan root", [this, root] { confirm("Remove this scan root?", [this, root] { library_->remove_game_root(root); }); });
     break;
   case Page::custom:

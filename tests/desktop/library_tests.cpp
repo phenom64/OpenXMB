@@ -23,9 +23,13 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iterator>
+#include <map>
+#include <optional>
 #include <set>
 #include <stdexcept>
 #include <thread>
@@ -236,18 +240,125 @@ void support_visibility(const fs::path& root,const fs::path& test_executable) {
   const auto found=std::find_if(updated.begin(),updated.end(),[&](const Game& value){return value.id==real.id;});
   require(found!=updated.end()&&found->favorite&&found->play_count==1&&found->icon==real.icon&&found->launch_override.arguments==real.launch_override.arguments,"visible real game mutations preserve manual artwork and launch settings");
 }
+void rpcs3_discovery_options(const fs::path& root) {
+  struct Environment {
+#ifdef _WIN32
+    std::map<std::wstring,std::optional<std::wstring>> saved;
+    Environment() {
+      for(const auto* name:{L"RPCS3_EXECUTABLE",L"RPCS3_DATA_DIR",L"RPCS3_CONFIG_DIR",L"APPDATA",L"HOME",L"XDG_CONFIG_HOME",L"PATH"}) {
+        const auto* value=_wgetenv(name);saved[name]=value?std::optional<std::wstring>(value):std::nullopt;_wputenv_s(name,L"");
+      }
+    }
+    ~Environment(){for(const auto& [name,value]:saved)_wputenv_s(name.c_str(),value?value->c_str():L"");}
+#else
+    std::map<std::string,std::optional<std::string>> saved;
+    Environment() {
+      for(const auto* name:{"RPCS3_EXECUTABLE","RPCS3_DATA_DIR","RPCS3_CONFIG_DIR","APPDATA","HOME","XDG_CONFIG_HOME","PATH"}) {
+        const auto* value=std::getenv(name);saved[name]=value?std::optional<std::string>(value):std::nullopt;unsetenv(name);
+      }
+    }
+    ~Environment(){for(const auto& [name,value]:saved)if(value)setenv(name.c_str(),value->c_str(),1);else unsetenv(name.c_str());}
+#endif
+  } environment;
+  const auto utf8=[](const fs::path& path){const auto value=path.u8string();return std::string(value.begin(),value.end());};
+  const auto write=[](const fs::path& path,std::string_view bytes) {fs::create_directories(path.parent_path());std::ofstream(path,std::ios::binary)<<bytes;};
+  const auto native_title=[&](const fs::path& folder,const std::string& id,const std::string& category) {
+    write(folder/"USRDIR/EBOOT.BIN","controlled non-executable boot fixture");
+    const std::map<std::string,std::string> fields{{"TITLE","Option-only title "+id},{"TITLE_ID",id},{"CATEGORY",category},{"APP_VER","01.00"}};
+    std::vector<unsigned char> keys,data;
+    struct Entry{unsigned key,length,offset;};std::vector<Entry> entries;
+    for(const auto& [key,value]:fields) {
+      entries.push_back({static_cast<unsigned>(keys.size()),static_cast<unsigned>(value.size()+1),static_cast<unsigned>(data.size())});
+      keys.insert(keys.end(),key.begin(),key.end());keys.push_back(0);data.insert(data.end(),value.begin(),value.end());data.push_back(0);
+      while(data.size()%4)data.push_back(0);
+    }
+    const auto key_offset=20+static_cast<unsigned>(entries.size())*16;
+    const auto data_offset=(key_offset+static_cast<unsigned>(keys.size())+3)&~3u;
+    std::ofstream output(folder/"PARAM.SFO",std::ios::binary);
+    const auto word=[&](std::uint32_t value,unsigned bytes){for(unsigned i=0;i<bytes;++i)output.put(static_cast<char>(value>>(8*i)));};
+    output.write("\0PSF",4);word(0x101,4);word(key_offset,4);word(data_offset,4);word(static_cast<unsigned>(entries.size()),4);
+    for(const auto& entry:entries){word(entry.key,2);word(0x0204,2);word(entry.length,4);word((entry.length+3)&~3u,4);word(entry.offset,4);}
+    output.write(reinterpret_cast<const char*>(keys.data()),keys.size());while(static_cast<unsigned>(output.tellp())<data_offset)output.put(0);
+    output.write(reinterpret_cast<const char*>(data.data()),data.size());
+  };
+  const auto install=root/fs::path(u8"selected emulator \u6771\u4eac");
+  const auto executable=install/"rpcs3.exe";write(executable,"controlled non-executable RPCS3 fixture");
+#ifndef _WIN32
+  fs::permissions(executable,fs::perms::owner_read|fs::perms::owner_exec);
+#endif
+  const auto data=install/"portable";
+  const auto disc=root/fs::path(u8"registered disc \u6771\u4eac")/"PS3_GAME";
+  native_title(disc,"TEST10001","DG");native_title(data/"dev_hdd0/game/TEST10002","TEST10002","HG");
+  native_title(data/"dev_hdd0/game/TEST10003","TEST10003","GD");
+  auto registry_path=data/"games.yml";
+#ifdef _WIN32
+  registry_path=data/"config/games.yml";
+#endif
+  const auto path_utf8=disc.parent_path().generic_u8string();
+  write(registry_path,"TEST10001: '"+std::string(path_utf8.begin(),path_utf8.end())+"'\n");
+  const auto other=root/"other emulator/rpcs3.exe";write(other,"unselected emulator fixture");
+#ifndef _WIN32
+  fs::permissions(other,fs::perms::owner_read|fs::perms::owner_exec);
+#endif
+  native_title(other.parent_path()/"portable/dev_hdd0/game/TEST10004","TEST10004","HG");
+  const auto inventory=[&] {
+    std::map<fs::path,std::pair<std::string,fs::file_time_type>> result;
+    for(const auto& item:fs::recursive_directory_iterator(root))if(item.is_regular_file()) {
+      const auto relative=item.path().lexically_relative(root);if(relative.begin()!=relative.end()&&*relative.begin()=="profile")continue;
+      std::ifstream input(item.path(),std::ios::binary);result.emplace(item.path(),std::pair{std::string(std::istreambuf_iterator<char>(input),{}),fs::last_write_time(item.path())});
+    }
+    return result;
+  };
+  const auto before=inventory();
+  require(discover_games({}, {.installed_steam=false}).empty(),"isolated option-only fixture leaked into environment discovery");
+  GameDiscoveryOptions options;options.installed_steam=false;options.rpcs3_executable=executable;
+  const auto found=discover_games({},options);
+  require(found.size()==2,"option-only selected RPCS3 installation did not discover its registered disc and HDD game");
+  for(const auto& item:found)require(item.game.executable==fs::absolute(executable)&&item.game.title_id!="TEST10003"&&
+    item.game.arguments==std::vector<std::string>{"--no-gui",utf8(item.game.content)},"selected executable or bootable DG/HG filtering changed");
+  require(rpcs3_executable(executable)==fs::absolute(executable)&&import_rpcs3_game(disc,executable).executable==fs::absolute(executable),
+    "manual import and executable lookup must share the selected RPCS3 installation");
+  const auto detected=rpcs3_game_roots(executable);
+  require(std::find(detected.begin(),detected.end(),fs::weakly_canonical(data/"dev_hdd0/game"))!=detected.end(),
+    "detected-folder helper ignored the selected emulator");
+  GameDiscoveryOptions manual{false,false,executable};const auto manual_found=discover_games({disc.parent_path()},manual);
+  require(manual_found.size()==1&&manual_found.front().game.executable==fs::absolute(executable),
+    "explicit native roots lost the selected emulator when automatic registration was disabled");
+#ifdef _WIN32
+  _wputenv_s(L"RPCS3_EXECUTABLE",other.c_str());
+#else
+  setenv("RPCS3_EXECUTABLE",utf8(other).c_str(),1);
+#endif
+  require(discover_games({},options).size()==2&&rpcs3_executable(executable)==fs::absolute(executable),
+    "environment executable displaced the profile's explicit RPCS3 installation");
+  auto invalid=options;invalid.rpcs3_executable=root/"missing-rpcs3.exe";
+  bool rejected=false;try{(void)discover_games({},invalid);}catch(const std::runtime_error&){rejected=true;}
+  require(rejected,"missing selected executable silently fell back to another installed emulator");
+  auto nul=executable.native();nul.push_back(fs::path::value_type{});nul+=fs::path("unexpected.exe").native();
+  invalid.rpcs3_executable=fs::path(nul);rejected=false;
+  try{(void)discover_games({},invalid);}catch(const std::runtime_error&){rejected=true;}
+  require(rejected,"selected RPCS3 path accepted an embedded NUL through an existing prefix");
+  require(inventory()==before,"RPCS3 option discovery modified emulator registry metadata or assets");
+  Library library(root/"profile");require(library.import_games(found)==2&&library.import_games(discover_games({},options))==0&&library.games().size()==2,
+    "option-only RPCS3 registration is not idempotent");
+  require(inventory()==before,"RPCS3 profile import modified the source installation or registered disc");
+}
 }
 int main(int argc,char** argv) {
   if(argc==4&&std::string(argv[1])=="--direct-launch-child") {std::ofstream output(argv[2]);output<<argv[3];return output?0:2;}
   const auto root = fs::temp_directory_path() / ("openxmb-desktop-library-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
   try {
     fs::create_directories(root);
+    if(argc==2&&std::string_view(argv[1])=="--rpcs3-options-only") {
+      rpcs3_discovery_options(root/"rpcs3-options");fs::remove_all(root);std::cout<<"RPCS3 option-only discovery checks passed\n";return 0;
+    }
     profiles(root / "profiles");
     games(root / "games");
     arguments();
     runner_manifests(root / "runner-manifests");
     steam_launch_settings(root / "steam-launch-settings",fs::absolute(argv[0]));
     support_visibility(root / "support-visibility",fs::absolute(argv[0]));
+    rpcs3_discovery_options(root/"rpcs3-options");
     fs::remove_all(root);
     std::cout << "Desktop profiles, game launch, custom sections and local social checks passed\n";
   } catch (const std::exception &error) {

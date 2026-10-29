@@ -55,7 +55,12 @@ struct Game {
 };
 struct GameCandidate { Game game; bool refresh_metadata{}; };
 using GameDiscovery = std::vector<GameCandidate>;
-struct GameDiscoveryOptions { bool registered_rpcs3{true}, installed_steam{true}; };
+struct GameDiscoveryOptions {
+  bool registered_rpcs3{true}, installed_steam{true};
+  // Capture the originating profile's selected emulator when submitting a
+  // scan. Empty retains environment/PATH discovery without mutating either.
+  std::filesystem::path rpcs3_executable;
+};
 // Read-only discovery can run off the UI thread. Import into the originating
 // profile only after its identity has been checked by the caller.
 GameDiscovery discover_games(const std::vector<std::filesystem::path>& roots = {}, GameDiscoveryOptions options = {});
@@ -81,9 +86,9 @@ std::filesystem::path default_data_root();
 std::vector<std::string> parse_arguments(const std::string &text);
 std::string format_arguments(const std::vector<std::string> &arguments);
 std::map<std::string, std::string> read_param_sfo(const std::filesystem::path &path);
-std::optional<std::filesystem::path> rpcs3_executable();
-std::vector<std::filesystem::path> rpcs3_game_roots();
-Game import_rpcs3_game(const std::filesystem::path &directory);
+std::optional<std::filesystem::path> rpcs3_executable(const std::filesystem::path& selected_executable = {});
+std::vector<std::filesystem::path> rpcs3_game_roots(const std::filesystem::path& selected_executable = {});
+Game import_rpcs3_game(const std::filesystem::path &directory,const std::filesystem::path& selected_executable = {});
 // Returns a transient native launch target for a Steam direct override, leaving
 // the stored provider identity intact. Validates its local executable/cwd.
 // Provider mode returns the original game, including its Steam launch options.

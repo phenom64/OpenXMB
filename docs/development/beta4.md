@@ -184,6 +184,21 @@ registries and native roots can still be scanned. Candidate installations are
 combined, including old Windows registry locations. Custom VFS mounts still
 need manual roots; archives and relative registry entries are not imported.
 
+The RPCS3 executable selected in Game Runners now feeds background discovery,
+both manual rescan flows, detected game folders and automatic trophy-profile
+lookup. Background results are discarded if the originating profile or selected
+executable changes before completion. An invalid explicit executable does not
+fall back to another installation; Settings displays the error without exiting.
+The native Settings fixture covers Unicode portable installations, registered
+discs, installed HDD games, game-data exclusion, repeat scans and source-file
+preservation with environment/PATH detection removed.
+
+Opt-in real-media acceptance has rendered G-Force's original ICON0/PIC1 assets,
+matched unobscured PIC1 pixels and verified background restoration after leaving
+the game. Its actual SND0.AT3 decoded through the native preview mixer pipeline
+with dummy audio output. These checks preserve source files and do not boot an
+emulator. This title has no ICON1.PAM, so it does not establish real PAM acceptance.
+
 ## Current integration and testing
 
 Steam discovery reads registered libraries and fully installed app manifests. It

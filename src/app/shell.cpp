@@ -158,6 +158,7 @@ namespace app
         std::future<openxmb::desktop::GameDiscovery> discovery;
         std::filesystem::path discovery_root;
         std::string discovery_profile;
+        std::string discovery_runner_path;
         bool discovery_started = false;
         bool toggle_requested{}, shell_is_session_xmb{}, launched_minimized{}, close_library_pending{}, screenshot_requested{}, minimize_requested{};
         std::string known_session_id, pending_notice, hotkey_setting;
@@ -2383,11 +2384,14 @@ namespace app
             games->presentation->tick(win);
         }
         if(!fixed_components_loaded || setup_requested || config::CONFIG.initialSetupRequired) return;
+        const auto configured_runner=config::CONFIG.preference("runner.rpcs3.path");
+        if(!games->discovery.valid() && configured_runner!=games->discovery_runner_path)games->discovery_started=false;
         if(games->discovery.valid() && games->discovery.wait_for(std::chrono::seconds(0))==std::future_status::ready) {
             try {
                 auto found=games->discovery.get();
                 openxmb::desktop::Library current;
-                if(current.root()==games->discovery_root && current.active_profile().id==games->discovery_profile) {
+                if(current.root()==games->discovery_root && current.active_profile().id==games->discovery_profile &&
+                   configured_runner==games->discovery_runner_path) {
                     if(!found.empty()) {static_cast<void>(current.import_games(found));queue_menu_reload();}
                 } else games->discovery_started=false;
             } catch(const std::exception& error) { spdlog::warn("Automatic game discovery: {}",error.what()); }
@@ -2397,7 +2401,10 @@ namespace app
                 openxmb::desktop::Library current;
                 games->discovery_root=current.root(); games->discovery_profile=current.active_profile().id;
                 const auto roots=current.game_roots();
-                games->discovery=std::async(std::launch::async,[roots] {return openxmb::desktop::discover_games(roots);});
+                openxmb::desktop::GameDiscoveryOptions options;
+                options.rpcs3_executable=std::filesystem::u8path(configured_runner);
+                games->discovery_runner_path=configured_runner;
+                games->discovery=std::async(std::launch::async,[roots,options] {return openxmb::desktop::discover_games(roots,options);});
                 games->discovery_started=true;
             } catch(const std::exception& error) { spdlog::warn("Cannot start game discovery: {}",error.what()); }
         }

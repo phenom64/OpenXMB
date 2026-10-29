@@ -254,7 +254,16 @@ export void activate(shell* shell,const openxmb::xmb::CatalogNode& node) {
     if(key=="browser.clear") {shell->emplace_overlay<message_overlay>("Clear Browsing Data?","Remove browser cookies, site storage and cached pages?",std::vector<std::string>{"No","Yes"},[](unsigned i){if(i) {config::CONFIG.preferences["browser.clear_site_data"]=std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());config::CONFIG.save_config();}});return;}
     if(key=="reset") {shell->emplace_overlay<message_overlay>("Restore Default Settings?","Restore this profile's preferences? Your media files will be preserved.",std::vector<std::string>{"No","Yes"},[shell](unsigned i){if(i) shell->reset_settings();});return;}
     if(key=="music.rescan") {shell->reload_menu();return;}
-    if(key=="games.rescan") {openxmb::desktop::Library library;const auto count=library.scan_games();show_error(shell,"Added "+std::to_string(count)+" games to the library.");return;}
+    if(key=="games.rescan") {
+        try {
+            openxmb::desktop::Library library;
+            openxmb::desktop::GameDiscoveryOptions options;
+            options.rpcs3_executable=std::filesystem::u8path(config::CONFIG.preference("runner.rpcs3.path"));
+            const auto count=library.scan_games(options);
+            show_error(shell,"Added "+std::to_string(count)+" games to the library.");
+        } catch(const std::exception& error) {show_error(shell,error.what());}
+        return;
+    }
     if(key=="games.emulation") {shell->open_panel("emulation");return;}
     if(key=="games.runners") {shell->open_panel("runners");return;}
     if(key=="cache.clear") {shell->emplace_overlay<message_overlay>("Clear Thumbnail Cache?","Generated thumbnails will be recreated when needed. Original media is preserved.",std::vector<std::string>{"No","Yes"},[shell](unsigned i){if(i) {const auto root=openxmb::integrations::user_data_directory()/"thumbnails";std::error_code error;std::filesystem::remove_all(root,error);if(error)show_error(shell,error.message());}});return;}
