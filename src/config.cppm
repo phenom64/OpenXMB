@@ -168,7 +168,7 @@ export namespace config
             bool controllerAnalogStick = true;
             double controllerCursorSpeed = 1.0;
 
-            std::string controllerType;
+            std::string controllerType = "auto";
 
             std::map<std::string, std::filesystem::path> themeIcons;
             std::map<std::string, std::filesystem::path> themeSounds;

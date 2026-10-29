@@ -54,6 +54,7 @@ int main() {
   unsigned checks=0;
   const auto require=[&](bool b,const char* text){++checks;if(!b)throw std::runtime_error(text);};
   try {
+    require(config::config{}.controllerType=="auto","a fresh profile must have automatic controller prompts");
     scoped_environment environment;
     for(const auto* name:{"HOME","USERPROFILE","APPDATA","LOCALAPPDATA","XDG_CONFIG_HOME"})
       environment.set(name,(root/"isolated home").string());
