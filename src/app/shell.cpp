@@ -66,10 +66,13 @@ module;
 #include "openxmb/desktop/runners.hpp"
 #include "openxmb/desktop/youtube.hpp"
 #include "openxmb/desktop/steamgriddb.hpp"
+#include "openxmb/desktop/steam.hpp"
 #include "openxmb/desktop/async_job.hpp"
 #include <set>
 #include "openxmb/integrations/session_window.hpp"
 #include "openxmb/integrations/xmb_overlay.hpp"
+#include "openxmb/integrations/guide_input.hpp"
+#include "guide_timing.hpp"
 #include "openxmb/themes/library.hpp"
 #include "openxmb/setup/model.hpp"
 #include "openxmb/input/prompt.hpp"
@@ -140,10 +143,14 @@ namespace app
     struct shell::game_state {
         struct ArtworkResult {std::filesystem::path root,icon,cover,background;std::string profile,game_id;};
         openxmb::desktop::SessionManager sessions;
+        openxmb::integrations::GuideInput guide;
+        GuideTiming guide_edges;
+        std::string guide_session_id;
+        std::chrono::steady_clock::time_point guide_probe_at{};
         std::unique_ptr<app::game_presentation> presentation;
         std::unique_ptr<app::session_xmb> overlay;
         std::shared_ptr<std::vector<openxmb::integrations::OverlayInput>> overlay_input=std::make_shared<std::vector<openxmb::integrations::OverlayInput>>();
-        bool overlay_dismiss{},overlay_return{},screenshot_status{};
+        bool overlay_dismiss{},overlay_return{},overlay_return_after_dismiss{},screenshot_status{};
         std::optional<std::chrono::steady_clock::time_point> screenshot_status_started;
         struct PendingCapture {std::string session;openxmb::integrations::SessionWindowTarget target;std::chrono::steady_clock::time_point due,deadline;};
         std::optional<PendingCapture> pending_capture;
@@ -154,6 +161,8 @@ namespace app
         bool discovery_started = false;
         bool toggle_requested{}, shell_is_session_xmb{}, launched_minimized{}, close_library_pending{}, screenshot_requested{}, minimize_requested{};
         std::string known_session_id, pending_notice, hotkey_setting;
+        std::string quitting_session;
+        std::optional<std::chrono::steady_clock::time_point> window_unavailable_since;
         std::filesystem::path photo_root;
         std::optional<openxmb::integrations::SessionWindowTarget> target;
         std::uintptr_t shell_handle{};
@@ -987,7 +996,8 @@ namespace app
                 color = vk::ClearColorValue(std::array<float, 4>{ c.r, c.g, c.b, 1.0f });
             }
             if(ingame_mode) {
-                color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.65f});
+                const float visibility=games->overlay&&games->overlay->active()?games->overlay->motion().opacity:1.0F;
+                color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.65f*visibility});
             }
             std::array<vk::ClearValue, 3> background_clears{color, color, color};
             const auto depth_index = win->config.sampleCount == vk::SampleCountFlagBits::e1 ? 1u : 2u;
@@ -1664,6 +1674,12 @@ namespace app
             procedural_wave_render->particles_enabled = config::CONFIG.particlesEnabled&&!config::CONFIG.enabled("power.reduced.motion",false);
             procedural_wave_render->particle_color = config::CONFIG.particleColor;
         }
+        const bool session_transition=ingame_mode&&games->overlay&&games->overlay->active();
+        if(session_transition) {
+            const auto motion=games->overlay->motion();
+            renderer.push_color(glm::vec4(motion.opacity));
+            renderer.push_zoom(motion.zoom);
+        }
         bool render_menu = true;
         unsigned int overlay_begin = 0;
         bool has_overlay = !overlays.empty();
@@ -1818,6 +1834,7 @@ namespace app
             }
         }
 
+        if(session_transition){renderer.pop_zoom();renderer.pop_color();}
         float debug_y = 0.0;
         if(config::CONFIG.showFPS) {
             renderer.draw_text("FPS: {:.2f}"_(win->currentFPS), 0, debug_y, 0.05f, glm::vec4(0.7f, 0.7f, 0.7f, 1.0f));
@@ -1868,6 +1885,7 @@ namespace app
     }
 
     result shell::launch_game(const openxmb::desktop::Game& game) {
+        if(!openxmb::desktop::steam_game_is_playable(game))return result::success;
         if(games->sessions.active_session()) {
             emplace_overlay<app::message_overlay>("Game running", "Quit the current game before starting another.", std::vector<std::string>{"OK"});
             return result::success;
@@ -1884,10 +1902,14 @@ namespace app
             descriptor.profile_directory=library.active_directory();
             descriptor.tracking=plan.tracking;
 #ifdef _WIN32
-            if(game.runner=="steam" && game.launch_override.mode==openxmb::desktop::GameLaunchMode::provider && !game.launch_override.executable.empty()) {
-                std::error_code observation_error;
-                if(std::filesystem::is_regular_file(game.launch_override.executable,observation_error) && !observation_error)
-                    descriptor.observation=openxmb::desktop::ProviderObservationSpec{game.launch_override.executable};
+            if(game.runner=="steam" && game.launch_override.mode==openxmb::desktop::GameLaunchMode::provider) {
+                openxmb::desktop::ProviderObservationSpec observation;
+                observation.executable=game.launch_override.executable;
+                observation.installation_directory=game.game_directory.empty()?game.working_directory:game.game_directory;
+                const auto id_text=game.content.generic_string();
+                const auto id=std::from_chars(id_text.data(),id_text.data()+id_text.size(),observation.steam_app_id);
+                if(id.ec==std::errc{}&&id.ptr==id_text.data()+id_text.size()&&observation.steam_app_id&&(!observation.executable.empty()||!observation.installation_directory.empty()))
+                    descriptor.observation=std::move(observation);
             }
 #endif
             const auto launched=games->sessions.launch(std::move(descriptor),plan.arguments,plan.working_directory);
@@ -1956,7 +1978,12 @@ namespace app
         if(!override.empty())options.executable_override=std::filesystem::u8path(override);
         const auto detected=openxmb::desktop::detect_youtube(options);
         if(detected) {
-            static_cast<void>(launch_application("youtube","YouTube",detected.value->arguments,detected.value->executable.parent_path(),"youtube",detected.value->tracking));return;
+            auto arguments=detected.value->arguments;
+            // Native acceptance uses the client's supported portable profile,
+            // so it never reads or updates a personal YouTube login/profile.
+            if(const auto* profile=std::getenv("OPENXMB_HARNESS_YOUTUBE_PROFILE");profile&&*profile)
+                arguments.emplace_back("--portable="+std::string(profile));
+            static_cast<void>(launch_application("youtube","YouTube",arguments,detected.value->executable.parent_path(),"youtube",detected.value->tracking));return;
         }
 #ifdef _WIN32
         emplace_overlay<app::message_overlay>("Set Up YouTube","Download and set up the controller-friendly YouTube app? You can stay in OpenXMB while it gets ready.",std::vector<std::string>{"Not Now","Set Up"},[this,root=options.data_root](unsigned index) {
@@ -1997,11 +2024,12 @@ namespace app
         const auto active=games->sessions.active_session();
         return active?active->descriptor.title:std::string{};
     }
-    void shell::toggle_session_xmb() { games->toggle_requested=true; }
-    void shell::save_session_screenshot() { games->screenshot_requested=true; }
+    void shell::toggle_session_xmb() { games->toggle_requested=!games->toggle_requested; }
+    void shell::save_session_screenshot() { spdlog::debug("Session screenshot requested");games->screenshot_requested=true; }
     void shell::quit_session() {
         const auto active=games->sessions.active_session();
         if(!active) return;
+        if(active->awaiting_observation){static_cast<void>(games->sessions.quit(active->id));return;}
         if(!active->capabilities.graceful_close) {
             emplace_overlay<app::message_overlay>("Session unavailable","This launcher does not expose the running application. Return to the application to quit it safely.",std::vector<std::string>{"OK"});return;
         }
@@ -2010,6 +2038,7 @@ namespace app
             if(!index)return;
             const auto stopped=games->sessions.quit(id);
             if(!stopped) games->pending_notice=stopped.message;
+            else games->quitting_session=id;
         });
     }
 
@@ -2025,7 +2054,7 @@ namespace app
                 const auto closed=games->overlay->close();
                 if(!closed) {games->pending_notice=closed.message;return false;}
             }
-            games->overlay_input->clear();games->overlay_dismiss=false;games->overlay_return=false;
+            games->overlay_input->clear();games->overlay_dismiss=false;games->overlay_return=false;games->overlay_return_after_dismiss=false;
             set_ingame_mode(false);games->shell_is_session_xmb=false;held_scancodes.fill(false);button_timing.clear();
             return true;
         };
@@ -2043,6 +2072,23 @@ namespace app
             }
         }
         auto active=games->sessions.active_session();
+        // This optional native listener supplements SDL while another process
+        // owns focus. Runtime absence keeps the existing shortcut/SDL path.
+        if(!win->config.headless && active) {
+            const auto now=std::chrono::steady_clock::now();
+            if(games->guide_session_id!=active->id) {
+                games->guide.stop();games->guide_edges.reset();games->guide_session_id=active->id;games->guide_probe_at={};
+            }
+            if(!games->guide.running() && now>=games->guide_probe_at) {
+                if(games->guide.start())spdlog::debug("Native Guide listener registered for session");
+                games->guide_probe_at=now+std::chrono::seconds(2);
+            }
+            for(const auto& edge:games->guide.drain()) {
+                if(games->guide_edges.edge(GuideTiming::Source::native,edge.pressed,edge.steady_timestamp_us))toggle_session_xmb();
+            }
+        } else if(!games->guide_session_id.empty()) {
+            games->guide.stop();games->guide_edges.reset();games->guide_session_id.clear();
+        }
         if(active && active->descriptor.kind==openxmb::desktop::SessionKind::application && active->descriptor.runner=="youtube" && active->descriptor.tracking!=openxmb::desktop::TrackingQuality::direct_child &&
            std::chrono::steady_clock::now()-games->window_probe_at>std::chrono::milliseconds(100)) {
             games->window_probe_at=std::chrono::steady_clock::now();
@@ -2053,10 +2099,13 @@ namespace app
             games->tracking=active->descriptor.tracking;
             games->target=active->window;
         }
+        menu.refresh_session_entries(bool(active),active&&active->descriptor.kind==openxmb::desktop::SessionKind::application,
+            active?std::string_view(active->descriptor.title):std::string_view{});
         const auto identity=active?active->id:std::string{};
         if(identity!=games->known_session_id) {
             const bool ended=!games->known_session_id.empty() && identity.empty();
             games->known_session_id=identity;
+            games->quitting_session.clear();games->window_unavailable_since.reset();
             if(!active)games->target.reset();queue_menu_reload();
             if(ended) {
                 games->pending_capture.reset();
@@ -2074,7 +2123,7 @@ namespace app
                     auto* host=static_cast<shell*>(context);
                     if(message==WM_HOTKEY && parameter==0x4f58 && reinterpret_cast<std::uintptr_t>(hwnd)==host->games->shell_handle) {
                         spdlog::debug("In-game XMB keyboard shortcut received");
-                        host->games->toggle_requested=true;
+                        host->toggle_session_xmb();
                     }
                 },this);
             }
@@ -2093,8 +2142,17 @@ namespace app
         }
 #endif
         if(active && games->overlay && games->overlay->active() && (!active->capabilities.focus || !active->window)) {
-            restore_shell();games->pending_notice="The game window is no longer available. OpenXMB has returned to its normal window.";
-        }
+            // Windows are destroyed before their owning process signals exit.
+            // Allow normal/manual shutdown to settle before treating a missing
+            // window as an unavailable compositor target.
+            const auto now=std::chrono::steady_clock::now();
+            if(!games->window_unavailable_since)games->window_unavailable_since=now;
+            if(games->quitting_session==active->id || now-*games->window_unavailable_since>=std::chrono::seconds(1)) {
+                const bool expected=games->quitting_session==active->id;
+                restore_shell();
+                if(!expected)games->pending_notice="The game window is no longer available. OpenXMB has returned to its normal window.";
+            }
+        } else games->window_unavailable_since.reset();
         if(games->overlay && games->overlay->active()) {
             if(const auto error=games->overlay->take_error();!error.empty()) {
                 spdlog::warn("Transparent XMB unavailable: {}",error);
@@ -2152,11 +2210,12 @@ namespace app
         const bool return_to_game=games->overlay_return || toggle;
         if((toggle || dismiss) && active && !win->config.headless) {
             if(games->overlay && games->overlay->active()) {
-                if(close_overlay() && return_to_game) {
-                    const auto focused=games->target?openxmb::integrations::focus_session_window(*games->target):
-                        openxmb::integrations::Result{false,"The game window is no longer available."};
-                    if(!focused) {restore_shell();games->pending_notice=focused.message;}
+                if(toggle&&games->overlay->closing())games->overlay->reopen(config::CONFIG.enabled("power.reduced.motion",false));
+                else {
+                    games->overlay->dismiss(config::CONFIG.enabled("power.reduced.motion",false));
+                    games->overlay_return_after_dismiss=return_to_game;
                 }
+                games->overlay_dismiss=false;games->overlay_return=false;
             } else if(!shell_focused()) {
                 bool opened=false;
                 if(active->capabilities.focus && active->window) {
@@ -2175,10 +2234,11 @@ namespace app
                                     else if(input.kind==openxmb::integrations::OverlayInputKind::focus_lost || input.kind==openxmb::integrations::OverlayInputKind::close) {
                                         queue->clear();queue->push_back(input);
                                     }
-                                });
+                                },config::CONFIG.enabled("power.reduced.motion",false));
                             if(prepared) {
                                 SDL_MinimizeWindow(win->win.get());games->shell_is_session_xmb=true;games->launched_minimized=true;
-                                reload_menu();menu.show_session(active->descriptor.kind==openxmb::desktop::SessionKind::application);opened=true;
+                                menu.refresh_session_entries(true,active->descriptor.kind==openxmb::desktop::SessionKind::application,active->descriptor.title);
+                                menu.show_session(active->descriptor.kind==openxmb::desktop::SessionKind::application);opened=true;
                             } else {set_ingame_mode(false);spdlog::warn("Transparent XMB entry failed: {}",prepared.message);}
                         }
                     }
@@ -2192,7 +2252,17 @@ namespace app
                 else games->pending_notice=focus.message;
             } else games->pending_notice="Return using your system's window switcher. Window control is unavailable for this session.";
         }
-        if(std::exchange(games->screenshot_requested,false)) {
+        if(games->overlay&&games->overlay->dismissal_finished()) {
+            const bool return_focus=games->overlay_return_after_dismiss;
+            if(close_overlay()&&return_focus&&games->target) {
+                const auto focused=openxmb::integrations::focus_session_window(*games->target);
+                if(!focused){restore_shell();games->pending_notice=focused.message;}
+            }
+        }
+        if(games->screenshot_requested&&games->overlay&&games->overlay->active()) {
+            games->overlay->dismiss(config::CONFIG.enabled("power.reduced.motion",false));
+            games->overlay_return_after_dismiss=true;
+        } else if(std::exchange(games->screenshot_requested,false)) {
             if(!active || !active->capabilities.capture || !active->window || win->config.headless) {
                 games->pending_notice="Screenshots require a live, identified application window.";
             } else {
@@ -2242,6 +2312,9 @@ namespace app
     }
 
     void shell::tick_games() {
+        // Discovery/import and full-menu texture rebuilds must not interrupt
+        // an in-game frame or consume its entrance animation on the UI thread.
+        if(games->sessions.active_session())return;
         if(games->artwork.ready()) {
             try {
                 const auto result=games->artwork.get();
@@ -2702,10 +2775,13 @@ namespace app
             win->waitIdle();
             std::erase_if(overlays,[](const auto& value) {return dynamic_cast<programs::library_manager*>(value.get())!=nullptr;});
         }
-        if(!games->pending_notice.empty() && input_focused())
+        if(!games->pending_notice.empty() && input_focused()) {
+            spdlog::debug("Session notice: {}",games->pending_notice);
             emplace_overlay<app::message_overlay>("Game Session",std::exchange(games->pending_notice,{}),std::vector<std::string>{"OK"});
+        }
         tick_games();
-        if(menu_reload_pending && overlays.empty() && !old_overlay) {
+        if(menu_reload_pending && overlays.empty() && !old_overlay && !games->sessions.active_session() &&
+           !(games->overlay&&games->overlay->active())) {
             menu_reload_pending=false;
             reload_menu();
         }
@@ -2881,6 +2957,8 @@ namespace app
     }
 
     void shell::dispatch(const event& event) {
+        if(event.action!=action::none)spdlog::trace("Dispatch action={}, dialogs={}, closing={}, background={}",static_cast<unsigned>(event.action),overlays.size(),games->overlay&&games->overlay->closing(),background_only);
+        if(games->overlay&&games->overlay->closing())return;
         if(event.action!=action::none||event.get<events::key_down>()||event.get<events::controller_button_down>()||event.get<events::mouse_move>()) last_activity=std::chrono::steady_clock::now();
         // A held dismissal must not auto-repeat into the revealed menu.
         if(startup_dismiss_button) {
@@ -3116,6 +3194,7 @@ namespace app
     }
     void shell::remove_controller(sdl::GameController* controller)
     {
+        static_cast<void>(games->guide_edges.edge(GuideTiming::Source::sdl,false,static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count())));
         button_timing.clear();
         for(int code=0;code<SDL_CONTROLLER_BUTTON_MAX;++code)
             dispatch(event{action::none,events::controller_button_up{to_logical_button(static_cast<sdl::GameControllerButton>(code))}});
@@ -3132,7 +3211,7 @@ namespace app
         if(win->config.headless&&controller)return;
         if(static_cast<int>(button)==SDL_CONTROLLER_BUTTON_GUIDE && has_running_session()) {
             note_input_device(controller);
-            if(button_timing.press(static_cast<unsigned>(button),false,std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count()))toggle_session_xmb();
+            if(games->guide_edges.edge(GuideTiming::Source::sdl,true,static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count())))toggle_session_xmb();
             return;
         }
         if(!input_focused())return;
@@ -3149,6 +3228,9 @@ namespace app
     {
         if(win->config.headless&&controller)return;
         spdlog::trace("Button up: {}", fmt::underlying(button));
+        if(static_cast<int>(button)==SDL_CONTROLLER_BUTTON_GUIDE) {
+            static_cast<void>(games->guide_edges.edge(GuideTiming::Source::sdl,false,static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count())));return;
+        }
         button_timing.release(static_cast<unsigned>(button));
         if(!input_focused())return;
         dispatch(event{action::none, events::controller_button_up{to_logical_button(button)}});

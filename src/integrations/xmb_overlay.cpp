@@ -132,6 +132,8 @@ Result XmbOverlay::present(std::span<const std::uint8_t> bgra,unsigned width,uns
   if(!converted)return converted;
   const auto ready=std::chrono::steady_clock::now();POINT position{impl_->bounds.x,impl_->bounds.y},source{0,0};SIZE size{static_cast<LONG>(width),static_cast<LONG>(height)};BLENDFUNCTION blend{AC_SRC_OVER,0,255,AC_SRC_ALPHA};
   if(!UpdateLayeredWindow(impl_->window,nullptr,&position,&size,impl_->dc,&source,0,&blend,ULW_ALPHA))return {false,"Windows could not present the transparent overlay."};
+  if(IsWindowVisible(impl_->window)&&!SetWindowPos(impl_->window,HWND_TOPMOST,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE))
+    return {false,"Windows could not maintain the overlay above the application."};
   const auto end=std::chrono::steady_clock::now();++impl_->stats.frames;impl_->stats.conversion_ns+=static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(ready-begin).count());impl_->stats.present_ns+=static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(end-ready).count());impl_->has_frame=true;return {true,{}};
 #else
   (void)bgra;(void)width;(void)height;(void)stride;return {false,"Transparent overlay is unavailable on this platform."};
@@ -141,7 +143,7 @@ Result XmbOverlay::show(bool activate) {
 #ifdef _WIN32
   if(!impl_->window||!impl_->on_owner())return {false,"The overlay is not prepared on this UI thread."};
   if(!impl_->has_frame)return {false,"The overlay needs a rendered frame before it can be shown."};
-  ShowWindow(impl_->window,SW_SHOWNOACTIVATE);if(!IsWindowVisible(impl_->window))return {false,"Windows did not show the overlay."};
+  if(!SetWindowPos(impl_->window,HWND_TOPMOST,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE|SWP_SHOWWINDOW)||!IsWindowVisible(impl_->window))return {false,"Windows did not show the overlay."};
   if(activate&&(!SetForegroundWindow(impl_->window)||GetForegroundWindow()!=impl_->window)){ShowWindow(impl_->window,SW_HIDE);return {false,"Windows did not grant overlay focus. Switch to OpenXMB manually."};}
   return {true,{}};
 #else

@@ -15,10 +15,14 @@ def main():
     parser.add_argument('--app', type=Path, required=True)
     parser.add_argument('--child', type=Path)
     parser.add_argument('--game-executable', type=Path, help='Opt in to an installed game instead of the controlled fixture')
+    parser.add_argument('--youtube-executable', type=Path, help='Opt in to the real YouTube application flow with isolated client data')
     parser.add_argument('--steam-executable', type=Path)
     parser.add_argument('--steam-app-id')
+    parser.add_argument('--automatic-steam', action='store_true', help='Test default installation-root identification without an executable override')
     parser.add_argument('--title')
     parser.add_argument('--capture-only', action='store_true', help='Skip the initial Back/reopen cycle while diagnosing capture')
+    parser.add_argument('--check-transitions', action='store_true', help='Measure the rendered entrance over the controlled game')
+    parser.add_argument('--trace', action='store_true', help='Record detailed keyboard and lifecycle diagnostics')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--allow-other-previews', action='store_true', help='Explicitly allow independent previews; restore prior focus afterward')
     args = parser.parse_args()
@@ -26,12 +30,15 @@ def main():
         raise SystemExit('This fixture requires Windows.')
     from PIL import Image, ImageGrab
     actual_game = args.game_executable is not None
+    actual_app = args.youtube_executable is not None
+    if actual_game and actual_app:
+        parser.error('Choose either a Steam game or YouTube for one run')
     if actual_game and (not args.steam_executable or not args.steam_app_id):
         parser.error('Installed game tests require --steam-executable and --steam-app-id')
-    if not actual_game and not args.child:
+    if not actual_game and not actual_app and not args.child:
         parser.error('--child is required for the controlled fixture')
     app, root = args.app.resolve(), args.output.resolve()
-    child = args.game_executable.resolve() if actual_game else args.child.resolve()
+    child = args.game_executable.resolve() if actual_game else args.youtube_executable.resolve() if actual_app else args.child.resolve()
     kernel = ctypes.WinDLL('kernel32', use_last_error=True)
     class ProcessEntry(ctypes.Structure):
         _fields_ = [('size', w.DWORD), ('usage', w.DWORD), ('pid', w.DWORD),
@@ -49,7 +56,7 @@ def main():
         entry = ProcessEntry(); entry.size = ctypes.sizeof(entry)
         available = kernel.Process32FirstW(inventory, ctypes.byref(entry))
         while available:
-            if actual_game and entry.exe.lower() == child.name.lower():
+            if (actual_game or actual_app) and entry.exe.lower() == child.name.lower():
                 raise SystemExit('The selected game is already running; it will not be adopted or closed.')
             if not args.allow_other_previews and entry.exe.lower() in {'xms.bin.exe', 'openxmb.exe', app.name.lower()}:
                 raise SystemExit('Close other OpenXMB previews before this desktop focus fixture.')
@@ -157,7 +164,15 @@ def main():
             'platform': 'Steam', 'content': args.steam_app_id, 'title_id': args.steam_app_id,
             'executable': str(args.steam_executable.resolve()), 'working_directory': str(child.parent),
             'launch_override': {'mode': 'provider', 'executable': str(child), 'arguments': [], 'working_directory': ''}}
-    (profile / 'library.json').write_text(json.dumps({'version': 1, 'games': [game]}))
+        if args.automatic_steam:
+            game['game_directory'] = str(child.parent)
+            game.pop('launch_override')
+    if actual_app:
+        game = {'id': 'youtube', 'title': 'YouTube'}
+        settings = json.loads(config.read_text())
+        settings['preferences']['youtube.executable'] = str(child)
+        config.write_text(json.dumps(settings))
+    (profile / 'library.json').write_text(json.dumps({'version': 1, 'games': [] if actual_app else [game]}))
     journal = profile / 'sessions/history.json'
     def game_record():
         try:
@@ -168,8 +183,14 @@ def main():
         'OPENXMB_FIXED_', 'OPENXMB_INITIAL_', 'AUROREENGINE_HEADLESS'))}
     env.update({'OPENXMB_CONFIG': str(config), 'OPENXMB_DATA_DIR': str(root / 'data'),
         'XMB_ASSET_DIR': str(app.parent / 'shell'), 'XMB_LOCALE_DIR': str(app.parent / 'locales'),
-        'OPENXMB_FORCE_SETUP': '0', 'OPENXMB_INITIAL_CATEGORY': 'game', 'OPENXMB_HARNESS_ACTIONS': '1:ok',
-        'SDL_AUDIODRIVER': 'dummy', 'SPDLOG_LEVEL': 'debug'})
+        'OPENXMB_FORCE_SETUP': '0', 'OPENXMB_INITIAL_CATEGORY': 'tv' if actual_app else 'game', 'OPENXMB_HARNESS_ACTIONS': '1:ok',
+        'SDL_AUDIODRIVER': 'dummy', 'SPDLOG_LEVEL': 'trace' if args.trace else 'debug'})
+    if actual_app:
+        env['OPENXMB_HARNESS_YOUTUBE_PROFILE'] = str(root / 'youtube-profile')
+        for environment_name, directory in (('APPDATA', 'appdata'), ('LOCALAPPDATA', 'localappdata')):
+            folder = root / directory
+            folder.mkdir()
+            env[environment_name] = str(folder)
     shell_hwnd = game_hwnd = None
     with (root / 'native.log').open('w', encoding='utf-8') as log:
         process = subprocess.Popen([str(app), '--no-fullscreen', '--width', '960', '--height', '540',
@@ -193,14 +214,14 @@ def main():
 
         try:
             shell_hwnd = wait(lambda: next((hwnd for hwnd in windows(process.pid) if user.IsWindowVisible(hwnd)), None), 'Visible shell window missing')
-            if actual_game:
+            if actual_game or actual_app:
                 def associated_window():
                     record = game_record()
-                    if record.get('tracking') == 3 and record.get('process_id', -1) > 0:
+                    if record.get('tracking') == (0 if actual_app else 3) and record.get('process_id', -1) > 0:
                         return next((hwnd for hwnd in windows(record['process_id']) if user.IsWindowVisible(hwnd)), None)
                 game_hwnd = wait(associated_window, 'Steam game was not associated with a new window', seconds=50)
                 focus_game()
-                time.sleep(18)  # Finish startup without sending gameplay input.
+                time.sleep(8 if actual_app else 18)  # Finish startup without sending gameplay input.
             else:
                 wait(ready.exists, 'Owned game did not launch')
                 game_hwnd = int(ready.read_text())
@@ -209,7 +230,7 @@ def main():
             assert user.GetMonitorInfoW(user.MonitorFromWindow(game_hwnd, 2), ctypes.byref(monitor))
             bounds = monitor.bounds
             box = (bounds.left, bounds.top, bounds.right, bounds.bottom)
-            if actual_game:
+            if actual_game or actual_app:
                 client = w.RECT(); origin = w.POINT()
                 assert user.GetClientRect(game_hwnd, ctypes.byref(client))
                 assert user.ClientToScreen(game_hwnd, ctypes.byref(origin))
@@ -225,6 +246,18 @@ def main():
 
             overlay = open_overlay()
             assert user.IsIconic(shell_hwnd), 'Ordinary shell restored underneath transparent host'
+            if args.check_transitions and not actual_game and not actual_app:
+                samples = []
+                point = (int(baseline.width * .1), int(baseline.height * .8))
+                channel = max(range(3), key=lambda i: baseline.getpixel(point)[i])
+                for index in range(10):
+                    frame = ImageGrab.grab(box)
+                    frame.save(root / f'overlay-enter-{index:02d}.png')
+                    samples.append(frame.getpixel(point)[channel] / baseline.getpixel(point)[channel])
+                    time.sleep(.025)
+                (root / 'entrance-samples.json').write_text(json.dumps(samples))
+                assert any(.42 < value < .94 for value in samples), ('Overlay appeared without a rendered fade', samples)
+                assert .30 <= samples[-1] <= .40, ('Overlay fade did not settle at the requested shade', samples)
             time.sleep(.5)
             rendered = ImageGrab.grab(box)
             rendered.save(root / 'overlay-game.png')
@@ -238,7 +271,7 @@ def main():
                 wait(lambda: not user.IsWindowVisible(overlay), 'Back did not hide overlay')
                 wait(lambda: user.GetForegroundWindow() == game_hwnd, 'Back did not restore game focus')
                 overlay = open_overlay()
-            for _ in range(4):
+            for _ in range(3 if actual_app else 4):
                 key(overlay, 0x25)  # Game -> Photo
             ImageGrab.grab(box).save(root / 'overlay-photo.png')
             key(overlay, 0x0d)  # Save Screenshot in Photo
@@ -253,19 +286,40 @@ def main():
                     assert captured.getpixel(point)[:3] == baseline.getpixel(point)[:3], 'Screenshot included overlay dimming'
 
             overlay = open_overlay()
-            if actual_game:
+            if actual_game or actual_app:
                 key(overlay, 0x0d)  # Quit Game confirmation in the real XMB
                 time.sleep(.3)
                 key(overlay, 0x27)
                 key(overlay, 0x0d)
                 wait(lambda: game_record().get('state') == 1, 'Game did not honor graceful Quit Game', seconds=25)
                 record = game_record()
-                assert record['tracking'] == 3 and record['duration_ms'] > 0, record
-                print('PASS real Steam launch, pinned observation, overlay, screenshot and graceful Quit Game:', game['title'])
+                assert record['tracking'] == (0 if actual_app else 3) and record['duration_ms'] > 0, record
+                if actual_app:
+                    assert record['kind'] == 1, 'YouTube was tracked as a game instead of an application'
+                print('PASS real application flow:' if actual_app else 'PASS real Steam launch:', game['title'], 'identified window, overlay, screenshot, graceful Quit App' if actual_app else 'identified window, overlay, screenshot, graceful Quit Game')
             else:
                 user.PostMessageW(game_hwnd, 0x0010, 0, 0)
             wait(lambda: not user.IsIconic(shell_hwnd), 'Game exit did not restore normal shell')
             wait(lambda: not user.IsWindowVisible(overlay), 'Overlay survived game exit')
+            if actual_app:
+                first_session = game_record()['id']
+                time.sleep(.5)
+                ImageGrab.grab().save(root / 'restored-before-relaunch.png')
+                assert 'Session notice:' not in (root / 'native.log').read_text(encoding='utf-8'), 'Routine Quit App displayed an error dialog'
+                key(shell_hwnd, 0x0d)
+                def relaunched_app():
+                    record = game_record()
+                    if record.get('id') != first_session and record.get('tracking') == 0 and record.get('state') == 0:
+                        return next((hwnd for hwnd in windows(record['process_id']) if user.IsWindowVisible(hwnd)), None)
+                game_hwnd = wait(relaunched_app, 'Quit App left a stale lock and prevented YouTube relaunch', seconds=25)
+                overlay = open_overlay()
+                time.sleep(.3)
+                user.PostMessageW(game_hwnd, 0x0010, 0, 0)
+                wait(lambda: game_record().get('state') == 1, 'Manual YouTube window close did not end the session')
+                wait(lambda: not user.IsIconic(shell_hwnd), 'Manual app close did not restore the shell')
+                wait(lambda: not user.IsWindowVisible(overlay), 'Manual app close left the overlay alive')
+                assert 'Session notice:' not in (root / 'native.log').read_text(encoding='utf-8'), 'Routine manual app exit displayed an error dialog'
+                print('PASS YouTube relaunch after Quit App, external window close and session restoration')
             print('PASS transparent pixels, Game/Photo navigation, Back focus, clean screenshot, exit lifecycle')
         finally:
             foreground = user.GetForegroundWindow()

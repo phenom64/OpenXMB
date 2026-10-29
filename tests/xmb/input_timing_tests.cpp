@@ -1,4 +1,5 @@
 #include "../../src/app/input_timing.hpp"
+#include "../../src/app/guide_timing.hpp"
 #include <iostream>
 #include <stdexcept>
 void check(bool value,const char* message){if(!value)throw std::runtime_error(message);}
@@ -26,5 +27,26 @@ int main() try {
     check(input.trigger(1,32767)==true,"right trigger tracks independently");
     input.clear();check(input.trigger(1,32767)==true,"disconnect or blur resets trigger state");
     check(!input.trigger(2,32767),"invalid trigger index is ignored");
+    app::GuideTiming guide;
+    using Source=app::GuideTiming::Source;
+    check(guide.edge(Source::native,true,100),"native Guide begins one hold");
+    input.clear(); // Ordinary focus-loss cleanup must not reset Guide ownership.
+    check(!guide.edge(Source::sdl,true,500000),"delayed SDL duplicate cannot toggle a held native Guide");
+    check(!guide.edge(Source::native,false,200),"one source releasing cannot release another held source");
+    check(!guide.edge(Source::sdl,false,600000),"Guide release never toggles");
+    check(guide.edge(Source::native,true,300),"next native press accepted immediately after release");
+    check(!guide.edge(Source::native,false,250),"stale native edge cannot release a newer hold");
+    check(!guide.edge(Source::native,true,301),"duplicate native down cannot toggle");
+    check(!guide.edge(Source::native,false,302),"queued native release accepted");
+    check(guide.edge(Source::native,true,303),"distinct queued press retains its edge without a drain-time debounce");
+    guide.reset();
+    check(guide.edge(Source::sdl,true,1),"new session resets both source states and clock origins");
+    check(!guide.edge(Source::sdl,false,20),"completed SDL tap releases");
+    check(!guide.edge(Source::native,true,1),"queued native duplicate of completed SDL tap cannot toggle twice");
+    check(!guide.edge(Source::native,false,21),"native handover release never toggles");
+    check(!guide.edge(Source::sdl,true,30),"SDL no longer competes after native delivery is proven");
+    check(guide.edge(Source::native,true,30),"new native gesture after handover toggles once");
+    check(!guide.edge(Source::native,false,31),"rapid native gesture releases");
+    check(guide.edge(Source::native,true,32),"rapid native gesture after release is retained");
     std::cout<<"input_timing_tests: release boundaries, bounce gap and direction cadence passed\n";
 } catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}

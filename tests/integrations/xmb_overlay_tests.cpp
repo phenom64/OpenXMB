@@ -1,4 +1,5 @@
 #include "openxmb/integrations/xmb_overlay.hpp"
+#include "openxmb/xmb/overlay_motion.hpp"
 #include <array>
 #include <cstdint>
 #include <iostream>
@@ -15,6 +16,14 @@
 using namespace openxmb::integrations;
 void require(bool ok,const char* message){if(!ok)throw std::runtime_error(message);}
 int main(){try{
+  openxmb::xmb::OverlayMotion motion;
+  require(motion.sample(10).opacity==0,"unpresented overlay must remain transparent");
+  motion.show(10);const auto midway=motion.sample(10.12);
+  require(midway.opacity>0&&midway.opacity<1&&midway.zoom>1&&midway.zoom<1.12F,"entrance must fade and zoom");
+  require(motion.sample(10.25).opacity==1&&motion.sample(10.25).zoom==1,"entrance must settle exactly");
+  motion.hide(11);const auto leaving=motion.sample(11.06);
+  motion.show(11.06);require(std::abs(motion.sample(11.06).opacity-leaving.opacity)<0.0001F,"rapid reopening must not jump opacity");
+  motion.hide(12,true);require(motion.sample(12).opacity==0,"reduced motion must dismiss immediately");
   const std::array<std::uint8_t,20> input{255,125,3,0, 137,137,137,64, 188,188,188,128, 92,0,0,128, 73,99,40,255};
   std::array<std::uint8_t,20> output{};
   require(bool(convert_overlay_bgra(input,5,1,20,output,20)),"pixel conversion failed");

@@ -6,6 +6,7 @@ add_library(openxmb_integrations STATIC
   "${_openxmb_integrations_root}/src/integrations/observed_process.cpp"
   "${_openxmb_integrations_root}/src/integrations/session_window.cpp"
   "${_openxmb_integrations_root}/src/integrations/xmb_overlay.cpp"
+  "${_openxmb_integrations_root}/src/integrations/guide_input.cpp"
   "${_openxmb_integrations_root}/src/integrations/browser_input.cpp"
   "${_openxmb_integrations_root}/src/integrations/disc.cpp")
 add_library(OpenXMB::Integrations ALIAS openxmb_integrations)
@@ -43,6 +44,19 @@ if(OPENXMB_BUILD_NATIVE_TESTS)
   set_target_properties(openxmb_overlay_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
   add_test(NAME openxmb_overlay_tests COMMAND openxmb_overlay_tests)
   if(WIN32)
+    include(CheckCXXSourceCompiles)
+    check_cxx_source_compiles("#include <windows.h>\n#include <GameInput.h>\n#if defined(GAMEINPUT_API_VERSION) && GAMEINPUT_API_VERSION != 0\n#error Unsupported GameInput ABI\n#endif\nint main() { return 0; }" OPENXMB_HAS_GAMEINPUT_V0)
+    if(OPENXMB_HAS_GAMEINPUT_V0)
+      add_executable(openxmb_guide_input_tests "${_openxmb_integrations_root}/tests/integrations/guide_input_tests.cpp")
+      target_include_directories(openxmb_guide_input_tests PRIVATE "${_openxmb_integrations_root}/include")
+      target_compile_features(openxmb_guide_input_tests PRIVATE cxx_std_23)
+      set_target_properties(openxmb_guide_input_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+      add_test(NAME openxmb_guide_input_tests COMMAND openxmb_guide_input_tests)
+    endif()
+    # Opt-in installed-runtime lifecycle check; never generates controller input.
+    add_executable(openxmb_guide_input_runtime_tests EXCLUDE_FROM_ALL "${_openxmb_integrations_root}/tests/integrations/guide_input_runtime_tests.cpp")
+    target_link_libraries(openxmb_guide_input_runtime_tests PRIVATE OpenXMB::Integrations)
+    set_target_properties(openxmb_guide_input_runtime_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
     add_executable(openxmb_session_window_child EXCLUDE_FROM_ALL "${_openxmb_integrations_root}/tests/integrations/session_window_child.cpp")
     add_executable(openxmb_session_window_tests EXCLUDE_FROM_ALL "${_openxmb_integrations_root}/tests/integrations/session_window_tests.cpp")
     target_link_libraries(openxmb_session_window_child PRIVATE user32 gdi32)

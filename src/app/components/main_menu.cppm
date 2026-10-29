@@ -24,9 +24,11 @@ module;
 #include "openxmb/xmb/settings_controller.hpp"
 
 #include <chrono>
+#include <array>
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -56,6 +58,7 @@ class main_menu : public action_receiver {
         result on_action(action action) override;
         void show_settings();
         void show_session(bool application);
+        void refresh_session_entries(bool active,bool application,std::string_view title);
     private:
         using time_point = std::chrono::time_point<std::chrono::steady_clock>;
 
@@ -107,6 +110,10 @@ class main_menu : public action_receiver {
         void render_settings_scene(auroreengine::gui_renderer& renderer, time_point now);
 
         std::vector<std::unique_ptr<menu::menu>> menus;
+        // Non-owning pointers into menus; full preload clears them before
+        // replacing categories. Session refresh only changes visibility/text.
+        std::array<menu::prefixed_menu*,3> session_menus{};
+        std::array<menu::action_menu_entry*,3> session_rows{};
         int selected = 0;
 
         int last_selected = 0;

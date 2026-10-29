@@ -704,6 +704,7 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
     settings_previous_route.reset();
     settings_render_values.clear();settings_render_icons.clear();
     settings_icon_textures.clear();settings_value_labels.clear();
+    session_menus={};session_rows={};
     menus.clear();
 
     const auto& asset_directory = config::CONFIG.asset_directory;
@@ -715,6 +716,14 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
     const auto panel_menu = [&](std::string label, std::filesystem::path icon,
                                 std::vector<std::unique_ptr<menu::menu_entry>> rows) {
         return make_simple<menu::simple_menu>(std::move(label), std::move(icon), loader, std::move(rows));
+    };
+    const auto session_menu=[&](std::size_t slot,std::unique_ptr<menu::menu> body,std::string label,
+                               const std::filesystem::path& icon,std::function<result()> activate) {
+        auto row=make_simple<menu::action_menu_entry>(std::move(label),icon,loader,std::move(activate));
+        session_rows[slot]=row.get();
+        std::vector<std::unique_ptr<menu::menu_entry>> actions;actions.push_back(std::move(row));
+        auto wrapped=std::make_unique<menu::prefixed_menu>(std::move(body),std::move(actions));
+        session_menus[slot]=wrapped.get();menus.push_back(std::move(wrapped));
     };
     {
         std::vector<std::unique_ptr<menu::menu_entry>> rows;
@@ -732,12 +741,8 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
     auto photo_menu=make_simple<menu::files_menu>("Photo"_(),
         preferred_icon(asset_directory, "xmb_icon_002.png", "icon_category_photo.png"), loader, xmb,
         config::CONFIG.pictures_path(), loader, menu::files_menu_profile::photo);
-    if(xmb->has_running_session()) {
-        std::vector<std::unique_ptr<menu::menu_entry>> actions;
-        actions.push_back(make_simple<menu::action_menu_entry>("Save Screenshot",asset_directory/"icons/actions/screenshot.png",loader,
-            [host=xmb] {host->save_session_screenshot();return result::success;},std::function<result(action)>{},xmb->session_title()));
-        menus.push_back(std::make_unique<menu::prefixed_menu>(std::move(photo_menu),std::move(actions)));
-    } else menus.push_back(std::move(photo_menu));
+    session_menu(0,std::move(photo_menu),"Save Screenshot",asset_directory/"icons/actions/screenshot.png",
+        [host=xmb] {host->save_session_screenshot();return result::success;});
     menus.push_back(make_simple<menu::files_menu>("Music"_(),
         preferred_icon(asset_directory, "xmb_icon_003.png", "icon_category_music.png"), loader, xmb,
         config::CONFIG.music_path(), loader, menu::files_menu_profile::music));
@@ -746,9 +751,6 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
         config::CONFIG.videos_path(), loader, menu::files_menu_profile::video));
     {
         std::vector<std::unique_ptr<menu::menu_entry>> rows;
-        if(xmb->has_running_session() && xmb->session_is_application())
-            rows.push_back(make_simple<menu::action_menu_entry>("Quit App",asset_directory/"icons/actions/quit_session.png",loader,
-                [host=xmb] {host->quit_session();return result::success;},std::function<result(action)>{},xmb->session_title()));
         rows.push_back(make_simple<menu::action_menu_entry>("YouTube",asset_directory/"icons/services/youtube.png",loader,std::function<result()>{},
             [host=xmb](action input) {
                 if(input==action::ok) {host->open_youtube();return result::success;}
@@ -758,7 +760,9 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
                 });return result::success;
             },"Watch YouTube",true));
         rows.push_back(make_simple<menu::files_menu>("Video Library",asset_directory/"icons/theme/icon_video.png",loader,xmb,config::CONFIG.videos_path(),loader,menu::files_menu_profile::video));
-        menus.push_back(panel_menu("TV / Video Services",asset_directory/"icons/theme/icon_tv.png",std::move(rows)));
+        session_menu(1,panel_menu("TV / Video Services",asset_directory/"icons/theme/icon_tv.png",std::move(rows)),
+            "Quit App",asset_directory/"icons/actions/quit_session.png",
+            [host=xmb] {host->quit_session();return result::success;});
     }
     {
         std::vector<std::unique_ptr<menu::menu_entry>> rows;
@@ -770,12 +774,8 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
         try { games = openxmb::desktop::Library{}.games(); }
         catch(const std::exception& error) { spdlog::warn("Could not load games: {}",error.what()); }
         auto games_menu=make_simple<menu::games_menu>("Game",preferred_icon(asset_directory,"xmb_icon_005.png","icon_category_game.png"),loader,xmb,loader,std::move(games),std::move(rows));
-        if(xmb->has_running_session() && !xmb->session_is_application()) {
-            std::vector<std::unique_ptr<menu::menu_entry>> actions;
-            actions.push_back(make_simple<menu::action_menu_entry>("Quit Game",asset_directory/"icons/actions/quit_session.png",loader,
-                [host=xmb] {host->quit_session();return result::success;},std::function<result(action)>{},xmb->session_title()));
-            menus.push_back(std::make_unique<menu::prefixed_menu>(std::move(games_menu),std::move(actions)));
-        } else menus.push_back(std::move(games_menu));
+        session_menu(2,std::move(games_menu),"Quit Game",asset_directory/"icons/actions/quit_session.png",
+            [host=xmb] {host->quit_session();return result::success;});
     }
     {
         std::vector<std::unique_ptr<menu::menu_entry>> rows;
@@ -807,6 +807,8 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
                 section.icon.empty() ? asset_directory/"icons/icon_files_folder.png" : section.icon,
                 loader,xmb,section.folder,loader,menu::files_menu_profile::generic));
     } catch(const std::exception& error) { spdlog::warn("Could not load custom sections: {}",error.what()); }
+
+    refresh_session_entries(xmb->has_running_session(),xmb->session_is_application(),xmb->session_title());
 
     if(const auto initial_category = initial_category_index_from_env()) {
         if(*initial_category >= 0 &&
@@ -966,6 +968,7 @@ bool main_menu::activate_current(action action) {
     finish_media_transition();
     auto& menu = *menus[selected];
     auto res = current_submenu ? current_submenu->activate(action) : menu.activate(action);
+    spdlog::debug("XMB menu activation: category={}, row={}, child={}, action={}, result={}",selected,menu.get_selected_submenu(),bool(current_submenu),static_cast<unsigned>(action),static_cast<unsigned>(res));
     if(res == result::submenu) {
         auto& entry = current_submenu ? current_submenu->get_submenu(current_submenu->get_selected_submenu())
             : menu.get_submenu(menu.get_selected_submenu());
@@ -1872,9 +1875,26 @@ void main_menu::finish_media_transition() {
 }
 void main_menu::show_session(bool application) {
     finish_media_transition();
+    // A retained route must close children before their parents: file menus
+    // release their nested rows in on_close(). No category body is replaced.
+    if(current_submenu)current_submenu->on_close();
+    for(auto it=submenu_stack.rbegin();it!=submenu_stack.rend();++it)(*it)->on_close();
     current_submenu=nullptr;submenu_stack.clear();in_submenu=false;
+    media_depth_from=media_depth_to=0;media_returning=false;
     select(application?5:6);
     select_menu_item(0);
+}
+
+void main_menu::refresh_session_entries(bool active,bool application,std::string_view title) {
+    const std::array visible{active,active&&application,active&&!application};
+    bool changed=false;
+    for(std::size_t i=0;i<session_menus.size();++i) {
+        if(session_rows[i])session_rows[i]->set_description(active?title:std::string_view{});
+        if(session_menus[i])changed=session_menus[i]->set_prefix_visible(visible[i])||changed;
+    }
+    // A disappearing prefix changes row indices. Finish that old interpolation
+    // without querying/rebuilding file-menu contents on this lightweight path.
+    if(changed)last_selected_menu_item_transition={};
 }
 
 void main_menu::show_settings() {

@@ -1,5 +1,7 @@
 module;
 #include "openxmb/integrations/xmb_overlay.hpp"
+#include "openxmb/xmb/overlay_motion.hpp"
+#include <chrono>
 #include <exception>
 #include <functional>
 #include <memory>
@@ -16,11 +18,14 @@ export class session_xmb {
   struct State {
     openxmb::integrations::XmbOverlay native;
     bool shown{};
+    bool closing{},reduced{};
+    openxmb::xmb::OverlayMotion motion;
     std::string error;
   };
   std::shared_ptr<State> state_;
   bool active_{};
 public:
+  static double seconds() {return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();}
   explicit session_xmb(auroreengine::window* value):window_(value) {}
   ~session_xmb() {close();}
   session_xmb(const session_xmb&)=delete;
@@ -28,12 +33,20 @@ public:
   [[nodiscard]] bool active() const {return active_;}
   [[nodiscard]] bool focused() const {return state_ && state_->native.focused();}
   [[nodiscard]] bool visible() const {return state_ && state_->native.visible();}
+  [[nodiscard]] bool closing() const {return state_ && state_->closing;}
+  [[nodiscard]] openxmb::xmb::OverlayMotionSample motion() const {
+    return state_?state_->motion.sample(seconds()):openxmb::xmb::OverlayMotionSample{};
+  }
+  void dismiss(bool reduced=false) {if(state_&&!state_->closing){state_->closing=true;state_->motion.hide(seconds(),reduced);}}
+  void reopen(bool reduced=false) {if(state_){state_->closing=false;state_->motion.show(seconds(),reduced);}}
+  [[nodiscard]] bool dismissal_finished() const {const auto sample=motion();return closing()&&sample.settled&&sample.opacity<=0;}
   [[nodiscard]] std::string take_error() {return state_?std::exchange(state_->error,{}):std::string{};}
   [[nodiscard]] openxmb::integrations::OverlayStats stats() const {return state_?state_->native.stats():openxmb::integrations::OverlayStats{};}
-  openxmb::integrations::Result open(openxmb::integrations::OverlayBounds bounds,openxmb::integrations::OverlayCallback callback) {
+  openxmb::integrations::Result open(openxmb::integrations::OverlayBounds bounds,openxmb::integrations::OverlayCallback callback,bool reduced=false) {
     if(active_)return {false,"The in-game XMB is already visible."};
     try {
       state_=std::make_shared<State>();
+      state_->reduced=reduced;
       const auto prepared=state_->native.prepare(bounds,std::move(callback));
       if(!prepared) {state_.reset();return prepared;}
       state_->error.clear();state_->shown=false;
@@ -46,6 +59,7 @@ public:
           const auto activated=state->native.show(true);
           if(!activated) {state->error=activated.message;return;}
           state->shown=true;
+          state->motion.show(seconds(),state->reduced);
         }
       });
       active_=true;

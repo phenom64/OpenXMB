@@ -197,12 +197,22 @@ Steam game Triangle options include Launch Settings. A selected direct executabl
 literal arguments and working folder survive discovery refresh without changing
 the Steam identity or duplicating the game. Some titles require Steam even when
 started directly; no authentication or DRM bypass is provided. Forwarding launcher
-lifetime is not game lifetime. On Windows, Steam launch can separately observe a newly launched, user-selected
-game executable using read-only process rights and conservative association.
+lifetime is not game lifetime. On Windows, Steam launch observes a newly launched
+game inside its registered installation directory using read-only process rights
+and conservative association. An explicit executable override takes priority.
 Preexisting, ambiguous, inaccessible and expired matches stay unavailable.
 Observed playtime is separate from owned-child playtime; Quit Game sends only a
-graceful window close request. The executable selection is optional and remains
-necessary when Steam does not expose enough reliable game identity.
+graceful window close request. The executable selection remains available when
+installation-root discovery cannot identify a unique game window. Steam starts
+with `-silent -applaunch`; its client and any required authentication remain
+necessary. OpenXMB does not alter Steam's controller mappings, inject a proxy DLL,
+or disable its renderer.
+
+The local Steam appinfo type excludes tools/framework products from the playable
+view. Unknown games remain visible. Filtering preserves the stored records,
+favourites, artwork and launch overrides; native imports with similar names stay
+independent. An unobserved forwarding launcher cannot indefinitely block a new
+game or application session.
 
 Trophy Collection reads real RPCS3 trophy sets by RPCS3 user and offers cache-first
 RetroAchievements account reads. SteamGridDB uses official search/role APIs with
@@ -216,13 +226,18 @@ installation uses verified release metadata, SHA-256 and bounded archive extract
 other platforms detect installed clients but do not yet offer automatic setup.
 The isolated live Windows acceptance downloaded the official 155 MB v2.0.1
 portable release, verified its hash, extracted and detected it, and validated its
-fullscreen launch plan. The application was not launched by that test.
+fullscreen launch plan. A separate real-client acceptance launches YouTube with
+its supported isolated portable profile, opens XMB above it, validates the
+darkened app pixels, saves an undimmed screenshot, confirms Quit App, relaunches,
+then manually closes the app while XMB is open. It verifies both exits restore
+the shell without a stale session or a spurious window-loss dialog. Personal
+YouTube login data is not used by this fixture.
 
 The preview launchers now default to fullscreen. Use `-Windowed` explicitly for
 windowed testing. `run-beta4-test.ps1` selects an immutable snapshot; it may lag the
 source build. Do not replace a snapshot's binaries while a tester is running it.
 
-Windows verification includes 76 enabled passing CTests (one reference-frame
+Windows verification includes automated CTests (one reference-frame
 comparison remains explicitly disabled), refreshed setup/reset and provider UI
 smokes, and native-size GPU artwork upload. Real provider credentials, actual
 emulator/game boot, physical controllers and Linux/macOS session adapters remain
@@ -239,7 +254,22 @@ focus flag can lag after restoring ordinary Vulkan presentation. The Quit Game/
 Quit App glyph was reconstructed from the reference's two outlined circular
 segments after auditing the available assets. Raw captured layout was compared with the
 user's PS3 references; these camera/low-resolution sources do not calibrate exact
-opacity or transition timing.
+opacity or transition timing. The current reversible envelope fades/zooms in over
+240 ms and out over 180 ms, starting on the first presented frame. Reduced motion
+is respected. Session action rows retain their textures and menu bodies so
+opening XMB does not rebuild the full shell. Screenshots wait until the native
+overlay has dismissed and the app has regained focus before capture.
+
+Windows additionally has an optional System32 GameInput v0 Guide listener during
+active sessions, supplementing SDL and the configurable keyboard shortcut. The
+adapter bounds its callback queue, confirms cancellation before releasing callback
+state, and releases the runtime on a worker because final Release can take seconds.
+Only one runtime owner may be active or tearing down at a time. Deterministic
+boundary tests and an opt-in installed-runtime lifecycle test cover these paths;
+physical Guide delivery remains unverified. A focused exclusive Guide owner or
+operating-system policy can suppress background delivery. Exclusive fullscreen,
+protected processes and Linux/macOS overlay parity remain separate acceptance
+gates; no injection or protection bypass is used.
 
 The setup fidelity pass uses the original 1080p frames for luminous text selection,
 fixed-width date cells, 13x7 spinner marks, name-field chrome and confirmation

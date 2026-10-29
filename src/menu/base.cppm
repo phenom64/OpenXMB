@@ -30,7 +30,9 @@ module;
 #include <stdexcept>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 export module openxmb.app:menu_base;
@@ -82,8 +84,9 @@ class menu : public menu_entry {
 class prefixed_menu final : public menu {
     std::unique_ptr<menu> body;
     std::vector<std::unique_ptr<menu_entry>> prefix;
-    unsigned int selected{};
-    bool opened{};
+    std::optional<unsigned int> selected_prefix{0};
+    bool opened{},prefix_visible{true};
+    unsigned int prefix_count() const {return prefix_visible?static_cast<unsigned int>(prefix.size()):0;}
 public:
     prefixed_menu(std::unique_ptr<menu> value, std::vector<std::unique_ptr<menu_entry>> rows)
         : body(std::move(value)), prefix(std::move(rows)) {}
@@ -91,17 +94,32 @@ public:
     std::string_view get_description() const override { return body->get_description(); }
     const auroreengine::texture& get_icon() const override { return body->get_icon(); }
     const auroreengine::texture* get_glass_icon() const override { return body->get_glass_icon(); }
-    unsigned int get_submenus_count() const override { return static_cast<unsigned int>(prefix.size())+body->get_submenus_count(); }
-    unsigned int get_selected_submenu() const override { const auto count=get_submenus_count(); return count?std::min(selected,count-1):0; }
-    void select_submenu(unsigned int index) override { selected=index; if(index>=prefix.size()) body->select_submenu(index-static_cast<unsigned int>(prefix.size())); }
-    menu_entry& get_submenu(unsigned int index) const override { return index<prefix.size()?*prefix.at(index):body->get_submenu(index-static_cast<unsigned int>(prefix.size())); }
-    void on_open() override { opened=true; body->on_open(); }
+    // Visibility changes never replace a row, body or texture. The body's own
+    // selection remains authoritative while contextual rows are focused/hidden.
+    bool set_prefix_visible(bool visible) {const bool changed=prefix_visible!=visible;prefix_visible=visible;if(!visible)selected_prefix.reset();return changed;}
+    unsigned int get_submenus_count() const override { return prefix_count()+body->get_submenus_count(); }
+    unsigned int get_selected_submenu() const override {
+        const auto count=get_submenus_count(),before=prefix_count();
+        const auto selected=before&&selected_prefix?std::min(*selected_prefix,before-1):before+body->get_selected_submenu();
+        return count?std::min(selected,count-1):0;
+    }
+    void select_submenu(unsigned int index) override {
+        const auto before=prefix_count();
+        if(index<before)selected_prefix=index;
+        else {selected_prefix.reset();body->select_submenu(index-before);}
+    }
+    menu_entry& get_submenu(unsigned int index) const override { const auto before=prefix_count();return index<before?*prefix.at(index):body->get_submenu(index-before); }
+    void on_open() override {
+        opened=true;body->on_open();
+        if(prefix_count()&&!selected_prefix&&!body->get_submenus_count())selected_prefix=0;
+    }
     void on_close() override { opened=false; body->on_close(); }
     void prepare_icons() override { body->prepare_icons(); }
-    void get_button_actions(std::vector<std::pair<action,std::string>>& actions) override { if(selected>=prefix.size()) body->get_button_actions(actions); }
+    void get_button_actions(std::vector<std::pair<action,std::string>>& actions) override { if(get_selected_submenu()>=prefix_count()) body->get_button_actions(actions); }
     result activate(action input) override {
         if(!opened) return result::submenu;
-        if(selected<prefix.size()) return prefix.at(selected)->activate(input);
+        const auto selected=get_selected_submenu();
+        if(selected<prefix_count()) return prefix.at(selected)->activate(input);
         return body->activate(input);
     }
 };
@@ -121,6 +139,7 @@ class simple : public T {
         std::string_view get_description() const override {
             return description;
         }
+        void set_description(std::string_view value) {if(description!=value)description.assign(value);}
         const auroreengine::texture& get_icon() const override {
             return icon;
         }
