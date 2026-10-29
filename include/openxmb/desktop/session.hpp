@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <memory>
+#include <map>
 #include <optional>
 #include <string>
 #include <vector>
@@ -64,7 +65,9 @@ public:
   SessionManager(const SessionManager&) = delete;
   SessionManager& operator=(const SessionManager&) = delete;
   [[nodiscard]] SessionLaunchResult launch(SessionDescriptor descriptor, const std::vector<std::string>& arguments,
-                                          const std::filesystem::path& working_directory = {});
+                                           const std::filesystem::path& working_directory = {},
+                                           const std::map<std::string,std::string>& environment_overrides = {},
+                                           const std::vector<std::uintptr_t>& inherited_handles = {});
   [[nodiscard]] std::vector<SessionSnapshot> snapshot() const;
   // Only verified game/app processes and bounded pending discovery are
   // exclusive. Unobserved forwarding launchers never hold the launch lock.

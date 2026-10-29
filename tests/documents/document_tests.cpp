@@ -37,6 +37,11 @@
 #include <sstream>
 #include <stdexcept>
 #include <vector>
+#include <optional>
+#ifdef _WIN32
+#define NOMINMAX
+#include <windows.h>
+#endif
 namespace docs=openxmb::documents;
 void require(bool test,const char* text) { if(!test) throw std::runtime_error(text); }
 std::vector<char> bytes(const std::filesystem::path& path) { std::ifstream file(path,std::ios::binary); return {std::istreambuf_iterator<char>(file),{}}; }
@@ -82,11 +87,51 @@ void set_environment(const char* name,const std::string& value) {
     setenv(name,value.c_str(),1);
 #endif
 }
-int main() {
+#ifdef _WIN32
+std::filesystem::path self_executable(){std::wstring path(32768,L'\0');const auto size=GetModuleFileNameW(nullptr,path.data(),path.size());require(size&&size<path.size(),"test executable path unavailable");path.resize(size);return path;}
+int document_tool_fixture(){
+    const auto* ready=std::getenv("OPENXMB_DOCUMENT_HANDLE_READY"),*release=std::getenv("OPENXMB_DOCUMENT_HANDLE_RELEASE");
+    if(!ready||!release||GetFileType(GetStdHandle(STD_OUTPUT_HANDLE))!=FILE_TYPE_DISK||GetFileType(GetStdHandle(STD_INPUT_HANDLE))!=FILE_TYPE_CHAR||GetStdHandle(STD_OUTPUT_HANDLE)!=GetStdHandle(STD_ERROR_HANDLE))return 4;
+    std::cout<<"Pages: 1\n"<<std::flush;{std::ofstream signal(ready);signal<<"ready";}
+    const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(6);
+    while(!std::filesystem::exists(release)&&std::chrono::steady_clock::now()<deadline)std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    return std::filesystem::exists(release)?0:5;
+}
+void document_handle_isolation(const std::filesystem::path& root){
+    std::filesystem::create_directories(root/"tools");
+    struct Environment {std::vector<std::pair<std::string,std::optional<std::string>>> saved;void set(const char* key,std::string value){const auto* old=std::getenv(key);saved.emplace_back(key,old?std::optional<std::string>(old):std::nullopt);set_environment(key,value);}~Environment(){for(auto i=saved.rbegin();i!=saved.rend();++i)_putenv_s(i->first.c_str(),i->second?i->second->c_str():"");}} environment;
+    const auto self=self_executable();for(const auto* tool:{"pdfinfo.exe","pdftoppm.exe"})std::filesystem::copy_file(self,root/"tools"/tool);
+    const auto* previous=std::getenv("PATH");environment.set("PATH",(root/"tools").string()+";"+self.parent_path().string()+";"+(previous?previous:""));
+    environment.set("OPENXMB_DOCUMENT_HANDLE_READY",(root/"ready").string());environment.set("OPENXMB_DOCUMENT_HANDLE_RELEASE",(root/"release").string());
+    SECURITY_ATTRIBUTES security{sizeof(security),nullptr,TRUE};
+    struct Handle {HANDLE value{INVALID_HANDLE_VALUE};~Handle(){if(value!=INVALID_HANDLE_VALUE)CloseHandle(value);}} unrelated;
+    const auto lock=root/"unrelated-instance-lock";unrelated.value=CreateFileW(lock.c_str(),GENERIC_READ,0,&security,CREATE_NEW,FILE_ATTRIBUTE_NORMAL,nullptr);require(unrelated.value!=INVALID_HANDLE_VALUE,"unrelated inheritable lock fixture failed");
+    std::ofstream(root/"fixture.pdf")<<"isolated controlled tool fixture";
+    auto opening=std::async(std::launch::async,[root]{return docs::open(root/"fixture.pdf");});
+    struct Release {std::filesystem::path path;~Release(){std::ofstream(path)<<"done";}} release{root/"release"};
+    const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(5);
+    while(!std::filesystem::exists(root/"ready")&&opening.wait_for(std::chrono::milliseconds(0))!=std::future_status::ready&&std::chrono::steady_clock::now()<deadline)std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    if(!std::filesystem::exists(root/"ready")){if(opening.wait_for(std::chrono::milliseconds(0))==std::future_status::ready)(void)opening.get();require(false,"isolated document helper never became ready");}
+    CloseHandle(unrelated.value);unrelated.value=INVALID_HANDLE_VALUE;
+    const auto attempt=CreateFileW(lock.c_str(),GENERIC_READ,0,nullptr,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,nullptr);const bool private_handle=attempt!=INVALID_HANDLE_VALUE;if(private_handle)CloseHandle(attempt);
+    {std::ofstream done(root/"release");done<<"done";}const auto document=opening.get();
+    require(private_handle,"document helper inherited an unrelated disk-file lock");require(document->pages==1,"restricted document stdout/stdin pipeline failed");
+}
+#endif
+int main(int argc,char** argv) {
+#ifdef _WIN32
+    if(self_executable().filename()==L"pdfinfo.exe")return document_tool_fixture();
+#else
+    (void)argc;(void)argv;
+#endif
     const auto root=std::filesystem::temp_directory_path()/("openxmb-document-tests-"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
     std::filesystem::create_directories(root);
     struct Cleanup {std::filesystem::path p;~Cleanup(){std::error_code ec;std::filesystem::remove_all(p,ec);}} cleanup{root};
     try {
+#ifdef _WIN32
+        document_handle_isolation(root/"handle-isolation");
+        if(argc==2&&std::string_view(argv[1])=="--handle-isolation-only"){std::cout<<"Document tool handle isolation and restricted stdio passed\n";return 0;}
+#endif
         image(root/"red.png",false);image(root/"blue.png",true);
         auto red=bytes(root/"red.png"),blue=bytes(root/"blue.png");
         for(bool tar:{false,true}) {

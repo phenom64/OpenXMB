@@ -121,21 +121,37 @@ void run(std::vector<std::string> arguments,const std::filesystem::path& log,std
     int status=-1;
 #if defined(_WIN32)
     SECURITY_ATTRIBUTES attributes{sizeof(attributes),nullptr,TRUE};
-    HANDLE output=CreateFileW(log.c_str(),GENERIC_WRITE,FILE_SHARE_READ,&attributes,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,nullptr);
-    if(output==INVALID_HANDLE_VALUE) throw std::runtime_error("Cannot create document tool log");
-    HANDLE null_input=CreateFileW(L"NUL",GENERIC_READ,FILE_SHARE_READ|FILE_SHARE_WRITE,&attributes,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,nullptr);
-    STARTUPINFOW startup{}; startup.cb=sizeof(startup); startup.dwFlags=STARTF_USESTDHANDLES; startup.hStdOutput=output; startup.hStdError=output; startup.hStdInput=null_input;
+    struct ChildResources {
+        HANDLE output{INVALID_HANDLE_VALUE},input{INVALID_HANDLE_VALUE};
+        PROCESS_INFORMATION process{};LPPROC_THREAD_ATTRIBUTE_LIST list{};
+        std::vector<unsigned char> storage;
+        void close_stdio()noexcept{if(output!=INVALID_HANDLE_VALUE)CloseHandle(output);if(input!=INVALID_HANDLE_VALUE)CloseHandle(input);output=input=INVALID_HANDLE_VALUE;}
+        ~ChildResources(){if(list)DeleteProcThreadAttributeList(list);close_stdio();if(process.hThread)CloseHandle(process.hThread);if(process.hProcess)CloseHandle(process.hProcess);}
+    } child;
+    child.output=CreateFileW(log.c_str(),GENERIC_WRITE,FILE_SHARE_READ,&attributes,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,nullptr);
+    if(child.output==INVALID_HANDLE_VALUE) throw std::runtime_error("Cannot create document tool log");
+    child.input=CreateFileW(L"NUL",GENERIC_READ,FILE_SHARE_READ|FILE_SHARE_WRITE,&attributes,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,nullptr);
+    if(child.input==INVALID_HANDLE_VALUE)throw std::runtime_error("Cannot open document tool input");
+    SIZE_T attribute_bytes{};
+    if(InitializeProcThreadAttributeList(nullptr,1,0,&attribute_bytes)||GetLastError()!=ERROR_INSUFFICIENT_BUFFER||!attribute_bytes)throw std::runtime_error("Cannot size document tool handle list");
+    child.storage.resize(attribute_bytes);const auto list=reinterpret_cast<LPPROC_THREAD_ATTRIBUTE_LIST>(child.storage.data());
+    if(!InitializeProcThreadAttributeList(list,1,0,&attribute_bytes))throw std::runtime_error("Cannot initialize document tool handle list");
+    child.list=list;
+    std::array<HANDLE,2> handles{child.output,child.input};
+    if(!UpdateProcThreadAttribute(child.list,0,PROC_THREAD_ATTRIBUTE_HANDLE_LIST,handles.data(),sizeof(handles),nullptr,nullptr))throw std::runtime_error("Cannot restrict document tool inherited handles");
+    STARTUPINFOEXW startup{};startup.StartupInfo.cb=sizeof(startup);startup.lpAttributeList=child.list;
+    startup.StartupInfo.dwFlags=STARTF_USESTDHANDLES;startup.StartupInfo.hStdOutput=child.output;startup.StartupInfo.hStdError=child.output;startup.StartupInfo.hStdInput=child.input;
     std::wstring command;
     for(const auto& arg:arguments) { if(!command.empty()) command+=L' '; command+=quote_windows(utf16(arg)); }
-    PROCESS_INFORMATION process{};
-    const bool launched=CreateProcessW(binary.c_str(),command.data(),nullptr,nullptr,TRUE,CREATE_NO_WINDOW,nullptr,nullptr,&startup,&process)!=0;
-    CloseHandle(output); if(null_input!=INVALID_HANDLE_VALUE) CloseHandle(null_input);
+    auto& process=child.process;
+    const bool launched=CreateProcessW(binary.c_str(),command.data(),nullptr,nullptr,TRUE,CREATE_NO_WINDOW|EXTENDED_STARTUPINFO_PRESENT,nullptr,nullptr,&startup.StartupInfo,&process)!=0;
+    child.close_stdio();
     if(!launched) throw std::runtime_error("Cannot start "+arguments.front());
     bool cancelled=false;
     while(WaitForSingleObject(process.hProcess,20)==WAIT_TIMEOUT) {
         if(stop.stop_requested() || std::chrono::steady_clock::now()>deadline) { TerminateProcess(process.hProcess,1); cancelled=true; break; }
     }
-    WaitForSingleObject(process.hProcess,INFINITE); DWORD code{}; GetExitCodeProcess(process.hProcess,&code); status=static_cast<int>(code); CloseHandle(process.hThread); CloseHandle(process.hProcess);
+    WaitForSingleObject(process.hProcess,INFINITE); DWORD code{}; GetExitCodeProcess(process.hProcess,&code); status=static_cast<int>(code);
     if(cancelled) throw std::runtime_error(stop.stop_requested()?"Document operation cancelled":"Document tool timed out");
 #else
     std::vector<char*> argv; for(auto& arg:arguments) argv.push_back(arg.data()); argv.push_back(nullptr);

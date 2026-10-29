@@ -18,13 +18,13 @@ apt_options=(-o DPkg::Lock::Timeout=180 -o Acquire::Retries=3
 sudo env DEBIAN_FRONTEND=noninteractive apt-get "${apt_options[@]}" update
 sudo env DEBIAN_FRONTEND=noninteractive apt-get "${apt_options[@]}" install -y --no-install-recommends \
   clang-19 clang-tools-19 lld-19 g++-14 cmake ninja-build pkg-config \
-  gettext locales libarchive-dev zlib1g-dev libx11-dev libxtst-dev libcurl4-openssl-dev \
+  gettext locales libarchive-dev zlib1g-dev libx11-dev libxtst-dev libxcb1-dev libxcb-render0-dev libxcb-res0-dev libcurl4-openssl-dev \
   libavcodec-dev libavformat-dev libavutil-dev libswresample-dev libswscale-dev \
   libfmt-dev libfreetype-dev libglm-dev libharfbuzz-dev libxmp-dev fonts-noto-core fonts-noto-cjk \
   libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libvulkan-dev \
   glslang-tools spirv-tools vulkan-utility-libraries-dev vulkan-validationlayers mesa-vulkan-drivers \
   libgtk-3-dev libwebkit2gtk-4.1-dev glib-networking bubblewrap xdg-dbus-proxy apparmor \
-  ffmpeg poppler-utils xvfb xauth imagemagick dpkg-dev file patchelf
+  ffmpeg poppler-utils xvfb xauth xcompmgr libpng-dev imagemagick dpkg-dev file patchelf
 # Allow only the CI helper to create WebKit's private sandbox namespaces.
 # Keep the host's AppArmor policy and WebKit's bubblewrap/seccomp sandbox active.
 if [ "${GITHUB_ACTIONS:-}" = 'true' ] && sudo aa-enabled --quiet; then

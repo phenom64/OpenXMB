@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <optional>
 #include <memory>
+#include <map>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -29,7 +30,7 @@ struct ProcessObservation {
   ProcessState state{ProcessState::unknown};
   std::optional<int> exit_code;
   std::string message;
-  // Windows creation identity read from the retained native process handle.
+  // Windows creation identity or Linux /proc start ticks for the owned child.
   // Zero means unavailable; never substitute a query against a bare PID.
   std::uint64_t process_creation{};
 };
@@ -45,15 +46,24 @@ public:
 private:
   explicit OwnedProcess(std::shared_ptr<State> state);
   std::shared_ptr<State> state_;
-  friend OwnedProcessLaunch launch_owned_process(const std::vector<std::string>&, const std::filesystem::path&);
+  friend OwnedProcessLaunch launch_owned_process(const std::vector<std::string>&, const std::filesystem::path&, const std::map<std::string,std::string>&, const std::vector<std::uintptr_t>&);
 };
 struct OwnedProcessLaunch {
   std::shared_ptr<OwnedProcess> process;
   std::string message;
   explicit operator bool() const noexcept { return bool(process); }
 };
+// Overrides affect only this child; an empty map inherits the environment
+// unchanged. Empty values set an empty variable. Names are ASCII identifiers
+// (128 bytes), values UTF-8 without NUL (32768 bytes); max 64 entries/256 KiB.
+// Windows names merge case-insensitively; conflicting case variants fail.
+// Windows may pass up to 16 explicitly selected file handles. They are duplicated
+// for this child only; unrelated inheritable handles are excluded. Other
+// platforms reject a nonempty handle list. Caller handles remain caller-owned.
 [[nodiscard]] OwnedProcessLaunch launch_owned_process(const std::vector<std::string>& arguments,
-                                                       const std::filesystem::path& working_directory = {});
+                                                       const std::filesystem::path& working_directory = {},
+                                                       const std::map<std::string,std::string>& environment_overrides = {},
+                                                       const std::vector<std::uintptr_t>& inherited_handles = {});
 
 // Arguments are passed directly to the program; no command shell is involved.
 [[nodiscard]] ProcessResult launch_process(const std::vector<std::string>& arguments,

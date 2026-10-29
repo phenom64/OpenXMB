@@ -333,7 +333,7 @@ struct SessionManager::Impl {
 };
 SessionManager::SessionManager() : impl_(std::make_unique<Impl>()) {}
 SessionManager::~SessionManager() { (void)shutdown(); }
-SessionLaunchResult SessionManager::launch(SessionDescriptor descriptor, const std::vector<std::string>& arguments, const fs::path& working_directory) {
+SessionLaunchResult SessionManager::launch(SessionDescriptor descriptor, const std::vector<std::string>& arguments, const fs::path& working_directory, const std::map<std::string,std::string>& environment_overrides, const std::vector<std::uintptr_t>& inherited_handles) {
   std::lock_guard launching(impl_->shutdown_mutex);
   {
     std::lock_guard lock(impl_->mutex);
@@ -354,7 +354,7 @@ SessionLaunchResult SessionManager::launch(SessionDescriptor descriptor, const s
     entry->watch=std::make_shared<integrations::ExecutableObservation>(directory?spec.installation_directory:spec.executable,directory);
   }
   catch(const std::exception& error){return {false,{},std::string("Cannot prepare Steam game observation: ")+error.what()};}
-  const auto started = Clock::now(); auto launched = integrations::launch_owned_process(arguments, working_directory);
+  const auto started = Clock::now(); auto launched = integrations::launch_owned_process(arguments, working_directory, environment_overrides, inherited_handles);
   if (!launched) return {false, {}, launched.message};
   SessionSnapshot snapshot;
   snapshot.id = "session-" + owner_token() + "-" + std::to_string(++serial); snapshot.descriptor = std::move(descriptor);

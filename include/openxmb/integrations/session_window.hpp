@@ -12,6 +12,9 @@ struct SessionWindowTarget {
   std::uintptr_t handle{};
   std::uint64_t process_creation{};
 };
+struct SessionWindowBounds {int x{},y{};unsigned width{},height{};};
+// Current visible client geometry, after validating the pinned identity.
+[[nodiscard]] std::optional<SessionWindowBounds> session_window_bounds(const SessionWindowTarget& target);
 // Returns no target when no unique eligible window exists.
 [[nodiscard]] std::optional<SessionWindowTarget> find_session_window(std::int64_t pid);
 [[nodiscard]] Result validate_session_window(const SessionWindowTarget& target);

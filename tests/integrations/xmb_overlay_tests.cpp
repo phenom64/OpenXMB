@@ -45,7 +45,8 @@ int main(){try{
   require(padded_out==before,"invalid request modified output");
   require(!convert_overlay_bgra(padded_out,1,2,12,padded_out,12),"overlapping input and output accepted");
 #ifndef _WIN32
-  XmbOverlay overlay;require(!overlay.prepare({0,0,100,100},{}),"unsupported platform reported available");
+  XmbOverlay overlay;const auto prepared=overlay.prepare({0,0,100,100},{});
+  if(prepared){require(!overlay.visible()&&!overlay.focused(),"X11 prepare changed focus or visibility");overlay.hide();}
 #else
   const auto foreground=GetForegroundWindow();
   XmbOverlay overlay;

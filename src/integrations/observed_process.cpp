@@ -221,6 +221,7 @@ ExecutableMatch ExecutableObservation::poll(std::stop_token stop) {
   if(Clock::now()-p.candidate_at<std::chrono::milliseconds(200))return {};
   p.matched=std::shared_ptr<ObservedProcess>(new ObservedProcess(candidate));return {ExecutableMatchState::matched,p.matched,{}};
 #else
+  (void)stop;
   return {ExecutableMatchState::unavailable,{},p.error};
 #endif
 }
