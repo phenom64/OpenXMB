@@ -5172,3 +5172,7 @@ msgstr "按 {ok} 设置日期和时间。按 {extra} 自动设置。按 {right} 
 #. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
 msgid "Press {ok} to enter a user name. Press {right} to continue."
 msgstr "按 {ok} 输入用户名。按 {right} 继续。"
+
+
+msgid "Credits"
+msgstr "制作人员"

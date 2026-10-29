@@ -5172,3 +5172,7 @@ msgstr "{ok}를 눌러 날짜와 시간을 설정하세요. {extra}를 눌러 �
 #. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
 msgid "Press {ok} to enter a user name. Press {right} to continue."
 msgstr "{ok}를 눌러 사용자 이름을 입력하세요. {right}을 눌러 계속하세요."
+
+
+msgid "Credits"
+msgstr "크레딧"

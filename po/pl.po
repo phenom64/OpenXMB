@@ -5427,3 +5427,7 @@ msgstr "Naciśnij {ok}, aby ustawić datę i godzinę. Naciśnij {extra}, aby us
 #. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
 msgid "Press {ok} to enter a user name. Press {right} to continue."
 msgstr "Naciśnij {ok}, aby wprowadzić nazwę użytkownika. Naciśnij {right}, aby kontynuować."
+
+
+msgid "Credits"
+msgstr "Twórcy"

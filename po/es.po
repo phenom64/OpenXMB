@@ -5172,3 +5172,7 @@ msgstr "Pulsa {ok} para ajustar la fecha y la hora. Pulsa {extra} para ajustarla
 #. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
 msgid "Press {ok} to enter a user name. Press {right} to continue."
 msgstr "Pulsa {ok} para introducir un nombre de usuario. Pulsa {right} para continuar."
+
+
+msgid "Credits"
+msgstr "Créditos"

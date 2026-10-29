@@ -5172,3 +5172,7 @@ msgstr "Tekan {ok} untuk mengatur tanggal dan waktu. Tekan {extra} untuk mengatu
 #. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
 msgid "Press {ok} to enter a user name. Press {right} to continue."
 msgstr "Tekan {ok} untuk memasukkan nama pengguna. Tekan {right} untuk melanjutkan."
+
+
+msgid "Credits"
+msgstr "Kredit"

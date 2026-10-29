@@ -5172,3 +5172,7 @@ msgstr "{ok}を押すと日付と時刻を設定できます。{extra}を押す�
 #. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
 msgid "Press {ok} to enter a user name. Press {right} to continue."
 msgstr "{ok}を押すとユーザー名を入力できます。{right}を押すと次へ進みます。"
+
+
+msgid "Credits"
+msgstr "クレジット"

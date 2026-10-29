@@ -105,6 +105,8 @@ public:
             c.text("Designed by Kavish Krishnakumar in Manchester.",960,524,27,{1,1,1,1},0,true);
             c.text("This program is licensed to you under the GNU General Public License version 3.0.",960,606,25,{1,1,1,1},0,true);
             c.text("For more information, see the Licenses section.",960,646,25,{1,1,1,1},0,true);
+            c.text("Credits",960,700,23,{1,1,1,0.75F},0,true);
+            c.text(std::string_view("SVG Keyboard Icons — George Black (MIT)"),960,736,22,{1,1,1,1},0,true);
             icons_.draw(c,"branding/syndromatic",960,817,104);
             const auto footer=::openxmb::localization::shell_locale::translate("& © 2025-2026. Syndromatic Limited Britannia. All rights reserved.");
             const auto footer_width=renderer.text_width_pixels(footer,24*c.scale)/c.scale;

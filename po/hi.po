@@ -5426,3 +5426,7 @@ msgstr "तारीख और समय सेट करने के लिए
 #. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
 msgid "Press {ok} to enter a user name. Press {right} to continue."
 msgstr "उपयोगकर्ता नाम दर्ज करने के लिए {ok} दबाएँ। आगे बढ़ने के लिए {right} दबाएँ।"
+
+
+msgid "Credits"
+msgstr "श्रेय"
