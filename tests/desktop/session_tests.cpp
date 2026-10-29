@@ -191,7 +191,7 @@ int observation_fixture(const std::string& mode) {
     if(!InitializeSecurityDescriptor(&descriptor,SECURITY_DESCRIPTOR_REVISION)||!InitializeAcl(acl,sizeof(bytes),ACL_REVISION)||
        !SetSecurityDescriptorDacl(&descriptor,TRUE,acl,FALSE)||!SetKernelObjectSecurity(GetCurrentProcess(),DACL_SECURITY_INFORMATION,&descriptor))return 83;
   }
-  std::ofstream("ready")<<"ready";
+  std::ofstream("ready")<<GetCurrentProcessId();
   const auto deadline=std::chrono::steady_clock::now()+15s;
   while(!fs::exists("release")&&!state.close_requested&&std::chrono::steady_clock::now()<deadline) {
     MSG message{};while(PeekMessageW(&message,nullptr,0,0,PM_REMOVE)){TranslateMessage(&message);DispatchMessageW(&message);}
@@ -227,6 +227,11 @@ void observed_process_checks(const fs::path& root,const fs::path& self) {
   wait([&]{match=watch.poll();if(match.state==ExecutableMatchState::rejected||match.state==ExecutableMatchState::unavailable)throw std::runtime_error(match.message);return match.state==ExecutableMatchState::matched;},"new exact executable was not observed");
   require(match.process&&match.process->id()==process.process->id()&&match.process->creation_time()!=0,"observed identity did not pin the correct PID and creation time");
   const auto window=match.process->window();require(window.has_value(),"unique observed fixture window was not available");
+  const auto later=fixture_start(image,root/"later-instance");
+  const auto retained=watch.poll();
+  require(retained.state==ExecutableMatchState::matched&&retained.process==match.process,
+    "once associated, later matching processes must not replace or invalidate the pinned game capability");
+  fixture_release(later,root/"later-instance");
   auto stale=*window;++stale.process_creation;
   require(!validate_session_window(stale),"a changed process creation token was accepted");
   require(GetForegroundWindow()==before,"observed fixture or observation unexpectedly stole focus");
@@ -247,11 +252,15 @@ void observed_process_checks(const fs::path& root,const fs::path& self) {
   const auto protected_process=fixture_start(image,root/"inaccessible","inaccessible");
   require(inaccessible.poll().state==ExecutableMatchState::unavailable,"inaccessible matching process was accepted or ignored as absent");
   fixture_release(protected_process,root/"inaccessible");
+  ExecutableObservation canceled(image);std::stop_source stop;stop.request_stop();
+  const auto cancel_started=std::chrono::steady_clock::now();
+  require(canceled.poll(stop.get_token()).state==ExecutableMatchState::unavailable&&std::chrono::steady_clock::now()-cancel_started<250ms,
+    "canceled process discovery did not stop promptly before enumerating candidates");
 }
 void observed_manager_checks(const fs::path& root,const fs::path& helper,const fs::path& self) {
   const auto image=fixture_image(root,self,"observed-session-game.exe");const auto cwd=root/"cwd";fs::create_directories(cwd);
   SessionManager manager;const auto profile=root/"profile";
-  const auto launched=manager.launch(steam_descriptor(profile,image),{text(helper),"record","0","0"},cwd);
+  const auto launched=manager.launch(steam_descriptor(profile,image,1200),{text(helper),"record","0","0"},cwd);
   require(bool(launched),"provider observation launch failed");
   std::this_thread::sleep_for(150ms);
   auto pending=manager.active_session();
@@ -265,12 +274,14 @@ void observed_manager_checks(const fs::path& root,const fs::path& helper,const f
     "observed session capabilities did not correspond to its unique current window");
   require(!manager.quit(launched.session_id,ProcessStopMode::force_stop)&&process.process->observe().state==ProcessState::running,
     "provider-observed process was force terminated");
-  std::this_thread::sleep_for(150ms);
+  std::this_thread::sleep_for(1300ms);
   require(bool(manager.quit(launched.session_id)),"provider-observed graceful close failed");
   wait([&]{const auto history=manager.history(profile);return !history.recent.empty()&&history.recent.front().state==SessionState::exited;},"observed session was not finalized independently of the UI");
   const auto history=manager.history(profile);
   require(history.launch_count==1&&history.total_playtime_ms==0&&history.provider_observed_playtime_ms>=100,
     "observed-provider accounting was conflated with owned-child playtime");
+  require(history.recent.front().state==SessionState::exited&&history.recent.front().duration_ms>=1200&&history.recent.front().exit_code==0,
+    "a matched game exiting after the discovery timeout lost its observed lifetime or terminal exit");
   for(unsigned i=0;i<20;++i)require(manager.history(profile).provider_observed_playtime_ms==history.provider_observed_playtime_ms,"provider-observed exit was counted more than once");
   wait([&]{return process.process->observe().state==ProcessState::exited;},"closed observed fixture did not exit");
   require(fs::exists(root/"game/closed"),"graceful request did not pass through the fixture WM_CLOSE handler");
@@ -302,6 +313,34 @@ void observed_manager_checks(const fs::path& root,const fs::path& helper,const f
   require(bool(direct.quit(own.session_id)),"owned window graceful close failed after capability validation");
   wait([&]{return !direct.active_session();},"owned window close was not finalized");
 }
+void pending_shutdown_checks(const fs::path& root,const fs::path& self) {
+  const auto never_started=fixture_image(root,self,"pending-never-started-game.exe");
+  const auto forwarder=fixture_image(root,self,"pending-owned-forwarder.exe");
+  const auto profile=root/"profile";SessionManager manager;
+  struct Child {fs::path folder;HANDLE handle;};std::vector<Child> children;
+  for(unsigned index=0;index<16;++index) {
+    const auto folder=root/("forwarder-"+std::to_string(index));fs::create_directories(folder);
+    auto desc=steam_descriptor(profile,never_started,60000);desc.identity="pending-"+std::to_string(index);
+    require(bool(manager.launch(desc,{text(forwarder),"--observation-fixture","wait"},folder)),"pending shutdown forwarder failed to launch");
+    DWORD pid{};
+    wait([&]{std::ifstream input(folder/"ready");return bool(input>>pid)&&pid!=0;},"pending shutdown forwarder did not publish its ready identity");
+    HANDLE handle=OpenProcess(SYNCHRONIZE|PROCESS_QUERY_LIMITED_INFORMATION,FALSE,pid);
+    require(handle&&WaitForSingleObject(handle,0)==WAIT_TIMEOUT,"pending shutdown fixture was not live before shutdown");
+    children.push_back({folder,handle});
+  }
+  for(const auto& snapshot:manager.snapshot())require(snapshot.awaiting_observation&&snapshot.duration_ms==0,"pending launch unexpectedly gained a game lifetime");
+  const auto started=std::chrono::steady_clock::now();require(bool(manager.shutdown()),"multiple pending observations did not shut down cleanly");
+  require(std::chrono::steady_clock::now()-started<1s,"shutdown finished pending discovery batches instead of stopping promptly");
+  const auto history=manager.history(profile);
+  require(history.launch_count==16&&history.total_playtime_ms==0&&history.provider_observed_playtime_ms==0,"pending shutdown fabricated playtime or changed launch accounting");
+  for(const auto& record:history.recent)require(record.state==SessionState::detached&&record.awaiting_observation&&record.duration_ms==0&&record.ended_at==0&&!record.window,
+    "pending shutdown fabricated association or a terminal game exit");
+  for(const auto& child:children) {
+    require(WaitForSingleObject(child.handle,0)==WAIT_TIMEOUT,"pending observation shutdown killed an owned forwarder");
+    std::ofstream(child.folder/"release")<<"release";
+    require(WaitForSingleObject(child.handle,5000)==WAIT_OBJECT_0,"pending forwarder failed to finish after explicit fixture release");CloseHandle(child.handle);
+  }
+}
 #endif
 }
 int main(int argc, char** argv) {
@@ -319,6 +358,7 @@ int main(int argc, char** argv) {
 #ifdef _WIN32
     observed_process_checks(root/"observed-process",fs::absolute(argv[0]));
     observed_manager_checks(root/"observed-manager",helper,fs::absolute(argv[0]));
+    pending_shutdown_checks(root/"pending-shutdown",fs::absolute(argv[0]));
 #endif
     fs::remove_all(root); std::cout << "Owned process and session journal checks passed\n";
   } catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }

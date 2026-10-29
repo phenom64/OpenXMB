@@ -85,14 +85,16 @@ struct ExecutableObservation::Impl {
     if(!okay)return {};
     return data; // Move the buffer: TOKEN_USER contains a SID pointer into it.
   }
-  std::vector<std::shared_ptr<ObservedProcess::State>> scan() {
+  std::vector<std::shared_ptr<ObservedProcess::State>> scan(std::stop_token stop = {}) {
     std::vector<std::shared_ptr<ObservedProcess::State>> result;
+    if(stop.stop_requested()){error="Game process discovery was stopped.";return result;}
     const auto scan_started=Clock::now();
     HANDLE snapshot=CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS,0);
     if(snapshot==INVALID_HANDLE_VALUE){error="Windows could not enumerate game processes.";return result;}
     PROCESSENTRY32W entry{};entry.dwSize=sizeof(entry);bool more=Process32FirstW(snapshot,&entry)!=FALSE;std::size_t count=0;
     if(!more&&GetLastError()!=ERROR_NO_MORE_FILES)error="Windows process enumeration is unavailable.";
     while(more) {
+      if(stop.stop_requested()){error="Game process discovery was stopped.";break;}
       if(++count>32768||Clock::now()-scan_started>std::chrono::milliseconds(250)){error="The process enumeration exceeds its time or entry limit.";break;}
       if(entry.th32ProcessID&&entry.th32ProcessID!=excluded&&equal(entry.szExeFile,executable.filename().native())) {
         DWORD candidate_session{};
@@ -146,21 +148,19 @@ ExecutableObservation::ExecutableObservation(const fs::path& executable):impl_(s
 }
 ExecutableObservation::~ExecutableObservation()=default;
 void ExecutableObservation::exclude_process(std::int64_t pid){impl_->excluded=pid;}
-ExecutableMatch ExecutableObservation::poll() {
+ExecutableMatch ExecutableObservation::poll(std::stop_token stop) {
   auto& p=*impl_;
   if(p.failed!=ExecutableMatchState::pending)return {p.failed,{},p.error};
 #ifdef _WIN32
-  if(p.matched&&p.matched->observe().state!=ProcessState::running)return {ExecutableMatchState::matched,p.matched,{}};
-  const auto candidates=p.scan();
+  // Discovery ends at association. Keep this exact retained process handle
+  // through exit; a new instance or a PID reuse never triggers rediscovery.
+  if(p.matched)return {ExecutableMatchState::matched,p.matched,{}};
+  const auto candidates=p.scan(stop);
   if(!p.error.empty()){p.failed=ExecutableMatchState::unavailable;return {p.failed,{},p.error};}
   if(candidates.size()>1){p.failed=ExecutableMatchState::rejected;return {p.failed,{},"Several matching game processes appeared; observation is ambiguous."};}
   if(candidates.empty()){p.candidate_pid=-1;return {};}
   const auto& candidate=candidates.front();
   if(candidate->creation<=p.since){p.failed=ExecutableMatchState::rejected;return {p.failed,{},"The matching process predates this launch; it was not adopted."};}
-  if(p.matched) {
-    if(candidate->pid!=p.matched->id()||candidate->creation!=p.matched->creation_time()){p.failed=ExecutableMatchState::rejected;return {p.failed,{},"The game process identity changed; no replacement was adopted."};}
-    return {ExecutableMatchState::matched,p.matched,{}};
-  }
   if(candidate->pid!=p.candidate_pid||candidate->creation!=p.candidate_creation){p.candidate_pid=candidate->pid;p.candidate_creation=candidate->creation;p.candidate_at=Clock::now();return {};}
   if(Clock::now()-p.candidate_at<std::chrono::milliseconds(200))return {};
   p.matched=std::shared_ptr<ObservedProcess>(new ObservedProcess(candidate));return {ExecutableMatchState::matched,p.matched,{}};

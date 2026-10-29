@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <stop_token>
 
 namespace openxmb::integrations {
 // A pinned, read-only identity. It cannot be converted into OwnedProcess and
@@ -37,7 +38,9 @@ public:
   ExecutableObservation(const ExecutableObservation&)=delete;
   ExecutableObservation& operator=(const ExecutableObservation&)=delete;
   void exclude_process(std::int64_t pid);
-  [[nodiscard]] ExecutableMatch poll();
+  // Cancellation applies only to discovery. Once matched, every poll returns
+  // the same pinned capability, including after its process exits.
+  [[nodiscard]] ExecutableMatch poll(std::stop_token stop = {});
 private:
   struct Impl;
   std::unique_ptr<Impl> impl_;

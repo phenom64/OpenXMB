@@ -226,15 +226,20 @@ struct SessionManager::Impl {
   std::condition_variable condition;
   std::vector<std::shared_ptr<Entry>> entries;
   bool stopping{};
+  std::stop_source stop;
   std::thread observer;
   Impl() : observer([this] { run(); }) {}
   static void changed(Entry& entry){entry.dirty=true;++entry.revision;}
-  void update(const std::shared_ptr<Entry>& entry) {
+  void update(const std::shared_ptr<Entry>& entry,bool discover=true) {
     std::shared_ptr<integrations::OwnedProcess> process;std::shared_ptr<integrations::ExecutableObservation> watch;
+    std::shared_ptr<integrations::ObservedProcess> observed;
     {
       std::lock_guard lock(mutex);if(entry->snapshot.state!=SessionState::running)return;
-      if(entry->watch&&Clock::now()<entry->next_poll)return;
-      process=entry->process;watch=entry->watch;entry->next_poll=Clock::now()+std::chrono::milliseconds(100);
+      if(discover&&stopping)return;
+      if(discover&&entry->watch&&Clock::now()<entry->next_poll)return;
+      process=entry->process;watch=entry->watch;observed=entry->observed;
+      if(!discover&&watch&&!observed)return;
+      entry->next_poll=Clock::now()+std::chrono::milliseconds(100);
     }
     // Process enumeration, identity queries and window discovery never hold
     // the snapshot mutex. The worker is the sole watch/poll consumer.
@@ -242,10 +247,13 @@ struct SessionManager::Impl {
     integrations::ExecutableMatch match;
     std::optional<integrations::SessionWindowTarget> window;
     try {
-      if(watch){match=watch->poll();if(match.process){observation=match.process->observe();if(observation.state==integrations::ProcessState::running)window=match.process->window();}}
+      if(watch) {
+        match=observed?integrations::ExecutableMatch{integrations::ExecutableMatchState::matched,observed,{}}:watch->poll(stop.get_token());
+        if(match.process){observation=match.process->observe();if(discover&&observation.state==integrations::ProcessState::running)window=match.process->window();}
+      }
       else {
         observation=process->observe();
-        if(observation.state==integrations::ProcessState::running&&observation.process_creation) {
+        if(discover&&observation.state==integrations::ProcessState::running&&observation.process_creation) {
           window=integrations::find_session_window(process->id());
           if(window&&window->process_creation!=observation.process_creation)window.reset();
         }
@@ -253,16 +261,19 @@ struct SessionManager::Impl {
     }catch(const std::exception& error){match.state=integrations::ExecutableMatchState::unavailable;match.message=error.what();observation={integrations::ProcessState::unknown,{},error.what()};}
     std::lock_guard lock(mutex);auto& e=*entry;auto& snapshot=e.snapshot;
     if(snapshot.state!=SessionState::running)return;
+    if(discover&&stopping)return;
     if(watch) {
       if(snapshot.awaiting_observation&&Clock::now()>=e.deadline) {
         match.state=integrations::ExecutableMatchState::unavailable;match.message="No unique new matching Steam game was observed before the launch timeout.";
       }
       if(match.state==integrations::ExecutableMatchState::pending) {
-        if(Clock::now()<e.deadline)return;
-        match.state=integrations::ExecutableMatchState::unavailable;match.message="No unique new matching Steam game was observed before the launch timeout.";
+        if(snapshot.awaiting_observation)return;
+        match.state=integrations::ExecutableMatchState::unavailable;match.message="The associated game process is no longer observable.";
       }
       if(match.state!=integrations::ExecutableMatchState::matched||!match.process) {
-        snapshot.state=SessionState::interrupted;snapshot.awaiting_observation=false;snapshot.duration_ms=0;
+        snapshot.state=SessionState::interrupted;
+        snapshot.duration_ms=snapshot.awaiting_observation?0:static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now()-e.started).count());
+        snapshot.awaiting_observation=false;
         snapshot.capabilities={};snapshot.window.reset();snapshot.tracking_message=match.message;changed(e);return;
       }
       if(!e.observed) {
@@ -300,7 +311,12 @@ struct SessionManager::Impl {
       condition.wait_for(lock, std::chrono::milliseconds(25), [&] { return stopping; });
       if (stopping) break;
       const auto work=entries;lock.unlock();
-      for (const auto& entry : work) { update(entry); save(entry); }
+      for (const auto& entry : work) {
+        if(stop.stop_requested())break;
+        update(entry);
+        if(stop.stop_requested())break;
+        save(entry);
+      }
       lock.lock();
     }
   }
@@ -420,12 +436,14 @@ SessionHistory SessionManager::history(const fs::path& profile_directory, const 
 }
 integrations::Result SessionManager::shutdown() {
   std::lock_guard shutdown_lock(impl_->shutdown_mutex);
-  { std::lock_guard lock(impl_->mutex); impl_->stopping = true; impl_->condition.notify_all(); }
+  { std::lock_guard lock(impl_->mutex); impl_->stopping = true;impl_->stop.request_stop(); impl_->condition.notify_all(); }
   if (impl_->observer.joinable()) impl_->observer.join();
   std::vector<std::shared_ptr<Impl::Entry>> entries;{std::lock_guard lock(impl_->mutex);entries=impl_->entries;}
   std::string error;
   for (const auto& entry : entries) {
-    impl_->update(entry);
+    // Refresh retained identities only. Pending discoveries remain unknown;
+    // shutdown must not begin another executable or window enumeration.
+    impl_->update(entry,false);
     {std::lock_guard lock(impl_->mutex);
       if(entry->snapshot.state==SessionState::running) {
         entry->snapshot.state=SessionState::detached;entry->snapshot.ended_at=0;entry->snapshot.capabilities={};entry->snapshot.window.reset();
