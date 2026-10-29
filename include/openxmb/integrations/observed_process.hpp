@@ -28,12 +28,15 @@ struct ExecutableMatch {
   std::shared_ptr<ObservedProcess> process;
   std::string message;
 };
-// Construct before forwarding the launch. Only new processes with this exact
-// canonical image and the same user/session may match. Existing, ambiguous or
-// inaccessible matches fail closed. Poll on a worker, never the UI thread.
+// Construct before forwarding the launch. Exact mode requires this canonical
+// image. Directory mode requires a safe installation root, a strictly contained
+// canonical image and one validated game window. Both require a new, same-user
+// and same-session identity. Ambiguous or preexisting games fail closed.
+// Unrelated inaccessible processes cannot become directory-mode candidates.
+// Poll on a worker, never the UI thread.
 class ExecutableObservation {
 public:
-  explicit ExecutableObservation(const std::filesystem::path& executable);
+  explicit ExecutableObservation(const std::filesystem::path& target,bool installation_directory=false);
   ~ExecutableObservation();
   ExecutableObservation(const ExecutableObservation&)=delete;
   ExecutableObservation& operator=(const ExecutableObservation&)=delete;

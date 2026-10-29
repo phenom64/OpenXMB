@@ -52,9 +52,12 @@ void validate(const SessionDescriptor& value) {
   if (value.kind != SessionKind::game && value.kind != SessionKind::application) throw std::runtime_error("Invalid session kind");
   if (value.tracking != TrackingQuality::direct_child && value.tracking != TrackingQuality::launcher_only && value.tracking != TrackingQuality::unknown && value.tracking != TrackingQuality::provider_observed) throw std::runtime_error("Invalid tracking quality");
   if(value.observation) {
-    const auto& spec=*value.observation;bounded_string(path_text(spec.executable),32768,true);
+    const auto& spec=*value.observation;
+    bounded_string(path_text(spec.executable),32768,spec.installation_directory.empty());
+    bounded_string(path_text(spec.installation_directory),32768,spec.executable.empty());
     if(value.runner!="steam"||value.kind!=SessionKind::game||value.tracking!=TrackingQuality::launcher_only)
-      throw std::runtime_error("Executable observation requires a launcher-only Steam game session");
+      throw std::runtime_error("Process observation requires a launcher-only Steam game session");
+    if(spec.executable.empty()&&!spec.steam_app_id)throw std::runtime_error("Automatic Steam observation requires its installed app ID");
     if(spec.timeout_ms<250||spec.timeout_ms>300000)throw std::runtime_error("Steam game observation timeout must be between 250 ms and five minutes");
   }
 }
@@ -284,6 +287,13 @@ struct SessionManager::Impl {
     }
     snapshot.duration_ms=static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now()-e.started).count());
     snapshot.window=window;
+    if(!watch&&window&&observation.state==integrations::ProcessState::running&&
+       snapshot.descriptor.kind==SessionKind::application&&snapshot.descriptor.runner=="youtube"&&
+       snapshot.descriptor.tracking!=TrackingQuality::direct_child) {
+      snapshot.descriptor.tracking=TrackingQuality::direct_child;
+      snapshot.tracking_message="Observed application window and direct child lifetime; detached descendants are not tracked";
+      changed(e);
+    }
     const bool controlled=snapshot.descriptor.tracking==TrackingQuality::direct_child||snapshot.descriptor.tracking==TrackingQuality::provider_observed;
     snapshot.capabilities={controlled&&window.has_value(),controlled&&window.has_value(),controlled&&window.has_value()};
 #ifndef _WIN32
@@ -339,7 +349,10 @@ SessionLaunchResult SessionManager::launch(SessionDescriptor descriptor, const s
   try { validate(descriptor); descriptor.profile_directory = fs::weakly_canonical(fs::absolute(descriptor.profile_directory));std::lock_guard journal(impl_->journal_mutex);preflight(descriptor); }
   catch (const std::exception& error) { return {false, {}, "Cannot prepare session history: " + std::string(error.what())}; }
   auto entry=std::make_shared<Impl::Entry>();
-  if(descriptor.observation)try{entry->watch=std::make_shared<integrations::ExecutableObservation>(descriptor.observation->executable);}
+  if(descriptor.observation)try {
+    const auto& spec=*descriptor.observation;const bool directory=spec.executable.empty();
+    entry->watch=std::make_shared<integrations::ExecutableObservation>(directory?spec.installation_directory:spec.executable,directory);
+  }
   catch(const std::exception& error){return {false,{},std::string("Cannot prepare Steam game observation: ")+error.what()};}
   const auto started = Clock::now(); auto launched = integrations::launch_owned_process(arguments, working_directory);
   if (!launched) return {false, {}, launched.message};
@@ -367,7 +380,9 @@ std::vector<SessionSnapshot> SessionManager::snapshot() const {
 }
 std::optional<SessionSnapshot> SessionManager::active_session() const {
   std::lock_guard lock(impl_->mutex);
-  for (auto it = impl_->entries.rbegin(); it != impl_->entries.rend(); ++it) if ((*it)->snapshot.state == SessionState::running) {
+  for (auto it = impl_->entries.rbegin(); it != impl_->entries.rend(); ++it) if ((*it)->snapshot.state == SessionState::running &&
+      ((*it)->snapshot.awaiting_observation||(*it)->snapshot.descriptor.tracking==TrackingQuality::direct_child||
+       (*it)->snapshot.descriptor.tracking==TrackingQuality::provider_observed)) {
     auto value=(*it)->snapshot;
     if(!value.awaiting_observation)value.duration_ms=static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now()-(*it)->started).count());
     return value;
@@ -396,11 +411,19 @@ integrations::Result SessionManager::confirm_application_window(const std::strin
 }
 integrations::Result SessionManager::quit(const std::string& session_id, integrations::ProcessStopMode mode) {
   std::shared_ptr<integrations::OwnedProcess> owned;std::shared_ptr<integrations::ObservedProcess> observed;
+  std::shared_ptr<Impl::Entry> canceled;
   {
     std::lock_guard lock(impl_->mutex);
     for (const auto& entry : impl_->entries) if (entry->snapshot.id == session_id) {
       const auto& snapshot=entry->snapshot;
-      if(snapshot.state!=SessionState::running||snapshot.awaiting_observation)return {false,"This game has no current process capability."};
+      if(snapshot.state!=SessionState::running)return {false,"This game has no current process capability."};
+      if(snapshot.awaiting_observation) {
+        if(mode!=integrations::ProcessStopMode::request_close)return {false,"Pending observation cannot force stop a forwarding launcher."};
+        auto& value=entry->snapshot;value.state=SessionState::detached;value.awaiting_observation=false;
+        value.duration_ms=0;value.ended_at=0;value.exit_code.reset();value.capabilities={};value.window.reset();
+        value.tracking_message="Game observation canceled; the launcher and any game were left running.";
+        Impl::changed(*entry);canceled=entry;break;
+      }
       if(snapshot.descriptor.tracking==TrackingQuality::provider_observed) {
         if(mode!=integrations::ProcessStopMode::request_close)return {false,"An observed Steam game can only receive a graceful window close request; force stop is unavailable."};
         if(!snapshot.capabilities.graceful_close)return {false,"The observed game has no unique current window to close."};
@@ -413,6 +436,7 @@ integrations::Result SessionManager::quit(const std::string& session_id, integra
       break;
     }
   }
+  if(canceled){impl_->save(canceled);return {true,"Game observation canceled; running processes were left open."};}
   if(observed)return observed->request_close();
   if(owned)return owned->stop(mode);
   return {false, "This session is not owned by this manager"};

@@ -21,6 +21,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <algorithm>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -197,6 +198,44 @@ void steam_launch_settings(const fs::path& root,const fs::path& test_executable)
   {std::ofstream file(metadata);file<<legacy_state;}
   for(const auto& entry:Library(root).games())require(entry.launch_override.mode==GameLaunchMode::provider,"legacy libraries without launch settings migrate to provider mode");
 }
+void support_visibility(const fs::path& root,const fs::path& test_executable) {
+  Library library(root);
+  Game support;support.title="Steamworks Common Redistributables";support.runner="steam";support.content="228980";
+  support.favorite=true;support.play_count=7;support.icon=root/"custom support icon.png";
+  support.automatic_artwork["icon"]=root/"old automatic icon.png";
+  support.launch_override.mode=GameLaunchMode::direct;support.launch_override.executable=test_executable;
+  support.launch_override.arguments={"literal saved support override"};
+  const auto first=library.save_game(support);
+  support.title="Ubisoft Connect Services";support.content="4099820";support.id.clear();
+  const auto second=library.save_game(support);
+  Game native;native.title="Ubisoft Connect Services";native.runner="native";native.executable=test_executable;native.icon=root/"native manual artwork.png";
+  native=library.save_game(native);
+  Game real;real.title="Trackmania";real.runner="steam";real.content="2225070";real.icon=root/"real manual artwork.png";
+  real=library.save_game(real);
+  const auto metadata=library.active_directory()/"library.json";
+  nlohmann::json before;{std::ifstream input(metadata);input>>before;}
+  // A future/private field must also survive operations performed through the
+  // filtered view; reconstructing hidden records through Game would lose it.
+  for(auto& item:before["games"])if(item["id"]==first.id||item["id"]==second.id)item["retained_user_note"]="do not rewrite this hidden record";
+  {std::ofstream output(metadata);output<<before;}
+  const auto saved_record=[&](const nlohmann::json& state,const std::string& id) {
+    for(const auto& item:state.at("games"))if(item.at("id")==id)return item.dump();
+    throw std::runtime_error("stored support record disappeared");
+  };
+  const auto first_bytes=saved_record(before,first.id),second_bytes=saved_record(before,second.id);
+  const auto visible=library.games();
+  require(visible.size()==2,"stored support products are hidden without hiding real or explicit native games");
+  require(std::any_of(visible.begin(),visible.end(),[&](const Game& value){return value.id==native.id&&value.icon==native.icon;}),"explicit Ubisoft-named native imports retain their artwork and visibility");
+  real.favorite=true;real.launch_override.mode=GameLaunchMode::direct;real.launch_override.executable=test_executable;
+  real.launch_override.arguments={"saved real game override"};library.save_game(real);library.mark_played(real.id);
+  auto refreshed=real;refreshed.title="Trackmania refreshed";refreshed.icon=root/"new automatic header.png";refreshed.launch_override={};
+  require(library.import_games({{refreshed,true},{first,true},{second,true}})==0,"rescanning support products never adds them back or duplicates the real game");
+  nlohmann::json after;{std::ifstream input(metadata);input>>after;}
+  require(after["games"].size()==4&&saved_record(after,first.id)==first_bytes&&saved_record(after,second.id)==second_bytes,"favourite history override and discovery updates preserve byte-equivalent hidden support records");
+  const auto updated=library.games();
+  const auto found=std::find_if(updated.begin(),updated.end(),[&](const Game& value){return value.id==real.id;});
+  require(found!=updated.end()&&found->favorite&&found->play_count==1&&found->icon==real.icon&&found->launch_override.arguments==real.launch_override.arguments,"visible real game mutations preserve manual artwork and launch settings");
+}
 }
 int main(int argc,char** argv) {
   if(argc==4&&std::string(argv[1])=="--direct-launch-child") {std::ofstream output(argv[2]);output<<argv[3];return output?0:2;}
@@ -208,6 +247,7 @@ int main(int argc,char** argv) {
     arguments();
     runner_manifests(root / "runner-manifests");
     steam_launch_settings(root / "steam-launch-settings",fs::absolute(argv[0]));
+    support_visibility(root / "support-visibility",fs::absolute(argv[0]));
     fs::remove_all(root);
     std::cout << "Desktop profiles, game launch, custom sections and local social checks passed\n";
   } catch (const std::exception &error) {

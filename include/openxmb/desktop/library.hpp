@@ -107,6 +107,7 @@ public:
   std::filesystem::path config_path(const std::string &id) const;
   std::filesystem::path themes_path(const std::string &id) const;
 
+  // Playable view: provider support products stay stored, but are not games.
   std::vector<Game> games() const;
   Game save_game(Game game);
   void remove_game(const std::string &id);

@@ -101,6 +101,23 @@ void manager_checks(const fs::path& root, const fs::path& helper) {
   require(reopened.history(profile).error.empty(),"provider-observed tracking value 3 remains readable beside existing session enum values");
   require(!fs::exists(profile / "library.json"), "session backend wrote library.json");
 }
+void forwarding_lifetime_checks(const fs::path& root,const fs::path& helper) {
+  for(const auto quality:{TrackingQuality::launcher_only,TrackingQuality::unknown}) {
+    const auto folder=root/(quality==TrackingQuality::launcher_only?"launcher":"unknown");fs::create_directories(folder);
+    SessionManager manager;auto desc=descriptor(folder/"profile");desc.tracking=quality;
+    const auto launched=manager.launch(desc,{text(helper),"wait","ready","release"},folder);
+    require(bool(launched),"persistent forwarding fixture did not launch");
+    wait([&]{return fs::exists(folder/"ready");},"persistent forwarding fixture never became ready");
+    const auto blocked=manager.active_session().has_value();
+    const auto snapshot=manager.snapshot().front();
+    require(!snapshot.capabilities.focus&&!snapshot.capabilities.capture&&!snapshot.capabilities.graceful_close,
+      "unobserved forwarder acquired game window capabilities");
+    std::ofstream(folder/"release")<<"release";
+    wait([&]{return manager.snapshot().front().state==SessionState::exited;},"forwarder exit was not recorded");
+    require(!blocked,"a persistent forwarding launcher retained the game launch lock");
+    require(manager.history(folder/"profile").total_playtime_ms==0,"forwarder lifetime was credited as game time");
+  }
+}
 void journal_checks(const fs::path& root, const fs::path& helper) {
   const auto profile = root / "profile"; const auto cwd = root / "cwd"; fs::create_directories(cwd);
   SessionManager manager;
@@ -179,12 +196,16 @@ LRESULT CALLBACK fixture_window(HWND hwnd,UINT message,WPARAM parameter,LPARAM v
   return DefWindowProcW(hwnd,message,parameter,value);
 }
 int observation_fixture(const std::string& mode) {
-  FixtureWindow state;HWND hwnd{};
-  if(mode=="window") {
+  FixtureWindow state;HWND hwnd{},second{};
+  if(mode=="window"||mode=="two-windows") {
     WNDCLASSW cls{};cls.lpfnWndProc=fixture_window;cls.hInstance=GetModuleHandleW(nullptr);cls.lpszClassName=L"OpenXMB.ObservedFixture";
     if(!RegisterClassW(&cls))return 81;
     hwnd=CreateWindowExW(WS_EX_NOACTIVATE,cls.lpszClassName,L"Observed game fixture",WS_POPUP|WS_VISIBLE,-32000,-32000,120,80,nullptr,nullptr,cls.hInstance,&state);
     if(!hwnd)return 82;
+    if(mode=="two-windows") {
+      second=CreateWindowExW(WS_EX_NOACTIVATE,cls.lpszClassName,L"Ambiguous game fixture",WS_POPUP|WS_VISIBLE,-32000,-32000,120,80,nullptr,nullptr,cls.hInstance,&state);
+      if(!second)return 84;
+    }
   }
   if(mode=="inaccessible") {
     SECURITY_DESCRIPTOR descriptor{};alignas(ACL) unsigned char bytes[64]{};auto* acl=reinterpret_cast<ACL*>(bytes);
@@ -199,6 +220,7 @@ int observation_fixture(const std::string& mode) {
   }
   if(state.close_requested)std::ofstream("closed")<<"closed";
   if(hwnd)DestroyWindow(hwnd);
+  if(second)DestroyWindow(second);
   return 0;
 }
 fs::path fixture_image(const fs::path& root,const fs::path& self,const char* name) {
@@ -257,10 +279,85 @@ void observed_process_checks(const fs::path& root,const fs::path& self) {
   require(canceled.poll(stop.get_token()).state==ExecutableMatchState::unavailable&&std::chrono::steady_clock::now()-cancel_started<250ms,
     "canceled process discovery did not stop promptly before enumerating candidates");
 }
+void directory_process_checks(const fs::path& root,const fs::path& self) {
+  const auto installed=root/"installed-game";const auto image=fixture_image(installed/"bin",self,"game.exe");
+  const auto sibling=fixture_image(root/"installed-game-other",self,"other.exe");
+  const auto helper=fixture_image(installed,self,"UnityCrashHandler64.exe");
+  const auto silent_image=fixture_image(installed,self,"background.exe");
+  const auto other_image=fixture_image(installed,self,"alternate.exe");
+  bool refused=false;try{ExecutableObservation unsafe(root.root_path(),true);}catch(const std::exception&){refused=true;}
+  require(refused,"directory observation accepted a whole volume as a game installation");
+  refused=false;try{ExecutableObservation unsafe(fs::temp_directory_path(),true);}catch(const std::exception&){refused=true;}
+  require(refused,"directory observation accepted the shared temporary directory");
+  const auto before=GetForegroundWindow();
+  ExecutableObservation watch(installed,true);
+  const auto outside=fixture_start(sibling,root/"outside");
+  const auto escape=installed/"escape";
+  const bool alias_created=CreateSymbolicLinkW(escape.c_str(),sibling.parent_path().c_str(),SYMBOLIC_LINK_FLAG_DIRECTORY|0x2)!=FALSE;
+  OwnedProcessLaunch aliased;
+  if(alias_created)aliased=fixture_start(escape/sibling.filename(),root/"aliased-outside");
+  const auto crash=fixture_start(helper,root/"helper");
+  const auto background=fixture_start(silent_image,root/"background","wait");
+  const auto multiple_windows=fixture_start(other_image,root/"multiple-windows","two-windows");
+  const auto inaccessible=fixture_start(sibling,root/"unrelated-inaccessible","inaccessible");
+  require(watch.poll().state==ExecutableMatchState::pending,"root observation accepted a sibling path, helper or process without one valid window");
+  const auto game=fixture_start(image,root/"game");ExecutableMatch match;
+  wait([&]{match=watch.poll();if(match.state==ExecutableMatchState::rejected||match.state==ExecutableMatchState::unavailable)throw std::runtime_error(match.message);return match.state==ExecutableMatchState::matched;},"new game below its imported installation root was not observed");
+  require(match.process&&match.process->id()==game.process->id()&&match.process->window(),"root observation did not retain the proven game process/window identity");
+  require(GetForegroundWindow()==before,"directory observation or its fixtures stole desktop focus");
+  fixture_release(game,root/"game");
+  require(watch.poll().process==match.process&&match.process->observe().state==ProcessState::exited,
+    "directory observation replaced the pinned game identity after its manual exit");
+  fixture_release(outside,root/"outside");fixture_release(crash,root/"helper");fixture_release(background,root/"background");
+  fixture_release(multiple_windows,root/"multiple-windows");fixture_release(inaccessible,root/"unrelated-inaccessible");
+  if(aliased)fixture_release(aliased,root/"aliased-outside");
+  const auto existing=fixture_start(image,root/"existing");ExecutableObservation baseline(installed,true);
+  const auto baseline_state=baseline.poll().state;fixture_release(existing,root/"existing");
+  require(baseline_state==ExecutableMatchState::rejected,"directory observation adopted a preexisting game");
+  ExecutableObservation ambiguous(installed,true);
+  const auto first=fixture_start(image,root/"first"),second_game=fixture_start(other_image,root/"second");
+  const auto ambiguous_state=ambiguous.poll().state;fixture_release(first,root/"first");fixture_release(second_game,root/"second");
+  require(ambiguous_state==ExecutableMatchState::rejected,"directory observation silently chose one of several game windows");
+}
+void directory_manager_checks(const fs::path& root,const fs::path& self) {
+  const auto installed=root/"installed-game";const auto image=fixture_image(installed,self,"actual-game.exe");
+  const auto forwarder=fixture_image(root/"forwarder-image",self,"persistent-launcher.exe");
+  const auto folder=root/"forwarder";fs::create_directories(folder);
+  SessionManager manager;auto desc=steam_descriptor(root/"profile",{},4000);
+  desc.observation->installation_directory=installed;desc.observation->steam_app_id=4294967295u;
+  const auto launched=manager.launch(desc,{text(forwarder),"--observation-fixture","wait"},folder);
+  require(bool(launched),"directory observation failed to prepare its provider launch");
+  DWORD pid{};wait([&]{std::ifstream input(folder/"ready");return bool(input>>pid)&&pid!=0;},"persistent Steam forwarding fixture not ready");
+  HANDLE launcher=OpenProcess(SYNCHRONIZE|PROCESS_QUERY_LIMITED_INFORMATION,FALSE,pid);
+  require(launcher!=nullptr,"could not inspect the controlled forwarding fixture");
+  const auto game=fixture_start(image,root/"game");
+  wait([&]{const auto active=manager.active_session();return active&&active->descriptor.tracking==TrackingQuality::provider_observed&&active->window;},"automatic Steam directory observation never associated the game");
+  const auto active=*manager.active_session();
+  require(active.process_id==game.process->id()&&active.capabilities.graceful_close&&active.process_id!=pid,
+    "automatic Steam capabilities refer to its forwarding launcher");
+  fixture_release(game,root/"game");
+  wait([&]{return !manager.active_session();},"manually exited Steam game retained the active launch lock");
+  const bool launcher_alive=WaitForSingleObject(launcher,0)==WAIT_TIMEOUT;
+  std::ofstream(folder/"release")<<"release";
+  require(WaitForSingleObject(launcher,5000)==WAIT_OBJECT_0,"persistent forwarding fixture did not exit after release");CloseHandle(launcher);
+  require(launcher_alive,"observing game exit killed the forwarding Steam process");
+  wait([&]{const auto history=manager.history(root/"profile");return !history.recent.empty()&&history.recent.front().state==SessionState::exited;},"automatic observed game exit was not persisted");
+  const auto history=manager.history(root/"profile");
+  require(history.total_playtime_ms==0&&history.recent.front().process_id==game.process->id()&&history.recent.front().exit_code==0,
+    "automatic provider history fabricated ownership or recorded launcher exit as game exit");
+  SessionManager youtube;auto app=descriptor(root/"youtube-profile");app.kind=SessionKind::application;app.runner="youtube";app.tracking=TrackingQuality::launcher_only;
+  const auto app_folder=root/"youtube";fs::create_directories(app_folder);
+  require(bool(youtube.launch(app,{text(image),"--observation-fixture","window"},app_folder)),"owned app manual-close fixture did not launch");
+  wait([&]{const auto value=youtube.active_session();return value&&value->window&&value->capabilities.graceful_close;},"owned app window did not promote its forwarding session");
+  const auto app_window=*youtube.active_session()->window;
+  require(PostMessageW(reinterpret_cast<HWND>(app_window.handle),WM_CLOSE,0,0)!=FALSE,"external controlled app close failed");
+  wait([&]{return !youtube.active_session();},"manual owned app exit retained the active launch lock");
+}
 void observed_manager_checks(const fs::path& root,const fs::path& helper,const fs::path& self) {
   const auto image=fixture_image(root,self,"observed-session-game.exe");const auto cwd=root/"cwd";fs::create_directories(cwd);
   SessionManager manager;const auto profile=root/"profile";
-  const auto launched=manager.launch(steam_descriptor(profile,image,1200),{text(helper),"record","0","0"},cwd);
+  auto exact=steam_descriptor(profile,image,1200);exact.observation->installation_directory=root.root_path();
+  const auto launched=manager.launch(exact,{text(helper),"record","0","0"},cwd);
   require(bool(launched),"provider observation launch failed");
   std::this_thread::sleep_for(150ms);
   auto pending=manager.active_session();
@@ -313,6 +410,23 @@ void observed_manager_checks(const fs::path& root,const fs::path& helper,const f
   require(bool(direct.quit(own.session_id)),"owned window graceful close failed after capability validation");
   wait([&]{return !direct.active_session();},"owned window close was not finalized");
 }
+void pending_cancel_checks(const fs::path& root,const fs::path& helper,const fs::path& self) {
+  const auto image=fixture_image(root,self,"cancel-never-started.exe");const auto folder=root/"forwarder";fs::create_directories(folder);
+  SessionManager manager;const auto launched=manager.launch(steam_descriptor(root/"profile",image,60000),
+    {text(helper),"wait","ready","release"},folder);
+  require(bool(launched),"cancellable observation fixture did not launch");
+  wait([&]{return fs::exists(folder/"ready");},"cancellable forwarder never became ready");
+  require(!manager.quit(launched.session_id,ProcessStopMode::force_stop),"pending observation accepted force stop");
+  const auto canceled=manager.quit(launched.session_id);
+  const auto snapshot=manager.snapshot().front();
+  const auto blocked=manager.active_session().has_value();
+  const bool alive=!fs::exists(folder/"completed");
+  std::ofstream(folder/"release")<<"release";
+  wait([&]{return fs::exists(folder/"completed");},"canceling observation killed or stalled its forwarding launcher");
+  require(bool(canceled)&&!blocked,"pending observation could not be canceled without killing its launcher");
+  require(alive&&snapshot.state==SessionState::detached&&snapshot.duration_ms==0&&snapshot.ended_at==0&&!snapshot.exit_code,
+    "observation cancellation fabricated game exit or lifetime");
+}
 void pending_shutdown_checks(const fs::path& root,const fs::path& self) {
   const auto never_started=fixture_image(root,self,"pending-never-started-game.exe");
   const auto forwarder=fixture_image(root,self,"pending-owned-forwarder.exe");
@@ -352,11 +466,15 @@ int main(int argc, char** argv) {
   try {
     const auto helper = fs::absolute(argv[1]);
     process_checks(root / "process", helper);
+    forwarding_lifetime_checks(root/"forwarding-lifetime",helper);
     manager_checks(root / "manager", helper);
     journal_checks(root / "journal", helper);
     quit_and_shutdown(root / "quit", helper);
 #ifdef _WIN32
     observed_process_checks(root/"observed-process",fs::absolute(argv[0]));
+    directory_process_checks(root/"directory-process",fs::absolute(argv[0]));
+    directory_manager_checks(root/"directory-manager",fs::absolute(argv[0]));
+    pending_cancel_checks(root/"pending-cancel",helper,fs::absolute(argv[0]));
     observed_manager_checks(root/"observed-manager",helper,fs::absolute(argv[0]));
     pending_shutdown_checks(root/"pending-shutdown",fs::absolute(argv[0]));
 #endif

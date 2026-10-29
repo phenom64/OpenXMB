@@ -17,6 +17,10 @@ enum class SessionState { running, exited, detached, interrupted };
 struct ProviderObservationSpec {
   std::filesystem::path executable;
   std::uint32_t timeout_ms{60000};
+  // An exact executable takes priority. Otherwise automatic Steam discovery
+  // is confined to this imported game installation, never the Steam client.
+  std::filesystem::path installation_directory;
+  std::uint32_t steam_app_id{};
 };
 struct SessionCapabilities {bool focus{}, capture{}, graceful_close{};};
 struct SessionDescriptor {
@@ -62,7 +66,10 @@ public:
   [[nodiscard]] SessionLaunchResult launch(SessionDescriptor descriptor, const std::vector<std::string>& arguments,
                                           const std::filesystem::path& working_directory = {});
   [[nodiscard]] std::vector<SessionSnapshot> snapshot() const;
+  // Only verified game/app processes and bounded pending discovery are
+  // exclusive. Unobserved forwarding launchers never hold the launch lock.
   [[nodiscard]] std::optional<SessionSnapshot> active_session() const;
+  // request_close cancels pending discovery without signaling any process.
   [[nodiscard]] integrations::Result quit(const std::string& session_id,
     integrations::ProcessStopMode mode = integrations::ProcessStopMode::request_close);
   [[nodiscard]] SessionHistory history(const std::filesystem::path& profile_directory, const std::string& identity = {}) const;

@@ -7,6 +7,8 @@
 #include <fstream>
 #include <limits>
 #include <map>
+#include <memory>
+#include <mutex>
 #include <optional>
 #include <set>
 #include <stdexcept>
@@ -184,6 +186,133 @@ bool complete_counter(const Node& state, const char* total_key, const char* done
   const auto done = done_text ? number(*done_text) : std::optional<std::uint64_t>{0};
   return total && done && *done >= *total;
 }
+using AppTypes = std::map<std::string, bool>;
+std::optional<bool> playable_type(std::string type) {
+  type=lower(std::move(type));
+  if(type=="game"||type=="demo"||type=="mod"||type=="beta")return true;
+  for(const auto* support:{"tool","application","config","dlc","music","video","hardware","guide","advertising","launcher"})
+    if(type==support)return false;
+  return {};
+}
+bool playable_id(const std::string& id,const AppTypes& types) {
+  if(const auto found=types.find(id);found!=types.end())return found->second;
+  // Stable provider identities, confirmed as common.type=Tool in Steam's
+  // metadata: Steamworks Common Redistributables and Ubisoft Connect Services.
+  // Product names/publishers are deliberately not used as a blacklist.
+  return id!="228980"&&id!="4099820";
+}
+class AppInfo {
+public:
+  explicit AppInfo(std::string_view bytes):bytes_(bytes){}
+  AppTypes parse() {
+    std::size_t at=0;
+    // v29 adds an indexed key string table. Other versions are optional,
+    // unsupported metadata, not evidence that an installed title is a tool.
+    if(u32(at,bytes_.size())!=0x07564429)return {};
+    const auto universe=u32(at,bytes_.size());if(!universe||universe>5)return {};
+    const auto offset=u64(at,bytes_.size());
+    if(offset<16||offset>bytes_.size()-4)throw std::runtime_error("Invalid Steam appinfo string table");
+    const auto table=static_cast<std::size_t>(offset);auto strings=table;
+    const auto count=u32(strings,bytes_.size());if(count>100000)throw std::runtime_error("Excessive Steam appinfo keys");
+    keys_.reserve(count);
+    for(std::uint32_t i=0;i<count;++i)keys_.push_back(string(strings,bytes_.size()));
+    AppTypes result;std::set<std::uint32_t> ids;bool terminated=false;
+    while(at<table) {
+      const auto id=u32(at,table);
+      if(!id){terminated=true;break;}
+      if(ids.size()>=100000||!ids.insert(id).second)throw std::runtime_error("Duplicate/excessive Steam appinfo records");
+      const auto size=u32(at,table);
+      if(size<60||size>table-at)throw std::runtime_error("Invalid Steam appinfo record bounds");
+      const auto end=at+size;
+      if(size<=4*1024*1024) {
+        auto payload=at+60;std::optional<std::string> type;
+        try {
+          object(payload,end,0,0,type);
+          if(payload!=end)throw std::runtime_error("Trailing Steam appinfo record bytes");
+          if(type)if(const auto playable=playable_type(*type))result.emplace(std::to_string(id),*playable);
+        } catch(const std::runtime_error&) { /* This product remains unknown; independent records still apply. */ }
+      }
+      at=end;
+    }
+    if(!terminated||at!=table)throw std::runtime_error("Missing Steam appinfo record terminator");
+    return result;
+  }
+private:
+  std::string_view bytes_;
+  std::vector<std::string_view> keys_;
+  std::size_t nodes_{};
+  void require(std::size_t at,std::size_t count,std::size_t end) const {
+    if(at>end||count>end-at||end>bytes_.size())throw std::runtime_error("Truncated Steam appinfo data");
+  }
+  std::uint32_t u32(std::size_t& at,std::size_t end) const {
+    require(at,4,end);std::uint32_t result{};
+    for(unsigned i=0;i<4;++i)result|=std::uint32_t(static_cast<unsigned char>(bytes_[at+i]))<<(i*8);
+    at+=4;return result;
+  }
+  std::uint64_t u64(std::size_t& at,std::size_t end) const {
+    const auto low=u32(at,end),high=u32(at,end);return low|(std::uint64_t(high)<<32);
+  }
+  std::string_view string(std::size_t& at,std::size_t end) const {
+    require(at,1,end);const auto segment=bytes_.substr(at,std::min<std::size_t>(end-at,32769));
+    const auto length=segment.find('\0');
+    if(length==segment.npos)throw std::runtime_error("Invalid Steam appinfo string");
+    const auto result=segment.substr(0,length);at+=length+1;return result;
+  }
+  // Only root/appinfo/common/type is captured. Other values are validated and
+  // skipped without constructing a tree or retaining launch/private fields.
+  void object(std::size_t& at,std::size_t end,unsigned depth,unsigned section,std::optional<std::string>& product) {
+    if(depth>16)throw std::runtime_error("Excessive Steam appinfo nesting");
+    std::set<std::string> object_keys;
+    while(at<end) {
+      const auto kind=static_cast<unsigned char>(bytes_[at++]);if(kind==8)return;
+      if(++nodes_>1000000)throw std::runtime_error("Excessive Steam appinfo fields");
+      const auto index=u32(at,end);if(index>=keys_.size())throw std::runtime_error("Invalid Steam appinfo key index");
+      const auto key=lower(std::string(keys_[index]));
+      if(object_keys.size()>=65536||!object_keys.insert(key).second)throw std::runtime_error("Duplicate/excessive Steam appinfo object keys");
+      if(((section==0&&depth==0&&key=="appinfo")||(section==1&&key=="common"))&&kind!=0)
+        throw std::runtime_error("Steam appinfo product container must be an object");
+      if(section==2&&key=="type"&&kind!=1)throw std::runtime_error("Steam appinfo product type must be a string");
+      if(kind==0) {
+        const auto child=section==0&&depth==0&&key=="appinfo"?1u:section==1&&key=="common"?2u:3u;
+        object(at,end,depth+1,child,product);
+      } else if(kind==1) {
+        const auto value=string(at,end);
+        if(section==2&&key=="type") {
+          if(product||!safe_text(std::string(value),64))throw std::runtime_error("Invalid/duplicate Steam product type");
+          product=value;
+        }
+      } else if(kind==2||kind==3||kind==4||kind==6) {require(at,4,end);at+=4;}
+      else if(kind==7||kind==10) {require(at,8,end);at+=8;}
+      else if(kind==5) {
+        std::size_t units=0;
+        for(;;) {require(at,2,end);const bool zero=bytes_[at]==0&&bytes_[at+1]==0;at+=2;if(zero)break;if(++units>32768)throw std::runtime_error("Oversized Steam wide string");}
+      } else throw std::runtime_error("Unsupported Steam appinfo value type");
+    }
+    throw std::runtime_error("Unterminated Steam appinfo object");
+  }
+};
+std::shared_ptr<const AppTypes> app_types(const fs::path& root,Budget& budget) {
+  static const auto empty=std::make_shared<const AppTypes>();
+  const auto path=root/"appcache/appinfo.vdf";std::error_code error;
+  if(!fs::is_regular_file(fs::symlink_status(path,error))||error)return empty;
+  const auto size=fs::file_size(path,error);if(error||size<16||size>64*1024*1024||size>budget.bytes)return empty;
+  budget.bytes-=size;
+  const auto changed=fs::last_write_time(path,error);if(error)return empty;
+  struct Cached {std::uintmax_t size{};fs::file_time_type changed{};std::shared_ptr<const AppTypes> types;};
+  static std::mutex mutex;static std::map<fs::path,Cached> cache;
+  std::scoped_lock lock(mutex);
+  if(const auto found=cache.find(path);found!=cache.end()&&found->second.size==size&&found->second.changed==changed)return found->second.types;
+  auto types=empty;
+  try {
+    std::ifstream input(path,std::ios::binary);std::string bytes(static_cast<std::size_t>(size)+1,'\0');
+    input.read(bytes.data(),static_cast<std::streamsize>(bytes.size()));
+    if(input.bad()||static_cast<std::uint64_t>(input.gcount())!=size)throw std::runtime_error("Steam appinfo changed during its read");
+    bytes.resize(static_cast<std::size_t>(size));types=std::make_shared<const AppTypes>(AppInfo(bytes).parse());
+    if(fs::file_size(path,error)!=size||error||fs::last_write_time(path,error)!=changed||error)return empty;
+  } catch(const std::exception&) { /* Optional malformed/unknown metadata never hides unknown games. */ }
+  if(cache.size()>=64)cache.clear();
+  cache[path]={size,changed,types};return types;
+}
 Game read_manifest(const fs::path& manifest, const fs::path& root, const std::string& id, const fs::path& executable, Budget& budget) {
   const auto bytes = read_text(manifest, 1024 * 1024, budget);
   const auto document = KeyValues(bytes, 8192).parse(); const auto* state = document.get("appstate");
@@ -232,6 +361,27 @@ void artwork(Game& game, const std::vector<fs::path>& caches, Budget& budget) {
   if (game.background.empty() && text(game.icon.filename()).find("header") != std::string::npos) game.background = game.icon;
 }
 }
+bool steam_game_is_playable(const Game& game) {
+  if(game.runner!="steam")return true;
+  const auto id=app_id(text(game.content));if(!id)return true;
+  Budget budget;std::vector<fs::path> roots;
+  // A selected/explicit library comes first; its own cache can classify a
+  // title without depending on another Steam installation or test fixture.
+  auto path=game.working_directory;
+  for(unsigned depth=0;depth<16&&!path.empty();++depth) {
+    if(path.filename()=="common"&&path.parent_path().filename()=="steamapps") {roots.push_back(path.parent_path().parent_path());break;}
+    const auto parent=path.parent_path();if(parent==path)break;path=parent;
+  }
+  if(game.executable.has_parent_path())roots.push_back(game.executable.parent_path());
+  const auto defaults=default_roots();roots.insert(roots.end(),defaults.begin(),defaults.end());
+  std::set<fs::path> seen;
+  for(const auto& root:roots) {
+    if(network_path(root)||!seen.insert(root.lexically_normal()).second)continue;
+    const auto types=app_types(root,budget);
+    if(const auto found=types->find(*id);found!=types->end())return found->second;
+  }
+  return playable_id(*id,{});
+}
 GameDiscovery discover_steam_games(const std::vector<fs::path>& installation_roots, const fs::path& steam_executable) {
   if (installation_roots.size() > 64) throw ScanLimit("Choose at most 64 Steam installation roots");
   if (!safe_text(text(steam_executable), 32768, false)) throw std::runtime_error("Invalid Steam executable path");
@@ -260,6 +410,8 @@ GameDiscovery discover_steam_games(const std::vector<fs::path>& installation_roo
     catch (const ScanLimit&) { throw; } catch (const std::exception&) { /* Invalid registry cannot hide this root's valid manifests. */ }
   }
   std::vector<fs::path> caches;
+  AppTypes product_types;
+  for(const auto& root:roots) {const auto types=app_types(root,budget);product_types.insert(types->begin(),types->end());}
   for (const auto& root : roots) { std::error_code error; if (fs::is_directory(root / "appcache/librarycache", error)) caches.push_back(root / "appcache/librarycache"); }
   for (const auto& root : roots) {
     std::vector<std::pair<fs::path, std::string>> manifests; std::error_code error;
@@ -277,6 +429,7 @@ GameDiscovery discover_steam_games(const std::vector<fs::path>& installation_roo
       if (seen_apps.contains(id)) continue;
       try {
         auto game = read_manifest(manifest, root, id, steam_executable, budget);
+        if(!playable_id(id,product_types)) {seen_apps.insert(id);continue;}
         artwork(game, caches, budget); seen_apps.insert(id); games.push_back({std::move(game), true});
       } catch (const ScanLimit&) { throw; } catch (const std::exception&) { /* Read-only snapshot: incomplete/corrupt apps are skipped. */ }
       if (games.size() > 10000) throw ScanLimit("Steam discovery exceeded 10000 installed applications");

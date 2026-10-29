@@ -715,7 +715,11 @@ fs::path Library::switch_profile(const std::string &id) {
   auto state = global(root_); state["active_profile"] = id; write(root_ / "profiles.json", state);
   return config_path(id);
 }
-std::vector<Game> Library::games() const { return items<Game>(library(root_), "games", game); }
+std::vector<Game> Library::games() const {
+  auto result=items<Game>(library(root_),"games",game);
+  std::erase_if(result,[](const Game& value){return !steam_game_is_playable(value);});
+  return result;
+}
 Game Library::save_game(Game value) {
   valid_name(value.title);
   if (value.id.empty()) value.id = identifier("game");
@@ -804,7 +808,9 @@ GameDiscovery discover_games(const std::vector<fs::path>& configured_roots, Game
 }
 
 std::size_t Library::import_games(const GameDiscovery& discovered) {
-  auto existing = games();
+  // Persistence merges use every stored entry, including provider support
+  // products hidden from the games view. Never serialize a filtered view.
+  auto existing = items<Game>(library(root_),"games",game);
   const auto native = [](const Game &game) { return game.platform == "PlayStation 3 (RPCS3)" && !game.game_directory.empty(); };
   const auto identity = [&](const Game &game) {
     // The installed emulator executable and launch options can change. A
@@ -815,6 +821,7 @@ std::size_t Library::import_games(const GameDiscovery& discovered) {
   for (std::size_t i = 0; i < existing.size(); ++i) paths.emplace(identity(existing[i]), i);
   std::size_t count = 0;
   const auto accept = [&](Game found, bool manifest = false) {
+    if(!steam_game_is_playable(found))return;
     if (found.title.empty() || (found.executable.empty() && (found.runner.empty() || found.content.empty()))) return;
     const std::array<std::pair<const char*,fs::path Game::*>,6> roles{{{"icon",&Game::icon},{"background",&Game::background},{"preview",&Game::preview},{"music",&Game::music},{"cover",&Game::cover},{"logo",&Game::logo}}};
     for(const auto& [role,member]:roles)found.automatic_artwork[role]=found.*member;

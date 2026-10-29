@@ -83,7 +83,7 @@ void plans(const fs::path& root) {
   game.working_directory.clear(); game.runner = "made-up"; require(!plan_game_launch(game, options), "unknown runner was silently treated as native");
   game.runner = "steam"; game.content = "570";
   const auto steam = plan_game_launch(game, options);
-  require(bool(steam) && steam.arguments == std::vector<std::string>{text(options.executable_overrides.at("steam")), "-applaunch", "570"} && steam.tracking == TrackingQuality::launcher_only, "Steam app id plan must preserve forwarding semantics");
+  require(bool(steam) && steam.arguments == std::vector<std::string>{text(options.executable_overrides.at("steam")), "-silent", "-applaunch", "570"} && steam.tracking == TrackingQuality::launcher_only, "Steam app id plan must preserve forwarding semantics");
   for (const char* invalid : {"", "0", "-1", "570;touch injected", "4294967296", "steam://run/570"}) { game.content = invalid; require(!plan_game_launch(game, options), "invalid Steam app id was accepted"); }
   game = {}; game.executable = root / "native game.exe"; file(game.executable, true); game.working_directory = root;
   require(plan_game_launch(game, options).tracking == TrackingQuality::direct_child, "ordinary native binary should expose direct-child observation");

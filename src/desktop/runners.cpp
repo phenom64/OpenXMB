@@ -152,7 +152,7 @@ std::vector<std::string> defaults(const std::string& id, const fs::path& content
   else if (id == "retroarch") { if (fullscreen) result.push_back("-f"); result.push_back("-L"); result.push_back(text(core)); }
   else if (id == "dolphin") { result = {"--batch"}; if (fullscreen) { result.push_back("--config"); result.push_back("Dolphin.Display.Fullscreen=True"); } result.push_back("--exec"); }
   else if (id == "ppsspp") { result = {"--pause-menu-exit"}; if (fullscreen) result.push_back("--fullscreen"); }
-  else if (id == "steam") return {"-applaunch", steam_id(content)};
+  else if (id == "steam") return {"-silent", "-applaunch", steam_id(content)};
   result.push_back(text(content)); return result;
 }
 }
@@ -229,6 +229,8 @@ LaunchPlan plan_game_launch(const Game& game, const RunnerDiscoveryOptions& opti
         if (launch == game.arguments.end() || std::next(launch) == game.arguments.end() || *std::next(launch) != steam_id(content)) throw std::runtime_error("Explicit Steam arguments must launch the same validated app id with -applaunch");
       }
       plan.arguments = {text(runner.executable)}; plan.arguments.insert(plan.arguments.end(), arguments.begin(), arguments.end());
+      if(plan.runner=="steam"&&std::ranges::find(plan.arguments,"-silent")==plan.arguments.end())
+        plan.arguments.insert(plan.arguments.begin()+1,"-silent");
       plan.working_directory = game.working_directory.empty() ? runner.executable.parent_path() : game.working_directory;
       plan.tracking = plan.runner == "steam" ? TrackingQuality::launcher_only : runner.tracking;
       const bool imported_rpcs3 = plan.runner == "rpcs3" && game.arguments == std::vector<std::string>{"--no-gui", text(content)};
