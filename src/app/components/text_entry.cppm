@@ -1,5 +1,6 @@
 module;
 #include "../../localization/shell_locale.hpp"
+#include "../../localization/font_selection.hpp"
 
 #include "dialog_input.hpp"
 #include "dialog_text_layout.hpp"
@@ -8,11 +9,13 @@ module;
 #include <chrono>
 #include <cmath>
 #include <functional>
+#include <iterator>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <variant>
+#include <vector>
 
 export module openxmb.app:text_entry;
 import :component;
@@ -36,8 +39,11 @@ class text_entry_overlay : public component, public event_receiver {
 public:
     text_entry_overlay(std::string title, std::string initial,
                        std::function<void(std::string)> accept,std::function<void()> cancel={},
-                       keyboard_context context=keyboard_context::xmb)
-        : title_(::openxmb::localization::shell_locale::translate(title)), editor_(std::move(initial)), accept_(std::move(accept)),cancel_(std::move(cancel)),
+                       keyboard_context context=keyboard_context::xmb,
+                       std::vector<std::string> local_words={},bool local_completion=true)
+        : title_(::openxmb::localization::shell_locale::translate(title)),
+          editor_(std::move(initial),local_completion?completion_words(std::move(local_words)):std::vector<std::string>{},local_completion),
+          accept_(std::move(accept)),cancel_(std::move(cancel)),
           context_(context), position_(context==keyboard_context::message?glm::vec2{493,290}:glm::vec2{873,488}) {
         // Every captured keyboard opened with "g" focused.
         editor_.row=2;editor_.col=4;
@@ -49,27 +55,16 @@ public:
             if(stick->index==events::logical_joystick_index::right) {stick_={stick->x,stick->y};return result::success;}
             return result::unsupported;
         }
-        if(const auto* button=e.get<events::controller_button_down>()) {
-            using button_t=events::logical_controller_button;
-            switch(button->button) {
-            case button_t::start:return finish(true);
-            case button_t::back:editor_.cycle_page();return result::success|result::ok_sound;
-            case button_t::leftshoulder:editor_.move_caret(-1);return result::success;
-            case button_t::rightshoulder:editor_.move_caret(1);return result::success;
-            default:break;
-            }
-            // The controller Triangle inserts a space on the PS3 keyboard;
-            // keyboard-bound Options keeps its existing Save meaning.
-            if(e.action==action::options) {editor_.insert(" ");return result::success;}
-        }
-        std::optional<unsigned> down,up;
+        std::optional<unsigned> down,up,button_down,button_up;
         if(const auto* key=e.get<events::key_down>())down=key->keycode;
         if(const auto* key=e.get<events::key_up>())up=key->keycode;
+        if(const auto* button=e.get<events::controller_button_down>())button_down=static_cast<unsigned>(button->button);
+        if(const auto* button=e.get<events::controller_button_up>())button_up=static_cast<unsigned>(button->button);
         // Semantic bindings win over printable keys and transport shortcuts.
         const auto command=(down||e.is<events::controller_button_down>())?dialog_input::mapped(e.action):dialog_input::Command::none;
         const bool moved=command==dialog_input::Command::up||command==dialog_input::Command::down||
                          command==dialog_input::Command::left||command==dialog_input::Command::right;
-        switch(editor_.event(command,down,up)) {
+        switch(editor_.event(command,down,up,button_down,button_up)) {
         case dialog_input::Outcome::accept:return finish(true);
         case dialog_input::Outcome::cancel:return finish(false);
         case dialog_input::Outcome::copy:copy_value_=true;return result::success|result::ok_sound;
@@ -80,8 +75,11 @@ public:
 
     result tick(shell* xmb) override {
         const auto now=std::chrono::steady_clock::now();
-        const float dt=std::clamp(std::chrono::duration<float>(now-last_tick_).count(),0.0F,0.1F);
+        const auto elapsed=std::chrono::duration<double>(now-last_tick_).count();
+        const float dt=static_cast<float>(std::clamp(elapsed,0.0,0.1));
         last_tick_=now;
+        if(closing_||!xmb->input_focused()) {editor_.cancel_holds();stick_={};}
+        else editor_.advance(elapsed,config::CONFIG.number("input.repeat",180)/1000.0);
         // Right-stick repositioning is supported by the reference; speed and
         // interpolation were not measured, so one moderate rate is used and
         // the only limit is keeping the whole keyboard on screen.
@@ -176,16 +174,26 @@ public:
         rect(0,111,panel_width,333,grey(0.58F));
         for(int row=0;row<dialog_input::TextEntry::character_rows;++row) for(int col=0;col<dialog_input::TextEntry::columns;++col) {
             const float x=key_x(col),y=key_y(row);
-            const bool focused=row==editor_.row&&col==editor_.col;
-            draw_key(gradient,rect,x,y,key_width,row_height(row),focused?glm::vec3(0.94F):glm::vec3(0.77F),focused);
+            const bool focused=!editor_.prediction_focused&&row==editor_.row&&col==editor_.col;
+            draw_key(gradient,rect,x,y,key_width,row_height(row),focused?glm::vec3(0.94F):glm::vec3(0.77F),focused,editor_.pressed(row,col));
             if(labels>0) text_right(editor_.character(row,col),x+55,y+41,25,{ink.r,ink.g,ink.b,labels});
         }
-        // Prediction pane (no candidates are generated) and its footer strip.
+        // Local completion from the shipped locale text and this editor's
+        // buffer. No input is sent to a service or saved as typing history.
         rect(725,113,202,232,grey(0.44F));
         rect(917,116,7,226,grey(0.52F));
+        const auto& candidates=editor_.candidates();
+        for(std::size_t index=0;index<candidates.size();++index) {
+            const auto y=117+37*static_cast<float>(index);
+            const bool selected=editor_.prediction_focused&&index==std::min(editor_.prediction_index,candidates.size()-1);
+            if(selected)rect(728,y,186,35,grey(0.82F));
+            const auto candidate=dialog_text::ellipsize(candidates[index],172*c.scale,[&](auto value){return r.text_width_pixels(value,20*c.scale*config::CONFIG.textScale);});
+            if(labels>0)text(candidate,735,y+25,20,selected?glm::vec4{ink.r,ink.g,ink.b,labels}:glm::vec4{1,1,1,labels});
+        }
         gradient(725,348,202,30,grey(0.24F),grey(0.18F));
         if(labels>0) {
-            text("Prediction",735,369,17,{0.84F,0.9F,0.95F,labels});
+            const auto name=::openxmb::localization::shell_locale::translate("Predictive Input");
+            text(dialog_text::ellipsize(name,128*c.scale,[&](auto value){return r.text_width_pixels(value,17*c.scale*config::CONFIG.textScale);}),735,369,17,{0.84F,0.9F,0.95F,labels});
             rect(870,352,24,22,grey(0.62F,labels),2);rect(898,352,24,22,grey(0.85F,labels),2);
             text("a",882,369,16,{1,1,1,labels},true);text("0",910,369,16,{0.1F,0.1F,0.1F,labels},true);
         }
@@ -194,11 +202,12 @@ public:
         const auto function_key=[&](int row,const dialog_input::TextEntry::Cell& item) {
             using Key=dialog_input::TextEntry::Key;
             const float x=key_x(item.first),y=key_y(row),w=key_x(item.last)+key_width-x,h=row_height(row);
-            const bool focused=editor_.row==row&&item.first<=editor_.col&&editor_.col<=item.last;
+            const bool focused=!editor_.prediction_focused&&editor_.row==row&&item.first<=editor_.col&&editor_.col<=item.last;
+            const bool pressed=editor_.pressed(row,item.first);
             glm::vec3 tone=row==4?(item.first<4?yellow:blue):(item.key==Key::keypad||item.key==Key::blank||item.key==Key::input_mode||item.key==Key::enter?green:blue);
             if(item.key==Key::keypad) tone*=0.82F;
-            if(row==5&&item.first>=10) {const float px=item.first==10?723.0F:829.0F;draw_key(gradient,rect,px,y,98,h,focused?glm::vec3(1.0F):tone,focused);}
-            else draw_key(gradient,rect,x,y,w,h,focused?glm::mix(tone,glm::vec3(1.0F),0.65F):tone,focused);
+            if(row==5&&item.first>=10) {const float px=item.first==10?723.0F:829.0F;draw_key(gradient,rect,px,y,98,h,focused?glm::vec3(1.0F):tone,focused,pressed);}
+            else draw_key(gradient,rect,x,y,w,h,focused?glm::mix(tone,glm::vec3(1.0F),0.65F):tone,focused,pressed);
             if(labels<=0) return;
             const glm::vec4 label{navy.r,navy.g,navy.b,labels};
             const float right=x+w-9,base=y+h-9;
@@ -243,12 +252,19 @@ private:
     std::string_view page_name() const {return editor_.page==0?"Input Mode":editor_.page==1?"Symbols":"Accents";}
 
     result finish(bool accepted) {
+        editor_.cancel_holds();stick_={};
         closing_=true;accepted_=accepted;closed_at_=std::chrono::steady_clock::now();
         return result::success;
     }
-    static void draw_key(const auto& gradient,const auto& rect,float x,float y,float w,float h,glm::vec3 tone,bool focused) {
+    static std::vector<std::string> completion_words(std::vector<std::string> context) {
+        auto words=::openxmb::localization::font_catalog_texts(config::CONFIG.locale_directory,config::CONFIG.language);
+        words.insert(words.begin(),std::make_move_iterator(context.begin()),std::make_move_iterator(context.end()));
+        return words;
+    }
+    static void draw_key(const auto& gradient,const auto& rect,float x,float y,float w,float h,glm::vec3 tone,bool focused,bool pressed=false) {
+        if(pressed)tone*=0.73F;
         const auto shade=[&](float k){return glm::vec4(glm::min(tone*k,glm::vec3(1.0F)),1.0F);};
-        if(focused) rect(x-3,y-3,w+6,h+6,{1,1,1,0.28F},5);
+        if(focused||pressed) rect(x-3,y-3,w+6,h+6,{1,1,1,pressed?0.64F:0.28F},5);
         rect(x,y,w,h,shade(0.74F),3);
         gradient(x+1,y+1,w-2,h*0.34F,shade(0.80F),shade(1.0F));
         gradient(x+1,y+1+h*0.34F,w-2,h*0.36F,shade(1.0F),shade(1.0F));
@@ -263,7 +279,11 @@ private:
     // hint follows the connected controller), else a drawn square/triangle.
     static void icon_badge(shell* xmb,const auto& rect,const auto& image,const auto& triangle,float x,float y,action a,float alpha) {
         rect(x,y,21,18,{0.16F,0.16F,0.16F,0.92F*alpha},6);
-        if(const auto* icon=xmb->get_button_icon(a);icon&&icon->loaded) {image(*icon,x+3,y+2,15,15,alpha);return;}
+        if(const auto* icon=xmb->get_button_icon(a);icon&&icon->loaded&&icon->width>0&&icon->height>0) {
+            const float fit=std::min(17.0F/static_cast<float>(icon->width),14.0F/static_cast<float>(icon->height));
+            const float w=icon->width*fit,h=icon->height*fit;
+            image(*icon,x+(21-w)*0.5F,y+(18-h)*0.5F,w,h,alpha);return;
+        }
         const glm::vec4 white{1,1,1,alpha},dark{0.16F,0.16F,0.16F,alpha};
         if(a==action::options) {triangle({x+10.5F,y+3},{x+4,y+15},{x+17,y+15},white);triangle({x+10.5F,y+6},{x+6.5F,y+13.5F},{x+14.5F,y+13.5F},dark);return;}
         rect(x+5,y+4,11,11,white);rect(x+6.5F,y+5.5F,8,8,dark);

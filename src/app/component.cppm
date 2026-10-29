@@ -63,6 +63,10 @@ export namespace events {
         paddle3 = 18,
         paddle4 = 19,
         touchpad = 20,
+        // SDL exposes triggers as axes; the shell converts their threshold
+        // edges into these logical buttons for ordinary overlay routing.
+        lefttrigger = 21,
+        righttrigger = 22,
     };
 
     struct controller_button_down {

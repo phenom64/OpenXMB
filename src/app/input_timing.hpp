@@ -21,10 +21,19 @@ public:
         if(!repeating_||seconds<next_)return {};
         next_=seconds+interval;return repeating_;
     }
-    void clear() {held_.fill(false);repeating_.reset();}
+    // Separate press/release thresholds reject analog jitter around a hold.
+    std::optional<bool> trigger(unsigned index,int value) {
+        if(index>=triggers_.size())return {};
+        auto& held=triggers_[index];
+        if(!held&&value>=16384){held=true;return true;}
+        if(held&&value<=8192){held=false;return false;}
+        return {};
+    }
+    void clear() {held_.fill(false);triggers_.fill(false);repeating_.reset();}
 private:
-    std::array<bool,21> held_{},seen_{};
-    std::array<double,21> last_{};
+    std::array<bool,23> held_{},seen_{};
+    std::array<double,23> last_{};
+    std::array<bool,2> triggers_{};
     std::optional<unsigned> repeating_;
     double next_{};
 };

@@ -14,7 +14,7 @@ inline int read(const std::map<std::string,std::string>& preferences,bool pad,st
     const auto it=preferences.find(std::string(pad?"pad.":"key.")+std::string(actions[index]));
     if(it==preferences.end())return fallback;
     int value{};const auto& text=it->second;const auto [end,error]=std::from_chars(text.data(),text.data()+text.size(),value);
-    if(error!=std::errc{}||end!=text.data()+text.size()||value<0||value>(pad?20:512))return fallback;
+    if(error!=std::errc{}||end!=text.data()+text.size()||value<0||value>(pad?22:512))return fallback;
     return value;
 }
 inline void assign(std::map<std::string,std::string>& preferences,const std::string& key,int value) {
@@ -37,6 +37,7 @@ inline std::string_view xbox_artwork(int button) {
     case 9:return "xbox_lb";case 10:return "xbox_rb";
     case 11:return "xbox_dpad_up";case 12:return "xbox_dpad_down";
     case 13:return "xbox_dpad_left";case 14:return "xbox_dpad_right";
+    case 21:return "xbox_lt";case 22:return "xbox_rt";
     default:return {};
     }
 }

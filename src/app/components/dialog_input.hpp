@@ -1,10 +1,13 @@
 #pragma once
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
+#include "keyboard_completion.hpp"
 
 namespace app::dialog_input {
 enum class Command { none,left,right,up,down,ok,cancel,options,extra };
@@ -49,11 +52,14 @@ struct TextEntry {
         {Key::up,0,0},{Key::down,1,1},{Key::caret_left,2,2},{Key::caret_right,3,3},{Key::keypad,4,4},
         {Key::blank,5,5},{Key::input_mode,6,7},{Key::enter,8,9},{Key::copy,10,10},{Key::paste,11,11}}};
 
-    explicit TextEntry(std::string initial):value(std::move(initial)){}
+    explicit TextEntry(std::string initial,std::vector<std::string> corpus={},bool local_completion=true)
+        :value(std::move(initial)),completion_enabled_(local_completion),vocabulary_(local_completion?completion::vocabulary(corpus):std::vector<std::string>{}){}
     std::string value;
     std::size_t tail=0; // bytes after the caret; 0 keeps the caret at the end
     int row=0,col=0,page=0;
     bool caps=false,left_shift=false,right_shift=false;
+    bool prediction_focused=false;
+    std::size_t prediction_index=0;
 
     bool upper() const {return caps != (left_shift||right_shift);}
     static int width(int r) {return r==5?wide_columns:columns;}
@@ -72,17 +78,25 @@ struct TextEntry {
     static bool continuation(char ch) {return (static_cast<unsigned char>(ch)&0xc0)==0x80;}
     void insert(std::string_view text) {
         if(value.size()+text.size()>4096) return;
-        value.insert(caret(),text);
+        value.insert(caret(),text);prediction_focused=false;
     }
     void append(char ch) {insert(std::string_view(&ch,1));}
     void erase() {
+        prediction_focused=false;
         auto end=caret();
         if(!end) return;
         auto start=end-1;
         while(start && continuation(value[start]))--start;
         value.erase(start,end-start);
     }
+    void erase_forward() {
+        prediction_focused=false;
+        const auto start=caret();if(start==value.size())return;
+        auto end=start+1;while(end<value.size()&&continuation(value[end]))++end;
+        value.erase(start,end-start);tail=value.size()-start;
+    }
     void move_caret(int direction) {
+        prediction_focused=false;
         auto position=caret();
         if(direction<0&&position) {--position;while(position&&continuation(value[position]))--position;}
         else if(direction>0&&position<value.size()) {++position;while(position<value.size()&&continuation(value[position]))++position;}
@@ -90,6 +104,17 @@ struct TextEntry {
     }
     void cycle_page() {page=(page+1)%3;}
     void move(Command command) {
+        if(prediction_focused) {
+            const auto choices=candidates();
+            if(choices.empty()||command==Command::left||command==Command::right)prediction_focused=false;
+            else if(command==Command::up)prediction_index=(prediction_index+choices.size()-1)%choices.size();
+            else if(command==Command::down)prediction_index=(prediction_index+1)%choices.size();
+            return;
+        }
+        if(command==Command::right&&row<character_rows&&col==columns-1&&!candidates().empty()) {
+            prediction_focused=true;prediction_index=0;return;
+        }
+        if(delete_from_confirm_)stop_delete();
         const auto current=focused();
         switch(command) {
         case Command::up:row=(row+total_rows-1)%total_rows;break;
@@ -101,6 +126,7 @@ struct TextEntry {
         col=std::min(col,width(row)-1);
     }
     Outcome activate() {
+        if(prediction_focused) {accept_prediction();return Outcome::handled;}
         switch(focused().key) {
         case Key::character:insert(character(row,col));break;
         case Key::symbols:page=page==1?0:1;break;
@@ -110,6 +136,8 @@ struct TextEntry {
         case Key::space:insert(" ");break;
         case Key::caret_left:move_caret(-1);break;
         case Key::caret_right:move_caret(1);break;
+        case Key::up:case Key::down:
+            if(!candidates().empty()) {prediction_focused=true;prediction_index=0;}break;
         case Key::input_mode:cycle_page();break;
         case Key::enter:return Outcome::accept;
         case Key::copy:return Outcome::copy;
@@ -118,36 +146,150 @@ struct TextEntry {
         }
         return Outcome::handled;
     }
-    Outcome event(Command command,std::optional<unsigned> down={},std::optional<unsigned> up={}) {
-        if(up==225)left_shift=false;
-        if(up==229)right_shift=false;
+    Outcome event(Command command,std::optional<unsigned> down={},std::optional<unsigned> up={},
+                  std::optional<unsigned> button_down={},std::optional<unsigned> button_up={}) {
+        if(up&&*up<physical_slots)release(*up);
+        if(button_up&&*button_up<controller_slots)release(physical_slots+*button_up);
+        const auto source=down&&*down<physical_slots?down:
+            button_down&&*button_down<controller_slots?std::optional<unsigned>(physical_slots+*button_down):std::nullopt;
+        const bool first=source&&*source<feedback_.size()?!feedback_[*source].held:true;
+        if(source&&*source<feedback_.size())feedback_[*source].held=true;
         switch(command) {
-        case Command::cancel:return Outcome::cancel;
-        case Command::options:return Outcome::accept;
-        case Command::extra:erase();return Outcome::handled;
+        case Command::cancel:cancel_holds();return Outcome::cancel;
+        case Command::options:
+            if(button_down) {if(first){insert(" ");if(source)feedback(*source,4,6);}return Outcome::handled;}
+            cancel_holds();return Outcome::accept;
+        case Command::extra:delete_press(source,false,first);return Outcome::handled;
         case Command::up:case Command::down:case Command::left:case Command::right:move(command);return Outcome::handled;
         case Command::ok:
-            if(down)return Outcome::accept;
+            if(!first)return Outcome::handled;
+            if(prediction_focused) {if(first)accept_prediction();return Outcome::handled;}
+            if(down) {cancel_holds();return Outcome::accept;}
+            if(focused().key==Key::backspace) {delete_press(source,false,first);delete_from_confirm_=true;return Outcome::handled;}
+            if(source)feedback(*source,row,col);
             return activate();
         default:break;
         }
+        if(button_down&&source&&first) {
+            switch(*button_down) {
+            case 4:cycle_page();feedback(*source,5,6);break;
+            case 6:cancel_holds();return Outcome::accept;
+            case 9:move_caret(-1);feedback(*source,5,2);break;
+            case 10:move_caret(1);feedback(*source,5,3);break;
+            case 21:page=page==2?0:2;feedback(*source,4,2);break;
+            case 22:caps=!caps;feedback(*source,4,3);break;
+            default:break;
+            }
+        }
         if(!down)return Outcome::handled;
         const auto code=*down;
-        if(code==40||code==88)return Outcome::accept;
-        if(code==42){erase();return Outcome::handled;}
-        if(code==225){left_shift=true;return Outcome::handled;}
-        if(code==229){right_shift=true;return Outcome::handled;}
-        char ch=0;
-        if(code>=4&&code<=29)ch=static_cast<char>((upper()?'A':'a')+code-4);
-        else if(code>=30&&code<=38)ch=upper()?std::string_view("!@#$%^&*(")[code-30]:static_cast<char>('1'+code-30);
-        else if(code==39)ch=upper()?')':'0';
-        else if(code==44)ch=' ';
-        else if(code>=45&&code<=56) {
-            constexpr std::array<char,12> punctuation{'-','=','[',']','\\','\\',';','\'','`',',','.','/'};
-            ch=upper()?std::string_view("_+{}||:\"~<>?")[code-45]:punctuation[code-45];
+        if(code==40||code==88) {
+            if(!first)return Outcome::handled;
+            if(prediction_focused) {if(first)accept_prediction();return Outcome::handled;}
+            cancel_holds();return Outcome::accept;
         }
-        if(ch)append(ch);
+        if(code==42||code==76){delete_press(source,code==76,first);return Outcome::handled;}
+        if(code==225){left_shift=true;feedback(code,4,3);return Outcome::handled;}
+        if(code==229){right_shift=true;feedback(code,4,3);return Outcome::handled;}
+        if(code==57){if(first)caps=!caps;feedback(code,4,3);return Outcome::handled;}
+        if(code==43) {if(first&&!candidates().empty()){prediction_focused=!prediction_focused;prediction_index=0;}return Outcome::handled;}
+        if(shortcut_modifier())return Outcome::handled;
+        const auto ch=physical_character(code);
+        if(ch) {
+            append(ch);prediction_focused=false;
+            if(ch==' ')feedback(code,4,6);
+            else for(int r=0;r<character_rows;++r)for(int c=0;c<columns;++c)
+                if(character(r,c)==std::string_view(&ch,1))feedback(code,r,c);
+        }
         return Outcome::handled;
+    }
+    bool pressed(int r,int c) const {
+        return std::any_of(feedback_.begin(),feedback_.end(),[&](const auto& item){
+            return item.row==r&&cell(r,c).first<=item.col&&item.col<=cell(r,c).last&&(item.held||item.flash>0);
+        });
+    }
+    void cancel_holds() {
+        feedback_={};left_shift=false;right_shift=false;stop_delete();
+    }
+    // Schedule against elapsed hold time, consuming at most eight repeats per
+    // tick. OS key-repeat events never add a second deletion to this schedule.
+    void advance(double seconds,double base_interval=0.180) {
+        if(!std::isfinite(seconds)||seconds<0)return;
+        for(auto& item:feedback_)item.flash=std::max(0.0,item.flash-seconds);
+        if(!delete_source_)return;
+        delete_elapsed_+=seconds;const auto base=std::isfinite(base_interval)?std::clamp(base_interval,0.04,1.0):0.180;
+        const auto interval=[&](double at) {
+            const auto t=std::clamp((at-1.2)/1.8,0.0,1.0);
+            return base/(1+2*t*t*(3-2*t));
+        };
+        unsigned count=0;
+        while(delete_elapsed_+1e-9>=delete_next_&&count<8) {
+            if(delete_forward_)erase_forward();else erase();
+            delete_next_+=interval(delete_next_);++count;
+        }
+        if(count==8&&delete_elapsed_>=delete_next_)delete_next_=delete_elapsed_+interval(delete_elapsed_);
+    }
+    const std::vector<std::string>& candidates() const {
+        if(cached_caret_!=caret()||cached_value_!=value) {
+            cached_value_=value;cached_caret_=caret();
+            cached_candidates_=completion_enabled_?completion::candidates(vocabulary_,value,caret()):std::vector<std::string>{};
+        }
+        return cached_candidates_;
+    }
+    bool accept_prediction() {
+        const auto choices=candidates();const auto token=completion::token(value,caret());
+        if(choices.empty()||!token) {prediction_focused=false;prediction_index=0;return false;}
+        const auto selected=completion::match_case(choices[std::min(prediction_index,choices.size()-1)],token->prefix);
+        if(value.size()-(token->end-token->begin)+selected.size()>4096)return false;
+        value.replace(token->begin,token->end-token->begin,selected);
+        tail=value.size()-token->begin-selected.size();prediction_focused=false;prediction_index=0;
+        return true;
+    }
+private:
+    static constexpr unsigned physical_slots=512,controller_slots=32;
+    struct Feedback {bool held=false;int row=-1,col=-1;double flash=0;};
+    std::array<Feedback,physical_slots+controller_slots> feedback_{};
+    bool completion_enabled_=true,delete_forward_=false,delete_from_confirm_=false;
+    std::vector<std::string> vocabulary_;
+    mutable std::string cached_value_;
+    mutable std::size_t cached_caret_=std::string::npos;
+    mutable std::vector<std::string> cached_candidates_;
+    std::optional<unsigned> delete_source_;
+    double delete_elapsed_=0,delete_next_=0.450;
+    void feedback(unsigned source,int r,int c) {
+        if(source>=feedback_.size())return;
+        auto& item=feedback_[source];item.row=r;item.col=c;item.flash=0.090;
+    }
+    void release(unsigned source) {
+        if(source<feedback_.size())feedback_[source].held=false;
+        if(source==225)left_shift=false;
+        if(source==229)right_shift=false;
+        if(delete_source_==source)stop_delete();
+    }
+    void stop_delete() {delete_source_.reset();delete_elapsed_=0;delete_next_=0.450;delete_from_confirm_=false;}
+    void delete_press(std::optional<unsigned> source,bool forward,bool first) {
+        if(!first)return;
+        if(forward)erase_forward();else erase();
+        if(source) {
+            feedback(*source,4,4);delete_source_=source;delete_elapsed_=0;delete_next_=0.450;
+            delete_forward_=forward;delete_from_confirm_=false;
+        }
+    }
+    bool shortcut_modifier() const {
+        for(const auto code:{224u,226u,227u,228u,230u,231u})if(feedback_[code].held)return true;
+        return false;
+    }
+    char physical_character(unsigned code) const {
+        if(code>=4&&code<=29)return static_cast<char>((upper()?'A':'a')+code-4);
+        const bool shifted=left_shift||right_shift;
+        if(code>=30&&code<=38)return shifted?std::string_view("!@#$%^&*(")[code-30]:static_cast<char>('1'+code-30);
+        if(code==39)return shifted?')':'0';
+        if(code==44)return ' ';
+        if(code>=45&&code<=56) {
+            constexpr std::array<char,12> punctuation{'-','=','[',']','\\','\\',';','\'','`',',','.','/'};
+            return shifted?std::string_view("_+{}||:\"~<>?")[code-45]:punctuation[code-45];
+        }
+        return 0;
     }
 };
 }
