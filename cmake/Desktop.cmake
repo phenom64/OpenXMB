@@ -5,6 +5,8 @@ add_library(openxmb_desktop_core STATIC
   "${PROJECT_SOURCE_DIR}/src/desktop/steam.cpp"
   "${PROJECT_SOURCE_DIR}/src/desktop/http.cpp"
   "${PROJECT_SOURCE_DIR}/src/desktop/rpcs3_trophies.cpp"
+  "${PROJECT_SOURCE_DIR}/src/desktop/trophy_watch.cpp"
+  "${PROJECT_SOURCE_DIR}/src/desktop/rpcs3_session.cpp"
   "${PROJECT_SOURCE_DIR}/src/desktop/retroachievements.cpp"
   "${PROJECT_SOURCE_DIR}/src/desktop/youtube.cpp"
   "${PROJECT_SOURCE_DIR}/src/desktop/steamgriddb.cpp"
@@ -29,7 +31,7 @@ if(CURL_FOUND)
   target_link_libraries(openxmb_desktop_core PRIVATE CURL::libcurl)
 endif()
 if(OPENXMB_BUILD_NATIVE_TESTS)
-  foreach(_feature IN ITEMS steam http rpcs3_trophy retroachievements async_job youtube steamgriddb)
+  foreach(_feature IN ITEMS steam http rpcs3_trophy trophy_watch rpcs3_session retroachievements async_job youtube steamgriddb)
     add_executable(openxmb_${_feature}_tests "${PROJECT_SOURCE_DIR}/tests/desktop/${_feature}_tests.cpp")
     target_link_libraries(openxmb_${_feature}_tests PRIVATE OpenXMB::DesktopCore)
     set_target_properties(openxmb_${_feature}_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
