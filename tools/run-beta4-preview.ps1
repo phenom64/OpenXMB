@@ -1,5 +1,6 @@
 param(
     [switch]$FirstTimeSetup,
+    [switch]$Windowed,
     [string]$BuildDir = "",
     [string]$ProfileDir = ""
 )
@@ -41,7 +42,9 @@ try {
     if ($FirstTimeSetup) { [Environment]::SetEnvironmentVariable("OPENXMB_FORCE_SETUP", "1", "Process") }
     Write-Host "OpenXMB Beta 4 preview: $repoRoot"
     Write-Host "Isolated profile: $ProfileDir"
-    & $binary --no-fullscreen --width 1280 --height 720 --force-dir $media
+    $launchArguments = @('--force-dir', $media)
+    if ($Windowed) { $launchArguments += @('--no-fullscreen', '--width', '1280', '--height', '720') }
+    & $binary @launchArguments
     if ($LASTEXITCODE -ne 0) { throw "OpenXMB exited with code $LASTEXITCODE" }
 } finally {
     foreach ($name in $previous.Keys) { [Environment]::SetEnvironmentVariable($name, $previous[$name], "Process") }
