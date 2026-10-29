@@ -17,6 +17,7 @@
  */
 
 #include "openxmb/desktop/library.hpp"
+#include "openxmb/desktop/runners.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -74,7 +75,7 @@ void games(const fs::path &root) {
   std::ofstream(folder / "openxmb-game.json") << manifest;
   library.add_game_root(folder); library.add_game_root(folder);
   require(library.game_roots().size() == 1, "duplicate canonical roots deduplicated");
-  require(library.scan_games() == 1 && library.scan_games() == 0, "scan imports one game and repeat scan deduplicates");
+  require(library.scan_games({false,false}) == 1 && library.scan_games({false,false}) == 0, "scan imports one game and repeat scan deduplicates");
   auto game = library.games().front();
   require(game.title == "Fixture Game" && game.genre == "Fixture" && game.icon == fs::weakly_canonical(folder / "cover.png"), "manifest metadata and relative media resolve");
   game.arguments = {"literal ; $(touch injected) & spaced value"};
@@ -107,11 +108,22 @@ void runner_manifests(const fs::path& root) {
     std::ofstream(folder/(std::string(id)+".openxmb-game.json"))<<manifest;
   }
   library.add_game_root(folder);
-  require(library.scan_games()==2,"runner manifests without an executable remain distinct");
+  require(library.scan_games({false,false})==2,"runner manifests without an executable remain distinct");
   const auto games=library.games();
   require(games.size()==2 && games[0].runner=="steam" && games[0].executable.empty(),"runner manifests retain an absent executable for discovery");
   require(std::set<fs::path>{games[0].content,games[1].content}==std::set<fs::path>{"100","200"},"Steam app ids are identities, not relative filesystem paths");
-  require(library.scan_games()==0 && library.games().size()==2,"runner discovery is idempotent");
+  require(library.scan_games({false,false})==0 && library.games().size()==2,"runner discovery is idempotent");
+  auto original=library.games().front();
+  original.icon=folder/"manual-icon.png";library.save_game(original);
+  auto refreshed=original;refreshed.icon=folder/"automatic-header.jpg";refreshed.background=folder/"hero-a.jpg";
+  library.import_games({{refreshed,true}});
+  auto saved=library.games().front();
+  require(saved.icon==original.icon && saved.background==refreshed.background,"refresh preserves a manual image and fills missing native roles");
+  refreshed.background=folder/"hero-b.jpg";library.import_games({{refreshed,true}});
+  saved=library.games().front();
+  require(saved.icon==original.icon && saved.background==refreshed.background,"automatic images refresh independently of manual overrides");
+  refreshed.background.clear();library.import_games({{refreshed,true}});
+  require(library.games().front().background==saved.background,"rescanning a source without a role must retain cached automatic artwork");
 }
 void arguments() {
   const std::vector<std::string> values{"", "a path with spaces", "literal;$(value)", "a\\b\"c", "é"};
@@ -119,8 +131,75 @@ void arguments() {
   bool rejected = false; try { (void)parse_arguments("\"unclosed"); } catch (const std::runtime_error &) { rejected = true; }
   require(rejected, "malformed argument quotes rejected");
 }
+void steam_launch_settings(const fs::path& root,const fs::path& test_executable) {
+  Library library(root);
+  Game source; source.title="Steam fixture"; source.runner="steam"; source.content="12345";
+  require(library.import_games({{source,true}})==1,"Steam fixture imported");
+  const auto original=library.games().front();
+  const auto metadata=library.active_directory()/"library.json";
+  nlohmann::json state; std::ifstream(metadata)>>state;
+  const nlohmann::json override{{"mode","direct"},{"executable","C:/fixture game/game.exe"},
+    {"arguments",std::vector<std::string>{"literal ; $(value)","spaced value",""}},{"working_directory","C:/fixture game"}};
+  state["games"][0]["launch_override"]=override;
+  {std::ofstream output(metadata);output<<state;}
+  library.save_game(library.games().front());
+  {std::ifstream input(metadata);input>>state;}
+  require(state["games"][0].value("launch_override",nlohmann::json::object())==override,"Steam direct launch settings survive reopening and saving");
+  source.title="Refreshed Steam fixture";source.executable="steam.exe";
+  require(library.import_games({{source,true}})==0,"Steam launch override does not create duplicate on discovery refresh");
+  {std::ifstream input(metadata);input>>state;}
+  require(state["games"][0]["launch_override"]==override,"discovery preserves every saved direct launch setting");
+  const auto refreshed=library.games().front();
+  require(refreshed.id==original.id && refreshed.runner=="steam" && refreshed.content=="12345" && refreshed.title==source.title,
+    "Steam provider identity and refreshed metadata remain independent of direct launch settings");
+  Game direct=refreshed;
+  direct.launch_override.executable=test_executable;
+  const auto folder=root/"literal launch folder";fs::create_directories(folder);
+  const std::string payload="literal ; $(touch injected) & \"quoted\" value";
+  direct.launch_override.arguments={"--direct-launch-child","launch-result.txt",payload};
+  direct.launch_override.working_directory=folder;
+  direct.favorite=true;library.save_game(direct);library.mark_played(direct.id);
+  require(library.import_games({{source,true}})==0&&library.games().size()==1,"Steam refresh after saving direct launch never duplicates the entry");
+  direct=library.games().front();
+  require(direct.favorite&&direct.play_count==1&&direct.launch_override.mode==GameLaunchMode::direct,"Steam launch overrides retain favorites and history");
+  const auto target=launch_game_target(direct);
+  require(target.runner=="native"&&target.executable==test_executable&&target.arguments==direct.launch_override.arguments&&target.working_directory==folder,
+    "Steam direct mode resolves to the explicit native executable, literal argv and cwd");
+  require(direct.runner=="steam"&&direct.content=="12345"&&target.launch_override.mode==GameLaunchMode::provider,"resolving direct launch leaves stored Steam identity intact");
+  RunnerDiscoveryOptions options;options.search_path=false;options.search_defaults=false;
+  const auto plan=plan_game_launch(target,options);
+  require(plan&&plan.runner=="native"&&plan.arguments.size()==4&&plan.arguments[3]==payload&&plan.working_directory==folder&&plan.tracking==TrackingQuality::direct_child,
+    "real native runner plan launches direct executable without resolving Steam or changing literal arguments");
+  launch_game(direct);
+  const auto output=folder/"launch-result.txt";
+  for(int retry=0;retry<200&&!fs::exists(output);++retry)std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  std::ifstream input(output);std::string value;std::getline(input,value);
+  require(value==payload&&!fs::exists(folder/"injected"),"real direct child receives literal arguments and selected working folder");
+  direct.launch_override.working_directory.clear();
+  require(launch_game_target(direct).working_directory==test_executable.parent_path(),"direct working folder defaults to the executable's folder");
+  auto malformed=direct;
+  auto invalid_path=test_executable.native();invalid_path.push_back(fs::path::value_type{});
+  invalid_path+=fs::path("unexpected.exe").native();malformed.launch_override.executable=fs::path(invalid_path);
+  bool malformed_rejected=false;try{(void)launch_game_target(malformed);}catch(const std::runtime_error&){malformed_rejected=true;}
+  require(malformed_rejected,"direct executable paths cannot contain embedded NUL even when their prefix exists");
+  direct.launch_override.executable=root/"missing-game.exe";
+  bool rejected=false;try{(void)launch_game_target(direct);}catch(const std::runtime_error&){rejected=true;}
+  require(rejected,"missing direct executable produces an actionable failure instead of invoking Steam");
+  direct.launch_override.mode=GameLaunchMode::provider;library.save_game(direct);
+  const auto restored=launch_game_target(Library(root).games().front());
+  require(restored.runner=="steam"&&restored.content=="12345"&&restored.executable==source.executable,
+    "switching to default provider mode restores Steam despite a missing remembered direct executable");
+  require(restored.launch_override.executable==direct.launch_override.executable,"default provider mode remembers direct launch configuration for later");
+  Game legacy;legacy.title="Legacy Steam entry";legacy.runner="steam";legacy.content="22222";
+  legacy=library.save_game(legacy);
+  nlohmann::json legacy_state;{std::ifstream file(metadata);file>>legacy_state;}
+  for(auto& item:legacy_state["games"])item.erase("launch_override");
+  {std::ofstream file(metadata);file<<legacy_state;}
+  for(const auto& entry:Library(root).games())require(entry.launch_override.mode==GameLaunchMode::provider,"legacy libraries without launch settings migrate to provider mode");
 }
-int main() {
+}
+int main(int argc,char** argv) {
+  if(argc==4&&std::string(argv[1])=="--direct-launch-child") {std::ofstream output(argv[2]);output<<argv[3];return output?0:2;}
   const auto root = fs::temp_directory_path() / ("openxmb-desktop-library-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
   try {
     fs::create_directories(root);
@@ -128,6 +207,7 @@ int main() {
     games(root / "games");
     arguments();
     runner_manifests(root / "runner-manifests");
+    steam_launch_settings(root / "steam-launch-settings",fs::absolute(argv[0]));
     fs::remove_all(root);
     std::cout << "Desktop profiles, game launch, custom sections and local social checks passed\n";
   } catch (const std::exception &error) {

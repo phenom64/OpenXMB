@@ -30,6 +30,12 @@ struct Profile {
   std::string id, name;
   std::filesystem::path avatar;
 };
+enum class GameLaunchMode { provider, direct };
+struct GameLaunchOverride {
+  GameLaunchMode mode{GameLaunchMode::provider};
+  std::filesystem::path executable, working_directory;
+  std::vector<std::string> arguments;
+};
 struct Game {
   std::string id, title, description, genre, developer, category;
   std::string platform, title_id;
@@ -37,16 +43,22 @@ struct Game {
   std::filesystem::path game_directory;
   std::string runner;
   std::filesystem::path content, core;
+  std::filesystem::path cover, logo;
+  std::map<std::string,std::filesystem::path> automatic_artwork;
   std::vector<std::string> arguments;
   int year{};
   bool favorite{};
   std::uint64_t play_count{}, last_played{};
+  // Steam runner/content retain provider identity, independently of this
+  // profile's optional direct executable launch settings.
+  GameLaunchOverride launch_override;
 };
 struct GameCandidate { Game game; bool refresh_metadata{}; };
 using GameDiscovery = std::vector<GameCandidate>;
+struct GameDiscoveryOptions { bool registered_rpcs3{true}, installed_steam{true}; };
 // Read-only discovery can run off the UI thread. Import into the originating
 // profile only after its identity has been checked by the caller.
-GameDiscovery discover_games(const std::vector<std::filesystem::path>& roots = {});
+GameDiscovery discover_games(const std::vector<std::filesystem::path>& roots = {}, GameDiscoveryOptions options = {});
 struct CustomSection {
   std::string id, title;
   std::filesystem::path folder, icon;
@@ -72,6 +84,10 @@ std::map<std::string, std::string> read_param_sfo(const std::filesystem::path &p
 std::optional<std::filesystem::path> rpcs3_executable();
 std::vector<std::filesystem::path> rpcs3_game_roots();
 Game import_rpcs3_game(const std::filesystem::path &directory);
+// Returns a transient native launch target for a Steam direct override, leaving
+// the stored provider identity intact. Validates its local executable/cwd.
+// Provider mode returns the original game, including its Steam launch options.
+Game launch_game_target(const Game &game);
 // Starts an explicit argv vector without a command shell. Returns only after
 // the operating system accepts the executable; the child is reaped separately.
 void launch_game(const Game &game);
@@ -98,7 +114,7 @@ public:
   std::vector<std::filesystem::path> game_roots() const;
   void add_game_root(const std::filesystem::path &path);
   void remove_game_root(const std::filesystem::path &path);
-  std::size_t scan_games();
+  std::size_t scan_games(GameDiscoveryOptions options = {});
   std::size_t import_games(const GameDiscovery& discovered);
   // Optional RAWG artwork lookup, invoked only by an explicit UI action. The
   // API key is read transiently from the named process variable, never saved.

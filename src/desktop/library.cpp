@@ -17,6 +17,7 @@
  */
 
 #include "openxmb/desktop/library.hpp"
+#include "openxmb/desktop/steam.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -183,10 +184,15 @@ void erase(const fs::path &root, const char *key, const std::string &id) {
   save_library(root, state);
 }
 json game_json(const Game &g) {
+  json automatic=json::object();
+  for(const auto& [role,path]:g.automatic_artwork)automatic[role]=path_text(path);
   return {{"id", g.id}, {"title", g.title}, {"description", g.description}, {"genre", g.genre}, {"developer", g.developer}, {"category", g.category},
     {"executable", path_text(g.executable)}, {"arguments", g.arguments}, {"working_directory", path_text(g.working_directory)}, {"icon", path_text(g.icon)},
-    {"background", path_text(g.background)}, {"preview", path_text(g.preview)}, {"music", path_text(g.music)}, {"year", g.year}, {"favorite", g.favorite},
-    {"play_count", g.play_count}, {"last_played", g.last_played}, {"platform", g.platform}, {"title_id", g.title_id}, {"game_directory", path_text(g.game_directory)}, {"runner",g.runner}, {"content",path_text(g.content)}, {"core",path_text(g.core)}};
+    {"background", path_text(g.background)}, {"preview", path_text(g.preview)}, {"music", path_text(g.music)}, {"cover",path_text(g.cover)}, {"logo",path_text(g.logo)}, {"year", g.year}, {"favorite", g.favorite},
+    {"play_count", g.play_count}, {"last_played", g.last_played}, {"platform", g.platform}, {"title_id", g.title_id}, {"game_directory", path_text(g.game_directory)}, {"runner",g.runner}, {"content",path_text(g.content)}, {"core",path_text(g.core)}, {"automatic_artwork",std::move(automatic)},
+    {"launch_override",{{"mode",g.launch_override.mode==GameLaunchMode::direct?"direct":"provider"},
+      {"executable",path_text(g.launch_override.executable)},{"arguments",g.launch_override.arguments},
+      {"working_directory",path_text(g.launch_override.working_directory)}}}};
 }
 Game game(const json &value) {
   Game g;
@@ -197,6 +203,22 @@ Game game(const json &value) {
   g.preview = text_path(value.value("preview", "")); g.music = text_path(value.value("music", "")); g.year = value.value("year", 0); g.favorite = value.value("favorite", false);
   g.play_count = value.value("play_count", std::uint64_t{}); g.last_played = value.value("last_played", std::uint64_t{});
   g.runner=value.value("runner","");g.content=text_path(value.value("content",""));g.core=text_path(value.value("core",""));
+  if(value.contains("launch_override")) {
+    const auto& launch=value.at("launch_override");
+    if(!launch.is_object())throw std::runtime_error("Invalid game launch settings");
+    const auto mode=launch.value("mode","provider");
+    if(mode!="provider"&&mode!="direct")throw std::runtime_error("Unknown game launch mode");
+    g.launch_override.mode=mode=="direct"?GameLaunchMode::direct:GameLaunchMode::provider;
+    g.launch_override.executable=text_path(launch.value("executable",""));
+    g.launch_override.working_directory=text_path(launch.value("working_directory",""));
+    g.launch_override.arguments=launch.value("arguments",std::vector<std::string>{});
+  }
+  g.cover=text_path(value.value("cover",""));g.logo=text_path(value.value("logo",""));
+  if(value.contains("automatic_artwork")) {
+    const auto& automatic=value.at("automatic_artwork");
+    if(!automatic.is_object())throw std::runtime_error("Invalid automatic artwork metadata");
+    for(const auto* role:{"icon","background","preview","music","cover","logo"})if(automatic.contains(role))g.automatic_artwork[role]=text_path(automatic.at(role).get<std::string>());
+  }
   g.platform = value.value("platform", ""); g.title_id = value.value("title_id", ""); g.game_directory = text_path(value.value("game_directory", ""));
   return g;
 }
@@ -560,7 +582,38 @@ Game import_rpcs3_game(const fs::path &directory) {
   if (game.background.empty() && fs::is_regular_file(folder / "PIC0.PNG")) game.background = folder / "PIC0.PNG";
   return game;
 }
-void launch_game(const Game &game) {
+Game launch_game_target(const Game &game) {
+  if(game.launch_override.mode==GameLaunchMode::provider)return game;
+  if(game.launch_override.mode!=GameLaunchMode::direct||game.runner!="steam")
+    throw std::runtime_error("Direct executable launch settings are supported for Steam games");
+  const auto& launch=game.launch_override;
+  for(const auto* path:{&launch.executable,&launch.working_directory})
+    if(path->native().find(fs::path::value_type{})!=fs::path::string_type::npos||path->native().size()>32768)
+      throw std::runtime_error("A direct launch path contains NUL or exceeds 32768 characters");
+  std::error_code error;
+  if(!launch.executable.is_absolute()||!fs::is_regular_file(launch.executable,error)||error)
+    throw std::runtime_error("Choose an existing game executable with a full file path");
+#ifdef _WIN32
+  if(lower(launch.executable.extension().string())!=".exe")throw std::runtime_error("Choose a Windows game executable (.exe)");
+#else
+  if(::access(launch.executable.c_str(),X_OK)!=0)throw std::runtime_error("The chosen game file is not executable");
+#endif
+  if(!launch.working_directory.empty()&&(!launch.working_directory.is_absolute()||!fs::is_directory(launch.working_directory,error)||error))
+    throw std::runtime_error("Choose an existing working folder with a full path, or leave it empty");
+  if(launch.arguments.size()>255)throw std::runtime_error("Use at most 255 direct launch arguments");
+  std::size_t bytes=0;
+  for(const auto& argument:launch.arguments) {
+    if(argument.find('\0')!=std::string::npos||argument.size()>32768)throw std::runtime_error("A direct launch argument contains NUL or exceeds 32768 bytes");
+    bytes+=argument.size();
+  }
+  if(bytes>256*1024)throw std::runtime_error("Direct launch arguments exceed 256 KiB");
+  Game target=game;target.runner="native";target.executable=launch.executable;target.arguments=launch.arguments;
+  target.working_directory=launch.working_directory.empty()?launch.executable.parent_path():launch.working_directory;
+  target.content.clear();target.core.clear();target.game_directory.clear();target.launch_override={};
+  return target;
+}
+void launch_game(const Game &entry) {
+  const auto game=launch_game_target(entry);
   if (game.executable.empty()) throw std::runtime_error("Set this game's executable before launching");
   std::vector<std::string> arguments{path_text(game.executable)};
   arguments.insert(arguments.end(), game.arguments.begin(), game.arguments.end());
@@ -665,6 +718,9 @@ Game Library::save_game(Game value) {
   if (value.id.empty()) value.id = identifier("game");
   valid_id(value.id);
   if (value.arguments.size() > 256) throw std::runtime_error("Too many launch arguments");
+  if(value.launch_override.mode!=GameLaunchMode::provider&&value.launch_override.mode!=GameLaunchMode::direct)throw std::runtime_error("Unknown game launch mode");
+  if(value.launch_override.mode==GameLaunchMode::direct&&value.runner!="steam")throw std::runtime_error("Direct launch overrides require a Steam library entry");
+  if(value.launch_override.arguments.size()>255)throw std::runtime_error("Too many direct launch arguments");
   auto state = library(root_); upsert(state, "games", game_json(value)); save_library(root_, state); return value;
 }
 void Library::remove_game(const std::string &id) { erase(root_, "games", id); }
@@ -688,7 +744,7 @@ void Library::remove_game_root(const fs::path &path) {
   auto state = library(root_); auto roots = state.value("game_roots", std::vector<std::string>{});
   const auto value = path_text(fs::weakly_canonical(path)); std::erase(roots, value); state["game_roots"] = roots; save_library(root_, state);
 }
-GameDiscovery discover_games(const std::vector<fs::path>& configured_roots) {
+GameDiscovery discover_games(const std::vector<fs::path>& configured_roots, GameDiscoveryOptions options) {
   GameDiscovery result;
   std::size_t examined=0;
   std::set<std::string> seen;
@@ -696,14 +752,17 @@ GameDiscovery discover_games(const std::vector<fs::path>& configured_roots) {
     const auto identity=game_identity(value);
     if(seen.insert(identity).second)result.push_back({std::move(value),manifest});
   };
-  for (const auto &path : rpcs3_registered_paths()) {
+  if(options.registered_rpcs3) for (const auto &path : rpcs3_registered_paths()) {
     if (++examined > 10000) throw std::runtime_error("Game scan exceeded 10000 entries; choose narrower roots");
     Game found;
     try { found = import_rpcs3_game(path); } catch (const std::exception &) { continue; }
     accept(std::move(found));
   }
   auto roots = configured_roots;
-  const auto detected = rpcs3_game_roots(); roots.insert(roots.end(), detected.begin(), detected.end());
+  if(options.registered_rpcs3) {
+    const auto detected = rpcs3_game_roots(); roots.insert(roots.end(), detected.begin(), detected.end());
+  }
+  if(options.installed_steam)for(auto& candidate:discover_steam_games())accept(std::move(candidate.game),candidate.refresh_metadata);
   std::set<std::string> visited;
   for (const auto &root : roots) {
     if (!visited.insert(path_identity(root)).second) continue;
@@ -728,7 +787,7 @@ GameDiscovery discover_games(const std::vector<fs::path>& configured_roots) {
         else if (path.filename() == "openxmb-game.json" || path.filename().string().ends_with(".openxmb-game.json")) {
           found = game(read(path));
           if (!found.executable.empty() && found.executable.is_relative()) found.executable = path.parent_path() / found.executable;
-          for (auto *media : {&found.icon, &found.background, &found.preview, &found.music, &found.working_directory, &found.core})
+          for (auto *media : {&found.icon, &found.background, &found.preview, &found.music, &found.cover, &found.logo, &found.working_directory, &found.core})
             if (!media->empty() && media->is_relative()) *media = path.parent_path() / *media;
           if(found.runner!="steam" && !found.content.empty() && found.content.is_relative()) found.content=path.parent_path()/found.content;
         } else if (path.extension() == ".desktop") found = desktop_file(path);
@@ -754,23 +813,41 @@ std::size_t Library::import_games(const GameDiscovery& discovered) {
   std::size_t count = 0;
   const auto accept = [&](Game found, bool manifest = false) {
     if (found.title.empty() || (found.executable.empty() && (found.runner.empty() || found.content.empty()))) return;
+    const std::array<std::pair<const char*,fs::path Game::*>,6> roles{{{"icon",&Game::icon},{"background",&Game::background},{"preview",&Game::preview},{"music",&Game::music},{"cover",&Game::cover},{"logo",&Game::logo}}};
+    for(const auto& [role,member]:roles)found.automatic_artwork[role]=found.*member;
     const auto key = identity(found);
     if (const auto match = paths.find(key); match != paths.end()) {
       if (!native(found) && !manifest) return;
       const auto &saved = existing[match->second];
       found.id = saved.id; found.play_count = saved.play_count;
       found.last_played = saved.last_played; found.favorite = saved.favorite;
+      found.launch_override = saved.launch_override;
       if (native(found)) {
-        const auto preserve = [&](fs::path Game::*member, std::initializer_list<const char *> filenames) {
+        const auto preserve = [&](fs::path Game::*member, const char* role, std::initializer_list<const char *> filenames) {
           const auto &selected = saved.*member;
           if (selected.empty()) return;
           const auto chosen = path_identity(selected);
+          if(const auto automatic=saved.automatic_artwork.find(role);automatic!=saved.automatic_artwork.end()) {
+            if(automatic->second.empty() || chosen!=path_identity(automatic->second))found.*member=selected;
+            return;
+          }
           // Native role paths identify prior automatic choices even when the
           // asset was removed. Any other saved path is a user-selected asset.
           if (std::ranges::none_of(filenames, [&](const auto *name) { return chosen == path_identity(saved.game_directory / name); })) found.*member = selected;
         };
-        preserve(&Game::icon, {"ICON0.PNG"}); preserve(&Game::background, {"PIC1.PNG", "PIC0.PNG"});
-        preserve(&Game::preview, {"ICON1.PAM"}); preserve(&Game::music, {"SND0.AT3"});
+        preserve(&Game::icon, "icon", {"ICON0.PNG"}); preserve(&Game::background, "background", {"PIC1.PNG", "PIC0.PNG"});
+        preserve(&Game::preview, "preview", {"ICON1.PAM"}); preserve(&Game::music, "music", {"SND0.AT3"});
+      } else for(const auto& [role,member]:roles) {
+        const auto& selected=saved.*member;
+        const auto automatic=saved.automatic_artwork.find(role);
+        if(!selected.empty() && (automatic==saved.automatic_artwork.end() || automatic->second.empty() || path_identity(selected)!=path_identity(automatic->second)))found.*member=selected;
+      }
+      for(const auto& [role,member]:roles)if((found.*member).empty() && !(saved.*member).empty()) {
+        // Missing native PS3 media is a source update, not a stale provider
+        // cache. Manual choices for these roles were retained above.
+        if(native(found)&&member!=&Game::cover&&member!=&Game::logo)continue;
+        found.*member=saved.*member;
+        if(const auto previous=saved.automatic_artwork.find(role);previous!=saved.automatic_artwork.end())found.automatic_artwork[role]=previous->second;
       }
       existing[match->second] = save_game(std::move(found));
       return;
@@ -783,8 +860,8 @@ std::size_t Library::import_games(const GameDiscovery& discovered) {
   return count;
 }
 
-std::size_t Library::scan_games() {
-  return import_games(discover_games(game_roots()));
+std::size_t Library::scan_games(GameDiscoveryOptions options) {
+  return import_games(discover_games(game_roots(),options));
 }
 
 std::vector<CustomSection> Library::custom_sections() const {

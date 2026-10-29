@@ -163,7 +163,7 @@ void registered_discovery(const fs::path &root) {
   contents += "ARCHIVE: " + quoted_path(root / "unsupported.iso", '"') + "\n";
   file(registry(data), contents);
   Library library(root / "library");
-  const auto discovered=discover_games();
+  const auto discovered=discover_games({}, {.installed_steam=false});
   require(!discovered.empty()&&library.games().empty(),"background discovery reads games without writing the profile");
   require(library.import_games(discovered) == 5, "automatic discovery imports only bootable registered/native DG and HG titles");
   auto games = library.games();
@@ -172,7 +172,7 @@ void registered_discovery(const fs::path &root) {
   require(by_title(games, "TEST00004").game_directory == fs::weakly_canonical(data / "dev_hdd0/game/TEST00004") &&
     by_title(games, "TEST00005").game_directory == fs::weakly_canonical(data / "games/Other Disc/PS3_GAME"), "native HDD and disc installation roots both provide bootable titles");
   library.add_game_root(disc.parent_path());
-  require(library.scan_games() == 0 && library.games().size() == 5, "registry file/root/boot aliases and manual roots deduplicate");
+  require(library.scan_games({.installed_steam=false}) == 0 && library.games().size() == 5, "registry file/root/boot aliases and manual roots deduplicate");
   bool rejected = false;
   try { (void)import_rpcs3_game(data / "dev_hdd0/game/TEST00006"); } catch (const std::runtime_error &) { rejected = true; }
   require(rejected, "GD patch data cannot be imported as a bootable game");
@@ -189,33 +189,33 @@ void supported_locations(const fs::path &root) {
   _wputenv_s(L"RPCS3_CONFIG_DIR", data.c_str());
   file(registry(data), contents);
   Library configured(root / "configured-library");
-  require(configured.scan_games() == 1, "Unicode Windows RPCS3_CONFIG_DIR/config/games.yml is discovered");
+  require(configured.scan_games({.installed_steam=false}) == 1, "Unicode Windows RPCS3_CONFIG_DIR/config/games.yml is discovered");
   variable("RPCS3_CONFIG_DIR", "");
   const auto executable = root / "installation/rpcs3.exe"; file(executable);
   variable("RPCS3_EXECUTABLE", executable.string());
   file(executable.parent_path() / "games.yml", contents);
   Library legacy(root / "legacy-library");
-  require(legacy.scan_games() == 1, "legacy Windows installation games.yml is read without migrating it");
+  require(legacy.scan_games({.installed_steam=false}) == 1, "legacy Windows installation games.yml is read without migrating it");
   file(registry(executable.parent_path() / "portable"), contents);
   Library portable(root / "portable-library");
-  require(portable.scan_games() == 1, "portable/config/games.yml is discovered beside the installed emulator");
+  require(portable.scan_games({.installed_steam=false}) == 1, "portable/config/games.yml is discovered beside the installed emulator");
   variable("RPCS3_EXECUTABLE", "");
 #elif defined(__APPLE__)
   const auto home = root / "home"; variable("HOME", home.string());
   file(home / "Library/Application Support/rpcs3/games.yml", contents);
   Library native(root / "native-library");
-  require(native.scan_games() == 1, "macOS native RPCS3 registry is discovered");
+  require(native.scan_games({.installed_steam=false}) == 1, "macOS native RPCS3 registry is discovered");
   variable("HOME", "");
 #else
   const auto config = root / "xdg"; variable("XDG_CONFIG_HOME", config.string());
   file(config / "rpcs3/games.yml", contents);
   Library native(root / "native-library");
-  require(native.scan_games() == 1, "XDG RPCS3 registry is discovered");
+  require(native.scan_games({.installed_steam=false}) == 1, "XDG RPCS3 registry is discovered");
   variable("XDG_CONFIG_HOME", "");
   const auto home = root / "home"; variable("HOME", home.string());
   file(home / ".var/app/net.rpcs3.RPCS3/config/rpcs3/games.yml", contents);
   Library flatpak(root / "flatpak-library");
-  require(flatpak.scan_games() == 1, "Flatpak RPCS3 registry is discovered");
+  require(flatpak.scan_games({.installed_steam=false}) == 1, "Flatpak RPCS3 registry is discovered");
   variable("HOME", "");
 #endif
 }
@@ -226,7 +226,7 @@ void refresh_preserves_choices(const fs::path &root) {
   title(folder, "TEST00009", "HG", "Old title");
   for (const char *name : {"ICON0.PNG", "PIC1.PNG", "ICON1.PAM", "SND0.AT3"}) file(folder / name);
   Library library(root / "library");
-  require(library.scan_games() == 1, "native HDD title is discovered without a manual root");
+  require(library.scan_games({.installed_steam=false}) == 1, "native HDD title is discovered without a manual root");
   auto selected = library.games().front(); const auto id = selected.id;
   selected.favorite = true; selected.play_count = 7; selected.last_played = 12345678;
   selected.icon = root / "user icon.png"; selected.background = root / "user background.png";
@@ -238,7 +238,7 @@ void refresh_preserves_choices(const fs::path &root) {
   fs::permissions(other_emulator, fs::perms::owner_read | fs::perms::owner_write | fs::perms::owner_exec);
 #endif
   variable("RPCS3_EXECUTABLE", other_emulator.string());
-  require(library.scan_games() == 0, "emulator executable changes do not create a duplicate title");
+  require(library.scan_games({.installed_steam=false}) == 0, "emulator executable changes do not create a duplicate title");
   auto refreshed = library.games().front();
   require(refreshed.id == id && refreshed.title == "Refreshed title" && refreshed.executable == other_emulator, "refresh updates native metadata under the stable saved identity");
   require(refreshed.favorite && refreshed.play_count == 7 && refreshed.last_played == 12345678, "refresh preserves favorite and play history");
@@ -246,7 +246,7 @@ void refresh_preserves_choices(const fs::path &root) {
   refreshed.icon = folder / "ICON0.PNG"; refreshed.background = folder / "PIC1.PNG";
   library.save_game(refreshed);
   fs::remove(folder / "ICON0.PNG"); fs::remove(folder / "PIC1.PNG"); file(folder / "PIC0.PNG");
-  require(library.scan_games() == 0, "native media refresh does not add a game");
+  require(library.scan_games({.installed_steam=false}) == 0, "native media refresh does not add a game");
   refreshed = library.games().front();
   require(refreshed.icon.empty() && refreshed.background == folder / "PIC0.PNG", "native artwork refreshes when removed or replaced by fallback media");
 }
@@ -266,17 +266,17 @@ void invalid_registry(const fs::path &root) {
   for (std::size_t i = 0; i < invalid.size(); ++i) {
     file(registry(data), prefix + invalid[i]);
     Library library(root / ("library-" + std::to_string(i)));
-    require(library.scan_games() == 0 && library.games().empty(), "unsupported/malformed registry fails closed without partially importing entries");
+    require(library.scan_games({.installed_steam=false}) == 0 && library.games().empty(), "unsupported/malformed registry fails closed without partially importing entries");
   }
   file(registry(data), std::string(4 * 1024 * 1024 + 1, '#'));
   Library oversized(root / "oversized-library");
-  require(oversized.scan_games() == 0, "registry over 4 MiB is rejected before parsing");
+  require(oversized.scan_games({.installed_steam=false}) == 0, "registry over 4 MiB is rejected before parsing");
   std::string excessive = prefix;
   for (unsigned i = 0; i < 10000; ++i) excessive += "KEY" + std::to_string(i) + ": /nonexistent\n";
   file(registry(data), excessive);
-  require(oversized.scan_games() == 0, "registry over 10000 keys is rejected without a partial import");
+  require(oversized.scan_games({.installed_steam=false}) == 0, "registry over 10000 keys is rejected without a partial import");
   title(data / "dev_hdd0/game/TEST00011", "TEST00011", "HG");
-  require(oversized.scan_games() == 1, "invalid registry does not prevent independent native installed-game discovery");
+  require(oversized.scan_games({.installed_steam=false}) == 1, "invalid registry does not prevent independent native installed-game discovery");
 }
 void scan_save_errors(const fs::path &root, bool registered) {
   const auto data = root / "data";
@@ -294,13 +294,13 @@ void scan_save_errors(const fs::path &root, bool registered) {
   file(profile, "save destination blocked");
   require(library.games().empty(), "blocked save fixture still permits the initial empty library read");
   bool rejected = false;
-  try { (void)library.scan_games(); } catch (const std::exception &) { rejected = true; }
+  try { (void)library.scan_games({.installed_steam=false}); } catch (const std::exception &) { rejected = true; }
   require(rejected, registered ? "registry discovery must propagate library save failures" : "direct native root discovery must propagate library save failures");
   require(fs::is_regular_file(profile), "failed scan leaves the blocked save destination unchanged");
   // The same obstruction must remain harmless when the external metadata is
   // invalid: metadata errors are skipped before any attempted library save.
   file(folder / "PARAM.SFO", "broken metadata");
-  require(library.scan_games() == 0, "invalid native metadata is still skipped without attempting a save");
+  require(library.scan_games({.installed_steam=false}) == 0, "invalid native metadata is still skipped without attempting a save");
 }
 }
 int main() {
@@ -335,7 +335,7 @@ int main() {
     require(flag == "--no-gui" && boot == game.arguments[1], "installed emulator launch receives exact RPCS3 arguments and working directory");
 #endif
     Library library(root / "library"); library.add_game_root(root);
-    require(library.scan_games() >= 1, "game scan discovers an RPCS3 disc folder");
+    require(library.scan_games({.installed_steam=false}) >= 1, "game scan discovers an RPCS3 disc folder");
     const auto games = library.games();
     require(std::ranges::count_if(games, [](const Game &item) { return item.title_id == "TEST00001"; }) == 1, "scan does not import internal PS3 binaries as duplicate games");
     std::ofstream(folder / "broken.sfo", std::ios::binary) << "\0PSF";
