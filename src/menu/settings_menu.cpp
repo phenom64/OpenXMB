@@ -38,6 +38,7 @@ module;
 #include <string>
 #include <vector>
 #include "openxmb/integrations/desktop.hpp"
+#include "../localization/shell_locale.hpp"
 
 #if __linux__
 #include <sys/wait.h>
@@ -371,8 +372,8 @@ namespace menu {
             labels.reserve(std::ranges::distance(values));
             keys.reserve(std::ranges::distance(values));
             for(const auto& [k, n] : values) {
-                labels.push_back(n);
-                keys.push_back(k);
+                labels.emplace_back(key=="language"?openxmb::localization::shell_locale::language_label(k):std::string(n));
+                keys.emplace_back(k);
             }
 
             // Determine current selection index from config
@@ -549,21 +550,7 @@ namespace menu {
         // Keep Language settings under a simple System Settings group
         entries.push_back(make_simple<simple_menu>("System Settings"_(), asset_dir/"icons/icon_settings_personalization.png", loader,
             std::array{
-                entry_enum(loader, xmb, "Language"_(), "Preferred language for the shell"_(), "re.jcm.xmbos.shell", "language", std::array{
-                    std::pair{"auto", "Use system language"_()},
-                    std::pair{"en", "British English"_()},
-                    std::pair{"de", "German"_()},
-                    std::pair{"pl", "Polish"_()},
-                    std::pair{"fr", "French"_()},
-                    std::pair{"hi", "Hindi"_()},
-                    std::pair{"id", "Indonesian"_()},
-                    std::pair{"es", "Spanish"_()},
-                    std::pair{"ja", "Japanese"_()},
-                    std::pair{"zh_CN", "Simplified Chinese"_()},
-                    std::pair{"zh_TW", "Traditional Chinese"_()},
-                    std::pair{"ko", "Korean"_()},
-                    std::pair{"ru", "Russian"_()},
-                }),
+                entry_enum(loader, xmb, "Language"_(), "Preferred language for the shell"_(), "re.jcm.xmbos.shell", "language", openxmb::localization::shell_locale::languages),
                 entry_enum(loader, xmb, "Date/Time Format"_(), "Clock format shown by the shell"_(), "re.jcm.xmbos.shell", "date-time-format", std::array{
                     std::pair{"%a %d %b %H:%M", "%a %d %b %H:%M"},
                     std::pair{"%d/%m/%Y %H:%M", "%d/%m/%Y %H:%M"},

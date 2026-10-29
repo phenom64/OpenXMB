@@ -5402,3 +5402,27 @@ msgstr "OpenXMB की सेटिंग्स सहेजी नहीं ज
 
 msgid "This local time is skipped or repeated by daylight saving. Choose a different time or turn off automatic daylight saving."
 msgstr "ग्रीष्मकालीन समय के कारण यह स्थानीय समय छूट जाता है या दोहराया जाता है। कोई दूसरा समय चुनें या ग्रीष्मकालीन समय का स्वचालित समायोजन बंद करें।"
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Use {up} and {down} to select. Press {right} to continue."
+msgstr "चुनने के लिए {up} और {down} का उपयोग करें। आगे बढ़ने के लिए {right} दबाएँ।"
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Use {up} and {down} to select. Press {extra} to adjust daylight saving time. Press {right} to continue."
+msgstr "चुनने के लिए {up} और {down} का उपयोग करें। डेलाइट सेविंग टाइम समायोजित करने के लिए {extra} दबाएँ। आगे बढ़ने के लिए {right} दबाएँ।"
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Press {ok} to adjust daylight saving time. Press {extra} to return to the time zone list."
+msgstr "डेलाइट सेविंग टाइम समायोजित करने के लिए {ok} दबाएँ। समय क्षेत्र की सूची पर लौटने के लिए {extra} दबाएँ।"
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Use {up} and {down} to adjust the setting value and use {left} and {right} to select setting items. Press {ok} to accept your selections."
+msgstr "सेटिंग का मान बदलने के लिए {up} और {down} का उपयोग करें और सेटिंग के विकल्प चुनने के लिए {left} और {right} का उपयोग करें। अपने चयन की पुष्टि करने के लिए {ok} दबाएँ।"
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Press {ok} to set the date and time. Press {extra} to set automatically. Press {right} to continue."
+msgstr "तारीख और समय सेट करने के लिए {ok} दबाएँ। अपने आप सेट करने के लिए {extra} दबाएँ। आगे बढ़ने के लिए {right} दबाएँ।"
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Press {ok} to enter a user name. Press {right} to continue."
+msgstr "उपयोगकर्ता नाम दर्ज करने के लिए {ok} दबाएँ। आगे बढ़ने के लिए {right} दबाएँ।"

@@ -243,6 +243,24 @@
         "OPENXMB_HARNESS_ACTIONS": "0:down;0:down;0:down;0:right"
       }
     },
+    "setup-language-fr": {
+      "description": "French setup keeps language choices in their native names",
+      "pattern": "setup-language-fr-{:05d}.png",
+      "frames": 4,
+      "env": {"OPENXMB_SETUP_PAGE": "language", "OPENXMB_HARNESS_ACTIONS": "0:down;0:down"}
+    },
+    "setup-language-autonyms": {
+      "description": "Mixed CJK language names with the original theme font",
+      "pattern": "setup-language-autonyms-{:05d}.png",
+      "frames": 4,
+      "env": {"OPENXMB_SETUP_PAGE": "language", "OPENXMB_HARNESS_ACTIONS": "0:down;0:down;0:down;0:down;0:down;0:down;0:down"}
+    },
+    "setup-date-edit-fr": {
+      "description": "French date editor with binding-aware inline controls",
+      "pattern": "setup-date-edit-fr-{:05d}.png",
+      "frames": 20,
+      "env": {"OPENXMB_SETUP_PAGE": "language", "OPENXMB_HARNESS_ACTIONS": "0:down;0:down;0:right;0:right;0:ok"}
+    },
     "setup-time-zone-ja": {
       "description": "Initial Setup live language change to ja",
       "pattern": "setup-time-zone-ja-{:05d}.png",

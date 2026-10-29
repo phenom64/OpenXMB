@@ -67,7 +67,11 @@ public:
         if(!armed_) {
             int count{};const auto* keys=SDL_GetKeyboardState(&count);bool pressed=false;
             for(int i=0;i<count;++i)pressed=pressed||keys[i]!=0;
-            for(const auto& [id,controller]:host->get_window()->controllers)for(int i=0;i<SDL_CONTROLLER_BUTTON_MAX;++i)pressed=pressed||SDL_GameControllerGetButton(controller.get(),static_cast<SDL_GameControllerButton>(i))!=0;
+            for(const auto& [id,controller]:host->get_window()->controllers) {
+                for(int i=0;i<SDL_CONTROLLER_BUTTON_MAX;++i)pressed=pressed||SDL_GameControllerGetButton(controller.get(),static_cast<SDL_GameControllerButton>(i))!=0;
+                for(const auto axis:{SDL_CONTROLLER_AXIS_TRIGGERLEFT,SDL_CONTROLLER_AXIS_TRIGGERRIGHT})
+                    pressed=pressed||SDL_GameControllerGetAxis(controller.get(),axis)>8192;
+            }
             armed_=!pressed;
         }
         return result::success;

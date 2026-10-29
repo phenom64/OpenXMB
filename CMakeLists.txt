@@ -289,7 +289,7 @@ if(AUROREENGINE_LOCAL)
 else()
   FetchContent_Declare(auroreengine
     GIT_REPOSITORY https://github.com/phenom64/AuroreEngine.git
-    GIT_TAG        419e82e5202261dcf678ae28c766c980585fc648
+    GIT_TAG        4cd2a0587263f46382dfc9c62e0cba0d95668bb8
     OVERRIDE_FIND_PACKAGE
   )
   FetchContent_GetProperties(auroreengine)
@@ -788,6 +788,11 @@ if(OPENXMB_BUILD_NATIVE_TESTS)
   target_compile_definitions(openxmb_setup_tests PRIVATE _CRT_SECURE_NO_WARNINGS)
   openxmb_configure_native_test(openxmb_setup_tests)
   add_test(NAME openxmb_setup_tests COMMAND openxmb_setup_tests)
+  add_executable(openxmb_input_prompt_tests tests/localization/input_prompt_tests.cpp)
+  target_include_directories(openxmb_input_prompt_tests PRIVATE include)
+  set_target_properties(openxmb_input_prompt_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  openxmb_configure_native_test(openxmb_input_prompt_tests)
+  add_test(NAME openxmb_input_prompt_tests COMMAND openxmb_input_prompt_tests)
 
   add_executable(openxmb_layout_timeline_tests
     tests/xmb/layout_timeline_tests.cpp
@@ -1528,4 +1533,5 @@ if(OPENXMB_BUILD_NATIVE_TESTS)
   target_link_libraries(openxmb_artwork_decode_tests PRIVATE SDL2::SDL2 SDL2_image::SDL2_image)
   set_target_properties(openxmb_artwork_decode_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
   add_test(NAME openxmb_artwork_decode_tests COMMAND openxmb_artwork_decode_tests "${PROJECT_SOURCE_DIR}/tests/media/artwork-fixtures")
+  add_test(NAME openxmb_keyboard_svg_tests COMMAND openxmb_artwork_decode_tests --keyboard "${PROJECT_SOURCE_DIR}/assets/shell/icons/keyboard")
 endif()

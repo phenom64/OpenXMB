@@ -8,6 +8,7 @@
 #include <fstream>
 #include <stdexcept>
 #include <vector>
+#include <iterator>
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -87,7 +88,8 @@ std::filesystem::path select_font(const std::filesystem::path& configured,const 
     return configured;
 }
 
-std::vector<std::string> font_catalog_texts(const std::filesystem::path& locales,std::string_view requested) {
+std::vector<std::string> font_catalog_texts(const std::filesystem::path& locales,std::string_view requested,
+                                          std::span<const std::string_view> sources) {
     auto path=locales/effective_language(requested)/"LC_MESSAGES/shell.mo";
     std::error_code error;const auto size=std::filesystem::file_size(path,error);
     if(error||size<28||size>16*1024*1024)return {};
@@ -99,10 +101,17 @@ std::vector<std::string> font_catalog_texts(const std::filesystem::path& locales
         return result;
     };
     const auto magic=word(0,false);if(magic!=0x950412de&&magic!=0xde120495)return {};
-    const bool swap=magic==0xde120495;const auto count=word(8,swap),table=word(16,swap);
-    if(count>100000||std::uint64_t(table)+std::uint64_t(count)*8>data.size())return {};
+    const bool swap=magic==0xde120495;const auto count=word(8,swap),originals=word(12,swap),table=word(16,swap);
+    if(count>100000||std::uint64_t(table)+std::uint64_t(count)*8>data.size()||
+       std::uint64_t(originals)+std::uint64_t(count)*8>data.size())return {};
     std::vector<std::string> result;
     for(std::uint32_t i=1;i<count;++i) {
+        if(!sources.empty()) {
+            const auto length=word(originals+i*8,swap),offset=word(originals+i*8+4,swap);
+            if(length>65536||std::uint64_t(offset)+length>data.size())continue;
+            const std::string_view source(reinterpret_cast<const char*>(data.data()+offset),length);
+            if(std::ranges::find(sources,source)==sources.end())continue;
+        }
         const auto length=word(table+i*8,swap),offset=word(table+i*8+4,swap);
         if(length>65536||std::uint64_t(offset)+length>data.size())continue;
         std::string_view forms(reinterpret_cast<const char*>(data.data()+offset),length);
@@ -113,6 +122,34 @@ std::vector<std::string> font_catalog_texts(const std::filesystem::path& locales
             forms.remove_prefix(end+1);
         }
     }
+    return result;
+}
+std::vector<std::string> setup_font_texts(const std::filesystem::path& locales) {
+    constexpr std::string_view sources[]{
+        "Initial Setup","Syndromatic Limited Britannia","Select a language.","Select a time zone.",
+        "Use {up} and {down} to select. Press {right} to continue.",
+        "Use {up} and {down} to select. Press {extra} to adjust daylight saving time. Press {right} to continue.",
+        "Press {ok} to adjust daylight saving time. Press {extra} to return to the time zone list.",
+        "Automatically adjust for daylight saving time","Daylight saving rules are unavailable.",
+        "This time zone does not observe daylight saving time.","Set the time and date.",
+        "Use the system clock automatically","Use {up} and {down} to adjust the setting value and use {left} and {right} to select setting items. Press {ok} to accept your selections.",
+        "Press {ok} to set the date and time. Press {extra} to set automatically. Press {right} to continue.","Enter your user name.",
+        "Press {ok} to enter a user name. Press {right} to continue.","Finish initial setup.","Settings List",
+        "System Language","Time Zone","Date and Time","User Name","Region","Finish initial setup?",
+        "Your choices will be saved for OpenXMB.","Yes","No","Enter","Back","Edit","Automatic","Toggle",
+        "Daylight saving","Cancel","OK","Delete","Space","Shift","Caps Lock","Done",
+        "This local time is skipped or repeated by daylight saving. Choose a different time or turn off automatic daylight saving.",
+        "Could not save OpenXMB settings. Check that the profile folder is writable, then try again.",
+        "Could not save settings. Please try again.","No time zone is available."
+    };
+    std::vector<std::string> result(std::begin(sources),std::end(sources));
+    for(const auto& [code,label]:shell_locale::languages) {
+        if(code=="auto")continue;
+        result.emplace_back(label);
+        auto translated=font_catalog_texts(locales,code,sources);
+        result.insert(result.end(),std::make_move_iterator(translated.begin()),std::make_move_iterator(translated.end()));
+    }
+    for(const auto* variable:{"USERNAME","USER"})if(auto name=environment(variable);!name.empty())result.push_back(std::move(name));
     return result;
 }
 }

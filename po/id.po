@@ -5148,3 +5148,27 @@ msgstr "Tidak dapat menyimpan pengaturan OpenXMB. Pastikan folder profil dapat d
 
 msgid "This local time is skipped or repeated by daylight saving. Choose a different time or turn off automatic daylight saving."
 msgstr "Waktu lokal ini dilewati atau diulang karena perubahan waktu musim panas. Pilih waktu lain atau nonaktifkan penyesuaian waktu musim panas otomatis."
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Use {up} and {down} to select. Press {right} to continue."
+msgstr "Gunakan {up} dan {down} untuk memilih. Tekan {right} untuk melanjutkan."
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Use {up} and {down} to select. Press {extra} to adjust daylight saving time. Press {right} to continue."
+msgstr "Gunakan {up} dan {down} untuk memilih. Tekan {extra} untuk mengatur waktu musim panas. Tekan {right} untuk melanjutkan."
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Press {ok} to adjust daylight saving time. Press {extra} to return to the time zone list."
+msgstr "Tekan {ok} untuk mengatur waktu musim panas. Tekan {extra} untuk kembali ke daftar zona waktu."
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Use {up} and {down} to adjust the setting value and use {left} and {right} to select setting items. Press {ok} to accept your selections."
+msgstr "Gunakan {up} dan {down} untuk mengubah nilai pengaturan, serta {left} dan {right} untuk memilih item pengaturan. Tekan {ok} untuk mengonfirmasi pilihan Anda."
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Press {ok} to set the date and time. Press {extra} to set automatically. Press {right} to continue."
+msgstr "Tekan {ok} untuk mengatur tanggal dan waktu. Tekan {extra} untuk mengaturnya secara otomatis. Tekan {right} untuk melanjutkan."
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Press {ok} to enter a user name. Press {right} to continue."
+msgstr "Tekan {ok} untuk memasukkan nama pengguna. Tekan {right} untuk melanjutkan."

@@ -75,8 +75,11 @@ int main(int argc, char** argv) {
         check(catalog.text("category.settings.label")==expected, std::string("visible catalog switch to ")+language);
         const auto& node=catalog.nodes.at("category.settings.desktop.language");
         for(const auto& [code,label]:openxmb::localization::shell_locale::languages) {
-            const auto key=std::string(label);
-            check(dgettext("shell",key.c_str())!=key.c_str(),"language choice catalog presence: "+key);
+            const auto choice=std::ranges::find(node.choices,code,&openxmb::xmb::CatalogChoice::value);
+            check(choice!=node.choices.end(),"language choice is present: "+std::string(code));
+            if(choice!=node.choices.end())check(catalog.text(choice->label_key)==
+                (code=="auto"?std::string(dgettext("shell",std::string(label).c_str())):std::string(label)),
+                "language choice preserves its native name: "+std::string(code));
         }
         check(node.choices.size()==13,"auto and all twelve authorized locale packs offered");
         for(const auto& [id,legacy]:catalog.nodes) if(id=="category.settings.system.settings.system.language") {
@@ -114,6 +117,15 @@ int main(int argc, char** argv) {
     check(openxmb::localization::shell_locale::normalize("zh-Hans-CN")=="zh_CN","simplified Chinese script selects correct catalog");
     apply("en");
     check(openxmb::localization::shell_locale::language_label("en")=="British English","English option is exactly British English");
+    for(const auto* current:{"fr","ja","en"}) {
+        apply(current);
+        for(const auto& [code,native]:std::array<std::pair<const char*,const char*>,12>{{
+            {"en","British English"},{"de","Deutsch"},{"fr","Français"},{"hi","हिन्दी"},
+            {"pl","Polski"},{"id","Bahasa Indonesia"},{"es","Español"},{"ja","日本語"},
+            {"zh_CN","简体中文"},{"zh_TW","繁體中文"},{"ko","한국어"},{"ru","Русский"}}})
+            check(openxmb::localization::shell_locale::language_label(code)==native,
+                std::string("language autonym changed with interface locale: ")+current+" / "+code);
+    }
     if(argc>3) for(const auto* language:{"id","es","ja","zh_CN","zh_TW","ko","ru"}) {
         apply(language);
         auto loaded=openxmb::xmb::load_catalog_file(std::filesystem::path(argv[1])/"assets/xmb/catalog/en.json");

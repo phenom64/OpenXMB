@@ -90,7 +90,7 @@ inline std::string translate(std::string_view source) {
 }
 inline std::string language_label(std::string_view value) {
     const auto language=normalize(value);
-    for(const auto& [code,name]:languages) if(code==language) return translate(name);
-    return translate("British English");
+    for(const auto& [code,name]:languages) if(code==language) return code=="auto"?translate(name):std::string(name);
+    return "British English";
 }
 }

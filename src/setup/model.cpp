@@ -100,7 +100,7 @@ std::vector<Language> supported_languages() {
     std::vector<Language> result;
     for(const auto& [code,label]:localization::shell_locale::languages) {
         if(code=="auto")continue;
-        result.push_back({std::string(code),code=="en"?"English (United Kingdom)":std::string(label)});
+        result.push_back({std::string(code),std::string(label)});
     }
     return result;
 }

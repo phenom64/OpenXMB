@@ -5148,3 +5148,27 @@ msgstr "OpenXMBの設定を保存できませんでした。プロフィール�
 
 msgid "This local time is skipped or repeated by daylight saving. Choose a different time or turn off automatic daylight saving."
 msgstr "サマータイムの切り替えにより、この現地時刻は存在しないか、2回発生します。別の時刻を選ぶか、サマータイムの自動切り替えをオフにしてください。"
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Use {up} and {down} to select. Press {right} to continue."
+msgstr "{up}と{down}で選択します。{right}を押すと次へ進みます。"
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Use {up} and {down} to select. Press {extra} to adjust daylight saving time. Press {right} to continue."
+msgstr "{up}と{down}で選択します。{extra}を押すとサマータイムを調整できます。{right}を押すと次へ進みます。"
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Press {ok} to adjust daylight saving time. Press {extra} to return to the time zone list."
+msgstr "{ok}を押すとサマータイムを調整できます。{extra}を押すとタイムゾーンの一覧に戻ります。"
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Use {up} and {down} to adjust the setting value and use {left} and {right} to select setting items. Press {ok} to accept your selections."
+msgstr "{up}と{down}で設定値を調整し、{left}と{right}で設定項目を選択します。{ok}を押すと選択内容を確定します。"
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Press {ok} to set the date and time. Press {extra} to set automatically. Press {right} to continue."
+msgstr "{ok}を押すと日付と時刻を設定できます。{extra}を押すと自動設定します。{right}を押すと次へ進みます。"
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Press {ok} to enter a user name. Press {right} to continue."
+msgstr "{ok}を押すとユーザー名を入力できます。{right}を押すと次へ進みます。"

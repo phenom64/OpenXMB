@@ -1,6 +1,7 @@
 #include "../../src/localization/font_selection.hpp"
 #include <iostream>
 #include <stdexcept>
+#include <algorithm>
 int main(int argc,char** argv)try {
     if(argc!=3)return 2;
     const std::filesystem::path assets=argv[1],configured=assets/"Play-Regular.ttf";
@@ -18,5 +19,9 @@ int main(int argc,char** argv)try {
         for(const auto& text:texts)if(text.find('\0')!=std::string::npos)throw std::runtime_error("plural catalog entry was not split");
     }
     if(!font_catalog_texts(std::filesystem::path(argv[2])/"missing","en").empty())throw std::runtime_error("missing catalog must be safe");
+    const auto setup=setup_font_texts(argv[2]);
+    if(setup.size()<100||setup.size()>700)throw std::runtime_error("setup preload must contain a bounded translated subset");
+    for(const auto* name:{"British English","Français","हिन्दी","日本語","한국어","Русский"})
+        if(std::ranges::find(setup,name)==setup.end())throw std::runtime_error("setup omitted a native language name");
     std::cout<<"Script font selection passed; configured preference remains unchanged\n";
 }catch(const std::exception& error){std::cerr<<error.what()<<'\n';return 1;}

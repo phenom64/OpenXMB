@@ -1,4 +1,5 @@
 #include "openxmb/setup/model.hpp"
+#include "openxmb/setup/value_motion.hpp"
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>
@@ -154,6 +155,26 @@ int main() {
         model.command(Command::confirm,epoch); model.command(Command::left,epoch); model.command(Command::confirm,epoch);
         check(model.page()==Page::complete, "confirmed summary completes setup");
         time_zone_checks();
+        const auto entering=value_motion(0.0F,1);
+        check(entering.incoming_offset<0&&entering.incoming_alpha==0&&entering.outgoing_alpha==1,
+            "increment starts the new value above the stationary baseline");
+        const auto increasing=value_motion(0.04F,1),decreasing=value_motion(0.04F,-1);
+        check(increasing.incoming_offset<0&&increasing.outgoing_offset>0&&
+            decreasing.incoming_offset>0&&decreasing.outgoing_offset<0,
+            "increment and decrement glide in opposite directions, including wrapped values");
+        check(increasing.incoming_alpha>0&&increasing.outgoing_alpha>0&&
+            increasing.incoming_alpha+increasing.outgoing_alpha==1,
+            "the value glide crossfades old and new digits");
+        const auto settled=value_motion(0.08F,1),reduced=value_motion(0.02F,-1,true);
+        check(settled.incoming_offset==0&&settled.outgoing_alpha==0&&settled.incoming_alpha==1,
+            "value motion settles within the observed short transition interval");
+        check(reduced.incoming_offset==0&&reduced.incoming_alpha==1&&reduced.outgoing_alpha==0,
+            "reduced motion displays the changed value immediately");
+        const auto languages=supported_languages();
+        const auto english=std::ranges::find(languages,"en",&Language::code);
+        const auto french=std::ranges::find(languages,"fr",&Language::code);
+        check(english!=languages.end()&&english->label=="British English","setup uses the canonical British English autonym");
+        check(french!=languages.end()&&french->label=="Français","setup language labels use native names");
         std::cout << "Setup migration, time-zone, date editor and navigation checks passed\n";
     } catch(const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }
 }

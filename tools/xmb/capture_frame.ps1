@@ -88,6 +88,7 @@ function Invoke-SceneCapture {
     Remove-Item Env:OPENXMB_SETUP_PAGE -ErrorAction SilentlyContinue
     Remove-Item Env:OPENXMB_SETUP_EDIT -ErrorAction SilentlyContinue
     Remove-Item Env:OPENXMB_FIXED_SETUP_SECONDS -ErrorAction SilentlyContinue
+    Remove-Item Env:OPENXMB_FIXED_VALUE_SECONDS -ErrorAction SilentlyContinue
 
     foreach ($key in $SceneEnv.Keys) {
         Set-Item -Path "Env:$key" -Value $SceneEnv[$key]

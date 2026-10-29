@@ -9,10 +9,10 @@
 namespace openxmb::localization::shell_locale {
 inline constexpr std::array<std::pair<std::string_view,std::string_view>,13> languages{{
     {"auto","Use system language"},{"en","British English"},
-    {"de","German"},{"fr","French"},{"hi","Hindi"},{"pl","Polish"},
-    {"id","Indonesian"},{"es","Spanish"},{"ja","Japanese"},
-    {"zh_CN","Simplified Chinese"},{"zh_TW","Traditional Chinese"},
-    {"ko","Korean"},{"ru","Russian"}
+    {"de","Deutsch"},{"fr","Français"},{"hi","हिन्दी"},{"pl","Polski"},
+    {"id","Bahasa Indonesia"},{"es","Español"},{"ja","日本語"},
+    {"zh_CN","简体中文"},{"zh_TW","繁體中文"},
+    {"ko","한국어"},{"ru","Русский"}
 }};
 inline std::string normalize(std::string_view requested) {
     if(requested.empty() || requested=="auto") return "auto";

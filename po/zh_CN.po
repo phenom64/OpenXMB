@@ -5148,3 +5148,27 @@ msgstr "无法保存 OpenXMB 设置。请确认个人配置文件夹可写入，
 
 msgid "This local time is skipped or repeated by daylight saving. Choose a different time or turn off automatic daylight saving."
 msgstr "由于夏令时调整，此本地时间会被跳过或重复。请选择其他时间，或关闭自动夏令时调整。"
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Use {up} and {down} to select. Press {right} to continue."
+msgstr "使用 {up} 和 {down} 进行选择。按 {right} 继续。"
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Use {up} and {down} to select. Press {extra} to adjust daylight saving time. Press {right} to continue."
+msgstr "使用 {up} 和 {down} 进行选择。按 {extra} 调整夏令时。按 {right} 继续。"
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Press {ok} to adjust daylight saving time. Press {extra} to return to the time zone list."
+msgstr "按 {ok} 调整夏令时。按 {extra} 返回时区列表。"
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Use {up} and {down} to adjust the setting value and use {left} and {right} to select setting items. Press {ok} to accept your selections."
+msgstr "使用 {up} 和 {down} 调整设置值，使用 {left} 和 {right} 选择设置项。按 {ok} 确认所选设置。"
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Press {ok} to set the date and time. Press {extra} to set automatically. Press {right} to continue."
+msgstr "按 {ok} 设置日期和时间。按 {extra} 自动设置。按 {right} 继续。"
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Press {ok} to enter a user name. Press {right} to continue."
+msgstr "按 {ok} 输入用户名。按 {right} 继续。"

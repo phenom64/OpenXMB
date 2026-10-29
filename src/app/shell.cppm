@@ -144,22 +144,26 @@ namespace app
 
             std::string get_controller_type() const;
             const texture* get_button_icon(action value) const { return buttonTextures[std::to_underlying(value)].get(); }
+            float get_button_aspect(action value) const {
+                const auto* icon=get_button_icon(value);
+                return icon&&icon->loaded&&icon->height>0?static_cast<float>(icon->width)/icon->height:1.0F;
+            }
             std::string get_button_label(action value) const { return button_labels[std::to_underlying(value)]; }
+            void render_keycap_fallback(gui_renderer& renderer,float left,float centre,float width,float height,std::string_view label,float font,float alpha);
+            void render_input_instruction(gui_renderer& renderer,std::string_view pattern,float x,float baseline,float size,float alpha);
             void render_controller_buttons(gui_renderer& renderer, float x, float y, std::ranges::range auto buttons) {
                 const float fw=static_cast<float>(renderer.frame_size.width),fh=static_cast<float>(renderer.frame_size.height);
                 const float scale=std::min(fw/1920.0F,fh/1080.0F),height=34*scale,gap=12*scale,spacing=64*scale;
                 const float font=28*scale*static_cast<float>(config::CONFIG.textScale),key_font=19*scale;
-                const auto glyph_width=[&](action a){const auto& label=button_labels[std::to_underlying(a)];return label.empty()?height:std::max(height,renderer.text_width_pixels(label,key_font)+14*scale);};
+                const auto glyph_width=[&](action a){const auto& label=button_labels[std::to_underlying(a)];return label.empty()?height*get_button_aspect(a):std::max(height,renderer.text_width_pixels(label,key_font)+14*scale);};
                 float total=0;for(const auto& [a,text]:buttons)if(a!=action::none)total+=glyph_width(a)+gap+renderer.text_width_pixels(::openxmb::localization::shell_locale::translate(text),font)+spacing;
                 if(total>0)total-=spacing;float current=x*fw-total*0.5F;
-                const auto metrics=renderer.text_line_metrics_pixels(font),key_metrics=renderer.text_line_metrics_pixels(key_font);
+                const auto metrics=renderer.text_line_metrics_pixels(font);
                 for(const auto& [a,text]:buttons) {
                     if(a==action::none)continue;const auto i=std::to_underlying(a);const auto width=glyph_width(a);
                     if(!button_labels[i].empty()) {
-                        renderer.draw_rect({current/fw,y-height/(2*fh)},{width/fw,height/fh},{1,1,1,0.75F});
-                        renderer.draw_rect({(current+scale)/fw,y-height/(2*fh)+scale/fh},{(width-2*scale)/fw,(height-2*scale)/fh},{0.08F,0.08F,0.08F,1});
-                        renderer.draw_text_pixels(button_labels[i],current+width*0.5F,y*fh+(key_metrics.x-key_metrics.y)*0.5F,key_font,{1,1,1,1},0.7F,0,true);
-                    } else if(auto* icon=buttonTextures[i].get())renderer.draw_image(*icon,current/fw,y-height/(2*fh),height/fh,height/fh);
+                        render_keycap_fallback(renderer,current,y*fh,width,height,button_labels[i],key_font,1);
+                    } else if(auto* icon=buttonTextures[i].get())renderer.draw_image(*icon,current/fw,y-height/(2*fh),width/fh,height/fh);
                     renderer.draw_text_pixels(::openxmb::localization::shell_locale::translate(text),current+width+gap,y*fh+(metrics.x-metrics.y)*0.5F,font,{1,1,1,1},0.7F,0,false);
                     current+=width+gap+renderer.text_width_pixels(::openxmb::localization::shell_locale::translate(text),font)+spacing;
                 }
@@ -167,30 +171,31 @@ namespace app
 
             // Message-screen hints use fixed slots rather than packed labels: in
             // the 1920x1080 captures the Cross glyph sat at x~735 and the Circle
-            // glyph at x~1165 whatever the label ("Edit", "Enter"), at y~906.
+            // glyph at x~1165 whatever the label ("Edit", "Enter"), at y~906. A lone
+            // hint keeps its slot: the setup stills show Cross alone at x~735.
             void render_message_footer(gui_renderer& renderer, std::ranges::range auto buttons, float alpha) {
                 const float fw=static_cast<float>(renderer.frame_size.width),fh=static_cast<float>(renderer.frame_size.height);
                 const float scale=std::min(fw/1920.0F,fh/1080.0F),ox=(fw-1920.0F*scale)*0.5F,oy=(fh-1080.0F*scale)*0.5F;
                 const float icon=22*scale,font=22*scale*static_cast<float>(config::CONFIG.textScale),key_font=15*scale;
                 std::size_t count=0;for(const auto& [a,text]:buttons)if(a!=action::none)++count;
                 constexpr std::array<float,2> pair_slots{735.0F,1165.0F};
-                const auto metrics=renderer.text_line_metrics_pixels(font),key_metrics=renderer.text_line_metrics_pixels(key_font);
+                const auto metrics=renderer.text_line_metrics_pixels(font);
                 const float centre_y=oy+906*scale;
                 std::size_t slot=0;
                 for(const auto& [a,text]:buttons) {
                     if(a==action::none)continue;
-                    const float cx=ox+(count==2?pair_slots[slot]:count==1?900.0F:620.0F+slot*300.0F)*scale;
+                    const float cx=ox+(count==2?pair_slots[slot]:count==1?pair_slots[a==action::cancel?1:0]:620.0F+slot*300.0F)*scale;
                     ++slot;
                     const auto i=std::to_underlying(a);
                     float label_x=cx+icon*0.5F+19*scale;
                     if(!button_labels[i].empty()) {
                         const float width=std::max(icon,renderer.text_width_pixels(button_labels[i],key_font)+12*scale);
-                        renderer.draw_rect({(cx-icon*0.5F)/fw,(centre_y-icon*0.5F)/fh},{width/fw,icon/fh},{1,1,1,0.75F*alpha});
-                        renderer.draw_rect({(cx-icon*0.5F+scale)/fw,(centre_y-icon*0.5F+scale)/fh},{(width-2*scale)/fw,(icon-2*scale)/fh},{0.08F,0.08F,0.08F,alpha});
-                        renderer.draw_text_pixels(button_labels[i],cx-icon*0.5F+width*0.5F,centre_y+(key_metrics.x-key_metrics.y)*0.5F,key_font,{1,1,1,alpha},0.7F,0,true);
+                        render_keycap_fallback(renderer,cx-icon*0.5F,centre_y,width,icon,button_labels[i],key_font,alpha);
                         label_x=cx-icon*0.5F+width+19*scale;
                     } else if(auto* texture=buttonTextures[i].get()) {
-                        renderer.draw_image(*texture,(cx-icon*0.5F)/fw,(centre_y-icon*0.5F)/fh,icon/fh,icon/fh,{1,1,1,alpha});
+                        const float width=icon*get_button_aspect(a);
+                        renderer.draw_image(*texture,(cx-icon*0.5F)/fw,(centre_y-icon*0.5F)/fh,width/fh,icon/fh,{1,1,1,alpha});
+                        label_x=cx-icon*0.5F+width+19*scale;
                     }
                     renderer.draw_text_pixels(::openxmb::localization::shell_locale::translate(text),label_x,centre_y+(metrics.x-metrics.y)*0.5F,font,{1,1,1,alpha},0.7F,0,false);
                 }
@@ -309,9 +314,11 @@ namespace app
         private:
             void begin_initial_setup();
             bool render_status_clock(gui_renderer& renderer);
-            std::filesystem::path active_font_path() const;
-            bool setup_font_active = false;
             bool setup_requested = false;
+            bool initial_setup_active = false;
+            std::string input_prompt_family;
+            bool input_prompt_refresh = false;
+            void note_input_device(sdl::GameController* controller);
             bool setup_handoff_pending = false;
             friend class blur_layer;
 

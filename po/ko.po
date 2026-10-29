@@ -5148,3 +5148,27 @@ msgstr "OpenXMB 설정을 저장하지 못했습니다. 프로필 폴더에 쓰�
 
 msgid "This local time is skipped or repeated by daylight saving. Choose a different time or turn off automatic daylight saving."
 msgstr "일광 절약 시간제 전환으로 이 현지 시간이 건너뛰어지거나 반복됩니다. 다른 시간을 선택하거나 일광 절약 시간제 자동 적용을 끄세요."
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Use {up} and {down} to select. Press {right} to continue."
+msgstr "{up} 및 {down}을 사용하여 선택하세요. {right}을 눌러 계속하세요."
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Use {up} and {down} to select. Press {extra} to adjust daylight saving time. Press {right} to continue."
+msgstr "{up} 및 {down}을 사용하여 선택하세요. {extra}를 눌러 일광 절약 시간을 조정하세요. {right}을 눌러 계속하세요."
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Press {ok} to adjust daylight saving time. Press {extra} to return to the time zone list."
+msgstr "{ok}를 눌러 일광 절약 시간을 조정하세요. {extra}를 눌러 시간대 목록으로 돌아가세요."
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Use {up} and {down} to adjust the setting value and use {left} and {right} to select setting items. Press {ok} to accept your selections."
+msgstr "{up} 및 {down}을 사용하여 설정값을 조정하고, {left} 및 {right}을 사용하여 설정 항목을 선택하세요. {ok}를 눌러 선택한 내용을 확정하세요."
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Press {ok} to set the date and time. Press {extra} to set automatically. Press {right} to continue."
+msgstr "{ok}를 눌러 날짜와 시간을 설정하세요. {extra}를 눌러 자동으로 설정하세요. {right}을 눌러 계속하세요."
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Press {ok} to enter a user name. Press {right} to continue."
+msgstr "{ok}를 눌러 사용자 이름을 입력하세요. {right}을 눌러 계속하세요."

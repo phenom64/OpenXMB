@@ -170,5 +170,13 @@ inline void populate(openxmb::xmb::Catalog& catalog,
         }
     }
     for(auto& [key,text]:catalog.strings) text=translate(text);
+    for(const auto& [id,node]:catalog.nodes) if(node.action_id=="desktop.language") {
+        for(const auto& choice:node.choices) {
+            const auto native=std::ranges::find(openxmb::localization::shell_locale::languages,
+                choice.value,[](const auto& language){return language.first;});
+            if(native!=openxmb::localization::shell_locale::languages.end()&&native->first!="auto")
+                catalog.strings[choice.label_key]=native->second;
+        }
+    }
 }
 }

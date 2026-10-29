@@ -72,6 +72,9 @@ module;
 #include "openxmb/integrations/xmb_overlay.hpp"
 #include "openxmb/themes/library.hpp"
 #include "openxmb/setup/model.hpp"
+#include "openxmb/input/prompt.hpp"
+#include "keyboard_glyphs.hpp"
+#include <charconv>
 #include "openxmb/xmb/status_bar.hpp"
 #include <map>
 
@@ -111,6 +114,29 @@ using namespace mfk::i18n::literals;
 
 namespace app
 {
+    namespace {
+        std::string controller_prompt_family(sdl::GameController* controller) {
+            if(!controller)return "keyboard";
+            const auto type=sdl::GameControllerGetType(controller);
+            if(type==sdl::GameControllerTypeValues::PS3||type==sdl::GameControllerTypeValues::PS4||type==sdl::GameControllerTypeValues::PS5)return "playstation";
+            if(type==sdl::GameControllerTypeValues::XBOX360||type==sdl::GameControllerTypeValues::XBOXONE)return "xbox";
+            const auto* raw=sdl::GameControllerName(controller);
+            const std::string_view name=raw?raw:"";
+            return name=="Steam Virtual Gamepad"||name=="Steam Controller"?"steam":"default";
+        }
+        void configure_shell_font(auroreengine::font_renderer& font,bool setup) {
+            spdlog::debug("Preparing shell font '{}'; setup={}",config::CONFIG.fontPath.string(),setup);
+            const auto& assets=config::CONFIG.asset_directory;
+            std::vector<std::string> fallbacks;
+            for(const auto* name:{"fonts/NotoSans-Regular.ttf","fonts/NotoSansDevanagari-Regular.ttf","fonts/NotoSansCJK-Regular.ttc"}) {
+                const auto path=assets/name;
+                if(std::filesystem::is_regular_file(path))fallbacks.push_back(path.string());
+            }
+            font.set_fallback_fonts(std::move(fallbacks));
+            font.set_preload_texts(setup?openxmb::localization::setup_font_texts(config::CONFIG.locale_directory):
+                openxmb::localization::font_catalog_texts(config::CONFIG.locale_directory,config::CONFIG.language));
+        }
+    }
     struct shell::game_state {
         struct ArtworkResult {std::filesystem::path root,icon,cover,background;std::string profile,game_id;};
         openxmb::desktop::SessionManager sessions;
@@ -334,10 +360,12 @@ namespace app
     void shell::preload()
     {
         phase::preload();
-        SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS,"1");
-        setup_font_active=(!win->config.headless&&config::CONFIG.initialSetupRequired)||
+        // Noninteractive captures must not consume a controller used by a
+        // separate visible preview. Harness events are dispatched explicitly.
+        SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS,win->config.headless?"0":"1");
+        initial_setup_active=(!win->config.headless&&config::CONFIG.initialSetupRequired)||
             std::getenv("OPENXMB_SETUP_PAGE")||truthy_environment_flag("OPENXMB_FORCE_SETUP");
-        font_render = std::make_unique<font_renderer>(openxmb::localization::select_font(active_font_path(),config::CONFIG.asset_directory,config::CONFIG.language).string(), 32, device, allocator, win->swapchainExtent, win->gpuFeatures);
+        font_render = std::make_unique<font_renderer>(config::CONFIG.fontPath.string(), 32, device, allocator, win->swapchainExtent, win->gpuFeatures);
         image_render = std::make_unique<image_renderer>(device, win->swapchainExtent, win->gpuFeatures);
         image_render->setAllocator(allocator);
         simple_render = std::make_unique<simple_renderer>(device, allocator, win->swapchainExtent, win->gpuFeatures);
@@ -386,7 +414,7 @@ namespace app
             debugName(device, upsamplePipeline.get(), "Upsample Pipeline");
         }
 
-        font_render->set_preload_texts(openxmb::localization::font_catalog_texts(config::CONFIG.locale_directory,config::CONFIG.language));
+        configure_shell_font(*font_render,initial_setup_active);
         add_task(font_render->preload(loader, {shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get(), nullptr, 0x20, 0x1ff));
         image_render->preload({backgroundRenderPass.get(), shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
         simple_render->preload({shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
@@ -803,13 +831,14 @@ namespace app
 
     void shell::reload_language() {
         try {
+            const auto started=std::chrono::steady_clock::now();
             const std::string& lang = config::CONFIG.language;
             openxmb::localization::shell_locale::apply(lang, config::CONFIG.locale_directory);
-            reload_fonts();
-            spdlog::info("Language set to '{}'; reloading menus", lang);
-
-            // Rebuild main menu to refresh translated strings
-            reload_menu();
+            // Setup's translated strings and script fallbacks are already
+            // resident. Rebuilding hidden menus or font pipelines stalls input.
+            if(!initial_setup_active)reload_menu();
+            const auto elapsed=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-started).count();
+            spdlog::debug("Language '{}' applied in {:.3f} ms; setup={}, font resources retained",lang,elapsed,initial_setup_active);
         } catch(const std::exception& e) {
             spdlog::error("reload_language failed: {}", e.what());
         }
@@ -865,6 +894,7 @@ namespace app
 #endif
         menu.prepare_icons();
         commandBuffer.begin(vk::CommandBufferBeginInfo());
+        font_render->stage_glyphs(commandBuffer);
         if(games->presentation) games->presentation->upload(commandBuffer,frame,win);
 #if OPENXMB_ENABLE_VIDEO_PLAYER
         video_background_render->prerender(commandBuffer,frame);
@@ -1984,6 +2014,7 @@ namespace app
     }
 
     void shell::after_events() {
+        if(std::exchange(input_prompt_refresh,false))reload_button_icons();
         if(std::exchange(games->minimize_requested,false) && !win->config.headless) SDL_MinimizeWindow(win->win.get());
         const auto shell_focused=[&] {return input_focused();};
         if(!win->config.headless && !shell_focused()) {
@@ -2385,7 +2416,7 @@ namespace app
     }
 
     void shell::begin_initial_setup() {
-        if(!setup_font_active) {setup_font_active=true;reload_fonts();}
+        if(!initial_setup_active) {initial_setup_active=true;reload_fonts();}
         auto* setup=emplace_overlay<app::initial_setup_overlay>([this](const openxmb::setup::Draft& draft,const openxmb::setup::Zone& zone) {
             const auto previous_preferences=config::CONFIG.preferences;
             const auto previous_language=config::CONFIG.language;
@@ -2457,9 +2488,8 @@ namespace app
             const auto path=requested=="default"?config::CONFIG.fallback_font:std::filesystem::u8path(requested);
             if(path!=previous_font)try {
                 if(!openxmb::localization::font_covers(path,u8""))throw std::runtime_error("Cannot load font face");
-                const auto rendered=openxmb::localization::select_font(path,config::CONFIG.asset_directory,config::CONFIG.language);
-                validated_font=std::make_unique<font_renderer>(rendered.string(),32,device,allocator,win->swapchainExtent,win->gpuFeatures);
-                validated_font->set_preload_texts(openxmb::localization::font_catalog_texts(config::CONFIG.locale_directory,config::CONFIG.language));
+                validated_font=std::make_unique<font_renderer>(path.string(),32,device,allocator,win->swapchainExtent,win->gpuFeatures);
+                configure_shell_font(*validated_font,initial_setup_active);
                 validated_font->preload(loader,{shellRenderPass.get()},win->config.sampleCount,win->pipelineCache.get(),nullptr,0x20,0x1ff).get();
                 validated_font->prepare(win->swapchainImageCount);
             } catch(...) {
@@ -2523,27 +2553,19 @@ namespace app
         const auto path=value=="default"?config::CONFIG.fallback_font:std::filesystem::u8path(value);
         win->waitIdle();
         if(!openxmb::localization::font_covers(path,u8""))throw std::runtime_error("Cannot load font face");
-        const auto rendered=openxmb::localization::select_font(path,config::CONFIG.asset_directory,config::CONFIG.language);
-        auto replacement=std::make_unique<font_renderer>(rendered.string(),32,device,allocator,win->swapchainExtent,win->gpuFeatures);
-        replacement->set_preload_texts(openxmb::localization::font_catalog_texts(config::CONFIG.locale_directory,config::CONFIG.language));
+        auto replacement=std::make_unique<font_renderer>(path.string(),32,device,allocator,win->swapchainExtent,win->gpuFeatures);
+        configure_shell_font(*replacement,initial_setup_active);
         replacement->preload(loader,{shellRenderPass.get()},win->config.sampleCount,win->pipelineCache.get(),nullptr,0x20,0x1ff).get();
         replacement->prepare(win->swapchainImageCount);
         config::CONFIG.setFontPath(path.string());font_render=std::move(replacement);
     }
     void shell::reload_fonts() {
         win->waitIdle();
-        const auto rendered=openxmb::localization::select_font(active_font_path(),config::CONFIG.asset_directory,config::CONFIG.language);
-        auto replacement = std::make_unique<font_renderer>(rendered.string(), 32, device, allocator, win->swapchainExtent, win->gpuFeatures);
-        replacement->set_preload_texts(openxmb::localization::font_catalog_texts(config::CONFIG.locale_directory,config::CONFIG.language));
+        auto replacement = std::make_unique<font_renderer>(config::CONFIG.fontPath.string(), 32, device, allocator, win->swapchainExtent, win->gpuFeatures);
+        configure_shell_font(*replacement,initial_setup_active);
         replacement->preload(loader, {shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get(), nullptr, 0x20, 0x1ff).get();
         replacement->prepare(win->swapchainImageCount);
         font_render = std::move(replacement);
-    }
-
-    std::filesystem::path shell::active_font_path() const {
-        const auto setup_font=config::CONFIG.asset_directory/"fonts/NotoSans-Regular.ttf";
-        if(setup_font_active&&std::filesystem::is_regular_file(setup_font))return setup_font;
-        return config::CONFIG.fontPath;
     }
 
     void shell::reload_background() {
@@ -2559,19 +2581,92 @@ namespace app
             loader->loadTexture(backgroundTexture.get(), config::CONFIG.backgroundImage);
         }
     }
+    void shell::render_keycap_fallback(gui_renderer& renderer,float left,float centre,float width,float height,std::string_view label,float font,float alpha) {
+        const float fw=static_cast<float>(renderer.frame_size.width),fh=static_cast<float>(renderer.frame_size.height);
+        const float scale=std::min(fw/1920.0F,fh/1080.0F);
+        auroreengine::simple_params shape{};shape.radius_px=3*scale;shape.edge_falloff_px=0.8F*scale;
+        shape.edge_fill=0;shape.size_px={width,height};
+        renderer.draw_rect({left/fw,(centre-height*0.5F)/fh},{width/fw,height/fh},{1,1,1,0.85F*alpha},shape);
+        const auto metrics=renderer.text_line_metrics_pixels(font);
+        renderer.draw_text_pixels(label,left+width*0.5F,centre+(metrics.x-metrics.y)*0.5F,font,{1,1,1,alpha},0.7F,0,true);
+    }
+
+    void shell::render_input_instruction(gui_renderer& renderer,std::string_view pattern,float x,float baseline,float size,float alpha) {
+        if(get_controller_type()=="none")return;
+        const auto translated=openxmb::localization::shell_locale::translate(pattern);
+        const float fw=static_cast<float>(renderer.frame_size.width),fh=static_cast<float>(renderer.frame_size.height);
+        const float scale=std::min(fw/1920.0F,fh/1080.0F),ox=(fw-1920*scale)*0.5F,oy=(fh-1080*scale)*0.5F;
+        const float font=size*scale*static_cast<float>(config::CONFIG.textScale),glyph=font,key_font=font*0.68F;
+        const auto metrics=renderer.text_line_metrics_pixels(font);
+        const auto control_action=[](openxmb::input::PromptControl control) {
+            using enum openxmb::input::PromptControl;
+            switch(control){case up:return action::up;case down:return action::down;case left:return action::left;
+                case right:return action::right;case ok:return action::ok;case cancel:return action::cancel;
+                case extra:return action::extra;case options:return action::options;}
+            return action::none;
+        };
+        struct Run {std::string_view text;action control;float width;};
+        std::vector<std::vector<Run>> lines(1);std::vector<float> widths(1);
+        const auto append=[&](Run run) {
+            if(widths.back()+run.width>1760*scale&&!lines.back().empty()){lines.emplace_back();widths.push_back(0);}
+            if(run.control==action::none&&run.text.find_first_not_of(' ')==run.text.npos&&lines.back().empty())return;
+            widths.back()+=run.width;lines.back().push_back(run);
+        };
+        for(const auto& part:openxmb::input::prompt_parts(translated)) {
+            if(part.control) {
+                const auto control=control_action(*part.control);const auto& label=button_labels[std::to_underlying(control)];
+                append({{},control,label.empty()?glyph*get_button_aspect(control):std::max(glyph,renderer.text_width_pixels(label,key_font)+10*scale)});
+            } else {
+                for(std::size_t start=0;start<part.text.size();) {
+                    auto end=part.text.find(' ',start);if(end==part.text.npos)end=part.text.size();else ++end;
+                    const auto word=part.text.substr(start,end-start);
+                    append({word,action::none,renderer.text_width_pixels(word,font)});start=end;
+                }
+            }
+        }
+        for(std::size_t line=0;line<lines.size();++line) {
+            float current=ox+x*scale-widths[line]*0.5F;
+            const float y=oy+baseline*scale-static_cast<float>(lines.size()-line-1)*font*1.3F;
+            for(const auto& run:lines[line]) {
+                if(run.control==action::none)renderer.draw_text_pixels(run.text,current,y,font,{1,1,1,alpha},0.7F);
+                else {
+                    const auto index=std::to_underlying(run.control);const float centre=y-(metrics.x-metrics.y)*0.5F;
+                    if(!button_labels[index].empty()) {
+                        render_keycap_fallback(renderer,current,centre,run.width,glyph,button_labels[index],key_font,alpha);
+                    } else if(const auto* icon=buttonTextures[index].get())
+                        renderer.draw_image(*icon,current/fw,(centre-glyph*0.5F)/fh,run.width/fh,glyph/fh,{1,1,1,alpha});
+                }
+                current+=run.width;
+            }
+        }
+    }
+
     void shell::reload_button_icons() {
+        if(std::ranges::any_of(buttonTextures,[](const auto& icon){return bool(icon);}))win->waitIdle();
         const auto family=get_controller_type();
         for(std::size_t i=1;i<std::to_underlying(action::_length);++i) {
             button_labels[i].clear();buttonTextures[i].reset();if(family=="none")continue;
             const bool keyboard=family=="keyboard";const auto index=input_bindings::glyph_index(config::CONFIG.preferences,!keyboard,i-1);
             const auto code=input_bindings::read(config::CONFIG.preferences,!keyboard,i-1);
+            if(keyboard) {
+#ifdef __APPLE__
+                constexpr bool mac=true;
+#else
+                constexpr bool mac=false;
+#endif
+                const auto stem=keyboard_glyphs::stem(code,mac);
+                const auto asset=config::CONFIG.asset_directory/"icons/keyboard"/("icon-"+std::string(stem)+".svg");
+                if(!stem.empty()&&std::filesystem::is_regular_file(asset)) {
+                    buttonTextures[i]=std::make_unique<texture>(device,allocator);loader->loadTexture(buttonTextures[i].get(),asset);continue;
+                }
+            }
             if(family=="xbox") {
                 const auto artwork=input_bindings::xbox_artwork(code);
                 if(!artwork.empty()) {buttonTextures[i]=std::make_unique<texture>(device,allocator);loader->loadTexture(buttonTextures[i].get(),config::CONFIG.asset_directory/"icons/controller"/(std::string(artwork)+".png"));continue;}
             }
             if(index<0||family=="default"||keyboard) {
                 if(keyboard)button_labels[i]=SDL_GetScancodeName(static_cast<SDL_Scancode>(code));
-                else {switch(code){case 0:button_labels[i]="South";break;case 1:button_labels[i]="East";break;case 2:button_labels[i]="West";break;case 3:button_labels[i]="North";break;case 4:button_labels[i]=family=="playstation"?"Select":"View";break;case 6:button_labels[i]=family=="playstation"?"Start":"Menu";break;case 9:button_labels[i]=family=="playstation"?"L1":"LB";break;case 10:button_labels[i]=family=="playstation"?"R1":"RB";break;default:button_labels[i]="Button "+std::to_string(code);}}
+                else {switch(code){case 0:button_labels[i]="South";break;case 1:button_labels[i]="East";break;case 2:button_labels[i]="West";break;case 3:button_labels[i]="North";break;case 4:button_labels[i]=family=="playstation"?"Select":"View";break;case 6:button_labels[i]=family=="playstation"?"Start":"Menu";break;case 9:button_labels[i]=family=="playstation"?"L1":"LB";break;case 10:button_labels[i]=family=="playstation"?"R1":"RB";break;case 21:button_labels[i]=family=="playstation"?"L2":"LT";break;case 22:button_labels[i]=family=="playstation"?"R2":"RT";break;default:button_labels[i]="Button "+std::to_string(code);}}
                 if(button_labels[i].empty())button_labels[i]="Key "+std::to_string(code);continue;
             }
             const auto name=input_bindings::actions[static_cast<std::size_t>(index)];
@@ -2583,27 +2678,23 @@ namespace app
     std::string shell::get_controller_type() const {
         auto type = config::CONFIG.controllerType;
         if(type == "auto") {
+            if(!input_prompt_family.empty())return input_prompt_family;
             if(win->controllers.empty()) {
                 return "keyboard";
             }
             for(const auto& [id, controller] : win->controllers) {
-                sdl::GameControllerType ctype = sdl::GameControllerGetType(controller.get());
-                if(ctype == sdl::GameControllerTypeValues::PS3 ||
-                   ctype == sdl::GameControllerTypeValues::PS4 ||
-                   ctype == sdl::GameControllerTypeValues::PS5) {
-                    return "playstation";
-                } else if(ctype == sdl::GameControllerTypeValues::XBOX360 ||
-                          ctype == sdl::GameControllerTypeValues::XBOXONE) {
-                    return "xbox";
-                }
-                std::string_view name = sdl::GameControllerName(controller.get());
-                if(name == "Steam Virtual Gamepad" || name == "Steam Controller") {
-                    return "steam";
-                }
+                auto family=controller_prompt_family(controller.get());
+                if(family!="default")return family;
             }
             return "default";
         }
         return type;
+    }
+
+    void shell::note_input_device(sdl::GameController* controller) {
+        if(config::CONFIG.controllerType!="auto")return;
+        auto family=controller_prompt_family(controller);
+        if(family!=input_prompt_family) {input_prompt_family=std::move(family);input_prompt_refresh=true;}
     }
 
     void shell::tick() {
@@ -2701,6 +2792,23 @@ namespace app
                     {"l1", events::logical_controller_button::leftshoulder}, {"r1", events::logical_controller_button::rightshoulder}}};
                 if(step=="quit") {
                     SDL_Event quit{};quit.type=SDL_QUIT;SDL_PushEvent(&quit);
+                } else if(step.starts_with("key-down=")||step.starts_with("key-up=")) {
+                    const bool pressed=step.starts_with("key-down=");
+                    const auto number=step.substr(pressed?9:7);unsigned scan{};
+                    const auto parsed=std::from_chars(number.data(),number.data()+number.size(),scan);
+                    if(parsed.ec==std::errc{}&&parsed.ptr==number.data()+number.size()&&scan<SDL_NUM_SCANCODES) {
+                        SDL_Keysym key{};key.scancode=static_cast<SDL_Scancode>(scan);key.sym=SDL_GetKeyFromScancode(key.scancode);
+                        if(pressed)key_down(key);else key_up(key);
+                    }
+                } else if(step.starts_with("axis=")) {
+                    const auto comma=step.find(',');unsigned axis{};int value{};
+                    if(comma!=std::string_view::npos) {
+                        const auto a=std::from_chars(step.data()+5,step.data()+comma,axis);
+                        const auto v=std::from_chars(step.data()+comma+1,step.data()+step.size(),value);
+                        if(a.ec==std::errc{}&&a.ptr==step.data()+comma&&v.ec==std::errc{}&&v.ptr==step.data()+step.size()&&
+                           axis<SDL_CONTROLLER_AXIS_MAX&&value>=-32768&&value<=32767)
+                            axis_motion(nullptr,static_cast<sdl::GameControllerAxis>(axis),static_cast<int16_t>(value));
+                    }
                 } else if(step.starts_with("profile=")) {
                     switch_profile(std::filesystem::u8path(step.substr(8)));
                     break;
@@ -2735,7 +2843,7 @@ namespace app
         }
         if(std::exchange(setup_requested,false)) begin_initial_setup();
         if(std::exchange(setup_handoff_pending,false)) {
-            setup_font_active=false;
+            initial_setup_active=false;
             reload_language();
             shader_time_zero=std::chrono::steady_clock::now();
             startup_timeline.reset();
@@ -2983,6 +3091,7 @@ namespace app
         });
     }
     void shell::key_down(sdl::Keysym key) {
+        note_input_device(nullptr);
         spdlog::trace("Key down: symbol={} scancode={}",key.sym,std::to_underlying(key.scancode));
         const auto scan=static_cast<unsigned>(std::to_underlying(key.scancode));
         const bool held=scan<held_scancodes.size()&&held_scancodes[scan];
@@ -3001,22 +3110,33 @@ namespace app
     void shell::add_controller(sdl::GameController* controller)
     {
         if(config::CONFIG.controllerType == "auto") {
+            input_prompt_family.clear();
             reload_button_icons();
         }
     }
     void shell::remove_controller(sdl::GameController* controller)
     {
         button_timing.clear();
+        for(int code=0;code<SDL_CONTROLLER_BUTTON_MAX;++code)
+            dispatch(event{action::none,events::controller_button_up{to_logical_button(static_cast<sdl::GameControllerButton>(code))}});
+        for(const auto trigger:{events::logical_controller_button::lefttrigger,events::logical_controller_button::righttrigger})
+            dispatch(event{action::none,events::controller_button_up{trigger}});
         if(config::CONFIG.controllerType == "auto") {
+            input_prompt_family.clear();
             reload_button_icons();
         }
     }
     void shell::button_down(sdl::GameController* controller,sdl::GameControllerButton button) {
+        // SDL can still deliver queued device events to an offscreen window.
+        // Only explicit harness input (no device handle) belongs in captures.
+        if(win->config.headless&&controller)return;
         if(static_cast<int>(button)==SDL_CONTROLLER_BUTTON_GUIDE && has_running_session()) {
+            note_input_device(controller);
             if(button_timing.press(static_cast<unsigned>(button),false,std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count()))toggle_session_xmb();
             return;
         }
         if(!input_focused())return;
+        note_input_device(controller);
         const auto code=static_cast<unsigned>(button);
         const auto seconds=std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
         for(std::size_t i=0;i<input_bindings::actions.size();++i)if(static_cast<int>(button)==input_bindings::read(config::CONFIG.preferences,true,i)) {
@@ -3027,6 +3147,7 @@ namespace app
 
     void shell::button_up(sdl::GameController* controller, sdl::GameControllerButton button)
     {
+        if(win->config.headless&&controller)return;
         spdlog::trace("Button up: {}", fmt::underlying(button));
         button_timing.release(static_cast<unsigned>(button));
         if(!input_focused())return;
@@ -3034,10 +3155,21 @@ namespace app
     }
     void shell::axis_motion(sdl::GameController* controller, sdl::GameControllerAxis axis, int16_t value)
     {
+        if(win->config.headless&&controller)return;
         if(!input_focused()) {
-            last_controller_axis_input={};controller_axis_position={};cursor_joystick_delta={};return;
+            last_controller_axis_input={};controller_axis_position={};cursor_joystick_delta={};button_timing.clear();return;
         }
         spdlog::trace("Axis motion: {} {}", fmt::underlying(axis), value);
+        if(std::abs(value)>=controller_axis_input_threshold)note_input_device(controller);
+
+        if(axis==sdl::GameControllerAxisValues::TRIGGERLEFT||axis==sdl::GameControllerAxisValues::TRIGGERRIGHT) {
+            const unsigned index=axis==sdl::GameControllerAxisValues::TRIGGERLEFT?0:1;
+            if(const auto edge=button_timing.trigger(index,value)) {
+                const auto button=static_cast<sdl::GameControllerButton>(21+index);
+                if(*edge)button_down(controller,button);else button_up(controller,button);
+            }
+            return;
+        }
 
         unsigned int stick_index = 0;
         float v = static_cast<float>(value) / std::numeric_limits<int16_t>::max();

@@ -5148,3 +5148,27 @@ msgstr "Не удалось сохранить настройки OpenXMB. Уб�
 
 msgid "This local time is skipped or repeated by daylight saving. Choose a different time or turn off automatic daylight saving."
 msgstr "При переходе на летнее или зимнее время это местное время пропускается или повторяется. Выберите другое время или отключите автоматический переход на летнее время."
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Use {up} and {down} to select. Press {right} to continue."
+msgstr "Используйте {up} и {down} для выбора. Для продолжения нажмите {right}."
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Use {up} and {down} to select. Press {extra} to adjust daylight saving time. Press {right} to continue."
+msgstr "Используйте {up} и {down} для выбора. Нажмите {extra}, чтобы настроить летнее время. Для продолжения нажмите {right}."
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Press {ok} to adjust daylight saving time. Press {extra} to return to the time zone list."
+msgstr "Нажмите {ok}, чтобы настроить летнее время. Нажмите {extra}, чтобы вернуться к списку часовых поясов."
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Use {up} and {down} to adjust the setting value and use {left} and {right} to select setting items. Press {ok} to accept your selections."
+msgstr "Используйте {up} и {down} для изменения значения, а {left} и {right} — для выбора параметров. Нажмите {ok}, чтобы подтвердить выбор."
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Press {ok} to set the date and time. Press {extra} to set automatically. Press {right} to continue."
+msgstr "Нажмите {ok}, чтобы установить дату и время. Нажмите {extra} для автоматической установки. Для продолжения нажмите {right}."
+
+#. TRANSLATORS: Preserve every {...} token exactly; these tokens render input binding glyphs for the active device. Reorder them as needed.
+msgid "Press {ok} to enter a user name. Press {right} to continue."
+msgstr "Нажмите {ok}, чтобы ввести имя пользователя. Для продолжения нажмите {right}."

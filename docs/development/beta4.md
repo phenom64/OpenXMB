@@ -14,8 +14,10 @@ release brief remains gated on the user's testing and explicit go-ahead.
 - Version, configuration defaults, package manifest and packaging assertions
   use `0.4.0-beta.4`. Packaging filenames derive from `VERSION`; About, System
   Information and command-line version derive from `OPENXMB_VERSION_STRING`.
-- The visual integration uses AuroreEngine visual commit `19d2fc1`, preserved
-  on the engine's `dev` branch and pinned in FetchContent. Engine `master` and
+- The integration pins AuroreEngine `4cd2a05`, which includes the Opus visual
+  work, minimized lifecycle hook, native-size artwork upload and offscreen frame
+  presentation, primary-face-preserving script fallback and bounded incremental
+  glyph uploads on its `dev` branch. Engine `master` and
   the original visual worktree remain unchanged.
 
 ## Ownership and implementation sequence
@@ -124,24 +126,32 @@ records direct-child lifetime and actual exit status; a forwarding Steam launche
 does not establish game lifetime or accrue playtime. No process is adopted by PID
 for termination. Closing OpenXMB leaves a running game alive and records detachment.
 
-The current in-game adapter is a **switch-to-XMB fallback**. Windows registers
+The Windows in-game path has a per-pixel layered compositor fed by AuroreEngine's
+offscreen Vulkan frame sink. The controlled 1920x1080 desktop fixture verifies
+transparency, navigation, repeated dismissal/reopening, clean screenshots and
+game-exit restoration. Windows registers
 the configurable Ctrl+Shift+F1 shortcut while a session is observed; SDL Guide
 events can also wake the shell when the OS/Steam permits them. Ordinary controller
 input is gated while OpenXMB is unfocused. OS foreground denial is reported.
-Transparent composition, exclusive fullscreen, anti-cheat compatibility, and
-physical Guide/controller behavior are not verified by these fixtures.
+The switch-to-XMB fallback remains available. Exclusive fullscreen, anti-cheat
+compatibility and physical Guide/controller behavior are not verified by the
+headless fixtures. The overlay does not pause a game or block its independent
+controller polling.
 
 The user's original PS3 references establish **Quit Game under Game** and
 **Save Screenshot under Photo**. Applications use Quit App. The current Windows
-screenshot adapter requires a live, directly owned, unique foreground window,
+screenshot adapter requires a live, identity-pinned, unique foreground window,
 hidden/minimized OpenXMB, stable client bounds and no detected occluding window.
 It captures the client at native resolution to the launching profile's Photo
-folder, grouped by title. Protected, black, obscured and unavailable surfaces fail
-with a message. Transient system overlays and live GPU frame content cannot be
+folder, grouped by game/application and title. A bounded settling period retries
+transient restoration, geometry and occlusion states without blocking navigation.
+Complete PNGs are published atomically and existing files are never replaced.
+Protected, black, obscured and unavailable surfaces fail with a message after
+applicable retries. Transient system overlays and live GPU frame content cannot be
 guaranteed by this desktop sampling backend. Linux/macOS focus/capture adapters
 remain unavailable; they must not be presented as supported native overlays.
 
-AuroreEngine `dev` revision `f7396a2` adds an event-loop lifecycle hook before
+AuroreEngine `dev` includes the event-loop lifecycle hook introduced in `f7396a2` before
 frame throttling/minimized skips and defers minimized/zero-sized swapchain
 recreation. The actual Windows fixture found and then verified the minimize-during-
 render defect. Both 900 ms and 1 ms session exit/return cases pass. The separate
@@ -153,6 +163,7 @@ cmake --build build/native-c --target openxmb_session_window_tests openxmb_sessi
 & build/native-c/openxmb_session_window_tests.exe (Resolve-Path build/native-c/openxmb_session_window_child.exe).Path
 python tests/desktop/native_session_smoke.py --app build/native-c/XMS.bin.exe --child build/native-c/openxmb_session_window_child.exe
 python tests/desktop/native_game_smoke.py --app build/native-c/XMS.bin.exe --child build/native-c/openxmb_session_child.exe
+python tests/desktop/native_overlay_smoke.py --app build/native-c/XMS.bin.exe --child build/native-c/openxmb_session_window_child.exe --output build/overlay-acceptance
 ```
 
 ## First discovery increment
@@ -160,7 +171,8 @@ python tests/desktop/native_game_smoke.py --app build/native-c/XMS.bin.exe --chi
 Existing library scans now include RPCS3's registered `games.yml` paths and
 native data roots without first adding those roots manually. This increment is
 consumed by the existing **Scan game folders / Scan configured folders** actions;
-background startup discovery and direct crossbar game entries remain later work.
+background startup discovery and direct crossbar game entries also consume these
+candidates. Discovery never modifies emulator configuration.
 Bootable `DG`/`HG` titles require `USRDIR/EBOOT.BIN`; patches/data do not become
 games. Canonical native-folder identity deduplicates path aliases and survives
 an emulator path change. Refresh retains history, favourites and custom artwork.
@@ -171,3 +183,112 @@ or double quoted paths and Unicode escapes. Limits are 4 MiB, 10,000 keys and
 registries and native roots can still be scanned. Candidate installations are
 combined, including old Windows registry locations. Custom VFS mounts still
 need manual roots; archives and relative registry entries are not imported.
+
+## Current integration and testing
+
+Steam discovery reads registered libraries and fully installed app manifests. It
+uses locally cached horizontal headers/icons and heroes before network artwork.
+JPEG, PNG, WebP and TIFF are decoded by the packaged SDL2_image build; the runtime
+codec fixture exercises actual pixels, rather than only image-container headers.
+The engine preserves native image dimensions with bounded staging allocations.
+A 2305 x 2049 texture fixture validates exact GPU pixels through four upload paths.
+
+Steam game Triangle options include Launch Settings. A selected direct executable,
+literal arguments and working folder survive discovery refresh without changing
+the Steam identity or duplicating the game. Some titles require Steam even when
+started directly; no authentication or DRM bypass is provided. Forwarding launcher
+lifetime is not game lifetime. On Windows, Steam launch can separately observe a newly launched, user-selected
+game executable using read-only process rights and conservative association.
+Preexisting, ambiguous, inaccessible and expired matches stay unavailable.
+Observed playtime is separate from owned-child playtime; Quit Game sends only a
+graceful window close request. The executable selection is optional and remains
+necessary when Steam does not expose enough reliable game identity.
+
+Trophy Collection reads real RPCS3 trophy sets by RPCS3 user and offers cache-first
+RetroAchievements account reads. SteamGridDB uses official search/role APIs with
+explicit artwork selection, caching and native PS3 priority. Live account/API-key
+acceptance remains deferred at the user's request. API keys are read from named
+launch-environment variables and are not written into the library or settings.
+
+YouTube has a packaged menu icon, an installed-client detector and a native setup
+progress view. Information identifies the VacuumTube client. Windows managed
+installation uses verified release metadata, SHA-256 and bounded archive extraction;
+other platforms detect installed clients but do not yet offer automatic setup.
+The isolated live Windows acceptance downloaded the official 155 MB v2.0.1
+portable release, verified its hash, extracted and detected it, and validated its
+fullscreen launch plan. The application was not launched by that test.
+
+The preview launchers now default to fullscreen. Use `-Windowed` explicitly for
+windowed testing. `run-beta4-test.ps1` selects an immutable snapshot; it may lag the
+source build. Do not replace a snapshot's binaries while a tester is running it.
+
+Windows verification includes 76 enabled passing CTests (one reference-frame
+comparison remains explicitly disabled), refreshed setup/reset and provider UI
+smokes, and native-size GPU artwork upload. Real provider credentials, actual
+emulator/game boot, physical controllers and Linux/macOS session adapters remain
+release gates. These development results do not declare Beta 4 release-ready.
+
+The in-game Vulkan frame smoke verifies a 65-percent black veil, a transparent
+clock/date frame interior and independent text/icon opacity. The veil was darkened
+at the user's request; the low-resolution reference cannot calibrate its opacity.
+A hidden native compositor test exercises
+UpdateLayeredWindow without showing a host or changing foreground focus. The
+visible controlled fixture also verifies actual keyboard-shortcut activation and
+focus return. Windows foreground ownership is read directly because SDL's cached
+focus flag can lag after restoring ordinary Vulkan presentation. The Quit Game/
+Quit App glyph was reconstructed from the reference's two outlined circular
+segments after auditing the available assets. Raw captured layout was compared with the
+user's PS3 references; these camera/low-resolution sources do not calibrate exact
+opacity or transition timing.
+
+The setup fidelity pass uses the original 1080p frames for luminous text selection,
+fixed-width date cells, 13x7 spinner marks, name-field chrome and confirmation
+shading. A trace of the 25 fps recording supplies the page arrows' 2.52-second
+cycle. Native captures and human acceptance remain necessary, especially for
+font metrics, glow strength and transitions.
+
+Setup now follows the configured theme font: the original theme uses Play for
+Latin text, with persistent Noto fallback faces for other scripts. Every language
+option keeps its autonym, including British English, regardless of the selected
+interface language. Setup preloads a bounded translated subset for all twelve
+locales. A language selection changes gettext once and retains fonts and hidden
+menus; six live native changes measured at most 0.063 ms in the locale callback.
+This measures the synchronous update, not controller-to-display latency.
+
+Date digits use an 80 ms vertical crossfade: increases enter from above and
+decreases enter from below, including wraps. Markers and separators stay fixed.
+The recorded source shows roughly 40–80 ms transitions, with uncertain exact
+travel/easing; automatic/manual mode switching is an OpenXMB extension.
+
+Setup instructions contain logical control tokens whose glyphs come from the
+active keyboard/controller bindings. Auto prompts follow the last used input
+device. Keyboard prompts use transparent white SVG key artwork at a 4x viewport,
+preserving wide-key proportions; keys absent from the pack retain an outlined
+label fallback. All 65 imported vectors pass native SVG decode/transparency checks.
+
+The on-screen keyboard reacts to physical key presses without moving the
+controller selection. Held Backspace, forward Delete, mapped deletion and
+Confirm on the Backspace cell share a time-based repeat: 450 ms initial delay,
+the configured initial repeat pace, then gradual acceleration after 1.2 seconds.
+Release, loss of focus, disconnect and dismissal cancel the hold. A stalled frame
+can delete at most eight codepoints. Editing preserves UTF-8 codepoints; full
+grapheme editing, host keyboard layouts and IME composition remain open work.
+
+Suggestions complete the current word from the shipped locale vocabulary,
+optional caller context and the current editor buffer. They are local, bounded
+and cached, with no network request or saved typing history. This is word
+completion rather than a natural-language prediction model. Navigate Right from
+the final character column into suggestions, then Up/Down and Confirm. The
+default physical Tab binding still saves; an unbound Tab can focus suggestions.
+Accepting a suggestion and submitting are separate presses.
+
+Controller L2 toggles accents, R2 toggles case, L1/R1 move the caret, Select
+changes input mode, Triangle inserts a space and Start submits. Semantic remaps
+take precedence over unbound controller shortcuts. SDL trigger axes become
+logical button edges at half pressure, releasing at quarter pressure, so analog
+jitter cannot repeatedly toggle a mode. Native keyboard smoke exercises this
+axis path and saves its resulting entry through first-time setup.
+
+```powershell
+python tests/dialogs/native_keyboard_smoke.py --app build/native-c/XMS.bin.exe --output build/beta4-native-keyboard
+```
