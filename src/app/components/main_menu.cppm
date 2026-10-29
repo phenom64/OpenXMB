@@ -55,6 +55,7 @@ class main_menu : public action_receiver {
 
         result on_action(action action) override;
         void show_settings();
+        void show_session(bool application);
     private:
         using time_point = std::chrono::time_point<std::chrono::steady_clock>;
 

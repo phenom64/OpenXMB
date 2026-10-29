@@ -110,7 +110,7 @@ public:
     // changed selection never blocks on it and never displays a stale result.
     if (background_ready.valid() && background_ready.wait_for(std::chrono::seconds(0))==std::future_status::ready) {
       bool loaded=false;
-      try {background_ready.get();loaded=loading_background && loading_background->loaded;}
+      try {background_ready.get();loaded=loading_background && loading_background->loaded && loading_background->width>1 && loading_background->height>1;}
       catch(...) {loaded=false;}
       if (loaded && selected && started && selected->background==loading_path) {
         next_background=std::move(loading_background);next_path=loading_path;

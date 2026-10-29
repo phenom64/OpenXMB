@@ -269,15 +269,7 @@ void library_manager::refresh() {
     if (!game.background.empty()) add("View background artwork", game.background.filename().string(), [this, game] { open_file(game.background); }, game.background);
     if (!game.preview.empty()) add("Play video preview", game.preview.filename().string(), [this, game] { open_file(game.preview); });
     if (!game.music.empty()) add("Play preview music", game.music.filename().string(), [this, game] { if (!openxmb::music::service().set_queue({{game.music, game.title}})) throw std::runtime_error(openxmb::music::service().snapshot().error); message_ = "Playing game preview music"; });
-    add("Optional RAWG artwork provider", library_->artwork_provider_available() ? "Enabled and key is configured" : "Disabled or key absent; local artwork remains available", [this] {
-      ask("Artwork key environment variable (no key values)", "RAWG_API_KEY", [this](std::string variable) { library_->set_artwork_provider(true, std::move(variable)); message_ = "Provider enabled. Supply the key securely in environment settings."; });
-    });
-    add("Download artwork for this game", "Makes HTTPS requests only when provider and key are configured", [this, id = game.id] {
-      if (artwork_download_.valid()) throw std::runtime_error("An artwork request is already in progress");
-      if (!library_->artwork_provider_available()) throw std::runtime_error("Enable the provider and configure its key first; no request was made");
-      const auto root = library_->root(); artwork_download_ = std::async(std::launch::async, [root, id] { desktop::Library value(root); return value.fetch_artwork(id); }); message_ = "Looking up game artwork...";
-    });
-    add("Disable artwork provider", "Stops optional provider lookups", [this] { library_->set_artwork_provider(false); message_ = "Artwork provider disabled"; refresh(); });
+    add("Game Artwork", "Native images, custom files and SteamGridDB", [this,game] {pending_=[game](app::shell* host) {host->show_game_artwork(game);};});
     add("Remove from game library", "Keeps the executable and source media", [this, id = game.id] { confirm("Remove this game entry?", [this, id] { library_->remove_game(id); }); });
     break;
   }
@@ -321,7 +313,7 @@ void library_manager::refresh() {
     add("Status", account.status, [this, account] { ask("Local account status", account.status, [this, account](std::string value) mutable { account.status = std::move(value); library_->save_account(account); }); });
     add("Avatar", account.avatar.string(), [this, account] { ask("Avatar image path", account.avatar.string(), [this, account](std::string value) mutable { account.avatar = std::move(value); library_->save_account(account); }); });
     add("Local friends", "Manage offline simulated friend records", [this] { enter(Page::friends); });
-    add("Local trophies", "Manage offline trophy records", [this] { enter(Page::trophies); });
+    add("Trophy Collection", "RPCS3 trophies and linked achievement progress", [this] { pending_=[](app::shell* host) { host->open_panel("trophies"); }; });
     break;
   }
   case Page::trophies:

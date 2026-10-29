@@ -94,7 +94,7 @@ public:
     for(auto& [id,value]:items_) {
       if(value.ready.valid()&&value.ready.wait_for(std::chrono::seconds(0))==std::future_status::ready) {
         try {value.ready.get();
-          const auto size=value.texture&&value.texture->loaded
+          const auto size=value.texture&&value.texture->loaded&&value.texture->width>1&&value.texture->height>1
             ? static_cast<std::uint64_t>(std::max(0,value.texture->width))*static_cast<std::uint64_t>(std::max(0,value.texture->height))*4 : 0;
           value.published=size>0&&size<=max_bytes &&
             (!value.loading_background||value.texture->width>value.texture->height);
@@ -187,11 +187,14 @@ public:
     if(input==action::ok) return host_->launch_game(*game_);
     if(input!=action::options) return result::unsupported;
     const auto game=game_;const auto root=origin_root_;const auto profile=origin_profile_;auto* host=host_;
-    std::vector<std::string> options{tr("Launch"),tr("Information"),tr(game->favorite?"Remove from Favourites":"Add to Favourites")};
+    std::vector<std::string> options{tr("Launch"),tr("Information"),tr("Artwork"),tr(game->favorite?"Remove from Favourites":"Add to Favourites")};
+    if(game->runner=="steam")options.push_back(tr("Launch Settings"));
     host->emplace_overlay<app::choice_overlay>(std::move(options),0,[game,root,profile,host](unsigned int index) {
       if(index==0) {static_cast<void>(host->launch_game(*game));return;}
       if(index==1) {host->show_game_information(*game);return;}
-      if(index!=2) return;
+      if(index==2) {host->show_game_artwork(*game);return;}
+      if(index==4 && game->runner=="steam") {host->show_game_launch_settings(*game);return;}
+      if(index!=3) return;
       try {
         desktop::Library library;
         if(root.empty()||profile.empty()||library.root().lexically_normal()!=root.lexically_normal()||library.active_profile().id!=profile)

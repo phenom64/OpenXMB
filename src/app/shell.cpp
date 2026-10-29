@@ -64,7 +64,12 @@ module;
 #include "openxmb/desktop/library.hpp"
 #include "openxmb/desktop/session.hpp"
 #include "openxmb/desktop/runners.hpp"
+#include "openxmb/desktop/youtube.hpp"
+#include "openxmb/desktop/steamgriddb.hpp"
+#include "openxmb/desktop/async_job.hpp"
+#include <set>
 #include "openxmb/integrations/session_window.hpp"
+#include "openxmb/integrations/xmb_overlay.hpp"
 #include "openxmb/themes/library.hpp"
 #include "openxmb/setup/model.hpp"
 #include "openxmb/xmb/status_bar.hpp"
@@ -96,14 +101,23 @@ import :about;
 import :desktop_settings;
 import :initial_setup;
 import :game_presentation;
+import :youtube_setup;
+import :trophy_collection;
+import :game_artwork;
+import :session_xmb;
+import :game_launch_settings;
 
 using namespace mfk::i18n::literals;
 
 namespace app
 {
     struct shell::game_state {
+        struct ArtworkResult {std::filesystem::path root,icon,cover,background;std::string profile,game_id;};
         openxmb::desktop::SessionManager sessions;
         std::unique_ptr<app::game_presentation> presentation;
+        std::unique_ptr<app::session_xmb> overlay;
+        std::shared_ptr<std::vector<openxmb::integrations::OverlayInput>> overlay_input=std::make_shared<std::vector<openxmb::integrations::OverlayInput>>();
+        bool overlay_dismiss{},overlay_return{};
         std::shared_ptr<const openxmb::desktop::Game> highlighted;
         std::future<openxmb::desktop::GameDiscovery> discovery;
         std::filesystem::path discovery_root;
@@ -116,6 +130,11 @@ namespace app
         std::uintptr_t shell_handle{};
         bool hotkey_registered{};
         std::optional<std::chrono::steady_clock::time_point> shell_focus_requested;
+        openxmb::desktop::TrackingQuality tracking{openxmb::desktop::TrackingQuality::unknown};
+        std::chrono::steady_clock::time_point window_probe_at{};
+        openxmb::desktop::AsyncJob<ArtworkResult> artwork;
+        std::set<std::string> artwork_attempted;
+        std::chrono::steady_clock::time_point highlighted_at{};
     };
     struct shell::theme_state {
         std::shared_ptr<openxmb::themes::ThemeLibrary> library;
@@ -431,6 +450,9 @@ namespace app
 
     void shell::create_render_passes()
     {
+        renderPassSamples=win->config.sampleCount;
+        renderPassFormat=win->swapchainFormat.format;
+        renderPassFinalLayout=win->swapchainFinalLayout;
         {
             const auto background_format=win->swapchainFormat.format==vk::Format::eB8G8R8A8Srgb?vk::Format::eB8G8R8A8Unorm:
                 win->swapchainFormat.format==vk::Format::eR8G8B8A8Srgb?vk::Format::eR8G8B8A8Unorm:win->swapchainFormat.format;
@@ -602,7 +624,7 @@ namespace app
         // recreateSwapchain has already idled the device. Retire framebuffers
         // first, then rebuild every pipeline against the matching render passes
         // before allocating attachments for the new sample count.
-        if(renderPassSamples != win->config.sampleCount) {
+        if(renderPassSamples != win->config.sampleCount || renderPassFormat!=win->swapchainFormat.format || renderPassFinalLayout!=win->swapchainFinalLayout) {
             procedural_wave_render->prepare(0);
             create_render_passes();
             font_render->rebuild_pipelines({shellRenderPass.get()}, win->config.sampleCount, win->pipelineCache.get());
@@ -992,7 +1014,7 @@ namespace app
 #if OPENXMB_ENABLE_VIDEO_PLAYER
             if(background_video_active) video_background_render->render(commandBuffer,frame,backgroundRenderPass.get(),win->swapchainExtent);
 #endif
-            if(theme->active) {
+            if(theme->active && !ingame_mode) {
                 gui_renderer theme_gui(commandBuffer,frame,backgroundRenderPass.get(),win->swapchainExtent,font_render.get(),image_render.get(),simple_render.get());
                 if(const auto it=theme->textures.find(theme->frame.background);it!=theme->textures.end() && it->second->loaded)
                     image_render->renderImageSized(commandBuffer,frame,backgroundRenderPass.get(),*it->second,0,0,win->swapchainExtent.width,win->swapchainExtent.height);
@@ -1792,6 +1814,10 @@ namespace app
     }
 
     void shell::highlight_game(std::shared_ptr<const openxmb::desktop::Game> game) {
+        if(!game || !games->highlighted || game->id!=games->highlighted->id) {
+            games->highlighted_at=std::chrono::steady_clock::now();
+            games->artwork.cancel();
+        }
         games->highlighted=std::move(game);
     }
 
@@ -1809,14 +1835,23 @@ namespace app
             openxmb::desktop::SessionDescriptor descriptor;
             descriptor.identity=game.id; descriptor.title=game.title;
             descriptor.provider=game.platform.empty()?"native":game.platform;
-            const auto plan=openxmb::desktop::plan_game_launch(game,openxmb::desktop::runner_options_from_preferences(config::CONFIG.preferences));
+            const auto launch_target=openxmb::desktop::launch_game_target(game);
+            const auto plan=openxmb::desktop::plan_game_launch(launch_target,openxmb::desktop::runner_options_from_preferences(config::CONFIG.preferences));
             if(!plan) throw std::runtime_error(plan.message);
             descriptor.runner=plan.runner;
             descriptor.profile_directory=library.active_directory();
             descriptor.tracking=plan.tracking;
+#ifdef _WIN32
+            if(game.runner=="steam" && game.launch_override.mode==openxmb::desktop::GameLaunchMode::provider && !game.launch_override.executable.empty()) {
+                std::error_code observation_error;
+                if(std::filesystem::is_regular_file(game.launch_override.executable,observation_error) && !observation_error)
+                    descriptor.observation=openxmb::desktop::ProviderObservationSpec{game.launch_override.executable};
+            }
+#endif
             const auto launched=games->sessions.launch(std::move(descriptor),plan.arguments,plan.working_directory);
             if(!launched) throw std::runtime_error(launched.message);
             games->known_session_id=launched.session_id;queue_menu_reload();
+            games->tracking=plan.tracking;
             games->photo_root=config::CONFIG.pictures_path();
             games->close_library_pending=true;
             games->shell_is_session_xmb=false;
@@ -1824,7 +1859,7 @@ namespace app
             games->highlighted.reset();
             try { library.mark_played(game.id); }
             catch(const std::exception& error) { spdlog::warn("Game started, but library history could not be saved: {}",error.what()); }
-            games->launched_minimized=config::CONFIG.preference("games.launch","Keep Running")=="Minimise";
+            games->launched_minimized=config::CONFIG.preference("games.launch","Minimise")=="Minimise";
             games->minimize_requested=games->launched_minimized;
             return result::success;
         } catch(const std::exception& error) {
@@ -1839,10 +1874,71 @@ namespace app
         if(!game.platform.empty()) text+="\n"+game.platform;
         if(!game.title_id.empty()) text+="\n"+game.title_id;
         text+="\nPlay time: "+std::to_string(history.total_playtime_ms/60000)+" minutes";
+        if(history.provider_observed_playtime_ms)text+="\nObserved Steam time: "+std::to_string(history.provider_observed_playtime_ms/60000)+" minutes";
         if(!history.error.empty()) text+="\n"+history.error;
         emplace_overlay<app::message_overlay>(game.title,text,std::vector<std::string>{"OK"});
     }
+    void shell::show_game_artwork(const openxmb::desktop::Game& game) {
+        emplace_overlay<app::game_artwork>(*loader,game);
+    }
 
+    void shell::show_game_launch_settings(const openxmb::desktop::Game& game) {
+        emplace_overlay<app::game_launch_settings>(game);
+    }
+
+    result shell::launch_application(std::string identity,std::string title,const std::vector<std::string>& argv,const std::filesystem::path& cwd,std::string runner,openxmb::desktop::TrackingQuality tracking) {
+        if(has_running_session()) {
+            emplace_overlay<app::message_overlay>("Application running","Quit the current game or app before starting another.",std::vector<std::string>{"OK"});return result::success;
+        }
+        try {
+            openxmb::desktop::Library library;
+            openxmb::desktop::SessionDescriptor descriptor;
+            descriptor.identity=std::move(identity);descriptor.title=std::move(title);descriptor.provider="application";
+            descriptor.runner=std::move(runner);descriptor.profile_directory=library.active_directory();
+            descriptor.kind=openxmb::desktop::SessionKind::application;descriptor.tracking=tracking;
+            const auto launched=games->sessions.launch(std::move(descriptor),argv,cwd);
+            if(!launched)throw std::runtime_error(launched.message);
+            games->known_session_id=launched.session_id;games->tracking=tracking;
+            games->photo_root=config::CONFIG.pictures_path();games->highlighted.reset();
+            if(games->presentation)games->presentation->stop();
+            games->shell_is_session_xmb=false;games->close_library_pending=true;
+            games->launched_minimized=true;games->minimize_requested=true;queue_menu_reload();
+        } catch(const std::exception& error) {emplace_overlay<app::message_overlay>("Cannot start application",error.what(),std::vector<std::string>{"OK"});}
+        return result::success;
+    }
+
+    void shell::open_youtube() {
+        openxmb::desktop::YoutubeDetectionOptions options;
+        options.data_root=openxmb::desktop::default_data_root();
+        const auto override=config::CONFIG.preference("youtube.executable");
+        if(!override.empty())options.executable_override=std::filesystem::u8path(override);
+        const auto detected=openxmb::desktop::detect_youtube(options);
+        if(detected) {
+            static_cast<void>(launch_application("youtube","YouTube",detected.value->arguments,detected.value->executable.parent_path(),"youtube",detected.value->tracking));return;
+        }
+#ifdef _WIN32
+        emplace_overlay<app::message_overlay>("Set Up YouTube","Download and set up the controller-friendly YouTube app? You can stay in OpenXMB while it gets ready.",std::vector<std::string>{"Not Now","Set Up"},[this,root=options.data_root](unsigned index) {
+            if(index)emplace_overlay<app::youtube_setup>(root);
+        });
+#else
+        emplace_overlay<app::message_overlay>("YouTube","A supported YouTube app was not found. Automatic setup is not available in this build. Select an installed executable in application settings.",std::vector<std::string>{"OK"});
+#endif
+    }
+
+    void shell::show_youtube_information() {
+        openxmb::desktop::YoutubeDetectionOptions options;options.data_root=openxmb::desktop::default_data_root();
+        const auto override=config::CONFIG.preference("youtube.executable");if(!override.empty())options.executable_override=std::filesystem::u8path(override);
+        const auto detected=openxmb::desktop::detect_youtube(options);
+        auto text=std::string(openxmb::desktop::youtube_information);
+        if(detected)text+="\nVersion: "+(detected.value->version.empty()?std::string{"Unknown"}:detected.value->version);
+        else text+="\nNot installed";
+        emplace_overlay<app::message_overlay>("YouTube",text,std::vector<std::string>{"OK"});
+    }
+
+    bool shell::input_focused() const {
+        return win->config.headless || (games->overlay && games->overlay->active() ? games->overlay->focused() :
+            (SDL_GetWindowFlags(win->win.get())&SDL_WINDOW_INPUT_FOCUS)!=0);
+    }
     bool shell::has_running_session() const { return games->sessions.active_session().has_value(); }
     bool shell::session_is_application() const {
         const auto active=games->sessions.active_session();
@@ -1857,7 +1953,7 @@ namespace app
     void shell::quit_session() {
         const auto active=games->sessions.active_session();
         if(!active) return;
-        if(active->descriptor.tracking!=openxmb::desktop::TrackingQuality::direct_child) {
+        if(!active->capabilities.graceful_close) {
             emplace_overlay<app::message_overlay>("Session unavailable","This launcher does not expose the running application. Return to the application to quit it safely.",std::vector<std::string>{"OK"});return;
         }
         const auto title=active->descriptor.kind==openxmb::desktop::SessionKind::application?"Quit App":"Quit Game";
@@ -1870,11 +1966,21 @@ namespace app
 
     void shell::after_events() {
         if(std::exchange(games->minimize_requested,false) && !win->config.headless) SDL_MinimizeWindow(win->win.get());
-        const auto shell_focused=[&] {return (SDL_GetWindowFlags(win->win.get())&SDL_WINDOW_INPUT_FOCUS)!=0;};
+        const auto shell_focused=[&] {return input_focused();};
         if(!win->config.headless && !shell_focused()) {
             last_controller_axis_input={};controller_axis_position={};cursor_joystick_delta={};button_timing.clear();held_scancodes.fill(false);
         }
+        const auto close_overlay=[&] {
+            if(games->overlay && games->overlay->active()) {
+                const auto closed=games->overlay->close();
+                if(!closed) {games->pending_notice=closed.message;return false;}
+            }
+            games->overlay_input->clear();games->overlay_dismiss=false;games->overlay_return=false;
+            set_ingame_mode(false);games->shell_is_session_xmb=false;held_scancodes.fill(false);button_timing.clear();
+            return true;
+        };
         const auto restore_shell=[&] {
+            if(!close_overlay())return;
             SDL_RestoreWindow(win->win.get());SDL_RaiseWindow(win->win.get());
             games->shell_is_session_xmb=shell_focused();
             if(!games->shell_is_session_xmb) games->shell_focus_requested=std::chrono::steady_clock::now();
@@ -1886,14 +1992,25 @@ namespace app
                 games->pending_notice="Your system did not give OpenXMB focus. Select its window using the system window switcher.";
             }
         }
-        const auto active=games->sessions.active_session();
+        auto active=games->sessions.active_session();
+        if(active && active->descriptor.kind==openxmb::desktop::SessionKind::application && active->descriptor.runner=="youtube" && active->descriptor.tracking!=openxmb::desktop::TrackingQuality::direct_child &&
+           std::chrono::steady_clock::now()-games->window_probe_at>std::chrono::milliseconds(100)) {
+            games->window_probe_at=std::chrono::steady_clock::now();
+            if(const auto target=openxmb::integrations::find_session_window(active->process_id))
+                if(games->sessions.confirm_application_window(active->id,*target)) {games->target=target;games->tracking=openxmb::desktop::TrackingQuality::direct_child;active=games->sessions.active_session();}
+        }
+        if(active) {
+            games->tracking=active->descriptor.tracking;
+            games->target=active->window;
+        }
         const auto identity=active?active->id:std::string{};
         if(identity!=games->known_session_id) {
             const bool ended=!games->known_session_id.empty() && identity.empty();
             games->known_session_id=identity;
-            games->target.reset();queue_menu_reload();
+            if(!active)games->target.reset();queue_menu_reload();
             if(ended) {
-                if(games->launched_minimized&&!win->config.headless) restore_shell();
+                close_overlay();
+                if(games->launched_minimized && (games->tracking==openxmb::desktop::TrackingQuality::direct_child || games->tracking==openxmb::desktop::TrackingQuality::provider_observed) && !win->config.headless) restore_shell();
                 games->shell_is_session_xmb=false;games->launched_minimized=false;
             }
         }
@@ -1922,32 +2039,119 @@ namespace app
             }
         }
 #endif
-        if(std::exchange(games->toggle_requested,false) && active && !win->config.headless) {
-            if(!shell_focused()) {
-                if(active->descriptor.tracking==openxmb::desktop::TrackingQuality::direct_child)
-                    games->target=openxmb::integrations::find_session_window(active->process_id);
+        if(active && games->overlay && games->overlay->active() && (!active->capabilities.focus || !active->window)) {
+            restore_shell();games->pending_notice="The game window is no longer available. OpenXMB has returned to its normal window.";
+        }
+        if(games->overlay && games->overlay->active()) {
+            if(const auto error=games->overlay->take_error();!error.empty()) {
+                spdlog::warn("Transparent XMB unavailable: {}",error);
                 restore_shell();queue_menu_reload();
-            } else if(active->descriptor.tracking==openxmb::desktop::TrackingQuality::direct_child) {
-                if(!games->target)games->target=openxmb::integrations::find_session_window(active->process_id);
+                games->pending_notice="The transparent XMB is unavailable for this window. OpenXMB has switched to its normal window.";
+            }
+        }
+        if(games->overlay && games->overlay->active()) {
+            auto inputs=std::exchange(*games->overlay_input,{});
+            for(const auto& input:inputs) {
+                using enum openxmb::integrations::OverlayInputKind;
+                if(input.kind==close || input.kind==focus_lost) {
+                    games->overlay_dismiss=true;games->overlay_return=input.kind==close;continue;
+                }
+#ifdef _WIN32
+                if(input.kind==key_down || input.kind==key_up) {
+                    SDL_Keycode code=SDLK_UNKNOWN;
+                    if(input.virtual_key>='A' && input.virtual_key<='Z')code=static_cast<SDL_Keycode>(input.virtual_key-'A'+'a');
+                    else if(input.virtual_key>='0' && input.virtual_key<='9')code=static_cast<SDL_Keycode>(input.virtual_key);
+                    else if(input.virtual_key>=VK_F1 && input.virtual_key<=VK_F12)code=SDLK_F1+static_cast<int>(input.virtual_key-VK_F1);
+                    else switch(input.virtual_key) {
+                        case VK_LEFT:code=SDLK_LEFT;break;case VK_RIGHT:code=SDLK_RIGHT;break;
+                        case VK_UP:code=SDLK_UP;break;case VK_DOWN:code=SDLK_DOWN;break;
+                        case VK_RETURN:code=(input.scan_code&0x100)?SDLK_KP_ENTER:SDLK_RETURN;break;
+                        case VK_ESCAPE:code=SDLK_ESCAPE;break;case VK_TAB:code=SDLK_TAB;break;
+                        case VK_SPACE:code=SDLK_SPACE;break;case VK_BACK:code=SDLK_BACKSPACE;break;
+                        case VK_DELETE:code=SDLK_DELETE;break;case VK_INSERT:code=SDLK_INSERT;break;
+                        case VK_HOME:code=SDLK_HOME;break;case VK_END:code=SDLK_END;break;
+                        case VK_PRIOR:code=SDLK_PAGEUP;break;case VK_NEXT:code=SDLK_PAGEDOWN;break;
+                        case VK_CAPITAL:code=SDLK_CAPSLOCK;break;
+                        default:break;
+                    }
+                    if(code!=SDLK_UNKNOWN) {
+                        SDL_Keysym key{};key.sym=code;key.scancode=SDL_GetScancodeFromKey(code);
+                        if(input.modifiers&MOD_CONTROL)key.mod|=KMOD_CTRL;
+                        if(input.modifiers&MOD_SHIFT)key.mod|=KMOD_SHIFT;
+                        if(input.modifiers&MOD_ALT)key.mod|=KMOD_ALT;
+                        if(input.kind==key_down)this->key_down(key);else this->key_up(key);
+                    }
+                } else if(input.kind==mouse_move) {
+                    dispatch(event{action::none,events::mouse_move{static_cast<float>(input.x)/win->swapchainExtent.width,
+                        static_cast<float>(input.y)/win->swapchainExtent.height,0,0}});
+                } else if(input.kind==mouse_down || input.kind==mouse_up) {
+                    const auto button=to_logical_mouse_button(input.virtual_key==VK_LBUTTON?SDL_BUTTON_LEFT:input.virtual_key==VK_RBUTTON?SDL_BUTTON_RIGHT:SDL_BUTTON_MIDDLE);
+                    if(input.kind==mouse_down)dispatch(event{action::none,events::mouse_button_down{button}});
+                    else dispatch(event{action::none,events::mouse_button_up{button}});
+                }
+#endif
+            }
+        }
+        const bool toggle=std::exchange(games->toggle_requested,false);
+        const bool dismiss=games->overlay_dismiss;
+        const bool return_to_game=games->overlay_return || toggle;
+        if((toggle || dismiss) && active && !win->config.headless) {
+            if(games->overlay && games->overlay->active()) {
+                if(close_overlay() && return_to_game) {
+                    const auto focused=games->target?openxmb::integrations::focus_session_window(*games->target):
+                        openxmb::integrations::Result{false,"The game window is no longer available."};
+                    if(!focused) {restore_shell();games->pending_notice=focused.message;}
+                }
+            } else if(!shell_focused()) {
+                bool opened=false;
+                if(active->capabilities.focus && active->window) {
+                    games->target=active->window;
+#ifdef _WIN32
+                    if(games->target && openxmb::integrations::validate_session_window(*games->target)) {
+                        MONITORINFO info{};info.cbSize=sizeof(info);
+                        const auto monitor=MonitorFromWindow(reinterpret_cast<HWND>(games->target->handle),MONITOR_DEFAULTTONEAREST);
+                        if(GetMonitorInfoW(monitor,&info)) {
+                            if(!games->overlay)games->overlay=std::make_unique<app::session_xmb>(win);
+                            set_ingame_mode(true);
+                            const auto prepared=games->overlay->open({info.rcMonitor.left,info.rcMonitor.top,
+                                static_cast<unsigned>(info.rcMonitor.right-info.rcMonitor.left),static_cast<unsigned>(info.rcMonitor.bottom-info.rcMonitor.top)},
+                                [queue=games->overlay_input](const openxmb::integrations::OverlayInput& input) {
+                                    if(queue->size()<256)queue->push_back(input);
+                                    else if(input.kind==openxmb::integrations::OverlayInputKind::focus_lost || input.kind==openxmb::integrations::OverlayInputKind::close) {
+                                        queue->clear();queue->push_back(input);
+                                    }
+                                });
+                            if(prepared) {
+                                SDL_MinimizeWindow(win->win.get());games->shell_is_session_xmb=true;games->launched_minimized=true;
+                                reload_menu();menu.show_session(active->descriptor.kind==openxmb::desktop::SessionKind::application);opened=true;
+                            } else {set_ingame_mode(false);spdlog::warn("Transparent XMB entry failed: {}",prepared.message);}
+                        }
+                    }
+#endif
+                }
+                if(!opened) {restore_shell();queue_menu_reload();}
+            } else if(active->capabilities.focus && active->window) {
+                games->target=active->window;
                 const auto focus=games->target?openxmb::integrations::focus_session_window(*games->target):openxmb::integrations::Result{false,"No unique window is available for this session. Switch to the game manually."};
                 if(focus) {SDL_MinimizeWindow(win->win.get());games->shell_is_session_xmb=false;games->launched_minimized=true;}
                 else games->pending_notice=focus.message;
-            } else games->pending_notice="Return to this application using your system's window switcher. Its launcher does not expose the game window.";
+            } else games->pending_notice="Return using your system's window switcher. Window control is unavailable for this session.";
         }
         if(std::exchange(games->screenshot_requested,false)) {
-            if(!active || active->descriptor.tracking!=openxmb::desktop::TrackingQuality::direct_child || win->config.headless) {
-                games->pending_notice="Screenshots require a live, directly tracked application window.";
+            if(!active || !active->capabilities.capture || !active->window || win->config.headless) {
+                games->pending_notice="Screenshots require a live, identified application window.";
             } else {
-                games->target=openxmb::integrations::find_session_window(active->process_id);
+                if(!close_overlay())return;
+                games->target=active->window;
                 const auto focus=games->target?openxmb::integrations::focus_session_window(*games->target):openxmb::integrations::Result{false,"No unique application window is available for a screenshot."};
-                if(!focus) games->pending_notice=focus.message;
+                if(!focus) {restore_shell();games->pending_notice=focus.message;}
                 else {
                     SDL_MinimizeWindow(win->win.get());
                     auto title=active->descriptor.title;
                     for(auto& c:title) if(static_cast<unsigned char>(c)<32 || std::string_view{"<>:\"/\\|?*"}.find(c)!=std::string_view::npos)c='_';
                     if(title.size()>80) {std::size_t end=80;while(end>0&&(static_cast<unsigned char>(title[end])&0xc0)==0x80)--end;title.resize(end);}
                     while(!title.empty()&&(title.back()=='.'||title.back()==' '))title.pop_back();
-                    const auto folder=games->photo_root/"Screenshots"/std::filesystem::u8path("Game - "+title);
+                    const auto folder=games->photo_root/"Screenshots"/std::filesystem::u8path((active->descriptor.kind==openxmb::desktop::SessionKind::application?"App - ":"Game - ")+title);
                     static std::uint64_t serial{};
                     const auto stamp=std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
                     const auto destination=folder/(std::to_string(stamp)+"-"+std::to_string(++serial)+".png");
@@ -1966,6 +2170,69 @@ namespace app
     }
 
     void shell::tick_games() {
+        if(games->artwork.ready()) {
+            try {
+                const auto result=games->artwork.get();
+                openxmb::desktop::Library current;
+                if(current.root()==result.root && current.active_profile().id==result.profile) {
+                    auto entries=current.games();
+                    const auto found=std::ranges::find(entries,result.game_id,&openxmb::desktop::Game::id);
+                    bool changed=false;
+                    if(found!=entries.end()) {
+                        const auto fill=[&](std::filesystem::path openxmb::desktop::Game::* field,const char* role,const auto& path) {
+                            auto& value=*found;
+                            if(!(value.*field).empty() || path.empty())return;
+                            value.*field=path;value.automatic_artwork[role]=path;changed=true;
+                        };
+                        fill(&openxmb::desktop::Game::icon,"icon",result.icon);
+                        fill(&openxmb::desktop::Game::cover,"cover",result.cover);
+                        fill(&openxmb::desktop::Game::background,"background",result.background);
+                        if(changed) {current.save_game(std::move(*found));queue_menu_reload();}
+                    }
+                }
+            } catch(const std::exception& error) {spdlog::warn("Automatic artwork could not be applied: {}",error.what());}
+        }
+        if(games->highlighted && !games->artwork.running() && overlays.empty() && !old_overlay && !games->sessions.active_session() &&
+           config::CONFIG.enabled("artwork.steamgriddb.automatic",true) && std::chrono::steady_clock::now()-games->highlighted_at>=std::chrono::milliseconds(350) &&
+           (games->highlighted->icon.empty() || games->highlighted->background.empty())) {
+            const auto variable=config::CONFIG.preference("artwork.steamgriddb.key_env","STEAMGRIDDB_API_KEY");
+            const bool valid=!variable.empty() && variable.size()<=128 && std::ranges::all_of(variable,[](unsigned char c) {return (c>='a'&&c<='z')||(c>='A'&&c<='Z')||(c>='0'&&c<='9')||c=='_';});
+            const auto* key=valid?std::getenv(variable.c_str()):nullptr;
+            if(key && *key) {
+                openxmb::desktop::Library library;
+                const auto profile=library.active_profile().id;
+                const auto root_bytes=library.root().u8string();
+                const auto attempt=std::string(root_bytes.begin(),root_bytes.end())+"\n"+profile+"\n"+games->highlighted->id;
+                if(games->artwork_attempted.size()<1024 && games->artwork_attempted.insert(attempt).second) {
+                    const auto game=*games->highlighted;const auto root=library.root();const std::string secret(key);
+                    games->artwork.start([game,root,profile,secret](std::stop_token stop) {
+                        using namespace openxmb::desktop;
+                        game_state::ArtworkResult output;output.root=root;output.profile=profile;output.game_id=game.id;
+                        HttpTransport transport=[stop](HttpRequest request) {request.progress=[stop](std::uint64_t,std::uint64_t) {return !stop.stop_requested();};return http_get(request);};
+                        SteamGridDB provider(root/"cache/artwork"/profile,transport);
+                        const auto matching=provider.search(game.title,secret);
+                        if(!matching || stop.stop_requested())return output;
+                        std::uint64_t id{};unsigned exact{};
+                        for(const auto& candidate:matching.games)if(candidate.exact_match) {id=candidate.id;++exact;}
+                        if(exact!=1)return output;
+                        const auto download=[&](SteamGridDBRole role) {
+                            if(stop.stop_requested())return std::filesystem::path{};
+                            const auto assets=provider.assets(id,role,secret);
+                            if(!assets || assets.assets.empty() || stop.stop_requested())return std::filesystem::path{};
+                            const auto selected=provider.select(id,assets.assets.front().id,role,{},SteamGridDBOverride::preserve_native,secret);
+                            return selected?selected.path:std::filesystem::path{};
+                        };
+                        if(game.icon.empty()) {
+                            output.cover=download(SteamGridDBRole::horizontal_grid);output.icon=output.cover;
+                            if(output.icon.empty())output.icon=download(SteamGridDBRole::icon);
+                        }
+                        if(game.background.empty())output.background=download(SteamGridDBRole::hero);
+                        if(stop.stop_requested()) {output.icon.clear();output.cover.clear();output.background.clear();}
+                        return output;
+                    });
+                }
+            }
+        }
         if(games->presentation) {
             games->presentation->choose(overlays.empty() && !old_overlay && !ingame_mode && !games->sessions.active_session() ? games->highlighted : nullptr);
             games->presentation->tick(win);
@@ -2027,7 +2294,11 @@ namespace app
                 [] { return nlohmann::json::parse(config::CONFIG.shell_snapshot()); });
         } else if(name == "settings") {
             menu.show_settings();
-        } else if(name == "users" || name == "games" || name == "runners" || name == "custom" || name == "friends" || name == "account" || name == "trophies") {
+        } else if(name == "trophies") {
+            emplace_overlay<app::trophy_collection>(*loader);
+        } else if(name == "youtube") {
+            open_youtube();
+        } else if(name == "users" || name == "games" || name == "runners" || name == "custom" || name == "friends" || name == "account") {
             emplace_overlay<programs::library_manager>(name, *loader,
                 [this](const std::filesystem::path& path) { switch_profile(path); });
         } else {
@@ -2104,6 +2375,7 @@ namespace app
         win->waitIdle();
         config::CONFIG.switch_profile(path);
         games->highlighted.reset();
+        games->artwork.cancel();games->artwork_attempted.clear();
         if(games->presentation) games->presentation->stop();
         // Consume a pending result against its original profile before starting
         // another scan; no worker may write to the newly selected profile.
@@ -2256,7 +2528,7 @@ namespace app
                 const auto artwork=input_bindings::xbox_artwork(code);
                 if(!artwork.empty()) {buttonTextures[i]=std::make_unique<texture>(device,allocator);loader->loadTexture(buttonTextures[i].get(),config::CONFIG.asset_directory/"icons/controller"/(std::string(artwork)+".png"));continue;}
             }
-            if(index<0||family=="default") {
+            if(index<0||family=="default"||keyboard) {
                 if(keyboard)button_labels[i]=SDL_GetScancodeName(static_cast<SDL_Scancode>(code));
                 else {switch(code){case 0:button_labels[i]="South";break;case 1:button_labels[i]="East";break;case 2:button_labels[i]="West";break;case 3:button_labels[i]="North";break;case 4:button_labels[i]=family=="playstation"?"Select":"View";break;case 6:button_labels[i]=family=="playstation"?"Start":"Menu";break;case 9:button_labels[i]=family=="playstation"?"L1":"LB";break;case 10:button_labels[i]=family=="playstation"?"R1":"RB";break;default:button_labels[i]="Button "+std::to_string(code);}}
                 if(button_labels[i].empty())button_labels[i]="Key "+std::to_string(code);continue;
@@ -2298,7 +2570,7 @@ namespace app
             win->waitIdle();
             std::erase_if(overlays,[](const auto& value) {return dynamic_cast<programs::library_manager*>(value.get())!=nullptr;});
         }
-        if(!games->pending_notice.empty() && (win->config.headless || (SDL_GetWindowFlags(win->win.get())&SDL_WINDOW_INPUT_FOCUS)))
+        if(!games->pending_notice.empty() && input_focused())
             emplace_overlay<app::message_overlay>("Game Session",std::exchange(games->pending_notice,{}),std::vector<std::string>{"OK"});
         tick_games();
         if(menu_reload_pending && overlays.empty() && !old_overlay) {
@@ -2325,7 +2597,7 @@ namespace app
                 if(wanted_device!=active_audio_device)set_audio_device(wanted_device);
             }
         }
-        const bool focused=win->config.headless||(SDL_GetWindowFlags(win->win.get())&SDL_WINDOW_INPUT_FOCUS)!=0;
+        const bool focused=input_focused();
         if(!focused) {last_controller_axis_input={};controller_axis_position={};cursor_joystick_delta={};button_timing.clear();}
         const auto cap=config::CONFIG.maxFPS>10000?0:config::CONFIG.maxFPS;
         win->config.fpsLimit=focused?cap:config::CONFIG.number("power.background.fps",30);
@@ -2375,8 +2647,9 @@ namespace app
         {
             static const auto harness_steps = harness_steps_from_environment();
             static std::size_t harness_next = 0;
+            static const auto harness_started = std::chrono::steady_clock::now();
             const double harness_seconds = std::chrono::duration<double>(
-                std::chrono::steady_clock::now() - shader_time_zero).count();
+                std::chrono::steady_clock::now() - harness_started).count();
             while(harness_next < harness_steps.size() && harness_steps[harness_next].seconds <= harness_seconds) {
                 const std::string_view step = harness_steps[harness_next++].step;
                 constexpr std::array<std::pair<std::string_view, action>, 8> actions{{
@@ -2385,9 +2658,13 @@ namespace app
                 constexpr std::array<std::pair<std::string_view, events::logical_controller_button>, 4> buttons{{
                     {"start", events::logical_controller_button::start}, {"select", events::logical_controller_button::back},
                     {"l1", events::logical_controller_button::leftshoulder}, {"r1", events::logical_controller_button::rightshoulder}}};
-                if(step.starts_with("profile=")) {
+                if(step=="quit") {
+                    SDL_Event quit{};quit.type=SDL_QUIT;SDL_PushEvent(&quit);
+                } else if(step.starts_with("profile=")) {
                     switch_profile(std::filesystem::u8path(step.substr(8)));
                     break;
+                } else if(step=="in-game") {
+                    set_ingame_mode(true);
                 } else if(step=="reset") {
                     reset_settings();
                 } else if(step.starts_with("rs=")) {
@@ -2423,7 +2700,7 @@ namespace app
             startup_timeline.reset();
             emplace_overlay<app::startup_overlay>();
         }
-        poll_mouse();
+        if(!(games->overlay && games->overlay->active()))poll_mouse();
         tick_cursor();
     }
 
@@ -2520,7 +2797,11 @@ namespace app
             }
         }
 
-        handle(menu.on_action(event.action));
+        const auto menu_result=menu.on_action(event.action);
+        if((menu_result & result::unsupported) && event.action==action::cancel && games->overlay && games->overlay->active()) {
+            games->overlay_dismiss=true;games->overlay_return=true;return;
+        }
+        handle(menu_result);
     }
 
     void shell::poll_mouse()
@@ -2668,7 +2949,7 @@ namespace app
         const auto chord=config::CONFIG.preference("session.hotkey","Ctrl+Shift+F1");
         unsigned shortcut=SDL_SCANCODE_F1;
         if(chord=="Ctrl+Shift+F2")shortcut=SDL_SCANCODE_F2;else if(chord=="Ctrl+Shift+F3")shortcut=SDL_SCANCODE_F3;else if(chord=="Ctrl+Shift+F4")shortcut=SDL_SCANCODE_F4;
-        if(!held && has_running_session() && scan==shortcut && (SDL_GetModState()&KMOD_CTRL) && (SDL_GetModState()&KMOD_SHIFT)) {toggle_session_xmb();return;}
+        if(!held && has_running_session() && scan==shortcut && (key.mod&KMOD_CTRL) && (key.mod&KMOD_SHIFT)) {toggle_session_xmb();return;}
         for(std::size_t i=0;i<input_bindings::actions.size();++i) if(scan==static_cast<unsigned>(input_bindings::read(config::CONFIG.preferences,false,i))) {
             if(held&&i>=4)return;
             dispatch(event{static_cast<action>(i+1),events::key_down{scan}});return;
@@ -2694,7 +2975,7 @@ namespace app
             if(button_timing.press(static_cast<unsigned>(button),false,std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count()))toggle_session_xmb();
             return;
         }
-        if(!win->config.headless && !(SDL_GetWindowFlags(win->win.get())&SDL_WINDOW_INPUT_FOCUS))return;
+        if(!input_focused())return;
         const auto code=static_cast<unsigned>(button);
         const auto seconds=std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
         for(std::size_t i=0;i<input_bindings::actions.size();++i)if(static_cast<int>(button)==input_bindings::read(config::CONFIG.preferences,true,i)) {
@@ -2707,12 +2988,12 @@ namespace app
     {
         spdlog::trace("Button up: {}", fmt::underlying(button));
         button_timing.release(static_cast<unsigned>(button));
-        if(!win->config.headless && !(SDL_GetWindowFlags(win->win.get())&SDL_WINDOW_INPUT_FOCUS))return;
+        if(!input_focused())return;
         dispatch(event{action::none, events::controller_button_up{to_logical_button(button)}});
     }
     void shell::axis_motion(sdl::GameController* controller, sdl::GameControllerAxis axis, int16_t value)
     {
-        if(!win->config.headless && !(SDL_GetWindowFlags(win->win.get())&SDL_WINDOW_INPUT_FOCUS)) {
+        if(!input_focused()) {
             last_controller_axis_input={};controller_axis_position={};cursor_joystick_delta={};return;
         }
         spdlog::trace("Axis motion: {} {}", fmt::underlying(axis), value);

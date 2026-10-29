@@ -140,8 +140,17 @@ export std::string value(const std::string& key,shell* host=nullptr) {
     if(key=="date.format") return "DD/MM/YYYY";
     if(key=="input.repeat") return "180";
     if(key=="browser.search") return "DuckDuckGo";
-    if(key=="display.mode") return "Windowed";
-    if(key=="games.launch") return "Keep Running";
+    if(key=="display.mode") {
+        if(host && !host->get_window()->config.headless) {
+            const auto flags=SDL_GetWindowFlags(host->get_window()->win.get());
+            if((flags&SDL_WINDOW_FULLSCREEN_DESKTOP)==SDL_WINDOW_FULLSCREEN_DESKTOP)return "Borderless";
+            return (flags&SDL_WINDOW_FULLSCREEN)?"Fullscreen":"Windowed";
+        }
+        return "Borderless";
+    }
+    if(key=="games.launch") return "Minimise";
+    if(key=="artwork.steamgriddb.automatic") return "On";
+    if(key=="artwork.steamgriddb.key_env") return "STEAMGRIDDB_API_KEY";
     if(key=="power.background.fps") return "30";
     if(key=="power.dim"||key=="music.shuffle"||key=="music.repeat"||key=="photo.shuffle"||key=="time.seconds"||key=="power.reduced.motion") return "Off";
     if(key=="startup.intro"||key=="startup.warning"||key=="audio.startup"||key=="audio.background"||key=="audio.duck"||key=="music.background"||key=="music.artwork"||key=="video.resume"||key=="photo.repeat"||key=="input.osk"||key=="power.keep.awake") return "On";
@@ -223,6 +232,7 @@ void apply(shell* shell,const std::string& key,const std::string& selected) {
 #endif
         c.autostart=selected=="On";
     }
+    if(key=="youtube.executable" && !selected.empty() && !std::filesystem::is_regular_file(std::filesystem::u8path(selected)) && !std::filesystem::is_directory(std::filesystem::u8path(selected))) {show_error(shell,"Choose an installed executable or application bundle, or leave empty for automatic discovery.");return;}
     if(key=="audio.device"&&!shell->set_audio_device(selected=="System Default"?std::string{}:selected)) {show_error(shell,openxmb::music::service().snapshot().error);return;}
     c.preferences[key]=selected;c.save_config();
     if(key=="theme.sounds")shell->reload_theme_sounds();

@@ -614,6 +614,11 @@ target_sources(XMS PRIVATE src/localization/font_selection.cpp)
 target_sources(XMS PRIVATE src/setup/model.cpp)
 target_sources(XMS PUBLIC FILE_SET CXX_MODULES BASE_DIRS src FILES
   src/app/components/game_presentation.cppm
+  src/app/components/trophy_collection.cppm
+  src/app/components/youtube_setup.cppm
+  src/app/components/game_artwork.cppm
+  src/app/components/session_xmb.cppm
+  src/app/components/game_launch_settings.cppm
   src/menu/games_menu.cppm
   src/app/components/setup_controls.cppm
   src/app/components/initial_setup.cppm)

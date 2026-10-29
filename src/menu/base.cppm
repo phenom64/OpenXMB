@@ -187,10 +187,11 @@ class action_menu_entry_generic : public Base {
         action_menu_entry_generic(
             std::string name, Base::icon_type&& icon,
             std::function<result()> on_activate, std::function<result(action)> on_action = {},
-            std::string description = ""
+            std::string description = "", bool preserve_colour = false
         ) :
-            Base(std::move(name), std::move(icon), std::move(description)), on_activate(std::move(on_activate)), on_action(std::move(on_action)) {}
+            Base(std::move(name), std::move(icon), std::move(description)), on_activate(std::move(on_activate)), on_action(std::move(on_action)), preserve_colour(preserve_colour) {}
         ~action_menu_entry_generic() override = default;
+        bool preserve_icon_colour() const override { return preserve_colour; }
 
         result activate(action action) override {
             if(on_action) {
@@ -203,6 +204,7 @@ class action_menu_entry_generic : public Base {
     private:
         std::function<result()> on_activate;
         std::function<result(action)> on_action;
+        bool preserve_colour{};
 };
 using action_menu_entry = action_menu_entry_generic<simple_menu_entry>;
 using action_menu_entry_shared = action_menu_entry_generic<simple_menu_entry_shared>;

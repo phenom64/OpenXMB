@@ -54,8 +54,12 @@ def main():
                     'OPENXMB_INITIAL_CATEGORY': 'settings',
                     'OPENXMB_INITIAL_SETTINGS_MENU': 'category.settings.desktop.System',
                     'OPENXMB_INITIAL_SETTINGS_SELECTION': '10',
-                    'AUROREENGINE_HEADLESS_FRAMES': '24',
+                    'AUROREENGINE_HEADLESS_FRAMES': '100000',
                 })
+                # Confirmation feedback uses real monotonic time. End through
+                # the normal event loop after it has elapsed, not a GPU-speed-
+                # dependent number of frames.
+                current['OPENXMB_HARNESS_ACTIONS'] = actions + ';0.5:quit'
             if read_only:
                 current['OPENXMB_CONFIG_READ_ONLY'] = '1'
             if args.output:

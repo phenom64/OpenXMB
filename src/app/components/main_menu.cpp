@@ -696,6 +696,7 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
 
     finish_media_transition();
     const bool reloading=!menus.empty();
+    const auto previous_root_selection=reloading && selected>=0 && static_cast<std::size_t>(selected)<menus.size()?menus[selected]->get_selected_submenu():0U;
     const auto previous_route=settings_controller?settings_controller->route().id:std::string{};
     const auto previous_selection=settings_controller?settings_controller->route().selection:0U;
     current_submenu=nullptr;submenu_stack.clear();in_submenu=false;media_depth_from=media_depth_to=0;
@@ -733,7 +734,7 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
         config::CONFIG.pictures_path(), loader, menu::files_menu_profile::photo);
     if(xmb->has_running_session()) {
         std::vector<std::unique_ptr<menu::menu_entry>> actions;
-        actions.push_back(make_simple<menu::action_menu_entry>("Save Screenshot",asset_directory/"icons/icon_category_photo.png",loader,
+        actions.push_back(make_simple<menu::action_menu_entry>("Save Screenshot",asset_directory/"icons/actions/screenshot.png",loader,
             [host=xmb] {host->save_session_screenshot();return result::success;},std::function<result(action)>{},xmb->session_title()));
         menus.push_back(std::make_unique<menu::prefixed_menu>(std::move(photo_menu),std::move(actions)));
     } else menus.push_back(std::move(photo_menu));
@@ -745,6 +746,17 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
         config::CONFIG.videos_path(), loader, menu::files_menu_profile::video));
     {
         std::vector<std::unique_ptr<menu::menu_entry>> rows;
+        if(xmb->has_running_session() && xmb->session_is_application())
+            rows.push_back(make_simple<menu::action_menu_entry>("Quit App",asset_directory/"icons/actions/quit_session.png",loader,
+                [host=xmb] {host->quit_session();return result::success;},std::function<result(action)>{},xmb->session_title()));
+        rows.push_back(make_simple<menu::action_menu_entry>("YouTube",asset_directory/"icons/services/youtube.png",loader,std::function<result()>{},
+            [host=xmb](action input) {
+                if(input==action::ok) {host->open_youtube();return result::success;}
+                if(input!=action::options)return result::unsupported;
+                host->emplace_overlay<app::choice_overlay>(std::vector<std::string>{"Start","Information"},0,[host](unsigned index) {
+                    if(index==0)host->open_youtube();else host->show_youtube_information();
+                });return result::success;
+            },"Watch YouTube",true));
         rows.push_back(make_simple<menu::files_menu>("Video Library",asset_directory/"icons/theme/icon_video.png",loader,xmb,config::CONFIG.videos_path(),loader,menu::files_menu_profile::video));
         menus.push_back(panel_menu("TV / Video Services",asset_directory/"icons/theme/icon_tv.png",std::move(rows)));
     }
@@ -758,9 +770,9 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
         try { games = openxmb::desktop::Library{}.games(); }
         catch(const std::exception& error) { spdlog::warn("Could not load games: {}",error.what()); }
         auto games_menu=make_simple<menu::games_menu>("Game",preferred_icon(asset_directory,"xmb_icon_005.png","icon_category_game.png"),loader,xmb,loader,std::move(games),std::move(rows));
-        if(xmb->has_running_session()) {
+        if(xmb->has_running_session() && !xmb->session_is_application()) {
             std::vector<std::unique_ptr<menu::menu_entry>> actions;
-            actions.push_back(make_simple<menu::action_menu_entry>(xmb->session_is_application()?"Quit App":"Quit Game",asset_directory/"icons/icon_action_poweroff.png",loader,
+            actions.push_back(make_simple<menu::action_menu_entry>("Quit Game",asset_directory/"icons/actions/quit_session.png",loader,
                 [host=xmb] {host->quit_session();return result::success;},std::function<result(action)>{},xmb->session_title()));
             menus.push_back(std::make_unique<menu::prefixed_menu>(std::move(games_menu),std::move(actions)));
         } else menus.push_back(std::move(games_menu));
@@ -808,6 +820,7 @@ void main_menu::preload(vk::Device device, vma::Allocator allocator, auroreengin
         }
     }
 
+    if(reloading && menus[selected]->get_submenus_count())menus[selected]->select_submenu(std::min(previous_root_selection,menus[selected]->get_submenus_count()-1));
     menus[selected]->on_open();
 
     const auto catalog_path = asset_directory / "catalog/en.json";
@@ -1465,7 +1478,7 @@ void main_menu::render_settings_parent_layer(auroreengine::gui_renderer& rendere
         if(icon == nullptr || !icon->texture || !icon->texture->loaded) {
             return;
         }
-        draw_icon(renderer, *icon->texture, icon->glass_texture.get(), layout,
+        draw_icon(renderer, *icon->texture, (xmb->get_ingame_mode()?nullptr:icon->glass_texture.get()), layout,
             center_x, center_y, openxmb::xmb::SettingsSceneMetrics::icon_extent,
             alpha);
     };
@@ -1648,7 +1661,7 @@ void main_menu::render_settings_scene(auroreengine::gui_renderer& renderer, time
     }
 
     const openxmb::xmb::SettingsSceneRenderOptions options{
-        .glass_icons=config::CONFIG.iconGlassRefraction,
+        .glass_icons=(config::CONFIG.iconGlassRefraction && !xmb->get_ingame_mode()),
         .suppress_value_labels=settings_choice_panel_open||xmb->has_choice_overlay()
     };
     if(transitioning) {
@@ -1765,8 +1778,8 @@ void main_menu::render_crossbar(auroreengine::gui_renderer& renderer, time_point
         }
 
         draw_icon(renderer, menus[index]->get_icon(),
-            menus[index]->get_glass_icon(), layout,
-            center_x, center_y, extent, alpha);
+            (xmb->get_ingame_mode()?nullptr:menus[index]->get_glass_icon()), layout,
+            center_x, center_y, extent, alpha, xmb->get_ingame_mode());
 
         if(active) {
             canvas.text(menus[index]->get_name(),center_x,kCategoryLabelY+18,24,
@@ -1798,8 +1811,8 @@ void main_menu::render_crossbar(auroreengine::gui_renderer& renderer, time_point
             const auto alpha = (focused ? kFocusAlpha : kInactiveItemAlpha) * alpha_multiplier *
                 (focused ? 1.0 : 1.0 - 0.55 * options_here);
             auto& entry = menu.get_submenu(static_cast<unsigned int>(index));
-            draw_icon(renderer, entry.get_icon(), entry.get_glass_icon(), layout,
-                kItemIconX + x_shift, center_y, extent, alpha, entry.preserve_icon_colour());
+            draw_icon(renderer, entry.get_icon(), (xmb->get_ingame_mode()?nullptr:entry.get_glass_icon()), layout,
+                kItemIconX + x_shift, center_y, extent, alpha, entry.preserve_icon_colour() || xmb->get_ingame_mode());
             if(users != nullptr && users->is_signed_in_user(static_cast<unsigned int>(index))) {
                 const auto k = static_cast<float>(extent / kActiveItemIconExtent);
                 draw_user_diamond(canvas, static_cast<float>(kItemIconX + x_shift) - 130.0F * k,
@@ -1857,6 +1870,13 @@ void main_menu::finish_media_transition() {
         xmb->get_window()->waitIdle();closing->on_close();
     }
 }
+void main_menu::show_session(bool application) {
+    finish_media_transition();
+    current_submenu=nullptr;submenu_stack.clear();in_submenu=false;
+    select(application?5:6);
+    select_menu_item(0);
+}
+
 void main_menu::show_settings() {
     finish_media_transition();
     while(in_submenu){back();finish_media_transition();}
@@ -1898,13 +1918,13 @@ std::unique_ptr<main_menu::media_scene_state> main_menu::capture_media_scene(men
 }
 void main_menu::draw_media_scene(auroreengine::gui_renderer& renderer,const media_scene_state& state,double shift,double alpha,double parent_shift) {
     const auto layout=make_contained_layout(renderer);
-    for(const auto& entry:state.parents)draw_icon(renderer,*entry.icon,entry.glass,layout,entry.x+parent_shift,entry.y,openxmb::xmb::SettingsSceneMetrics::icon_extent,entry.alpha*alpha);
+    for(const auto& entry:state.parents)draw_icon(renderer,*entry.icon,(xmb->get_ingame_mode()?nullptr:entry.glass),layout,entry.x+parent_shift,entry.y,openxmb::xmb::SettingsSceneMetrics::icon_extent,entry.alpha*alpha,xmb->get_ingame_mode());
     auto snapshot=state.snapshot;
     for(std::size_t i=0;i<snapshot.row_count;++i) {
         auto& row=snapshot.rows[i];row.icon_center_x+=shift;row.label_x+=shift;row.description_x+=shift;
         row.alpha*=alpha;row.value_alpha*=alpha;row.description_alpha*=alpha;
     }
-    settings_scene_renderer.render(renderer,snapshot,state.icons,{.glass_icons=config::CONFIG.iconGlassRefraction});
+    settings_scene_renderer.render(renderer,snapshot,state.icons,{.glass_icons=(config::CONFIG.iconGlassRefraction && !xmb->get_ingame_mode())});
     if(state.empty)xmb_canvas(renderer).text("This folder is empty.",683+static_cast<float>(shift),515,34,{1,1,1,static_cast<float>(alpha)});
 }
 void main_menu::render_submenu(auroreengine::gui_renderer& renderer,time_point now) {

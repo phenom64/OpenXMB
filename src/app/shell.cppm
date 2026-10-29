@@ -37,7 +37,7 @@ module;
 #include <vector>
 #include <map>
 namespace openxmb::themes { class ThemeLibrary; struct AppliedTheme; }
-namespace openxmb::desktop { struct Game; }
+namespace openxmb::desktop { struct Game; enum class TrackingQuality; }
 
 #include <glm/vec2.hpp>
 #include "openxmb/xmb/boot_timeline.hpp"
@@ -109,7 +109,13 @@ namespace app
             void highlight_game(std::shared_ptr<const openxmb::desktop::Game> game);
             const texture* game_preview_icon(std::string_view identity) const;
             result launch_game(const openxmb::desktop::Game& game);
+            result launch_application(std::string identity,std::string title,const std::vector<std::string>& argv,const std::filesystem::path& cwd,std::string runner,openxmb::desktop::TrackingQuality tracking);
+            void open_youtube();
+            void show_youtube_information();
             void show_game_information(const openxmb::desktop::Game& game);
+            void show_game_launch_settings(const openxmb::desktop::Game& game);
+            void show_game_artwork(const openxmb::desktop::Game& game);
+            bool input_focused() const;
             bool has_running_session() const;
             bool session_is_application() const;
             std::string session_title() const;
@@ -323,6 +329,8 @@ namespace app
 
             vk::UniqueRenderPass backgroundRenderPass, shellRenderPass;
             vk::SampleCountFlagBits renderPassSamples{};
+            vk::Format renderPassFormat{};
+            vk::ImageLayout renderPassFinalLayout{};
 
             // Per-frame resolve target for background (offscreen, avoids reusing swapchain mid-frame)
             std::vector<std::unique_ptr<texture>> backgroundResolve;
