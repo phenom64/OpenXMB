@@ -166,8 +166,7 @@ RunnerDiscoveryOptions runner_options_from_preferences(const std::map<std::strin
 }
 std::vector<RunnerDescriptor> discover_runners(const RunnerDiscoveryOptions& options) {
   const auto known = definitions(); validate_options(options, known);
-  auto roots = options.search_roots;
-  if (options.search_defaults) { const auto system = default_roots(); roots.insert(roots.end(), system.begin(), system.end()); }
+  const auto system_roots=options.search_defaults?default_roots():std::vector<fs::path>{};
   std::vector<RunnerDescriptor> result; result.reserve(known.size());
   for (const auto& definition : known) {
     RunnerDescriptor runner{definition.id, definition.name, {}, std::string(definition.id) == "steam" ? TrackingQuality::launcher_only : TrackingQuality::direct_child, true, std::string(definition.id) == "retroarch", {}};
@@ -178,6 +177,18 @@ std::vector<RunnerDescriptor> discover_runners(const RunnerDiscoveryOptions& opt
       if (usable(*selected)) runner.executable = fs::weakly_canonical(fs::absolute(*selected));
       else runner.message = "The configured " + runner.name + " executable is missing or not executable; choose its installed executable";
     } else {
+      auto roots=options.search_roots;
+      if(options.search_defaults&&runner.id=="rpcs3") {
+        // Conventional portable installation only: never recursively crawl
+        // a person's home or probe other emulators beneath this PS3 folder.
+#ifdef _WIN32
+        const auto home=environment_path("USERPROFILE");
+#else
+        const auto home=environment_path("HOME");
+#endif
+        if(home)roots.push_back(*home/"Emulation/PS3/rpcs3");
+      }
+      roots.insert(roots.end(),system_roots.begin(),system_roots.end());
       for (const auto& root : roots) {
         for (const auto& name : definition.names) if (usable(root / name)) { runner.executable = fs::weakly_canonical(root / name); break; }
         if (runner) break;
@@ -223,7 +234,14 @@ LaunchPlan plan_game_launch(const Game& game, const RunnerDiscoveryOptions& opti
       fs::path core;
       if (runner.requires_core) core = content_path(game.core, game.working_directory, false, "libretro core");
       const auto automatic = defaults(plan.runner, content, core, fullscreen);
-      const auto& arguments = game.arguments.empty() ? automatic : game.arguments;
+      bool imported_rpcs3=false;
+      if(plan.runner=="rpcs3"&&game.arguments.size()==2&&game.arguments.front()=="--no-gui") {
+        auto imported_path=fs::path(std::u8string(game.arguments.back().begin(),game.arguments.back().end()));
+        if(imported_path.is_relative()&&!game.working_directory.empty())imported_path=game.working_directory/imported_path;
+        std::error_code error;imported_rpcs3=fs::equivalent(imported_path,content,error)&&!error;
+      }
+      auto arguments = game.arguments.empty() ? automatic : game.arguments;
+      if(imported_rpcs3&&fullscreen)arguments.insert(arguments.begin()+1,"--fullscreen");
       if (plan.runner == "steam" && !game.arguments.empty()) {
         const auto launch = std::ranges::find(game.arguments, "-applaunch");
         if (launch == game.arguments.end() || std::next(launch) == game.arguments.end() || *std::next(launch) != steam_id(content)) throw std::runtime_error("Explicit Steam arguments must launch the same validated app id with -applaunch");
@@ -233,7 +251,6 @@ LaunchPlan plan_game_launch(const Game& game, const RunnerDiscoveryOptions& opti
         plan.arguments.insert(plan.arguments.begin()+1,"-silent");
       plan.working_directory = game.working_directory.empty() ? runner.executable.parent_path() : game.working_directory;
       plan.tracking = plan.runner == "steam" ? TrackingQuality::launcher_only : runner.tracking;
-      const bool imported_rpcs3 = plan.runner == "rpcs3" && game.arguments == std::vector<std::string>{"--no-gui", text(content)};
       if (plan.runner != "steam" && !game.arguments.empty() && game.arguments != automatic && !imported_rpcs3) plan.tracking = TrackingQuality::unknown;
     }
     valid_arguments(plan.arguments); plan.success = true;

@@ -66,7 +66,7 @@ void variable(const char *name, const std::string &value) {
 struct Environment {
   std::map<std::string, std::optional<std::string>> original;
   Environment() {
-    for (const char *name : {"RPCS3_EXECUTABLE", "RPCS3_DATA_DIR", "RPCS3_CONFIG_DIR", "XDG_CONFIG_HOME", "HOME", "APPDATA", "PATH"}) {
+    for (const char *name : {"RPCS3_EXECUTABLE", "RPCS3_DATA_DIR", "RPCS3_CONFIG_DIR", "XDG_CONFIG_HOME", "HOME", "USERPROFILE", "APPDATA", "LOCALAPPDATA", "ProgramFiles", "ProgramFiles(x86)", "PATH"}) {
       const auto *value = std::getenv(name);
       original[name] = value ? std::optional<std::string>{value} : std::nullopt;
       variable(name, "");

@@ -17,6 +17,7 @@
  */
 
 #include "openxmb/desktop/library.hpp"
+#include "openxmb/desktop/runners.hpp"
 #ifndef OPENXMB_VERSION_STRING
 #define OPENXMB_VERSION_STRING "development"
 #endif
@@ -529,24 +530,11 @@ std::optional<fs::path> rpcs3_executable(const fs::path& selected_executable) {
       throw std::runtime_error("The selected RPCS3 executable is unavailable; choose its installed executable in Game Settings");
     return fs::absolute(selected_executable);
   }
-  if (const auto configured = environment_path("RPCS3_EXECUTABLE"); configured && usable(*configured)) return fs::absolute(*configured);
-  const auto search = environment_path("PATH");
-  if (!search) return {};
-#ifdef _WIN32
-  constexpr char separator = ';';
-  constexpr const char *names[]{"rpcs3.exe", "RPCS3.exe"};
-#else
-  constexpr char separator = ':';
-  constexpr const char *names[]{"rpcs3", "rpcs3.AppImage"};
-#endif
-  const auto value = path_text(*search);
-  for (std::size_t start = 0; start <= value.size();) {
-    const auto end = value.find(separator, start);
-    const auto part = value.substr(start, end == std::string::npos ? end : end - start);
-    if (!part.empty()) for (const auto *name : names) if (const auto path = text_path(part) / name; usable(path)) return fs::absolute(path);
-    if (end == std::string::npos) break;
-    start = end + 1;
-  }
+  // Keep metadata/portable-root discovery on the same bounded executable
+  // candidates and override precedence as launch planning. Runner discovery
+  // reads Game DTOs only and never calls back into this helper.
+  for(const auto& runner:discover_runners())if(runner.id=="rpcs3")
+    return runner?std::optional<fs::path>{runner.executable}:std::nullopt;
   return {};
 }
 std::vector<fs::path> rpcs3_game_roots(const fs::path& selected_executable) {

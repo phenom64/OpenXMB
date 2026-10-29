@@ -1,9 +1,13 @@
 #include "openxmb/desktop/runners.hpp"
 #include <algorithm>
 #include <chrono>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iterator>
+#include <map>
+#include <optional>
 #include <stdexcept>
 
 namespace fs = std::filesystem;
@@ -20,6 +24,51 @@ const RunnerDescriptor& by_id(const std::vector<RunnerDescriptor>& runners, cons
   require(found != runners.end(), "known runner descriptor missing"); return *found;
 }
 RunnerDiscoveryOptions isolated() { RunnerDiscoveryOptions result; result.search_path = false; result.search_defaults = false; return result; }
+struct Environment {
+#ifdef _WIN32
+  std::map<std::wstring,std::optional<std::wstring>> saved;
+  Environment(){for(const auto* name:{L"USERPROFILE",L"HOME",L"ProgramFiles",L"ProgramFiles(x86)",L"LOCALAPPDATA",L"PATH",L"RPCS3_EXECUTABLE",L"PCSX2_EXECUTABLE",L"STEAM_EXECUTABLE",L"RETROARCH_EXECUTABLE",L"DOLPHIN_EXECUTABLE",L"DUCKSTATION_EXECUTABLE",L"PPSSPP_EXECUTABLE"}){const auto* value=_wgetenv(name);saved[name]=value?std::optional<std::wstring>(value):std::nullopt;_wputenv_s(name,L"");}}
+  ~Environment(){for(const auto& [name,value]:saved)_wputenv_s(name.c_str(),value?value->c_str():L"");}
+  void set(const char* key,const fs::path& path){const std::string name(key);const std::wstring wide(name.begin(),name.end());_wputenv_s(wide.c_str(),path.c_str());}
+#else
+  std::map<std::string,std::optional<std::string>> saved;
+  Environment(){for(const auto* name:{"USERPROFILE","HOME","ProgramFiles","ProgramFiles(x86)","LOCALAPPDATA","PATH","RPCS3_EXECUTABLE","PCSX2_EXECUTABLE","STEAM_EXECUTABLE","RETROARCH_EXECUTABLE","DOLPHIN_EXECUTABLE","DUCKSTATION_EXECUTABLE","PPSSPP_EXECUTABLE"}){const auto* value=std::getenv(name);saved[name]=value?std::optional<std::string>(value):std::nullopt;unsetenv(name);}}
+  ~Environment(){for(const auto& [name,value]:saved)if(value)setenv(name.c_str(),value->c_str(),1);else unsetenv(name.c_str());}
+  void set(const char* key,const fs::path& path){setenv(key,path.c_str(),1);}
+#endif
+};
+void conventional_rpcS3(const fs::path& root) {
+  Environment environment;
+  const auto home=root/fs::path(u8"user \u6771\u4eac");environment.set("USERPROFILE",home);environment.set("HOME",home);
+#ifdef _WIN32
+  const auto binary=fs::path("rpcs3.exe");
+#else
+  const auto binary=fs::path("rpcs3");
+#endif
+  const auto executable=home/"Emulation/PS3/rpcs3"/binary;file(executable,true);
+  file(executable.parent_path()/"GuiConfigs/current-settings.ini");
+  file(home/"unrelated/deep/rpcs3"/binary,true);
+  const auto explicit_executable=root/"selected"/binary;file(explicit_executable,true);
+  const auto environment_executable=root/"environment"/binary;file(environment_executable,true);
+  const auto alternate=root/"caller-root"/binary;file(alternate,true);
+  const auto inventory=[&]{std::map<fs::path,std::pair<std::string,fs::file_time_type>> result;for(const auto& entry:fs::recursive_directory_iterator(root))if(entry.is_regular_file()){std::ifstream input(entry.path(),std::ios::binary);result[entry.path()]={std::string(std::istreambuf_iterator<char>(input),{}),fs::last_write_time(entry.path())};}return result;};
+  const auto before=inventory();
+  const auto default_found=discover_runners();
+  require(by_id(default_found,"rpcs3").executable==fs::weakly_canonical(executable),"default discovery missed user Emulation/PS3/rpcs3 installation with empty PATH");
+  require(rpcs3_executable()==fs::weakly_canonical(executable),"library executable discovery disagrees with the bounded conventional runner search");
+  auto roots=RunnerDiscoveryOptions{};roots.search_roots.push_back(alternate.parent_path());
+  require(by_id(discover_runners(roots),"rpcs3").executable==fs::weakly_canonical(alternate),"explicit search roots lost priority to conventional user installation");
+  auto disabled=isolated();require(!by_id(discover_runners(disabled),"rpcs3"),"disabled defaults still searched the user home");
+  environment.set("RPCS3_EXECUTABLE",environment_executable);
+  require(by_id(discover_runners(),"rpcs3").executable==fs::weakly_canonical(environment_executable)&&rpcs3_executable()==fs::weakly_canonical(environment_executable),"environment override lost priority to conventional installation");
+  auto options=RunnerDiscoveryOptions{};options.executable_overrides["rpcs3"]=explicit_executable;
+  require(by_id(discover_runners(options),"rpcs3").executable==fs::weakly_canonical(explicit_executable)&&rpcs3_executable(explicit_executable)==fs::absolute(explicit_executable),"profile override lost priority to environment or conventional installation");
+  options.executable_overrides["rpcs3"]=root/"missing";
+  require(!by_id(discover_runners(options),"rpcs3"),"invalid profile override fell through to a conventional installation");
+  environment.set("RPCS3_EXECUTABLE",root/"missing-env");
+  require(!by_id(discover_runners(),"rpcs3")&&!rpcs3_executable(),"invalid environment override fell through to a conventional installation");
+  require(inventory()==before,"runner detection modified emulator executables or GUI settings");
+}
 void discovery(const fs::path& root) {
   auto options = isolated();
   const auto missing = discover_runners(options);
@@ -100,8 +149,14 @@ void plans(const fs::path& root) {
   game.executable = options.executable_overrides.at("steam"); game.arguments = {"-applaunch", "570"};
   require(plan_game_launch(game, options).tracking == TrackingQuality::launcher_only, "native Steam entry must retain launcher-only tracking");
   game = {}; game.runner = "rpcs3"; game.executable = options.executable_overrides.at("rpcs3"); game.content = content; game.arguments = {"--no-gui", text(content)};
-  const auto imported = plan_game_launch(game, options);
+    const auto imported = plan_game_launch(game, options, false);
   require(bool(imported) && imported.arguments == std::vector<std::string>{text(game.executable), "--no-gui", text(content)} && imported.tracking == TrackingQuality::direct_child, "existing imported RPCS3 argv must remain exact without duplicate flags or lost tracking");
+    const auto generic_content=content.generic_u8string();
+    game.arguments={"--no-gui",std::string(generic_content.begin(),generic_content.end())};
+    const auto legacy_fullscreen=plan_game_launch(game,options);
+    require(legacy_fullscreen&&legacy_fullscreen.tracking==TrackingQuality::direct_child&&
+      legacy_fullscreen.arguments==std::vector<std::string>{text(game.executable),"--no-gui","--fullscreen",game.arguments.back()},
+      "legacy imported RPCS3 paths must retain lifetime tracking across native/generic separators and launch fullscreen by default");
   game.arguments = {"custom opaque args", text(content)}; require(plan_game_launch(game, options).tracking == TrackingQuality::unknown, "opaque custom emulator argv was treated as verified child lifetime");
   options.executable_overrides["rpcs3"] = root / "missing"; require(!plan_game_launch(game, options), "missing executable override must produce an error");
   require(!fs::exists(root / "injected"), "planning executed content or shell text");
@@ -109,6 +164,6 @@ void plans(const fs::path& root) {
 }
 int main() {
   const auto root = fs::weakly_canonical(fs::temp_directory_path()) / ("openxmb-runners-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
-  try { discovery(root / "discovery"); plans(root / "plans"); fs::remove_all(root); std::cout << "Runner discovery and literal launch-plan checks passed\n"; }
+  try { conventional_rpcS3(root/"conventional");discovery(root / "discovery"); plans(root / "plans"); fs::remove_all(root); std::cout << "Runner discovery and literal launch-plan checks passed\n"; }
   catch (const std::exception& error) { fs::remove_all(root); std::cerr << error.what() << '\n'; return 1; }
 }

@@ -245,7 +245,7 @@ void rpcs3_discovery_options(const fs::path& root) {
 #ifdef _WIN32
     std::map<std::wstring,std::optional<std::wstring>> saved;
     Environment() {
-      for(const auto* name:{L"RPCS3_EXECUTABLE",L"RPCS3_DATA_DIR",L"RPCS3_CONFIG_DIR",L"APPDATA",L"HOME",L"XDG_CONFIG_HOME",L"PATH"}) {
+      for(const auto* name:{L"RPCS3_EXECUTABLE",L"RPCS3_DATA_DIR",L"RPCS3_CONFIG_DIR",L"APPDATA",L"HOME",L"USERPROFILE",L"ProgramFiles",L"ProgramFiles(x86)",L"LOCALAPPDATA",L"XDG_CONFIG_HOME",L"PATH"}) {
         const auto* value=_wgetenv(name);saved[name]=value?std::optional<std::wstring>(value):std::nullopt;_wputenv_s(name,L"");
       }
     }
@@ -253,7 +253,7 @@ void rpcs3_discovery_options(const fs::path& root) {
 #else
     std::map<std::string,std::optional<std::string>> saved;
     Environment() {
-      for(const auto* name:{"RPCS3_EXECUTABLE","RPCS3_DATA_DIR","RPCS3_CONFIG_DIR","APPDATA","HOME","XDG_CONFIG_HOME","PATH"}) {
+      for(const auto* name:{"RPCS3_EXECUTABLE","RPCS3_DATA_DIR","RPCS3_CONFIG_DIR","APPDATA","HOME","USERPROFILE","ProgramFiles","ProgramFiles(x86)","LOCALAPPDATA","XDG_CONFIG_HOME","PATH"}) {
         const auto* value=std::getenv(name);saved[name]=value?std::optional<std::string>(value):std::nullopt;unsetenv(name);
       }
     }
@@ -342,6 +342,29 @@ void rpcs3_discovery_options(const fs::path& root) {
   Library library(root/"profile");require(library.import_games(found)==2&&library.import_games(discover_games({},options))==0&&library.games().size()==2,
     "option-only RPCS3 registration is not idempotent");
   require(inventory()==before,"RPCS3 profile import modified the source installation or registered disc");
+  const auto conventional_home=root/fs::path(u8"conventional user \u6771\u4eac");
+#ifdef _WIN32
+  _wputenv_s(L"RPCS3_EXECUTABLE",L"");_wputenv_s(L"USERPROFILE",conventional_home.c_str());_wputenv_s(L"HOME",conventional_home.c_str());
+  const auto conventional=conventional_home/"Emulation/PS3/rpcs3/rpcs3.exe";
+#else
+  unsetenv("RPCS3_EXECUTABLE");setenv("HOME",utf8(conventional_home).c_str(),1);
+  const auto conventional=conventional_home/"Emulation/PS3/rpcs3/rpcs3";
+#endif
+  write(conventional,"inert conventional user RPCS3 fixture");
+#ifndef _WIN32
+  fs::permissions(conventional,fs::perms::owner_read|fs::perms::owner_exec);
+#endif
+  write(conventional.parent_path()/"GuiConfigs/current-settings.ini","preserve emulator GUI preferences byte for byte");
+  const auto conventional_game=conventional.parent_path()/"portable/dev_hdd0/game/TEST10005";
+  native_title(conventional_game,"TEST10005","HG");
+  const auto before_automatic=inventory();
+  const auto automatic=discover_games({}, {.installed_steam=false});
+  require(automatic.size()==1&&automatic.front().game.title_id=="TEST10005"&&automatic.front().game.executable==fs::weakly_canonical(conventional),
+    "default discovery did not import native games from the conventional user RPCS3 installation");
+  const auto automatic_roots=rpcs3_game_roots();
+  require(std::ranges::find(automatic_roots,fs::weakly_canonical(conventional_game.parent_path()))!=automatic_roots.end(),"default RPCS3 root helper ignored conventional executable discovery");
+  require(library.import_games(automatic)==1&&library.import_games(discover_games({}, {.installed_steam=false}))==0,"conventional installation import did not retain stable library identity");
+  require(inventory()==before_automatic,"automatic RPCS3 discovery changed emulator executables, preferences or game sources");
 }
 }
 int main(int argc,char** argv) {
