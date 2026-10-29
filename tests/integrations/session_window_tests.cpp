@@ -24,6 +24,8 @@ int main(int argc, char** argv) {
     require(!find_session_window(-1), "invalid PID must not resolve");
     const SessionWindowTarget invalid{1, 1, 1};
     require(!focus_session_window(invalid), "invalid target must not focus");
+    require(!request_session_window_focus(invalid),"invalid target must not request focus");
+    require(!session_window_focused(invalid)&&!session_window_covers(invalid,0),"invalid target must not report focus or coverage");
     const auto invalid_capture=capture_session_window(invalid,fs::temp_directory_path()/"invalid-session.png");
     require(!invalid_capture && invalid_capture.state==CaptureState::unavailable,"invalid target must fail permanently without retrying");
     std::stop_source cancelled_request;cancelled_request.request_stop();
@@ -51,6 +53,8 @@ int main(int argc, char** argv) {
     auto target = find_session_window(launched_entry->process_id); require(bool(target), "fixture target not found");
     auto stale = *target; ++stale.process_creation;
     require(!focus_session_window(stale), "stale creation token must not focus");
+    require(!request_session_window_focus(stale)&&!session_window_focused(stale),"stale creation token must not request or report focus");
+    require(!session_window_covers(*target,target->handle),"coverage source must belong to this process");
     require(!capture_session_window(stale, image), "stale creation token must not capture");
     auto wrong = *target; wrong.pid = GetCurrentProcessId();
     require(!focus_session_window(wrong), "wrong PID must not focus");

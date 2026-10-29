@@ -7,6 +7,8 @@
 #include <fstream>
 #include <filesystem>
 #include <cstdint>
+#include <algorithm>
+#include <string_view>
 
 LRESULT CALLBACK fixture_proc(HWND hwnd, UINT message, WPARAM wp, LPARAM lp) {
   if(message==WM_TIMER) {DestroyWindow(hwnd);return 0;}
@@ -21,13 +23,16 @@ LRESULT CALLBACK fixture_proc(HWND hwnd, UINT message, WPARAM wp, LPARAM lp) {
   return DefWindowProcW(hwnd, message, wp, lp);
 }
 int wmain(int argc, wchar_t** argv) {
-  if (argc != 2 && argc != 3) return 2;
+  if (argc < 2 || argc > 5) return 2;
+  if(argc>=4)Sleep(static_cast<DWORD>(std::clamp(_wtoi(argv[3]),0,10000)));
   WNDCLASSW wc{}; wc.lpfnWndProc = fixture_proc; wc.hInstance = GetModuleHandleW(nullptr); wc.lpszClassName = L"OpenXMBSessionWindowFixture"; wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
   if (!RegisterClassW(&wc)) return 3;
-  HWND hwnd = CreateWindowW(wc.lpszClassName, L"OpenXMB capture fixture", WS_OVERLAPPEDWINDOW | WS_VISIBLE, 80, 80, 480, 320, nullptr, nullptr, wc.hInstance, nullptr);
+  const bool noactivate=argc==5&&std::wstring_view(argv[4])==L"noactivate";
+  HWND hwnd = CreateWindowW(wc.lpszClassName, L"OpenXMB capture fixture", WS_OVERLAPPEDWINDOW | (noactivate?0:WS_VISIBLE), 80, 80, 480, 320, nullptr, nullptr, wc.hInstance, nullptr);
   if (!hwnd) return 4;
+  if(noactivate)ShowWindow(hwnd,SW_SHOWNOACTIVATE);
   UpdateWindow(hwnd);
-  if(argc==3) SetTimer(hwnd,1,static_cast<UINT>(std::max(1,_wtoi(argv[2]))),nullptr);
+  if(argc>=3) SetTimer(hwnd,1,static_cast<UINT>(std::max(1,_wtoi(argv[2]))),nullptr);
   { std::ofstream out{std::filesystem::path(argv[1])}; out << reinterpret_cast<std::uintptr_t>(hwnd); }
   MSG msg{}; while (GetMessageW(&msg, nullptr, 0, 0) > 0) { TranslateMessage(&msg); DispatchMessageW(&msg); }
   return 0;

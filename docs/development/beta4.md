@@ -470,3 +470,33 @@ reports. An opt-in `--focus-timeout-stage relay` fixture additionally holds an
 active foreground relay; its real-desktop run remains pending while the user
 is testing snapshot008. The general suite is not a substitute for physical
 Guide or application-specific acceptance.
+
+
+## Application and game launch handoff
+
+Process creation no longer minimises OpenXMB immediately. A shared pending
+handoff keeps the fullscreen XMB mapped during startup, waits for the tracked
+session's identity-checked window, and requests foreground activation while
+OpenXMB still owns focus. Activation is observed separately on subsequent
+frames; a successful request alone is not a focus confirmation. The nonwaiting
+request path avoids the interactive X11 helper's activation polling on the UI
+thread. Forwarding YouTube launches retain their exact session intent until
+the owned child creates a window and becomes directly observed.
+
+The shell minimises only after the session is focused and its client covers
+the XMB window. A windowed app retains the visible XMB backdrop. Once a
+handoff has succeeded, later user focus changes cancel further launch actions.
+The 120-second failure deadline applies only before focus has succeeded.
+Platforms without a session-window adapter keep the shell mapped behind the
+OS-launched app; they do not claim verified focus or show a false window timeout.
+
+The opt-in `--check-launch-handoff` smoke disables every initial game-focus
+bootstrap. It records launch visibility/foreground observations and rejects
+minimisation before a visible foreground app exists. The controlled fixture
+waits 1.5 seconds before showing a nonactivating window. Snapshot008 reproduced
+the desktop gap; the repaired build retained XMB, explicitly focused that
+window and kept XMB behind it until it became fullscreen. The real Windows
+YouTube, RPCS3 G-Force and Steam Bomb Rush Cyberfunk paths passed launch,
+overlay, screenshot and graceful exit checks without initial focus assistance.
+YouTube relaunch and external close also passed. The isolated Linux X11 suite
+passed; native Linux/macOS application launch acceptance remains separate.

@@ -214,7 +214,13 @@ namespace app
         std::string discovery_profile;
         std::string discovery_runner_path;
         bool discovery_started = false;
-        bool toggle_requested{}, shell_is_session_xmb{}, launched_minimized{}, close_library_pending{}, screenshot_requested{}, minimize_requested{};
+        bool toggle_requested{}, shell_is_session_xmb{}, launched_minimized{}, close_library_pending{}, screenshot_requested{};
+        struct LaunchHandoff {
+            std::string session;
+            bool minimize{},focused{};
+            std::chrono::steady_clock::time_point started,next_attempt{};
+        };
+        std::optional<LaunchHandoff> launch_handoff;
         std::string known_session_id, pending_notice, hotkey_setting;
         std::string quitting_session;
         std::optional<std::chrono::steady_clock::time_point> window_unavailable_since;
@@ -2055,8 +2061,9 @@ namespace app
             games->highlighted.reset();
             try { library.mark_played(game.id); }
             catch(const std::exception& error) { spdlog::warn("Game started, but library history could not be saved: {}",error.what()); }
-            games->launched_minimized=config::CONFIG.preference("games.launch","Minimise")=="Minimise";
-            games->minimize_requested=games->launched_minimized;
+            games->launched_minimized=false;
+            games->launch_handoff=game_state::LaunchHandoff{launched.session_id,
+                config::CONFIG.preference("games.launch","Minimise")=="Minimise",false,std::chrono::steady_clock::now()};
             return result::success;
         } catch(const std::exception& error) {
             emplace_overlay<app::message_overlay>("Cannot start game",error.what(),std::vector<std::string>{"OK"});
@@ -2102,7 +2109,9 @@ namespace app
             games->photo_root=config::CONFIG.pictures_path();games->highlighted.reset();
             if(games->presentation)games->presentation->stop();
             games->shell_is_session_xmb=false;games->close_library_pending=true;
-            games->launched_minimized=true;games->minimize_requested=true;queue_menu_reload();
+            games->launched_minimized=false;
+            games->launch_handoff=game_state::LaunchHandoff{launched.session_id,true,false,std::chrono::steady_clock::now()};
+            queue_menu_reload();
         } catch(const std::exception& error) {emplace_overlay<app::message_overlay>("Cannot start application",error.what(),std::vector<std::string>{"OK"});}
         return result::success;
     }
@@ -2180,7 +2189,6 @@ namespace app
 
     void shell::after_events() {
         if(std::exchange(input_prompt_refresh,false))reload_button_icons();
-        if(std::exchange(games->minimize_requested,false) && !win->config.headless) SDL_MinimizeWindow(win->win.get());
         const auto shell_focused=[&] {return input_focused();};
         if(!win->config.headless && !shell_focused()) {
             last_controller_axis_input={};controller_axis_position={};cursor_joystick_delta={};button_timing.clear();held_scancodes.fill(false);
@@ -2344,6 +2352,60 @@ namespace app
             }
         }
         if(games->session_hotkey.take_presses()%2)toggle_session_xmb();
+#endif
+        // Keep the shell covering startup. Launch success identifies a process,
+        // not a mapped, focused window. Only hand off to the session's validated
+        // window, and minimise after its client actually covers the shell.
+#if defined(_WIN32) || defined(__linux__)
+        if(games->launch_handoff&&!win->config.headless) {
+            const auto now=std::chrono::steady_clock::now();
+            auto& handoff=*games->launch_handoff;
+            bool running=active&&active->id==handoff.session;
+            if(!active) {
+                // Forwarding apps (including YouTube) are promoted only after
+                // their owned child creates a window. Retain the launch intent
+                // during that nonexclusive startup phase; never adopt a PID.
+                const auto records=games->sessions.snapshot();
+                running=std::ranges::any_of(records,[&](const auto& record){
+                    return record.id==handoff.session&&record.state==openxmb::desktop::SessionState::running;
+                });
+            }
+            if(!running)games->launch_handoff.reset();
+            else if(!handoff.focused&&now-handoff.started>std::chrono::seconds(120)) {
+                spdlog::warn("Launch handoff timed out for session '{}'; keeping the XMB visible",handoff.session);
+                games->launch_handoff.reset();
+                games->pending_notice="The application started, but its window is not ready. OpenXMB has stayed open.";
+            } else if(active&&active->capabilities.focus&&active->window&&now>=handoff.next_attempt) {
+                handoff.next_attempt=now+std::chrono::milliseconds(100);
+                const auto& target=*active->window;
+                if(openxmb::integrations::session_window_focused(target)) {
+                    if(!handoff.focused)spdlog::debug("Launch handoff: '{}' owns foreground; XMB covered startup",active->descriptor.title);
+                    handoff.focused=true;
+                    if(!handoff.minimize)games->launch_handoff.reset();
+                    else if(openxmb::integrations::session_window_covers(target,games->shell_handle)) {
+                        SDL_MinimizeWindow(win->win.get());games->launched_minimized=true;
+                        spdlog::debug("Launch handoff: session covers XMB; shell minimised after focus transfer");
+                        games->launch_handoff.reset();
+                    }
+                } else if(handoff.focused) {
+                    // After a successful handoff, never take focus back from a
+                    // window the user selected while the app was running.
+                    games->launch_handoff.reset();
+                } else if(shell_focused()) {
+                    const auto requested=openxmb::integrations::request_session_window_focus(target);
+                    if(openxmb::integrations::session_window_focused(target)) {
+                        handoff.focused=true;
+                        spdlog::debug("Launch handoff: '{}' owns foreground after request",active->descriptor.title);
+                    }
+                    spdlog::debug("Launch handoff focus request for '{}': {}",active->descriptor.title,requested.message);
+                }
+            }
+        }
+#else
+        // Platforms without a native session-window adapter keep the shell
+        // behind the OS-launched app. Do not manufacture a focus confirmation
+        // or later report a working application as a timed-out window.
+        games->launch_handoff.reset();
 #endif
         if(active && games->overlay && games->overlay->active() && (!active->capabilities.focus || !active->window)) {
             // Windows are destroyed before their owning process signals exit.

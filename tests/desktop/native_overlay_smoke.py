@@ -27,6 +27,7 @@ def main():
     parser.add_argument('--settle-seconds', type=float, help='Bounded actual-app startup settling before overlay checks (0..120)')
     parser.add_argument('--capture-only', action='store_true', help='Skip the initial Back/reopen cycle while diagnosing capture')
     parser.add_argument('--check-transitions', action='store_true', help='Measure the rendered entrance over the controlled game')
+    parser.add_argument('--check-launch-handoff', action='store_true', help='Require the shell to cover startup and focus the child itself; never bootstrap initial game focus')
     parser.add_argument('--trace', action='store_true', help='Record detailed keyboard and lifecycle diagnostics')
     parser.add_argument('--windowed-shell', action='store_true', help='Opt in to a windowed shell; default matches the fullscreen user preview')
     parser.add_argument('--physical-guide', action='store_true', help='Wait up to 120 seconds for a real Guide press on the first overlay opening; later openings test the keyboard shortcut')
@@ -195,6 +196,8 @@ def main():
         return result
 
     focus_diagnostic_sequence = 0
+    launch_observations = []
+    launch_check_active = False
     def trace_focus(stage):
         nonlocal focus_diagnostic_sequence
         if not args.trace or not game_hwnd:
@@ -211,6 +214,19 @@ def main():
     def wait(predicate, message, seconds=20):
         deadline = time.monotonic() + seconds
         while time.monotonic() < deadline:
+            if launch_check_active:
+                record = game_record()
+                shown = [hwnd for hwnd in windows(record.get('process_id', 0)) if user.IsWindowVisible(hwnd) and not user.IsIconic(hwnd)]
+                state = {'time': time.monotonic(), 'shell_iconic': bool(user.IsIconic(shell_hwnd)),
+                    'foreground': user.GetForegroundWindow(), 'game_windows': shown}
+                launch_observations.append(state)
+                (root / 'launch-observations.json').write_text(json.dumps(launch_observations))
+                if state['shell_iconic'] and not shown:
+                    ImageGrab.grab().save(root / 'launch-desktop-gap.png')
+                    raise AssertionError('OpenXMB minimized before the launched application had a visible window')
+                if state['shell_iconic'] and state['foreground'] not in shown:
+                    ImageGrab.grab().save(root / 'launch-focus-gap.png')
+                    raise AssertionError('OpenXMB minimized before the launched application owned foreground')
             result = predicate()
             if result:
                 return result
@@ -249,6 +265,8 @@ def main():
         'startup.intro': 'Off', 'startup.warning': 'Off', 'audio.startup': 'Off', 'games.launch': 'Minimise', 'session.hotkey': 'Ctrl+Shift+F4'}}))
     game = {'id': 'overlay-fixture', 'title': 'Overlay Fixture', 'executable': str(child),
         'working_directory': str(root), 'arguments': [str(ready), '60000']}
+    if args.check_launch_handoff and not actual_external:
+        game['arguments'] += ['1500', 'noactivate']
     if actual_game:
         game = {'id': 'steam-integration', 'title': args.title or child.stem, 'runner': 'steam',
             'platform': 'Steam', 'content': args.steam_app_id, 'title_id': args.steam_app_id,
@@ -292,7 +310,7 @@ def main():
         'OPENXMB_FIXED_', 'OPENXMB_INITIAL_', 'AUROREENGINE_HEADLESS', 'RPCS3_'))}
     env.update({'OPENXMB_CONFIG': str(config), 'OPENXMB_DATA_DIR': str(root / 'data'),
         'XMB_ASSET_DIR': str(app.parent / 'shell'), 'XMB_LOCALE_DIR': str(app.parent / 'locales'),
-        'OPENXMB_FORCE_SETUP': '0', 'OPENXMB_INITIAL_CATEGORY': 'tv' if actual_app else 'game', 'OPENXMB_HARNESS_ACTIONS': '1:ok',
+        'OPENXMB_FORCE_SETUP': '0', 'OPENXMB_INITIAL_CATEGORY': 'tv' if actual_app else 'game', 'OPENXMB_HARNESS_ACTIONS': '3:ok' if args.check_launch_handoff else '1:ok',
         'SDL_AUDIODRIVER': 'dummy', 'SPDLOG_LEVEL': 'trace' if args.trace else 'debug'})
     # Every native test owns its logs as well as its configuration. Windows
     # startup truncates openxmb.log, so inheriting LOCALAPPDATA would erase the
@@ -400,6 +418,11 @@ def main():
 
         try:
             shell_hwnd = wait(lambda: next((hwnd for hwnd in windows(process.pid) if user.IsWindowVisible(hwnd)), None), 'Visible shell window missing')
+            if args.check_launch_handoff:
+                if user.GetForegroundWindow() != shell_hwnd:
+                    user.SetForegroundWindow(shell_hwnd)
+                assert user.GetForegroundWindow() == shell_hwnd, 'Launch precondition: XMB must own foreground before Confirm'
+                launch_check_active = True
             if actual_external:
                 def associated_window():
                     record = game_record()
@@ -427,11 +450,19 @@ def main():
                             return hwnd
                 game_hwnd = wait(associated_window, 'Actual game/app was not associated with a live rendering window', seconds=300 if actual_rpcs3 else 50)
                 time.sleep(args.settle_seconds if args.settle_seconds is not None else 30 if actual_rpcs3 else 8 if actual_app else 18)
-                focus_game()
+                if not args.check_launch_handoff:
+                    focus_game()
             else:
                 wait(ready.exists, 'Owned game did not launch')
                 game_hwnd = int(ready.read_text())
-            wait(lambda: user.IsIconic(shell_hwnd), 'Shell did not minimize')
+            if args.check_launch_handoff:
+                wait(lambda: user.GetForegroundWindow() == game_hwnd, 'OpenXMB did not give the launched application focus', seconds=10)
+                if not actual_external:
+                    assert not user.IsIconic(shell_hwnd), 'A windowed app exposed the desktop instead of keeping the XMB backdrop'
+                    ImageGrab.grab().save(root / 'windowed-app-over-xmb.png')
+                launch_check_active = False
+                assert launch_observations and any(not row['shell_iconic'] and not row['game_windows'] for row in launch_observations), 'Startup waiting was not observed'
+                print('PASS ordinary launch: shell covered startup and app acquired focus without harness focus/bootstrap', flush=True)
             monitor = Monitor(); monitor.size = ctypes.sizeof(monitor)
             assert user.GetMonitorInfoW(user.MonitorFromWindow(game_hwnd, 2), ctypes.byref(monitor))
             bounds = monitor.bounds
@@ -445,34 +476,37 @@ def main():
                 user.SetWindowLongPtrW(game_hwnd, -16, 0x90000000)  # fixture only
                 assert user.SetWindowPos(game_hwnd, None, bounds.left, bounds.top,
                     bounds.right - bounds.left, bounds.bottom - bounds.top, 0x0020 | 0x0040)
-            focus_game()
+            wait(lambda: user.IsIconic(shell_hwnd), 'Shell did not minimize after the focused app covered it')
+            if not args.check_launch_handoff:
+                focus_game()
             time.sleep(.3)
             baseline = ImageGrab.grab(box)
             baseline.save(root / 'game.png')
 
             if args.expect_focus_timeout:
-                shortcut()
-                wait(attach_marker.is_file, 'The test helper never reached its actual input attachment', seconds=8)
-                relay_hwnd = None
-                if args.focus_timeout_stage == 'relay':
-                    fields = attach_marker.read_text().split()
-                    assert len(fields) == 3 and fields[0] == 'relay', 'No active-relay marker was written'
-                    relay_hwnd = int(fields[2])
-                    assert user.IsWindow(relay_hwnd) and user.GetForegroundWindow() == relay_hwnd, 'The test never held an active foreground relay'
-                expected = 'terminated and reaped (exit code 1460)'
-                wait(lambda: expected in (root / 'native.log').read_text(encoding='utf-8'),
-                     'Attached focus helper was not contained by its deadline', seconds=8)
-                wait(lambda: not user.IsIconic(shell_hwnd), 'Timed-out focus handoff did not restore the shell')
-                if relay_hwnd:
-                    assert not user.IsWindow(relay_hwnd), 'Terminated helper left its foreground relay alive'
-                answer = ctypes.c_size_t()
-                user.SendMessageTimeoutW.argtypes = [w.HWND, w.UINT, w.WPARAM, w.LPARAM, w.UINT, w.UINT,
-                                                     ctypes.POINTER(ctypes.c_size_t)]
-                user.SendMessageTimeoutW.restype = w.LPARAM
-                assert user.SendMessageTimeoutW(game_hwnd, 0, 0, 0, 0x0002 | 0x0020, 250, ctypes.byref(answer)), 'The game input queue stayed attached or unresponsive after helper termination'
-                assert not any(user.IsWindowVisible(hwnd) for hwnd in windows(process.pid, 'OpenXMB.LayeredOverlay.v1')), 'A failed handoff left the overlay visible'
-                print('PASS actual attached-helper hang: deadline, exact helper termination/reap, game queue responsiveness and shell restoration', flush=True)
-                return
+                with mark_elsewhere() if args.last_input_elsewhere else nullcontext():
+                    shortcut()
+                    wait(attach_marker.is_file, 'The test helper never reached its actual input attachment', seconds=8)
+                    relay_hwnd = None
+                    if args.focus_timeout_stage == 'relay':
+                        fields = attach_marker.read_text().split()
+                        assert len(fields) == 3 and fields[0] == 'relay', 'No active-relay marker was written'
+                        relay_hwnd = int(fields[2])
+                        assert user.IsWindow(relay_hwnd) and user.GetForegroundWindow() == relay_hwnd, 'The test never held an active foreground relay'
+                    expected = 'terminated and reaped (exit code 1460)'
+                    wait(lambda: expected in (root / 'native.log').read_text(encoding='utf-8'),
+                         'Attached focus helper was not contained by its deadline', seconds=8)
+                    wait(lambda: not user.IsIconic(shell_hwnd), 'Timed-out focus handoff did not restore the shell')
+                    if relay_hwnd:
+                        assert not user.IsWindow(relay_hwnd), 'Terminated helper left its foreground relay alive'
+                    answer = ctypes.c_size_t()
+                    user.SendMessageTimeoutW.argtypes = [w.HWND, w.UINT, w.WPARAM, w.LPARAM, w.UINT, w.UINT,
+                                                         ctypes.POINTER(ctypes.c_size_t)]
+                    user.SendMessageTimeoutW.restype = w.LPARAM
+                    assert user.SendMessageTimeoutW(game_hwnd, 0, 0, 0, 0x0002 | 0x0020, 250, ctypes.byref(answer)), 'The game input queue stayed attached or unresponsive after helper termination'
+                    assert not any(user.IsWindowVisible(hwnd) for hwnd in windows(process.pid, 'OpenXMB.LayeredOverlay.v1')), 'A failed handoff left the overlay visible'
+                    print('PASS actual attached-helper hang: deadline, exact helper termination/reap, game queue responsiveness and shell restoration', flush=True)
+                    return
             overlay = open_overlay()
             assert user.IsIconic(shell_hwnd), 'Ordinary shell restored underneath transparent host'
             if args.check_transitions and not actual_external:

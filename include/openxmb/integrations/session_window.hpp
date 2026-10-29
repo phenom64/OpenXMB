@@ -21,6 +21,15 @@ struct SessionWindowBounds {int x{},y{};unsigned width{},height{};};
 [[nodiscard]] Result validate_session_window(const SessionWindowTarget& target);
 // Foreground activation is subject to OS policy and may be denied.
 [[nodiscard]] Result focus_session_window(const SessionWindowTarget& target);
+// Submit without waiting for another process/window manager to activate it.
+// Success means the request was submitted; observe session_window_focused()
+// separately. Used by launch handoffs on the UI thread.
+[[nodiscard]] Result request_session_window_focus(const SessionWindowTarget& target);
+// Read-only, identity-checked observations for an asynchronous launch handoff.
+[[nodiscard]] bool session_window_focused(const SessionWindowTarget& target);
+// True only when the session client covers a visible window owned by this
+// process. Windowed applications keep the XMB backdrop behind them.
+[[nodiscard]] bool session_window_covers(const SessionWindowTarget& target,std::uintptr_t own_window);
 // PNG capture of the foreground client. Windows Graphics Capture isolates the
 // exact HWND; unsupported systems and X11 require an unobstructed visible client.
 // A valid hidden/minimized

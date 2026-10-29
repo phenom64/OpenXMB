@@ -100,13 +100,30 @@ std::optional<SessionWindowTarget> find_session_window(std::int64_t pid) {
   SessionWindowTarget target{pid, reinterpret_cast<std::uintptr_t>(context.windows.front()), *token};
   return valid_target(target) ? std::optional<SessionWindowTarget>{target} : std::nullopt;
 }
-Result focus_session_window(const SessionWindowTarget& target) {
+Result request_session_window_focus(const SessionWindowTarget& target) {
   if (!valid_target(target)) return {false, "The session window is no longer valid."};
   HWND hwnd = reinterpret_cast<HWND>(target.handle);
   if (IsIconic(hwnd)) ShowWindowAsync(hwnd, SW_RESTORE);
-  if (!SetForegroundWindow(hwnd) || GetForegroundWindow() != hwnd || !valid_target(target))
+  if (!SetForegroundWindow(hwnd))
     return {false, "Windows did not grant focus to the session window. Select it from the taskbar."};
+  return {true,"Session window focus requested."};
+}
+Result focus_session_window(const SessionWindowTarget& target) {
+  const auto requested=request_session_window_focus(target);if(!requested)return requested;
+  if(!session_window_focused(target))return {false,"Windows has not focused the session window. Select it from the taskbar."};
   return {true, "Session window focused."};
+}
+bool session_window_focused(const SessionWindowTarget& target) {
+  return valid_target(target)&&GetForegroundWindow()==reinterpret_cast<HWND>(target.handle);
+}
+bool session_window_covers(const SessionWindowTarget& target,std::uintptr_t own_window) {
+  PhysicalCoordinates coordinates;
+  const HWND own=reinterpret_cast<HWND>(own_window);DWORD owner{};
+  RECT source{},client{};int width{},height{};
+  if(!valid_target(target)||!own||!IsWindowVisible(own)||IsIconic(own)||
+     !GetWindowThreadProcessId(own,&owner)||owner!=GetCurrentProcessId()||!GetWindowRect(own,&source)||
+     !client_geometry(reinterpret_cast<HWND>(target.handle),client,width,height))return false;
+  return client.left<=source.left&&client.top<=source.top&&client.right>=source.right&&client.bottom>=source.bottom;
 }
 Result validate_session_window(const SessionWindowTarget& target) {
   return valid_target(target)?Result{true,"Session window identity is current."}:Result{false,"The session window identity is no longer valid."};
@@ -286,11 +303,26 @@ std::optional<SessionWindowTarget> find_session_window(std::int64_t pid) {
 }
 Result validate_session_window(const SessionWindowTarget& target){Connection x;return x&&valid_target(x,target)?Result{true,"X11 window identity is current."}:Result{false,"The local X11 session window identity is unavailable or no longer valid."};}
 std::optional<SessionWindowBounds> session_window_bounds(const SessionWindowTarget& target){Connection x;return x&&valid_target(x,target)?geometry(x,target.handle):std::nullopt;}
-Result focus_session_window(const SessionWindowTarget& target) {
+Result request_session_window_focus(const SessionWindowTarget& target) {
   Connection x;if(!x||!valid_target(x,target))return {false,"The local X11 session window is no longer valid."};
   if(!x.check(xcb_map_window_checked(x.c,target.handle))||!x.activate(target.handle))return {false,"The X11 window manager could not request application focus."};
+  return {true,"Session window focus requested."};
+}
+Result focus_session_window(const SessionWindowTarget& target) {
+  const auto requested=request_session_window_focus(target);if(!requested)return requested;
+  Connection x;if(!x)return {false,"The local X11 connection is no longer available."};
   for(unsigned attempt=0;attempt<20;++attempt){if(x.active(target.handle)&&x.focused(target.handle)&&valid_target(x,target))return {true,"Session window focused."};std::this_thread::sleep_for(std::chrono::milliseconds(5));}
   return {false,"The X11 window manager did not grant application focus. Select it using the window switcher."};
+}
+bool session_window_focused(const SessionWindowTarget& target) {
+  Connection x;return x&&valid_target(x,target)&&x.active(target.handle)&&x.focused(target.handle);
+}
+bool session_window_covers(const SessionWindowTarget& target,std::uintptr_t own_window) {
+  Connection x;if(!x||!valid_target(x,target)||!own_window||own_window>std::numeric_limits<xcb_window_t>::max())return false;
+  const auto owner=x.client_pid(own_window);if(!owner||*owner!=getpid())return false;
+  const auto source=geometry(x,own_window),client=geometry(x,target.handle);
+  return source&&client&&client->x<=source->x&&client->y<=source->y&&
+    client->x+client->width>=source->x+source->width&&client->y+client->height>=source->y+source->height;
 }
 SessionCaptureResult capture_session_window(const SessionWindowTarget& target,const std::filesystem::path& destination,std::uintptr_t excluded_shell_handle,std::stop_token cancellation) {
   if(cancellation.stop_requested())return {CaptureState::unavailable,"Screenshot capture cancelled."};
@@ -324,6 +356,9 @@ std::optional<SessionWindowTarget> find_session_window(std::int64_t) { return {}
 std::optional<SessionWindowBounds> session_window_bounds(const SessionWindowTarget&) {return {};}
 Result validate_session_window(const SessionWindowTarget&) { return {false,"Session window identity is unavailable on this platform."}; }
 Result focus_session_window(const SessionWindowTarget&) { return {false, "Session window switching is unavailable on this platform."}; }
+Result request_session_window_focus(const SessionWindowTarget&) {return {false,"Session window switching is unavailable on this platform."};}
+bool session_window_focused(const SessionWindowTarget&) {return false;}
+bool session_window_covers(const SessionWindowTarget&,std::uintptr_t) {return false;}
 SessionCaptureResult capture_session_window(const SessionWindowTarget&, const std::filesystem::path&, std::uintptr_t,std::stop_token cancellation) { return {CaptureState::unavailable,cancellation.stop_requested()?"Screenshot capture cancelled.":"Session window capture is unavailable on this platform."}; }
 } // namespace openxmb::integrations
 #endif
