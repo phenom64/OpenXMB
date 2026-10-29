@@ -17,6 +17,9 @@
  */
 
 #include "openxmb/desktop/library.hpp"
+#ifndef OPENXMB_VERSION_STRING
+#define OPENXMB_VERSION_STRING "development"
+#endif
 #include "openxmb/desktop/steam.hpp"
 
 #include <nlohmann/json.hpp>
@@ -935,7 +938,7 @@ std::vector<unsigned char> https(const std::string &url, std::size_t limit) {
   if(const auto* certificates=std::getenv("CURL_CA_BUNDLE");certificates&&*certificates)
     curl_easy_setopt(handle,CURLOPT_CAINFO,certificates);
   curl_easy_setopt(handle, CURLOPT_TIMEOUT, 15L); curl_easy_setopt(handle, CURLOPT_NOSIGNAL, 1L);
-  curl_easy_setopt(handle, CURLOPT_USERAGENT, "OpenXMB/1.0"); curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, receive); curl_easy_setopt(handle, CURLOPT_WRITEDATA, &download);
+  curl_easy_setopt(handle, CURLOPT_USERAGENT, "OpenXMB/" OPENXMB_VERSION_STRING); curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, receive); curl_easy_setopt(handle, CURLOPT_WRITEDATA, &download);
   const auto status = curl_easy_perform(handle); long http{}; curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http); curl_easy_cleanup(handle);
   if (status != CURLE_OK || http != 200) throw std::runtime_error("Artwork provider request failed; check configured key and network access");
   return download.bytes;

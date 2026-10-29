@@ -32,7 +32,33 @@ std::string hash(const std::string& bytes) {
   require(BCryptCreateHash(a,&h,reinterpret_cast<PUCHAR>(object.data()),object_size,nullptr,0,0)>=0,"sha init");require(BCryptHashData(h,reinterpret_cast<PUCHAR>(const_cast<char*>(bytes.data())),static_cast<ULONG>(bytes.size()),0)>=0&&BCryptFinishHash(h,reinterpret_cast<PUCHAR>(out.data()),32,0)>=0,"sha finish");BCryptDestroyHash(h);BCryptCloseAlgorithmProvider(a,0);const char* hex="0123456789abcdef";std::string result;for(unsigned char c:out){result+=hex[c>>4];result+=hex[c&15];}return result;
 }
 #endif
-int main(){const auto root=fs::temp_directory_path()/"openxmb-youtube-fixture";try{fs::remove_all(root);
+int live_install(const fs::path& root) {
+  try {
+    require(!fs::exists(root),"Use a new isolated directory for live installation acceptance");
+    const HttpTransport transport=[](const HttpRequest& request){return http_get(request);};
+    const auto release=fetch_youtube_release(youtube_platform(),youtube_arch(),transport);
+    if(!release)throw std::runtime_error(release.error);
+    std::cout<<"Official release "<<release.value->tag<<", "<<release.value->size<<" bytes\n"<<std::flush;
+    std::string previous;std::uint64_t last_bucket=std::uint64_t(-1);
+    const auto installed=install_youtube(root,*release.value,transport,[&](std::string_view stage,std::uint64_t done,std::uint64_t total){
+      const auto bucket=done/(16*1024*1024);
+      if(stage!=previous||bucket!=last_bucket){previous=stage;last_bucket=bucket;std::cout<<stage<<" "<<done<<"/"<<total<<"\n"<<std::flush;}
+      return true;
+    });
+    if(!installed)throw std::runtime_error(installed.error);
+    YoutubeDetectionOptions options;options.data_root=root;options.search_defaults=false;
+    const auto detected=detect_youtube(options);
+    require(bool(detected)&&detected.value->managed&&detected.value->executable==installed.executable,"Managed application detection failed after real installation");
+    require(!detected.value->version.empty(),"Installed version is unavailable");
+    require(detected.value->arguments.size()>=2,"Fullscreen launch arguments are missing");
+    std::cout<<"PASS real verified download, extraction, managed detection and fullscreen launch plan; version "<<detected.value->version<<" (application not launched)\n";
+    return 0;
+  }catch(const std::exception& error){std::cerr<<error.what()<<'\n';return 1;}
+}
+int main(int argc,char** argv){
+ if(argc==3&&std::string_view(argv[1])=="--live-install")return live_install(fs::absolute(fs::u8path(argv[2])));
+ if(argc!=1){std::cerr<<"Use --live-install <new isolated directory> for opt-in network acceptance\n";return 2;}
+ const auto root=fs::temp_directory_path()/"openxmb-youtube-fixture";try{fs::remove_all(root);
   const std::string digest(64,'a');const auto json=std::string{"{\"tag_name\":\"v2.0.1\",\"assets\":[{\"name\":\"VacuumTube-x64-Portable.zip\",\"size\":155272382,\"digest\":\"sha256:"}+digest+"\",\"browser_download_url\":\"https://github.com/shy1132/VacuumTube/releases/download/v2.0.1/VacuumTube-x64-Portable.zip\"}]}";
   auto plan=select_youtube_release(json,YoutubePlatform::windows,YoutubeArch::x64);require(bool(plan)&&plan.value->size==155272382,"official asset selection");
   require(!select_youtube_release(json,YoutubePlatform::windows,YoutubeArch::arm64),"wrong architecture accepted");
@@ -70,9 +96,3 @@ int main(){const auto root=fs::temp_directory_path()/"openxmb-youtube-fixture";t
 #endif
   fs::remove_all(root);std::cout<<"YouTube backend fixtures passed\n";return 0;
  }catch(const std::exception& e){std::cerr<<e.what()<<'\n';fs::remove_all(root);return 1;}}
-
-
-
-
-
-
