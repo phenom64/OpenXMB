@@ -6,7 +6,7 @@
 
 namespace openxmb::integrations {
 // A process creation time and HWND identify one candidate, not an ownership
-// capability. Call only for a live session tracked as an owned direct child.
+// capability. Establish a live session process identity before using this target.
 struct SessionWindowTarget {
   std::int64_t pid{};
   std::uintptr_t handle{};
@@ -19,8 +19,14 @@ struct SessionWindowTarget {
 [[nodiscard]] Result focus_session_window(const SessionWindowTarget& target);
 // PNG capture of the visible foreground client only. A valid hidden/minimized
 // shell HWND owned by this process is mandatory. The caller must revalidate its
-// direct-child session. Occlusion/protected/black content can be unavailable;
+// session capability and pinned identity. Occlusion/protected/black content can be unavailable;
 // no desktop capture can guarantee a live GPU frame or rule out every overlay.
-[[nodiscard]] Result capture_session_window(const SessionWindowTarget& target,
+enum class CaptureState { saved, pending, unavailable };
+struct SessionCaptureResult {
+  CaptureState state{CaptureState::unavailable};
+  std::string message;
+  explicit operator bool() const noexcept {return state==CaptureState::saved;}
+};
+[[nodiscard]] SessionCaptureResult capture_session_window(const SessionWindowTarget& target,
   const std::filesystem::path& destination, std::uintptr_t excluded_shell_handle = 0);
 } // namespace openxmb::integrations

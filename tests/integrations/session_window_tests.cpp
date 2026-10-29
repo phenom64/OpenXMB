@@ -2,6 +2,8 @@
 #include "openxmb/desktop/session.hpp"
 #include <filesystem>
 #include <iostream>
+#include <fstream>
+#include <iterator>
 #include <stdexcept>
 #ifdef _WIN32
 #ifndef NOMINMAX
@@ -10,7 +12,6 @@
 #include <windows.h>
 #include <gdiplus.h>
 #include <chrono>
-#include <fstream>
 #include <thread>
 #endif
 using namespace openxmb::integrations;
@@ -21,7 +22,8 @@ int main(int argc, char** argv) {
     require(!find_session_window(-1), "invalid PID must not resolve");
     const SessionWindowTarget invalid{1, 1, 1};
     require(!focus_session_window(invalid), "invalid target must not focus");
-    require(!capture_session_window(invalid, fs::temp_directory_path() / "invalid-session.png"), "invalid target must not capture");
+    const auto invalid_capture=capture_session_window(invalid,fs::temp_directory_path()/"invalid-session.png");
+    require(!invalid_capture && invalid_capture.state==CaptureState::unavailable,"invalid target must fail permanently without retrying");
 #ifdef _WIN32
     require(argc == 2, "fixture executable argument is required");
     const auto root = fs::temp_directory_path() / ("openxmb-window-" + std::to_string(GetCurrentProcessId()));
@@ -61,6 +63,11 @@ int main(int argc, char** argv) {
         Gdiplus::Color left, right; bitmap.GetPixel(bitmap.GetWidth()/4, bitmap.GetHeight()/2, &left); bitmap.GetPixel(bitmap.GetWidth()*3/4, bitmap.GetHeight()/2, &right);
         require(left.GetRed() > left.GetGreen() && right.GetGreen() > right.GetRed(), "capture did not contain fixture pixels"); }
       Gdiplus::GdiplusShutdown(token);
+      const auto read_bytes=[&]{std::ifstream file(image,std::ios::binary);return std::string(std::istreambuf_iterator<char>(file),{});};
+      const auto original_png=read_bytes();
+      const auto collision=capture_session_window(*target,image,reinterpret_cast<std::uintptr_t>(shell));
+      require(!collision && collision.state==CaptureState::unavailable,"capture must never overwrite an existing screenshot");
+      require(read_bytes()==original_png,"screenshot collision modified an existing file");
       std::cout << "Windows session window identity, focus and screenshot pixel checks passed\n";
     } else std::cout << "Foreground denied; visual capture checks skipped\n";
     DestroyWindow(shell); PostMessageW(reinterpret_cast<HWND>(target->handle), WM_CLOSE, 0, 0);

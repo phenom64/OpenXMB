@@ -22,7 +22,7 @@ export namespace openxmb::xmb {
 class StatusBarRenderer {
 public:
   void render(auroreengine::gui_renderer &renderer, const StatusBarTime &time,
-              float opacity = 1.0F, std::string_view label = {}) const;
+              float opacity = 1.0F, std::string_view label = {}, bool transparent_frame = false) const;
 
   // Convenience path for production. Deterministic tests and captures should
   // resolve their fixed civil time once and use the overload above.
@@ -228,7 +228,7 @@ void draw_clock_face(auroreengine::gui_renderer &renderer,
 
 void StatusBarRenderer::render(auroreengine::gui_renderer &renderer,
                                const StatusBarTime &time,
-                               float opacity, std::string_view label) const {
+                               float opacity, std::string_view label, bool transparent_frame) const {
   opacity = std::clamp(opacity, 0.0F, 1.0F);
   if (opacity <= 0.001F || !valid_status_bar_time(time)) {
     return;
@@ -242,7 +242,8 @@ void StatusBarRenderer::render(auroreengine::gui_renderer &renderer,
   const std::string_view time_text=label.empty()?std::string_view(text_buffer.data(), text_size):label;
   const auto layout = make_layout(renderer);
 
-  renderer.draw_glass_frame(layout.x(StatusBarMetrics::frame_x),layout.y(StatusBarMetrics::frame_y),
+  if(transparent_frame)draw_u_frame(renderer,layout,opacity);
+  else renderer.draw_glass_frame(layout.x(StatusBarMetrics::frame_x),layout.y(StatusBarMetrics::frame_y),
       layout.height(StatusBarMetrics::frame_width+4.0F),layout.height(StatusBarMetrics::frame_height),opacity);
 
   const auto text_scale =

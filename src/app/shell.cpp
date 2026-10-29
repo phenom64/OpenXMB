@@ -117,7 +117,10 @@ namespace app
         std::unique_ptr<app::game_presentation> presentation;
         std::unique_ptr<app::session_xmb> overlay;
         std::shared_ptr<std::vector<openxmb::integrations::OverlayInput>> overlay_input=std::make_shared<std::vector<openxmb::integrations::OverlayInput>>();
-        bool overlay_dismiss{},overlay_return{};
+        bool overlay_dismiss{},overlay_return{},screenshot_status{};
+        std::optional<std::chrono::steady_clock::time_point> screenshot_status_started;
+        struct PendingCapture {std::string session;openxmb::integrations::SessionWindowTarget target;std::chrono::steady_clock::time_point due,deadline;};
+        std::optional<PendingCapture> pending_capture;
         std::shared_ptr<const openxmb::desktop::Game> highlighted;
         std::future<openxmb::desktop::GameDiscovery> discovery;
         std::filesystem::path discovery_root;
@@ -954,7 +957,7 @@ namespace app
                 color = vk::ClearColorValue(std::array<float, 4>{ c.r, c.g, c.b, 1.0f });
             }
             if(ingame_mode) {
-                color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.5f});
+                color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.65f});
             }
             std::array<vk::ClearValue, 3> background_clears{color, color, color};
             const auto depth_index = win->config.sampleCount == vk::SampleCountFlagBits::e1 ? 1u : 2u;
@@ -1720,6 +1723,15 @@ namespace app
 
         }
 
+        if(games->screenshot_status && overlays.empty()) {
+            if(!games->screenshot_status_started)games->screenshot_status_started=now;
+            if(now-*games->screenshot_status_started<std::chrono::seconds(3)) {
+                const auto width=static_cast<float>(renderer.frame_size.width),height=static_cast<float>(renderer.frame_size.height);
+                const auto scale=std::min(width/1920.0F,height/1080.0F);
+                renderer.draw_rect({0.70F,0.13F},{0.27F,0.06F},{0,0,0,0.65F});
+                renderer.draw_text_pixels(::openxmb::localization::shell_locale::translate("Screenshot saved"),width*0.715F,height*0.170F,26*scale,{1,1,1,1},0.7F);
+            } else {games->screenshot_status=false;games->screenshot_status_started.reset();}
+        }
         bool enable_cursor = false;
         for(unsigned int i=overlay_begin; i < overlays.size(); i++) {
             renderer.text_scale = static_cast<float>(config::CONFIG.textScale) * overlays[i]->typography_scale();
@@ -1936,8 +1948,15 @@ namespace app
     }
 
     bool shell::input_focused() const {
-        return win->config.headless || (games->overlay && games->overlay->active() ? games->overlay->focused() :
-            (SDL_GetWindowFlags(win->win.get())&SDL_WINDOW_INPUT_FOCUS)!=0);
+        if(win->config.headless)return true;
+        if(games->overlay && games->overlay->active())return games->overlay->focused();
+#ifdef _WIN32
+        // Restoring Vulkan presentation can leave SDL's cached focus flag set
+        // until its next window event. Use the actual foreground owner so a
+        // Guide/shortcut immediately after dismissal opens the XMB again.
+        if(games->shell_handle)return GetForegroundWindow()==reinterpret_cast<HWND>(games->shell_handle);
+#endif
+        return (SDL_GetWindowFlags(win->win.get())&SDL_WINDOW_INPUT_FOCUS)!=0;
     }
     bool shell::has_running_session() const { return games->sessions.active_session().has_value(); }
     bool shell::session_is_application() const {
@@ -2009,6 +2028,7 @@ namespace app
             games->known_session_id=identity;
             if(!active)games->target.reset();queue_menu_reload();
             if(ended) {
+                games->pending_capture.reset();
                 close_overlay();
                 if(games->launched_minimized && (games->tracking==openxmb::desktop::TrackingQuality::direct_child || games->tracking==openxmb::desktop::TrackingQuality::provider_observed) && !win->config.headless) restore_shell();
                 games->shell_is_session_xmb=false;games->launched_minimized=false;
@@ -2021,8 +2041,10 @@ namespace app
                 games->shell_handle=reinterpret_cast<std::uintptr_t>(info.info.win.window);
                 SDL_SetWindowsMessageHook([](void* context,void* hwnd,unsigned message,Uint64 parameter,Sint64) {
                     auto* host=static_cast<shell*>(context);
-                    if(message==WM_HOTKEY && parameter==0x4f58 && reinterpret_cast<std::uintptr_t>(hwnd)==host->games->shell_handle)
+                    if(message==WM_HOTKEY && parameter==0x4f58 && reinterpret_cast<std::uintptr_t>(hwnd)==host->games->shell_handle) {
+                        spdlog::debug("In-game XMB keyboard shortcut received");
                         host->games->toggle_requested=true;
+                    }
                 },this);
             }
         }
@@ -2093,6 +2115,8 @@ namespace app
             }
         }
         const bool toggle=std::exchange(games->toggle_requested,false);
+        if(toggle)spdlog::debug("In-game XMB toggle: session={}, overlay={}, focused={}",bool(active),games->overlay && games->overlay->active(),shell_focused());
+        if(toggle)games->pending_capture.reset();
         const bool dismiss=games->overlay_dismiss;
         const bool return_to_game=games->overlay_return || toggle;
         if((toggle || dismiss) && active && !win->config.headless) {
@@ -2143,27 +2167,44 @@ namespace app
             } else {
                 if(!close_overlay())return;
                 games->target=active->window;
-                const auto focus=games->target?openxmb::integrations::focus_session_window(*games->target):openxmb::integrations::Result{false,"No unique application window is available for a screenshot."};
-                if(!focus) {restore_shell();games->pending_notice=focus.message;}
+                const auto focused=openxmb::integrations::focus_session_window(*games->target);
+                if(!focused) {restore_shell();games->pending_notice=focused.message;}
                 else {
                     SDL_MinimizeWindow(win->win.get());
-                    auto title=active->descriptor.title;
-                    for(auto& c:title) if(static_cast<unsigned char>(c)<32 || std::string_view{"<>:\"/\\|?*"}.find(c)!=std::string_view::npos)c='_';
-                    if(title.size()>80) {std::size_t end=80;while(end>0&&(static_cast<unsigned char>(title[end])&0xc0)==0x80)--end;title.resize(end);}
-                    while(!title.empty()&&(title.back()=='.'||title.back()==' '))title.pop_back();
-                    const auto folder=games->photo_root/"Screenshots"/std::filesystem::u8path((active->descriptor.kind==openxmb::desktop::SessionKind::application?"App - ":"Game - ")+title);
-                    static std::uint64_t serial{};
-                    const auto stamp=std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-                    const auto destination=folder/(std::to_string(stamp)+"-"+std::to_string(++serial)+".png");
-                    std::error_code folder_error;
-                    std::filesystem::create_directories(folder,folder_error);
-                    const auto still_active=games->sessions.active_session();
-                    const auto captured=folder_error?openxmb::integrations::Result{false,"Cannot create the screenshot folder: "+folder_error.message()}:still_active && still_active->id==active->id?
-                        openxmb::integrations::capture_session_window(*games->target,destination,games->shell_handle):openxmb::integrations::Result{false,"The session ended before capture."};
-                    const auto saved_path=destination.u8string();
-                    games->pending_notice=captured?"Screenshot saved: "+std::string(saved_path.begin(),saved_path.end()):captured.message;
-                    if(captured) {games->shell_is_session_xmb=false;games->launched_minimized=true;}
-                    else restore_shell();
+                    // Let the game's own event/render loop resume after focus.
+                    // The XMB event loop stays responsive while the desktop settles.
+                    games->pending_capture=game_state::PendingCapture{active->id,*games->target,
+                        std::chrono::steady_clock::now()+std::chrono::milliseconds(100),
+                        std::chrono::steady_clock::now()+std::chrono::milliseconds(2500)};
+                }
+            }
+        }
+        if(games->pending_capture && std::chrono::steady_clock::now()>=games->pending_capture->due) {
+            const auto request=std::exchange(games->pending_capture,{});
+            const auto current=games->sessions.active_session();
+            if(!current || current->id!=request->session) {
+                restore_shell();games->pending_notice="The session changed before the screenshot could be saved.";
+            } else {
+                auto title=current->descriptor.title;
+                for(auto& c:title)if(static_cast<unsigned char>(c)<32||std::string_view{"<>:\"/\\|?*"}.find(c)!=std::string_view::npos)c='_';
+                if(title.size()>80){std::size_t end=80;while(end>0&&(static_cast<unsigned char>(title[end])&0xc0)==0x80)--end;title.resize(end);}
+                while(!title.empty()&&(title.back()=='.'||title.back()==' '))title.pop_back();
+                const auto folder=games->photo_root/"Screenshots"/std::filesystem::u8path((current->descriptor.kind==openxmb::desktop::SessionKind::application?"App - ":"Game - ")+title);
+                static std::uint64_t serial{};
+                const auto stamp=std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+                const auto destination=folder/(std::to_string(stamp)+"-"+std::to_string(++serial)+".png");
+                std::error_code folder_error;std::filesystem::create_directories(folder,folder_error);
+                const auto captured=folder_error?openxmb::integrations::SessionCaptureResult{openxmb::integrations::CaptureState::unavailable,"Cannot create the screenshot folder: "+folder_error.message()}:
+                    openxmb::integrations::capture_session_window(request->target,destination,games->shell_handle);
+                if(captured) {
+                    games->screenshot_status=true;games->screenshot_status_started.reset();
+                    games->shell_is_session_xmb=false;games->launched_minimized=true;
+                } else if(captured.state==openxmb::integrations::CaptureState::pending && std::chrono::steady_clock::now()<request->deadline) {
+                    games->pending_capture=*request;
+                    games->pending_capture->due=std::chrono::steady_clock::now()+std::chrono::milliseconds(50);
+                } else {
+                    spdlog::warn("Session screenshot unavailable: {}",captured.message);
+                    restore_shell();games->pending_notice=captured.message;
                 }
             }
         }
@@ -2339,7 +2380,7 @@ namespace app
     bool shell::render_status_clock(gui_renderer& renderer) {
         const auto local=shell_civil_time();
         if(!local)return false;
-        status_bar_render.render(renderer,{local->day,local->month,local->hour,local->minute,local->second});
+        status_bar_render.render(renderer,{local->day,local->month,local->hour,local->minute,local->second},1.0F,{},ingame_mode);
         return true;
     }
 

@@ -41,9 +41,11 @@ def main():
         assert frame.size == (1280, 720), frame.size
         for point in ((80, 600), (1100, 600), (640, 710)):
             r, g, b, alpha = frame.getpixel(point)
-            assert (r, g, b) == (0, 0, 0) and 126 <= alpha <= 129, (point, (r, g, b, alpha))
+            assert (r, g, b) == (0, 0, 0) and 164 <= alpha <= 168, (point, (r, g, b, alpha))
+        # Empty space inside the clock/date frame must use the same veil alpha.
+        assert 164 <= frame.getpixel((935, 68))[3] <= 168, 'Clock box became opaque'
         assert frame.getchannel('A').getextrema()[1] > 240, 'Text/icons lost their independent opacity'
-    print('PASS native GPU in-game frame: half-transparent black background, independently opaque XMB content')
+    print('PASS native GPU in-game frame: 65-percent black background and transparent clock frame, independently opaque XMB content')
 
 
 if __name__ == '__main__':

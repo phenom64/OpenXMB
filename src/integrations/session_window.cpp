@@ -3,6 +3,7 @@
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
+#include <atomic>
 #include <windows.h>
 #include <dwmapi.h>
 #include <gdiplus.h>
@@ -12,6 +13,10 @@
 
 namespace openxmb::integrations {
 namespace {
+struct PhysicalCoordinates {
+  DPI_AWARENESS_CONTEXT previous=SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+  ~PhysicalCoordinates(){if(previous)SetThreadDpiAwarenessContext(previous);}
+};
 std::optional<std::uint64_t> creation_time(std::int64_t pid) {
   if (pid <= 0 || pid > std::numeric_limits<DWORD>::max()) return {};
   HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE, FALSE, static_cast<DWORD>(pid));
@@ -56,13 +61,14 @@ BOOL CALLBACK inspect_above(HWND hwnd, LPARAM value) {
   return TRUE;
 }
 bool client_geometry(HWND hwnd, RECT& screen, int& width, int& height) {
-  RECT client{}; POINT top{}, bottom{};
+  RECT client{};
   if (!GetClientRect(hwnd, &client)) return false;
   width = client.right - client.left; height = client.bottom - client.top;
   if (width <= 0 || height <= 0 || width > 16384 || height > 16384) return false;
-  top = {client.left, client.top}; bottom = {client.right, client.bottom};
-  if (!ClientToScreen(hwnd, &top) || !ClientToScreen(hwnd, &bottom)) return false;
-  screen = {top.x, top.y, bottom.x, bottom.y};
+  POINT corners[2]{{client.left,client.top},{client.right,client.bottom}};
+  SetLastError(ERROR_SUCCESS);
+  if(!MapWindowPoints(hwnd,nullptr,corners,2) && GetLastError()!=ERROR_SUCCESS)return false;
+  screen = {corners[0].x,corners[0].y,corners[1].x,corners[1].y};
   if (screen.right - screen.left != width || screen.bottom - screen.top != height) return false;
   HMONITOR monitor = MonitorFromRect(&screen, MONITOR_DEFAULTTONULL); MONITORINFO info{}; info.cbSize = sizeof(info);
   return monitor && GetMonitorInfoW(monitor, &info) && screen.left >= info.rcMonitor.left && screen.top >= info.rcMonitor.top && screen.right <= info.rcMonitor.right && screen.bottom <= info.rcMonitor.bottom;
@@ -103,18 +109,23 @@ Result focus_session_window(const SessionWindowTarget& target) {
 Result validate_session_window(const SessionWindowTarget& target) {
   return valid_target(target)?Result{true,"Session window identity is current."}:Result{false,"The session window identity is no longer valid."};
 }
-Result capture_session_window(const SessionWindowTarget& target, const std::filesystem::path& destination, std::uintptr_t excluded_shell_handle) {
-  if (!valid_target(target)) return {false, "The session window is no longer valid."};
-  if (!shell_hidden(excluded_shell_handle)) return {false, "Hide or minimize the OpenXMB window before capturing."};
+SessionCaptureResult capture_session_window(const SessionWindowTarget& target, const std::filesystem::path& destination, std::uintptr_t excluded_shell_handle) {
+  PhysicalCoordinates coordinates;
+  if (!valid_target(target)) return {CaptureState::unavailable, "The session window is no longer valid."};
+  std::error_code destination_error;
+  if(std::filesystem::exists(destination,destination_error)||destination_error)
+    return {CaptureState::unavailable,"The screenshot destination already exists or cannot be inspected."};
+  if (!shell_hidden(excluded_shell_handle)) return {CaptureState::unavailable, "Hide or minimize the OpenXMB window before capturing."};
   HWND hwnd = reinterpret_cast<HWND>(target.handle);
-  if (IsIconic(hwnd) || GetForegroundWindow() != hwnd) return {false, "Bring the session window to the foreground before capturing."};
+  if(IsIconic(hwnd))return {CaptureState::pending,"The game window is still restoring."};
+  if(GetForegroundWindow()!=hwnd)return {CaptureState::unavailable,"Bring the session window to the foreground before capturing."};
   DWORD affinity{};
-  if (!GetWindowDisplayAffinity(hwnd, &affinity) || affinity != WDA_NONE) return {false, "The session window is protected or its capture policy is unavailable."};
+  if (!GetWindowDisplayAffinity(hwnd, &affinity) || affinity != WDA_NONE) return {CaptureState::unavailable, "The session window is protected or its capture policy is unavailable."};
   RECT rect{}; int width{}, height{};
-  if (!client_geometry(hwnd, rect, width, height)) return {false, "The session client area is offscreen or unavailable."};
-  if (FAILED(DwmFlush())) return {false, "Windows could not synchronize the desktop before capture."};
-  if (!unobstructed(hwnd, rect)) return {false, "The session window is obscured. Move other windows away and try again."};
-  HDC screen = GetDC(nullptr); if (!screen) return {false, "Windows could not access the visible screen."};
+  if (!client_geometry(hwnd, rect, width, height)) return {CaptureState::pending, "The session client area is offscreen or unavailable."};
+  if (FAILED(DwmFlush())) return {CaptureState::unavailable, "Windows could not synchronize the desktop before capture."};
+  if (!unobstructed(hwnd, rect)) return {CaptureState::pending, "The session window is obscured. Move other windows away and try again."};
+  HDC screen = GetDC(nullptr); if (!screen) return {CaptureState::unavailable, "Windows could not access the visible screen."};
   HDC memory = CreateCompatibleDC(screen);
   BITMAPINFO info{}; info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER); info.bmiHeader.biWidth = width; info.bmiHeader.biHeight = -height;
   info.bmiHeader.biPlanes = 1; info.bmiHeader.biBitCount = 32; info.bmiHeader.biCompression = BI_RGB;
@@ -126,16 +137,22 @@ Result capture_session_window(const SessionWindowTarget& target, const std::file
   if (memory) DeleteDC(memory); ReleaseDC(nullptr, screen);
   RECT after{}; int after_width{}, after_height{};
   const bool stable = copied && valid_target(target) && shell_hidden(excluded_shell_handle) && GetForegroundWindow() == hwnd && !IsIconic(hwnd) && client_geometry(hwnd, after, after_width, after_height) && EqualRect(&rect, &after) && unobstructed(hwnd, after);
-  if (!stable) { if (bitmap) DeleteObject(bitmap); return {false, "The session window changed, lost focus, or became obscured during capture."}; }
+  if (!stable) { if (bitmap) DeleteObject(bitmap); return {CaptureState::pending, "The session window changed, lost focus, or became obscured during capture."}; }
   const auto* data = static_cast<const unsigned char*>(pixels); bool nonblack = false;
   for (std::size_t i = 0, n = static_cast<std::size_t>(width) * height * 4; i < n; i += 4) if (data[i] || data[i+1] || data[i+2]) { nonblack = true; break; }
-  if (!nonblack) { DeleteObject(bitmap); return {false, "The captured surface was black or unavailable. A black game frame cannot be distinguished from an unavailable surface."}; }
+  if (!nonblack) { DeleteObject(bitmap); return {CaptureState::pending, "The captured surface was black or unavailable. A black game frame cannot be distinguished from an unavailable surface."}; }
   Gdiplus::GdiplusStartupInput startup; ULONG_PTR token{};
-  if (Gdiplus::GdiplusStartup(&token, &startup, nullptr) != Gdiplus::Ok) { DeleteObject(bitmap); return {false, "Windows image encoding could not start."}; }
+  if (Gdiplus::GdiplusStartup(&token, &startup, nullptr) != Gdiplus::Ok) { DeleteObject(bitmap); return {CaptureState::unavailable, "Windows image encoding could not start."}; }
+  static std::atomic<std::uint64_t> capture_serial{};
+  auto temporary=destination;
+  temporary+=".part-"+std::to_string(GetCurrentProcessId())+"-"+std::to_string(GetTickCount64())+"-"+std::to_string(++capture_serial);
   CLSID encoder{}; bool saved = false;
-  if (png_encoder(encoder)) { Gdiplus::Bitmap output(bitmap, nullptr); saved = output.GetLastStatus() == Gdiplus::Ok && output.Save(destination.c_str(), &encoder, nullptr) == Gdiplus::Ok; }
+  if (png_encoder(encoder)) { Gdiplus::Bitmap output(bitmap, nullptr); saved = output.GetLastStatus() == Gdiplus::Ok && output.Save(temporary.c_str(), &encoder, nullptr) == Gdiplus::Ok; }
   Gdiplus::GdiplusShutdown(token); DeleteObject(bitmap);
-  return saved ? Result{true, "Session window captured."} : Result{false, "Could not save the PNG screenshot at the requested location."};
+  // Publish a complete PNG atomically; never replace a user's existing file.
+  if(saved)saved=MoveFileExW(temporary.c_str(),destination.c_str(),MOVEFILE_WRITE_THROUGH)!=FALSE;
+  if(!saved)DeleteFileW(temporary.c_str());
+  return saved ? SessionCaptureResult{CaptureState::saved, "Session window captured."} : SessionCaptureResult{CaptureState::unavailable, "Could not save the PNG screenshot at the requested location."};
 }
 } // namespace openxmb::integrations
 #else
@@ -143,7 +160,7 @@ namespace openxmb::integrations {
 std::optional<SessionWindowTarget> find_session_window(std::int64_t) { return {}; }
 Result validate_session_window(const SessionWindowTarget&) { return {false,"Session window identity is unavailable on this platform."}; }
 Result focus_session_window(const SessionWindowTarget&) { return {false, "Session window switching is unavailable on this platform."}; }
-Result capture_session_window(const SessionWindowTarget&, const std::filesystem::path&, std::uintptr_t) { return {false, "Session window capture is unavailable on this platform."}; }
+SessionCaptureResult capture_session_window(const SessionWindowTarget&, const std::filesystem::path&, std::uintptr_t) { return {CaptureState::unavailable, "Session window capture is unavailable on this platform."}; }
 } // namespace openxmb::integrations
 #endif
 
