@@ -29,6 +29,9 @@ struct ProcessObservation {
   ProcessState state{ProcessState::unknown};
   std::optional<int> exit_code;
   std::string message;
+  // Windows creation identity read from the retained native process handle.
+  // Zero means unavailable; never substitute a query against a bare PID.
+  std::uint64_t process_creation{};
 };
 struct OwnedProcessLaunch;
 // A capability for one process actually launched by OpenXMB. Copies share the

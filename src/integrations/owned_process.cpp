@@ -27,6 +27,7 @@ struct OwnedProcess::State {
   ProcessObservation observation{ProcessState::running, {}, {}};
 #ifdef _WIN32
   HANDLE handle{};
+  std::uint64_t creation{};
   ~State() { if (handle) CloseHandle(handle); }
 #endif
   void refresh() {
@@ -99,7 +100,12 @@ std::wstring quote(const std::wstring& value) {
 OwnedProcess::OwnedProcess(std::shared_ptr<State> state) : state_(std::move(state)) {}
 std::int64_t OwnedProcess::id() const noexcept { return state_->pid; }
 ProcessObservation OwnedProcess::observe() const {
-  std::lock_guard lock(state_->mutex); state_->refresh(); return state_->observation;
+  std::lock_guard lock(state_->mutex); state_->refresh();
+  auto observation=state_->observation;
+#ifdef _WIN32
+  observation.process_creation=state_->creation;
+#endif
+  return observation;
 }
 Result OwnedProcess::stop(ProcessStopMode mode) const {
   std::lock_guard lock(state_->mutex); state_->refresh();
@@ -149,6 +155,8 @@ OwnedProcessLaunch launch_owned_process(const std::vector<std::string>& argument
       working_directory.empty() ? nullptr : working_directory.c_str(), &startup, &native_process))
     return {{}, "Unable to launch program (Windows error " + std::to_string(GetLastError()) + ")"};
   CloseHandle(native_process.hThread); state->handle = native_process.hProcess; state->pid = native_process.dwProcessId;
+  FILETIME created{},exited{},kernel{},user{};
+  if(GetProcessTimes(state->handle,&created,&exited,&kernel,&user))state->creation=(std::uint64_t(created.dwHighDateTime)<<32)|created.dwLowDateTime;
 #else
   std::vector<char*> argv; argv.reserve(arguments.size() + 1);
   for (const auto& argument : arguments) argv.push_back(const_cast<char*>(argument.c_str()));

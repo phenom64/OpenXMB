@@ -1,4 +1,5 @@
 #include "openxmb/desktop/session.hpp"
+#include "openxmb/integrations/observed_process.hpp"
 #include <nlohmann/json.hpp>
 #include <chrono>
 #include <filesystem>
@@ -6,6 +7,12 @@
 #include <iostream>
 #include <stdexcept>
 #include <thread>
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
 
 namespace fs = std::filesystem;
 using namespace openxmb::desktop;
@@ -30,6 +37,9 @@ void process_checks(const fs::path& root, const fs::path& helper) {
   require(bool(process), "native owned process did not launch");
   wait([&] { return fs::exists(root / "ready"); }, "native process never became ready");
   require(process.process->observe().state == ProcessState::running, "live process was reported exited");
+#ifdef _WIN32
+  require(process.process->observe().process_creation!=0,"owned process observation must expose identity from its retained handle");
+#endif
   require(!stop_process(process.process->id()), "a bare PID must not adopt or stop a tracked session capability");
   require(process.process->observe().state == ProcessState::running, "unowned PID stop request affected child");
   std::ofstream(root / "release") << "release";
@@ -81,6 +91,14 @@ void manager_checks(const fs::path& root, const fs::path& helper) {
   require(bool(manager.shutdown()), "clean manager shutdown failed");
   SessionManager reopened;
   require(reopened.history(profile, "fixture-game").total_playtime_ms == expected_duration, "durable history did not survive manager recreation");
+  // Append-only tracking enum migration: observed-provider history is separate
+  // from playtime of children OpenXMB actually owns.
+  const auto journal=profile/"sessions/history.json";
+  nlohmann::json provider_history;{std::ifstream input(journal);input>>provider_history;}
+  provider_history["recent"][0]["tracking"]=3;
+  provider_history["totals"][0]["provider_observed_playtime_ms"]=321;
+  {std::ofstream output(journal);output<<provider_history;}
+  require(reopened.history(profile).error.empty(),"provider-observed tracking value 3 remains readable beside existing session enum values");
   require(!fs::exists(profile / "library.json"), "session backend wrote library.json");
 }
 void journal_checks(const fs::path& root, const fs::path& helper) {
@@ -153,8 +171,143 @@ void quit_and_shutdown(const fs::path& root, const fs::path& helper) {
   const auto blocked = root / "blocked"; fs::create_directories(blocked); std::ofstream(blocked / "sessions") << "blocked directory";
   require(!reader.launch(descriptor(blocked), {text(helper), "record", "0", "0"}, cwd), "unwritable session journal launched an unjournalled child");
 }
+#ifdef _WIN32
+struct FixtureWindow {bool close_requested{};};
+LRESULT CALLBACK fixture_window(HWND hwnd,UINT message,WPARAM parameter,LPARAM value) {
+  if(message==WM_NCCREATE)SetWindowLongPtrW(hwnd,GWLP_USERDATA,reinterpret_cast<LONG_PTR>(reinterpret_cast<CREATESTRUCTW*>(value)->lpCreateParams));
+  if(message==WM_CLOSE) {auto* state=reinterpret_cast<FixtureWindow*>(GetWindowLongPtrW(hwnd,GWLP_USERDATA));if(state)state->close_requested=true;return 0;}
+  return DefWindowProcW(hwnd,message,parameter,value);
+}
+int observation_fixture(const std::string& mode) {
+  FixtureWindow state;HWND hwnd{};
+  if(mode=="window") {
+    WNDCLASSW cls{};cls.lpfnWndProc=fixture_window;cls.hInstance=GetModuleHandleW(nullptr);cls.lpszClassName=L"OpenXMB.ObservedFixture";
+    if(!RegisterClassW(&cls))return 81;
+    hwnd=CreateWindowExW(WS_EX_NOACTIVATE,cls.lpszClassName,L"Observed game fixture",WS_POPUP|WS_VISIBLE,-32000,-32000,120,80,nullptr,nullptr,cls.hInstance,&state);
+    if(!hwnd)return 82;
+  }
+  if(mode=="inaccessible") {
+    SECURITY_DESCRIPTOR descriptor{};alignas(ACL) unsigned char bytes[64]{};auto* acl=reinterpret_cast<ACL*>(bytes);
+    if(!InitializeSecurityDescriptor(&descriptor,SECURITY_DESCRIPTOR_REVISION)||!InitializeAcl(acl,sizeof(bytes),ACL_REVISION)||
+       !SetSecurityDescriptorDacl(&descriptor,TRUE,acl,FALSE)||!SetKernelObjectSecurity(GetCurrentProcess(),DACL_SECURITY_INFORMATION,&descriptor))return 83;
+  }
+  std::ofstream("ready")<<"ready";
+  const auto deadline=std::chrono::steady_clock::now()+15s;
+  while(!fs::exists("release")&&!state.close_requested&&std::chrono::steady_clock::now()<deadline) {
+    MSG message{};while(PeekMessageW(&message,nullptr,0,0,PM_REMOVE)){TranslateMessage(&message);DispatchMessageW(&message);}
+    std::this_thread::sleep_for(5ms);
+  }
+  if(state.close_requested)std::ofstream("closed")<<"closed";
+  if(hwnd)DestroyWindow(hwnd);
+  return 0;
+}
+fs::path fixture_image(const fs::path& root,const fs::path& self,const char* name) {
+  fs::create_directories(root);const auto image=root/name;fs::copy_file(self,image);return fs::canonical(image);
+}
+OwnedProcessLaunch fixture_start(const fs::path& image,const fs::path& folder,const char* mode="window") {
+  fs::create_directories(folder);
+  auto process=launch_owned_process({text(image),"--observation-fixture",mode},folder);
+  require(bool(process),"observed fixture did not start");
+  wait([&]{return fs::exists(folder/"ready");},"observed fixture did not become ready");return process;
+}
+void fixture_release(const OwnedProcessLaunch& process,const fs::path& folder) {
+  std::ofstream(folder/"release")<<"release";
+  wait([&]{return process.process->observe().state!=ProcessState::running;},"observed fixture did not exit");
+}
+SessionDescriptor steam_descriptor(const fs::path& profile,const fs::path& image,std::uint32_t timeout=4000) {
+  auto value=descriptor(profile,"observed-steam");value.runner="steam";value.provider="Steam";value.tracking=TrackingQuality::launcher_only;
+  value.observation=ProviderObservationSpec{image,timeout};return value;
+}
+void observed_process_checks(const fs::path& root,const fs::path& self) {
+  const auto image=fixture_image(root,self,"observed-identity-game.exe");
+  const auto before=GetForegroundWindow();
+  ExecutableObservation watch(image);
+  const auto process=fixture_start(image,root/"success");
+  ExecutableMatch match;
+  wait([&]{match=watch.poll();if(match.state==ExecutableMatchState::rejected||match.state==ExecutableMatchState::unavailable)throw std::runtime_error(match.message);return match.state==ExecutableMatchState::matched;},"new exact executable was not observed");
+  require(match.process&&match.process->id()==process.process->id()&&match.process->creation_time()!=0,"observed identity did not pin the correct PID and creation time");
+  const auto window=match.process->window();require(window.has_value(),"unique observed fixture window was not available");
+  auto stale=*window;++stale.process_creation;
+  require(!validate_session_window(stale),"a changed process creation token was accepted");
+  require(GetForegroundWindow()==before,"observed fixture or observation unexpectedly stole focus");
+  require(bool(match.process->request_close()),"observed fixture did not accept graceful close");
+  wait([&]{return match.process->observe().state==ProcessState::exited;},"read-only observation missed fixture exit");
+  for(unsigned i=0;i<10;++i)require(match.process->observe().exit_code==0,"observed exit code was not cached");
+  require(!match.process->window()&&!match.process->request_close(),"ended process retained a window or close capability");
+  wait([&]{return process.process->observe().state==ProcessState::exited;},"fixture owner did not observe exit");
+  const auto existing=fixture_start(image,root/"preexisting");
+  ExecutableObservation baseline(image);
+  require(baseline.poll().state==ExecutableMatchState::rejected,"preexisting matching process was adopted");
+  fixture_release(existing,root/"preexisting");
+  ExecutableObservation ambiguous(image);
+  const auto first=fixture_start(image,root/"first"),second=fixture_start(image,root/"second");
+  require(ambiguous.poll().state==ExecutableMatchState::rejected,"two new matching processes were silently disambiguated");
+  fixture_release(first,root/"first");fixture_release(second,root/"second");
+  ExecutableObservation inaccessible(image);
+  const auto protected_process=fixture_start(image,root/"inaccessible","inaccessible");
+  require(inaccessible.poll().state==ExecutableMatchState::unavailable,"inaccessible matching process was accepted or ignored as absent");
+  fixture_release(protected_process,root/"inaccessible");
+}
+void observed_manager_checks(const fs::path& root,const fs::path& helper,const fs::path& self) {
+  const auto image=fixture_image(root,self,"observed-session-game.exe");const auto cwd=root/"cwd";fs::create_directories(cwd);
+  SessionManager manager;const auto profile=root/"profile";
+  const auto launched=manager.launch(steam_descriptor(profile,image),{text(helper),"record","0","0"},cwd);
+  require(bool(launched),"provider observation launch failed");
+  std::this_thread::sleep_for(150ms);
+  auto pending=manager.active_session();
+  require(pending&&pending->awaiting_observation&&pending->duration_ms==0&&pending->started_at==0&&pending->process_id==-1,
+    "forwarder exit ended pending observation or credited launcher lifetime");
+  require(!manager.quit(launched.session_id,ProcessStopMode::force_stop),"pending provider session granted force-stop capability");
+  const auto process=fixture_start(image,root/"game");
+  wait([&]{const auto value=manager.active_session();return value&&value->descriptor.tracking==TrackingQuality::provider_observed&&value->capabilities.graceful_close;},"session did not associate the new exact game process");
+  const auto active=*manager.active_session();
+  require(active.process_id==process.process->id()&&!active.awaiting_observation&&active.capabilities.focus&&active.capabilities.capture&&active.window,
+    "observed session capabilities did not correspond to its unique current window");
+  require(!manager.quit(launched.session_id,ProcessStopMode::force_stop)&&process.process->observe().state==ProcessState::running,
+    "provider-observed process was force terminated");
+  std::this_thread::sleep_for(150ms);
+  require(bool(manager.quit(launched.session_id)),"provider-observed graceful close failed");
+  wait([&]{const auto history=manager.history(profile);return !history.recent.empty()&&history.recent.front().state==SessionState::exited;},"observed session was not finalized independently of the UI");
+  const auto history=manager.history(profile);
+  require(history.launch_count==1&&history.total_playtime_ms==0&&history.provider_observed_playtime_ms>=100,
+    "observed-provider accounting was conflated with owned-child playtime");
+  for(unsigned i=0;i<20;++i)require(manager.history(profile).provider_observed_playtime_ms==history.provider_observed_playtime_ms,"provider-observed exit was counted more than once");
+  wait([&]{return process.process->observe().state==ProcessState::exited;},"closed observed fixture did not exit");
+  require(fs::exists(root/"game/closed"),"graceful request did not pass through the fixture WM_CLOSE handler");
+  const auto absent_image=fixture_image(root,self,"never-started-game.exe");
+  const auto timeout=manager.launch(steam_descriptor(profile,absent_image,400),{text(helper),"record","0","0"},cwd);
+  require(bool(timeout),"timeout fixture failed to launch");
+  wait([&]{return !manager.active_session();},"pending game observation did not time out");
+  const auto timed=manager.history(profile).recent.front();
+  require(timed.state==SessionState::interrupted&&timed.duration_ms==0&&timed.ended_at==0&&!timed.capabilities.focus,"timeout fabricated a game exit or capability");
+  const auto survivor=manager.launch(steam_descriptor(profile,image),{text(helper),"record","0","0"},cwd);
+  require(bool(survivor),"observed shutdown fixture failed to launch");
+  const auto running=fixture_start(image,root/"survivor");
+  wait([&]{const auto value=manager.active_session();return value&&value->descriptor.tracking==TrackingQuality::provider_observed;},"shutdown fixture was not associated");
+  const auto before=std::chrono::steady_clock::now();require(bool(manager.shutdown()),"observed shutdown failed");
+  require(std::chrono::steady_clock::now()-before<1s&&running.process->observe().state==ProcessState::running,"observed shutdown waited for or killed the game");
+  fixture_release(running,root/"survivor");
+  require(manager.history(profile).recent.front().state==SessionState::detached&&manager.history(profile).provider_observed_playtime_ms==history.provider_observed_playtime_ms,
+    "detached observed game was credited with an unobserved exit");
+  SessionManager direct;
+  const auto direct_folder=root/"direct-window";fs::create_directories(direct_folder);
+  auto direct_descriptor=descriptor(root/"direct-profile");direct_descriptor.kind=SessionKind::application;
+  const auto own=direct.launch(direct_descriptor,{text(image),"--observation-fixture","window"},direct_folder);
+  require(bool(own),"direct window identity fixture did not launch");
+  wait([&]{const auto active=direct.active_session();return active&&active->window&&active->capabilities.focus;},"owned direct window did not gain validated capabilities");
+  const auto own_snapshot=*direct.active_session();
+  require(own_snapshot.window->process_creation!=0&&own_snapshot.window->pid==own_snapshot.process_id,"direct window capability has no pinned process identity");
+  auto stale=*own_snapshot.window;++stale.process_creation;
+  require(!direct.confirm_application_window(own.session_id,stale),"direct application confirmation accepted a mismatched creation identity");
+  require(bool(direct.quit(own.session_id)),"owned window graceful close failed after capability validation");
+  wait([&]{return !direct.active_session();},"owned window close was not finalized");
+}
+#endif
 }
 int main(int argc, char** argv) {
+#ifdef _WIN32
+  if(argc==3&&std::string(argv[1])=="--observation-fixture")return observation_fixture(argv[2]);
+#endif
   if (argc != 2) { std::cerr << "expected native session child path\n"; return 2; }
   const auto root = fs::weakly_canonical(fs::temp_directory_path()) / ("openxmb-session-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
   try {
@@ -163,6 +316,10 @@ int main(int argc, char** argv) {
     manager_checks(root / "manager", helper);
     journal_checks(root / "journal", helper);
     quit_and_shutdown(root / "quit", helper);
+#ifdef _WIN32
+    observed_process_checks(root/"observed-process",fs::absolute(argv[0]));
+    observed_manager_checks(root/"observed-manager",helper,fs::absolute(argv[0]));
+#endif
     fs::remove_all(root); std::cout << "Owned process and session journal checks passed\n";
   } catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }
 }

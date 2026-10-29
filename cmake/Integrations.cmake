@@ -3,6 +3,7 @@ get_filename_component(_openxmb_integrations_root "${CMAKE_CURRENT_LIST_DIR}/.."
 add_library(openxmb_integrations STATIC
   "${_openxmb_integrations_root}/src/integrations/desktop.cpp"
   "${_openxmb_integrations_root}/src/integrations/owned_process.cpp"
+  "${_openxmb_integrations_root}/src/integrations/observed_process.cpp"
   "${_openxmb_integrations_root}/src/integrations/session_window.cpp"
   "${_openxmb_integrations_root}/src/integrations/xmb_overlay.cpp"
   "${_openxmb_integrations_root}/src/integrations/browser_input.cpp"

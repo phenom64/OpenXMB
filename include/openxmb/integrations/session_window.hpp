@@ -14,6 +14,7 @@ struct SessionWindowTarget {
 };
 // Returns no target when no unique eligible window exists.
 [[nodiscard]] std::optional<SessionWindowTarget> find_session_window(std::int64_t pid);
+[[nodiscard]] Result validate_session_window(const SessionWindowTarget& target);
 // Foreground activation is subject to OS policy and may be denied.
 [[nodiscard]] Result focus_session_window(const SessionWindowTarget& target);
 // PNG capture of the visible foreground client only. A valid hidden/minimized

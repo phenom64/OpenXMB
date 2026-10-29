@@ -1,4 +1,6 @@
 #include "openxmb/desktop/session.hpp"
+#include "openxmb/integrations/session_window.hpp"
+#include "openxmb/integrations/observed_process.hpp"
 #include <nlohmann/json.hpp>
 #include <algorithm>
 #include <atomic>
@@ -48,11 +50,18 @@ void validate(const SessionDescriptor& value) {
   bounded_string(value.identity, 512, true); bounded_string(value.title, 512, true);
   bounded_string(value.provider, 128, true); bounded_string(value.runner, 128, true); bounded_string(path_text(value.profile_directory), 32768, true);
   if (value.kind != SessionKind::game && value.kind != SessionKind::application) throw std::runtime_error("Invalid session kind");
-  if (value.tracking != TrackingQuality::direct_child && value.tracking != TrackingQuality::launcher_only && value.tracking != TrackingQuality::unknown) throw std::runtime_error("Invalid tracking quality");
+  if (value.tracking != TrackingQuality::direct_child && value.tracking != TrackingQuality::launcher_only && value.tracking != TrackingQuality::unknown && value.tracking != TrackingQuality::provider_observed) throw std::runtime_error("Invalid tracking quality");
+  if(value.observation) {
+    const auto& spec=*value.observation;bounded_string(path_text(spec.executable),32768,true);
+    if(value.runner!="steam"||value.kind!=SessionKind::game||value.tracking!=TrackingQuality::launcher_only)
+      throw std::runtime_error("Executable observation requires a launcher-only Steam game session");
+    if(spec.timeout_ms<250||spec.timeout_ms>300000)throw std::runtime_error("Steam game observation timeout must be between 250 ms and five minutes");
+  }
 }
 std::string tracking_message(TrackingQuality quality) {
   if (quality == TrackingQuality::direct_child) return "Observed direct child lifetime; detached descendants are not tracked";
   if (quality == TrackingQuality::launcher_only) return "Only the forwarding launcher is observed; application lifetime and playtime are unknown";
+  if (quality == TrackingQuality::provider_observed) return "Observed matching Steam game process; the process is not owned by OpenXMB";
   return "Application lifetime is unknown; no playtime is credited";
 }
 std::uint64_t unsigned_value(const json& value) {
@@ -67,7 +76,7 @@ json record_json(const SessionSnapshot& value) {
   const auto& d = value.descriptor;
   json result{{"id", value.id}, {"identity", d.identity}, {"title", d.title}, {"provider", d.provider}, {"runner", d.runner}, {"kind", static_cast<int>(d.kind)},
     {"tracking", static_cast<int>(d.tracking)}, {"state", static_cast<int>(value.state)}, {"owner", owner_token()}, {"process_id", value.process_id},
-    {"started_at", value.started_at}, {"ended_at", value.ended_at}, {"duration_ms", value.duration_ms}};
+    {"started_at", value.started_at}, {"ended_at", value.ended_at}, {"duration_ms", value.duration_ms}, {"awaiting_observation",value.awaiting_observation}};
   result["exit_code"] = value.exit_code ? json(*value.exit_code) : json(nullptr); return result;
 }
 SessionSnapshot read_record(const json& record, const fs::path& profile) {
@@ -75,10 +84,11 @@ SessionSnapshot read_record(const json& record, const fs::path& profile) {
   value.id = record.at("id").get<std::string>(); bounded_string(value.id, 256, true);
   auto& d = value.descriptor;
   d.identity = record.at("identity"); d.title = record.at("title"); d.provider = record.at("provider"); d.runner = record.at("runner"); d.profile_directory = profile;
-  d.kind = static_cast<SessionKind>(enum_value(record.at("kind"), 1)); d.tracking = static_cast<TrackingQuality>(enum_value(record.at("tracking"), 2)); validate(d);
+  d.kind = static_cast<SessionKind>(enum_value(record.at("kind"), 1)); d.tracking = static_cast<TrackingQuality>(enum_value(record.at("tracking"), 3)); validate(d);
   const auto state = enum_value(record.at("state"), 3);
   value.state = static_cast<SessionState>(state); value.process_id = record.at("process_id").get<std::int64_t>();
   value.started_at = unsigned_value(record.at("started_at")); value.ended_at = unsigned_value(record.at("ended_at")); value.duration_ms = unsigned_value(record.at("duration_ms"));
+  value.awaiting_observation=record.value("awaiting_observation",false);
   if (!record.at("exit_code").is_null()) value.exit_code = record.at("exit_code").get<int>();
   const auto owner = record.at("owner").get<std::string>(); bounded_string(owner, 256, true);
   if (value.state == SessionState::running && owner != owner_token()) { value.state = SessionState::interrupted; value.ended_at = 0; value.exit_code.reset(); }
@@ -133,6 +143,7 @@ json load_journal(const fs::path& profile) {
     const auto identity = json::array({total.at("identity"), total.at("provider"), total.at("runner"), total.at("kind")}).dump();
     if (!identities.insert(identity).second) throw std::runtime_error("Duplicate session total identity");
     (void)unsigned_value(total.at("launch_count")); (void)unsigned_value(total.at("total_playtime_ms"));
+    if(total.contains("provider_observed_playtime_ms"))(void)unsigned_value(total.at("provider_observed_playtime_ms"));
   }
   return journal;
 }
@@ -188,6 +199,9 @@ void persist(const SessionSnapshot& value) {
   if (first_terminal && value.state == SessionState::exited && value.descriptor.tracking == TrackingQuality::direct_child) {
     auto duration = total->at("total_playtime_ms").get<std::uint64_t>(); add(duration, value.duration_ms); (*total)["total_playtime_ms"] = duration;
   }
+  if(first_terminal&&value.state==SessionState::exited&&value.descriptor.tracking==TrackingQuality::provider_observed) {
+    auto duration=total->value("provider_observed_playtime_ms",std::uint64_t{});add(duration,value.duration_ms);(*total)["provider_observed_playtime_ms"]=duration;
+  }
   if (inserted) recent.push_back(record_json(value)); else *found = record_json(value);
   while (recent.size() > 512) {
     const auto removable = std::ranges::find_if(recent, [](const json& record) { return record.at("state") != static_cast<int>(SessionState::running); });
@@ -199,93 +213,196 @@ void persist(const SessionSnapshot& value) {
 }
 
 struct SessionManager::Impl {
-  struct Entry { SessionSnapshot snapshot; std::shared_ptr<integrations::OwnedProcess> process; Clock::time_point started; bool dirty{true}; };
+  struct Entry {
+    SessionSnapshot snapshot;std::shared_ptr<integrations::OwnedProcess> process;
+    std::shared_ptr<integrations::ExecutableObservation> watch;
+    std::shared_ptr<integrations::ObservedProcess> observed;
+    Clock::time_point started,deadline,next_poll{};
+    bool dirty{true};std::uint64_t revision{};std::mutex save_mutex;
+  };
   mutable std::mutex mutex;
+  mutable std::mutex journal_mutex;
   std::mutex shutdown_mutex;
   std::condition_variable condition;
-  std::vector<Entry> entries;
+  std::vector<std::shared_ptr<Entry>> entries;
   bool stopping{};
   std::thread observer;
   Impl() : observer([this] { run(); }) {}
-  static void update(Entry& entry) {
-    if (entry.snapshot.state != SessionState::running) return;
-    entry.snapshot.duration_ms = static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - entry.started).count());
-    const auto observation = entry.process->observe();
-    if (observation.state == integrations::ProcessState::running) return;
-    entry.snapshot.state = observation.state == integrations::ProcessState::exited ? SessionState::exited : SessionState::interrupted;
-    entry.snapshot.ended_at = entry.snapshot.state == SessionState::exited ? wall_time() : 0; entry.snapshot.exit_code = observation.exit_code;
-    if (!observation.message.empty()) entry.snapshot.tracking_message += "; " + observation.message;
-    entry.dirty = true;
+  static void changed(Entry& entry){entry.dirty=true;++entry.revision;}
+  void update(const std::shared_ptr<Entry>& entry) {
+    std::shared_ptr<integrations::OwnedProcess> process;std::shared_ptr<integrations::ExecutableObservation> watch;
+    {
+      std::lock_guard lock(mutex);if(entry->snapshot.state!=SessionState::running)return;
+      if(entry->watch&&Clock::now()<entry->next_poll)return;
+      process=entry->process;watch=entry->watch;entry->next_poll=Clock::now()+std::chrono::milliseconds(100);
+    }
+    // Process enumeration, identity queries and window discovery never hold
+    // the snapshot mutex. The worker is the sole watch/poll consumer.
+    integrations::ProcessObservation observation;
+    integrations::ExecutableMatch match;
+    std::optional<integrations::SessionWindowTarget> window;
+    try {
+      if(watch){match=watch->poll();if(match.process){observation=match.process->observe();if(observation.state==integrations::ProcessState::running)window=match.process->window();}}
+      else {
+        observation=process->observe();
+        if(observation.state==integrations::ProcessState::running&&observation.process_creation) {
+          window=integrations::find_session_window(process->id());
+          if(window&&window->process_creation!=observation.process_creation)window.reset();
+        }
+      }
+    }catch(const std::exception& error){match.state=integrations::ExecutableMatchState::unavailable;match.message=error.what();observation={integrations::ProcessState::unknown,{},error.what()};}
+    std::lock_guard lock(mutex);auto& e=*entry;auto& snapshot=e.snapshot;
+    if(snapshot.state!=SessionState::running)return;
+    if(watch) {
+      if(snapshot.awaiting_observation&&Clock::now()>=e.deadline) {
+        match.state=integrations::ExecutableMatchState::unavailable;match.message="No unique new matching Steam game was observed before the launch timeout.";
+      }
+      if(match.state==integrations::ExecutableMatchState::pending) {
+        if(Clock::now()<e.deadline)return;
+        match.state=integrations::ExecutableMatchState::unavailable;match.message="No unique new matching Steam game was observed before the launch timeout.";
+      }
+      if(match.state!=integrations::ExecutableMatchState::matched||!match.process) {
+        snapshot.state=SessionState::interrupted;snapshot.awaiting_observation=false;snapshot.duration_ms=0;
+        snapshot.capabilities={};snapshot.window.reset();snapshot.tracking_message=match.message;changed(e);return;
+      }
+      if(!e.observed) {
+        e.observed=match.process;e.started=Clock::now();snapshot.process_id=match.process->id();snapshot.started_at=wall_time();
+        snapshot.descriptor.tracking=TrackingQuality::provider_observed;snapshot.awaiting_observation=false;
+        snapshot.tracking_message=tracking_message(TrackingQuality::provider_observed);changed(e);
+      }
+    }
+    snapshot.duration_ms=static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now()-e.started).count());
+    snapshot.window=window;
+    const bool controlled=snapshot.descriptor.tracking==TrackingQuality::direct_child||snapshot.descriptor.tracking==TrackingQuality::provider_observed;
+    snapshot.capabilities={controlled&&window.has_value(),controlled&&window.has_value(),controlled&&window.has_value()};
+#ifndef _WIN32
+    // Preserve the existing owned-child SIGTERM request on POSIX. Provider
+    // observation remains unavailable; no external PID is signalled.
+    snapshot.capabilities.graceful_close=snapshot.descriptor.tracking==TrackingQuality::direct_child&&observation.state==integrations::ProcessState::running;
+#endif
+    if(observation.state==integrations::ProcessState::running)return;
+    snapshot.state=observation.state==integrations::ProcessState::exited?SessionState::exited:SessionState::interrupted;
+    snapshot.ended_at=snapshot.state==SessionState::exited?wall_time():0;snapshot.exit_code=observation.exit_code;
+    snapshot.capabilities={};snapshot.window.reset();
+    if(!observation.message.empty())snapshot.tracking_message+="; "+observation.message;
+    changed(e);
   }
-  static void save(Entry& entry) {
-    if (!entry.dirty) return;
-    try { persist(entry.snapshot); entry.snapshot.persistence_error.clear(); entry.dirty = false; }
-    catch (const std::exception& error) { entry.snapshot.persistence_error = error.what(); }
+  void save(const std::shared_ptr<Entry>& entry) {
+    std::lock_guard saving(entry->save_mutex);SessionSnapshot snapshot;std::uint64_t revision;
+    {std::lock_guard lock(mutex);if(!entry->dirty)return;snapshot=entry->snapshot;revision=entry->revision;}
+    std::string error;try{std::lock_guard journal(journal_mutex);persist(snapshot);}catch(const std::exception& failure){error=failure.what();}
+    std::lock_guard lock(mutex);entry->snapshot.persistence_error=std::move(error);
+    if(entry->revision==revision&&entry->snapshot.persistence_error.empty())entry->dirty=false;
   }
   void run() {
     std::unique_lock lock(mutex);
     while (!stopping) {
       condition.wait_for(lock, std::chrono::milliseconds(25), [&] { return stopping; });
       if (stopping) break;
-      for (auto& entry : entries) { update(entry); save(entry); }
+      const auto work=entries;lock.unlock();
+      for (const auto& entry : work) { update(entry); save(entry); }
+      lock.lock();
     }
   }
 };
 SessionManager::SessionManager() : impl_(std::make_unique<Impl>()) {}
 SessionManager::~SessionManager() { (void)shutdown(); }
 SessionLaunchResult SessionManager::launch(SessionDescriptor descriptor, const std::vector<std::string>& arguments, const fs::path& working_directory) {
-  std::lock_guard lock(impl_->mutex);
-  if (impl_->stopping) return {false, {}, "Session observation has shut down"};
-  if (impl_->entries.size() >= 512) {
-    const auto removable = std::ranges::find_if(impl_->entries, [](const auto& value) { return value.snapshot.state != SessionState::running && !value.dirty; });
-    if (removable == impl_->entries.end()) return {false, {}, "Session observation backlog is full; resolve history save failures before launching more"};
-    impl_->entries.erase(removable);
+  std::lock_guard launching(impl_->shutdown_mutex);
+  {
+    std::lock_guard lock(impl_->mutex);
+    if (impl_->stopping) return {false, {}, "Session observation has shut down"};
+    if (impl_->entries.size() >= 512) {
+      const auto removable = std::ranges::find_if(impl_->entries, [](const auto& value) { return value->snapshot.state != SessionState::running && !value->dirty; });
+      if (removable == impl_->entries.end()) return {false, {}, "Session observation backlog is full; resolve history save failures before launching more"};
+      impl_->entries.erase(removable);
+    }
+    if (std::ranges::count_if(impl_->entries, [](const auto& entry) { return entry->snapshot.state == SessionState::running; }) >= 256) return {false, {}, "Too many active sessions"};
   }
-  if (std::ranges::count_if(impl_->entries, [](const auto& entry) { return entry.snapshot.state == SessionState::running; }) >= 256) return {false, {}, "Too many active sessions"};
-  try { validate(descriptor); descriptor.profile_directory = fs::weakly_canonical(fs::absolute(descriptor.profile_directory)); preflight(descriptor); }
+  if(descriptor.tracking==TrackingQuality::provider_observed)return {false,{},"Provider observation can only be established by matching a new process"};
+  try { validate(descriptor); descriptor.profile_directory = fs::weakly_canonical(fs::absolute(descriptor.profile_directory));std::lock_guard journal(impl_->journal_mutex);preflight(descriptor); }
   catch (const std::exception& error) { return {false, {}, "Cannot prepare session history: " + std::string(error.what())}; }
+  auto entry=std::make_shared<Impl::Entry>();
+  if(descriptor.observation)try{entry->watch=std::make_shared<integrations::ExecutableObservation>(descriptor.observation->executable);}
+  catch(const std::exception& error){return {false,{},std::string("Cannot prepare Steam game observation: ")+error.what()};}
   const auto started = Clock::now(); auto launched = integrations::launch_owned_process(arguments, working_directory);
   if (!launched) return {false, {}, launched.message};
   SessionSnapshot snapshot;
   snapshot.id = "session-" + owner_token() + "-" + std::to_string(++serial); snapshot.descriptor = std::move(descriptor);
-  snapshot.process_id = launched.process->id(); snapshot.started_at = wall_time(); snapshot.tracking_message = tracking_message(snapshot.descriptor.tracking);
-  impl_->entries.push_back({std::move(snapshot), std::move(launched.process), started, true});
-  auto& entry = impl_->entries.back(); Impl::save(entry);
-  const auto result = SessionLaunchResult{true, entry.snapshot.id, entry.snapshot.persistence_error.empty() ? "Session started" : "Session started; history save will retry: " + entry.snapshot.persistence_error};
-  if (impl_->entries.size() > 512) {
-    const auto removable = std::ranges::find_if(impl_->entries, [](const auto& value) { return value.snapshot.state != SessionState::running && !value.dirty; });
-    if (removable != impl_->entries.end()) impl_->entries.erase(removable);
-  }
+  snapshot.process_id = entry->watch?-1:launched.process->id(); snapshot.started_at = entry->watch?0:wall_time(); snapshot.tracking_message = tracking_message(snapshot.descriptor.tracking);
+  snapshot.awaiting_observation=bool(entry->watch);
+  if(entry->watch){entry->watch->exclude_process(launched.process->id());snapshot.tracking_message="Waiting for a unique new Steam game process; no game lifetime is credited yet.";}
+  entry->snapshot=std::move(snapshot);entry->process=std::move(launched.process);entry->started=started;
+  entry->deadline=started+std::chrono::milliseconds(entry->snapshot.descriptor.observation?entry->snapshot.descriptor.observation->timeout_ms:0);
+  {std::lock_guard lock(impl_->mutex);impl_->entries.push_back(entry);}
+  impl_->save(entry);
+  SessionLaunchResult result;
+  {std::lock_guard lock(impl_->mutex);result={true,entry->snapshot.id,entry->snapshot.persistence_error.empty()?"Session started":"Session started; history save will retry: "+entry->snapshot.persistence_error};}
   impl_->condition.notify_one(); return result;
 }
 std::vector<SessionSnapshot> SessionManager::snapshot() const {
   std::lock_guard lock(impl_->mutex); std::vector<SessionSnapshot> result; result.reserve(impl_->entries.size());
   for (const auto& entry : impl_->entries) {
-    auto snapshot = entry.snapshot;
-    if (snapshot.state == SessionState::running) snapshot.duration_ms = static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - entry.started).count());
+    auto snapshot = entry->snapshot;
+    if (snapshot.state == SessionState::running&&!snapshot.awaiting_observation) snapshot.duration_ms = static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - entry->started).count());
     result.push_back(std::move(snapshot));
   }
   return result;
 }
 std::optional<SessionSnapshot> SessionManager::active_session() const {
   std::lock_guard lock(impl_->mutex);
-  for (auto it = impl_->entries.rbegin(); it != impl_->entries.rend(); ++it) if (it->snapshot.state == SessionState::running) {
-    auto value=it->snapshot;
-    value.duration_ms=static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now()-it->started).count());
+  for (auto it = impl_->entries.rbegin(); it != impl_->entries.rend(); ++it) if ((*it)->snapshot.state == SessionState::running) {
+    auto value=(*it)->snapshot;
+    if(!value.awaiting_observation)value.duration_ms=static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now()-(*it)->started).count());
     return value;
   }
   return {};
 }
-integrations::Result SessionManager::quit(const std::string& session_id, integrations::ProcessStopMode mode) {
-  std::lock_guard lock(impl_->mutex);
-  for (auto& entry : impl_->entries) if (entry.snapshot.id == session_id) {
-    Impl::update(entry); Impl::save(entry);
-    if (entry.snapshot.state != SessionState::running || !entry.process) return {false, "This session is no longer observed as running"};
-    return entry.process->stop(mode);
+integrations::Result SessionManager::confirm_application_window(const std::string& id,const integrations::SessionWindowTarget& target) {
+  std::shared_ptr<Impl::Entry> selected;std::shared_ptr<integrations::OwnedProcess> process;
+  {std::lock_guard lock(impl_->mutex);for(const auto& entry:impl_->entries)if(entry->snapshot.id==id){selected=entry;process=entry->process;break;}}
+  if(selected) {
+    if(!process)return {false,"The application's owned child is unavailable."};
+    const auto observation=process->observe();
+    if(observation.state!=integrations::ProcessState::running||!observation.process_creation||target.process_creation!=observation.process_creation)
+      return {false,"The application window does not match its live owned process identity."};
+    const auto valid=integrations::validate_session_window(target);if(!valid)return valid;
+    {std::lock_guard lock(impl_->mutex);auto& entry=*selected;
+    if(entry.snapshot.state!=SessionState::running || entry.watch || entry.snapshot.descriptor.kind!=SessionKind::application || target.pid!=entry.process->id())
+      return {false,"A live window must belong to the application's owned child."};
+    entry.snapshot.descriptor.tracking=TrackingQuality::direct_child;
+    entry.snapshot.tracking_message="Observed application window and direct child lifetime; detached descendants are not tracked";
+    entry.snapshot.window=target;entry.snapshot.capabilities={true,true,true};Impl::changed(entry);}
+    impl_->save(selected);
+    return {true,"Application window confirmed."};
   }
+  return {false,"The application session is no longer available."};
+}
+integrations::Result SessionManager::quit(const std::string& session_id, integrations::ProcessStopMode mode) {
+  std::shared_ptr<integrations::OwnedProcess> owned;std::shared_ptr<integrations::ObservedProcess> observed;
+  {
+    std::lock_guard lock(impl_->mutex);
+    for (const auto& entry : impl_->entries) if (entry->snapshot.id == session_id) {
+      const auto& snapshot=entry->snapshot;
+      if(snapshot.state!=SessionState::running||snapshot.awaiting_observation)return {false,"This game has no current process capability."};
+      if(snapshot.descriptor.tracking==TrackingQuality::provider_observed) {
+        if(mode!=integrations::ProcessStopMode::request_close)return {false,"An observed Steam game can only receive a graceful window close request; force stop is unavailable."};
+        if(!snapshot.capabilities.graceful_close)return {false,"The observed game has no unique current window to close."};
+        observed=entry->observed;
+      }else if(snapshot.descriptor.tracking==TrackingQuality::direct_child) {
+        if(mode==integrations::ProcessStopMode::request_close&&!snapshot.capabilities.graceful_close)return {false,"The owned game has no unique current window to close."};
+        owned=entry->process;
+      }
+      else return {false,"A forwarding launcher is not a game process; quit from the game itself."};
+      break;
+    }
+  }
+  if(observed)return observed->request_close();
+  if(owned)return owned->stop(mode);
   return {false, "This session is not owned by this manager"};
 }
 SessionHistory SessionManager::history(const fs::path& profile_directory, const std::string& identity) const {
+  std::lock_guard journal(impl_->journal_mutex);
   SessionHistory result;
   try {
     const auto profile = fs::weakly_canonical(fs::absolute(profile_directory));
@@ -296,6 +413,7 @@ SessionHistory SessionManager::history(const fs::path& profile_directory, const 
     }
     for (const auto& total : journal.at("totals")) if (identity.empty() || total.at("identity") == identity) {
       add(result.launch_count, total.at("launch_count").get<std::uint64_t>()); add(result.total_playtime_ms, total.at("total_playtime_ms").get<std::uint64_t>());
+      add(result.provider_observed_playtime_ms,total.value("provider_observed_playtime_ms",std::uint64_t{}));
     }
   } catch (const std::exception& error) { result = {}; result.error = error.what(); }
   return result;
@@ -304,14 +422,18 @@ integrations::Result SessionManager::shutdown() {
   std::lock_guard shutdown_lock(impl_->shutdown_mutex);
   { std::lock_guard lock(impl_->mutex); impl_->stopping = true; impl_->condition.notify_all(); }
   if (impl_->observer.joinable()) impl_->observer.join();
-  std::lock_guard lock(impl_->mutex); std::string error;
-  for (auto& entry : impl_->entries) {
-    Impl::update(entry);
-    if (entry.snapshot.state == SessionState::running) {
-      entry.snapshot.state = SessionState::detached; entry.snapshot.ended_at = 0; entry.dirty = true;
-      entry.snapshot.tracking_message += "; observation shut down while the process was running";
+  std::vector<std::shared_ptr<Impl::Entry>> entries;{std::lock_guard lock(impl_->mutex);entries=impl_->entries;}
+  std::string error;
+  for (const auto& entry : entries) {
+    impl_->update(entry);
+    {std::lock_guard lock(impl_->mutex);
+      if(entry->snapshot.state==SessionState::running) {
+        entry->snapshot.state=SessionState::detached;entry->snapshot.ended_at=0;entry->snapshot.capabilities={};entry->snapshot.window.reset();
+        entry->snapshot.tracking_message+="; observation shut down while the process was running";Impl::changed(*entry);
+      }
     }
-    Impl::save(entry); entry.process.reset(); if (!entry.snapshot.persistence_error.empty()) error = entry.snapshot.persistence_error;
+    impl_->save(entry);
+    {std::lock_guard lock(impl_->mutex);entry->process.reset();entry->watch.reset();entry->observed.reset();if(!entry->snapshot.persistence_error.empty())error=entry->snapshot.persistence_error;}
   }
   return {error.empty(), error.empty() ? "Session observation stopped; running applications were left open" : "Session observation stopped; history save failed: " + error};
 }

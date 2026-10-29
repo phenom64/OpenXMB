@@ -1,4 +1,5 @@
 #include "openxmb/integrations/session_window.hpp"
+#include "openxmb/desktop/session.hpp"
 #include <filesystem>
 #include <iostream>
 #include <stdexcept>
@@ -25,20 +26,28 @@ int main(int argc, char** argv) {
     require(argc == 2, "fixture executable argument is required");
     const auto root = fs::temp_directory_path() / ("openxmb-window-" + std::to_string(GetCurrentProcessId()));
     fs::create_directories(root); const auto ready = root / "ready"; const auto image = root / "capture.png"; fs::remove(ready);
-    std::wstring command = L"\"" + fs::path(argv[1]).wstring() + L"\" \"" + ready.wstring() + L"\"";
-    STARTUPINFOW si{}; si.cb = sizeof(si); PROCESS_INFORMATION pi{};
-    require(CreateProcessW(nullptr, command.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi) != FALSE, "fixture launch failed");
-    struct Guard { PROCESS_INFORMATION p; ~Guard() { TerminateProcess(p.hProcess, 0); CloseHandle(p.hThread); CloseHandle(p.hProcess); } } guard{pi};
+    openxmb::desktop::SessionManager manager;
+    openxmb::desktop::SessionDescriptor descriptor;
+    descriptor.identity="window-fixture";descriptor.title="Window Fixture";descriptor.provider="application";descriptor.runner="fixture";
+    descriptor.profile_directory=root;descriptor.kind=openxmb::desktop::SessionKind::application;descriptor.tracking=openxmb::desktop::TrackingQuality::launcher_only;
+    const auto helper=fs::path(argv[1]).u8string(),destination=ready.u8string();
+    const auto launched=manager.launch(descriptor,{std::string(helper.begin(),helper.end()),std::string(destination.begin(),destination.end())});
+    require(bool(launched),"fixture launch failed");
+    struct Guard {openxmb::desktop::SessionManager& manager;std::string id;~Guard(){static_cast<void>(manager.quit(id,ProcessStopMode::force_stop));}} guard{manager,launched.session_id};
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
     while (!fs::exists(ready) && std::chrono::steady_clock::now() < deadline) std::this_thread::sleep_for(std::chrono::milliseconds(20));
     require(fs::exists(ready), "fixture did not become ready");
-    auto target = find_session_window(pi.dwProcessId); require(bool(target), "fixture target not found");
+    auto target = find_session_window(manager.active_session()->process_id); require(bool(target), "fixture target not found");
     auto stale = *target; ++stale.process_creation;
     require(!focus_session_window(stale), "stale creation token must not focus");
     require(!capture_session_window(stale, image), "stale creation token must not capture");
     auto wrong = *target; wrong.pid = GetCurrentProcessId();
     require(!focus_session_window(wrong), "wrong PID must not focus");
     require(!capture_session_window(wrong, image), "wrong PID must not capture");
+    require(!manager.confirm_application_window(launched.session_id,wrong),"A forwarding session must not adopt another process");
+    require(!manager.confirm_application_window(launched.session_id,stale),"A forwarding session must not accept a stale window");
+    require(bool(manager.confirm_application_window(launched.session_id,*target)),"A live child window did not confirm the application session");
+    require(manager.active_session()->descriptor.tracking==openxmb::desktop::TrackingQuality::direct_child,"Confirmed application did not become directly observed");
     HWND shell = CreateWindowW(L"STATIC", L"Hidden fixture shell", WS_OVERLAPPED, 0, 0, 1, 1, nullptr, nullptr, GetModuleHandleW(nullptr), nullptr);
     require(shell != nullptr, "hidden fixture shell creation failed");
     require(!capture_session_window(*target, image), "missing shell handle must fail closed");
@@ -54,7 +63,11 @@ int main(int argc, char** argv) {
       Gdiplus::GdiplusShutdown(token);
       std::cout << "Windows session window identity, focus and screenshot pixel checks passed\n";
     } else std::cout << "Foreground denied; visual capture checks skipped\n";
-    DestroyWindow(shell); PostMessageW(reinterpret_cast<HWND>(target->handle), WM_CLOSE, 0, 0); fs::remove_all(root);
+    DestroyWindow(shell); PostMessageW(reinterpret_cast<HWND>(target->handle), WM_CLOSE, 0, 0);
+    const auto exit_deadline=std::chrono::steady_clock::now()+std::chrono::seconds(5);
+    while(manager.active_session()&&std::chrono::steady_clock::now()<exit_deadline)std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    require(!manager.active_session(),"Window fixture did not exit");
+    static_cast<void>(manager.shutdown());fs::remove_all(root);
 #else
     (void)argc; (void)argv;
     require(!find_session_window(1), "unsupported platform must not resolve a target");

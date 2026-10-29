@@ -100,6 +100,9 @@ Result focus_session_window(const SessionWindowTarget& target) {
     return {false, "Windows did not grant focus to the session window. Select it from the taskbar."};
   return {true, "Session window focused."};
 }
+Result validate_session_window(const SessionWindowTarget& target) {
+  return valid_target(target)?Result{true,"Session window identity is current."}:Result{false,"The session window identity is no longer valid."};
+}
 Result capture_session_window(const SessionWindowTarget& target, const std::filesystem::path& destination, std::uintptr_t excluded_shell_handle) {
   if (!valid_target(target)) return {false, "The session window is no longer valid."};
   if (!shell_hidden(excluded_shell_handle)) return {false, "Hide or minimize the OpenXMB window before capturing."};
@@ -138,6 +141,7 @@ Result capture_session_window(const SessionWindowTarget& target, const std::file
 #else
 namespace openxmb::integrations {
 std::optional<SessionWindowTarget> find_session_window(std::int64_t) { return {}; }
+Result validate_session_window(const SessionWindowTarget&) { return {false,"Session window identity is unavailable on this platform."}; }
 Result focus_session_window(const SessionWindowTarget&) { return {false, "Session window switching is unavailable on this platform."}; }
 Result capture_session_window(const SessionWindowTarget&, const std::filesystem::path&, std::uintptr_t) { return {false, "Session window capture is unavailable on this platform."}; }
 } // namespace openxmb::integrations
