@@ -4,6 +4,7 @@ add_library(openxmb_integrations STATIC
   "${_openxmb_integrations_root}/src/integrations/desktop.cpp"
   "${_openxmb_integrations_root}/src/integrations/owned_process.cpp"
   "${_openxmb_integrations_root}/src/integrations/session_window.cpp"
+  "${_openxmb_integrations_root}/src/integrations/xmb_overlay.cpp"
   "${_openxmb_integrations_root}/src/integrations/browser_input.cpp"
   "${_openxmb_integrations_root}/src/integrations/disc.cpp")
 add_library(OpenXMB::Integrations ALIAS openxmb_integrations)
@@ -36,11 +37,15 @@ else()
 endif()
 install(TARGETS openxmb-integrations openxmb-retro RUNTIME DESTINATION bin)
 if(OPENXMB_BUILD_NATIVE_TESTS)
+  add_executable(openxmb_overlay_tests "${_openxmb_integrations_root}/tests/integrations/xmb_overlay_tests.cpp")
+  target_link_libraries(openxmb_overlay_tests PRIVATE OpenXMB::Integrations)
+  set_target_properties(openxmb_overlay_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+  add_test(NAME openxmb_overlay_tests COMMAND openxmb_overlay_tests)
   if(WIN32)
     add_executable(openxmb_session_window_child EXCLUDE_FROM_ALL "${_openxmb_integrations_root}/tests/integrations/session_window_child.cpp")
     add_executable(openxmb_session_window_tests EXCLUDE_FROM_ALL "${_openxmb_integrations_root}/tests/integrations/session_window_tests.cpp")
     target_link_libraries(openxmb_session_window_child PRIVATE user32 gdi32)
-    target_link_libraries(openxmb_session_window_tests PRIVATE OpenXMB::Integrations)
+    target_link_libraries(openxmb_session_window_tests PRIVATE OpenXMB::Integrations OpenXMB::DesktopCore)
     set_target_properties(openxmb_session_window_child openxmb_session_window_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
   endif()
   add_executable(openxmb_integrations_tests "${_openxmb_integrations_root}/tests/integrations/integration_tests.cpp")
