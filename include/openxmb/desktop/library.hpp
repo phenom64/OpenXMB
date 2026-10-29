@@ -114,6 +114,9 @@ public:
 
   // Playable view: provider support products stay stored, but are not games.
   std::vector<Game> games() const;
+  // Background readers pin their originating profile without changing the
+  // active-profile selector. Missing or removed profiles are rejected.
+  std::vector<Game> games(const std::string &profile_id) const;
   Game save_game(Game game);
   void remove_game(const std::string &id);
   void mark_played(const std::string &id);

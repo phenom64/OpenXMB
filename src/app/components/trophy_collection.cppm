@@ -50,10 +50,28 @@ namespace fs=std::filesystem;
 namespace desktop=openxmb::desktop;
 struct Profile {fs::path root;std::string user;};
 struct Record {desktop::AchievementGame game;std::vector<desktop::RetroProgressDetail> details;bool remote{},loaded{};};
-enum class WorkKind {profiles,sets,account,progress};
+// Supported local library ROMs for exact RetroAchievements matching. Only raw
+// .gb/.gbc/.gba content launched through a runner qualifies; every other
+// library game is counted as unsupported and keeps manual game IDs.
+struct LibraryScan {std::vector<fs::path> paths;unsigned unsupported{},unavailable{},over_limit{};};
+bool rom_extension(const fs::path& path){const auto text=path.extension().u8string();std::string ext(text.begin(),text.end());for(auto& c:ext)if(c>='A'&&c<='Z')c=static_cast<char>(c-'A'+'a');return ext==".gb"||ext==".gbc"||ext==".gba";}
+LibraryScan library_paths(const fs::path& root,const std::string& profile_id){
+  LibraryScan scan;std::set<fs::path> seen;
+  for(const auto& game:openxmb::desktop::Library(root).games(profile_id)){
+    if(game.runner.empty()||game.runner=="native"||game.runner=="steam"||game.runner=="rpcs3"||!rom_extension(game.content)){++scan.unsupported;continue;}
+    auto path=game.content;if(path.is_relative()&&!game.working_directory.empty())path=game.working_directory/path;
+    if(path.is_relative()){++scan.unavailable;continue;}
+    path=path.lexically_normal();if(!seen.insert(path).second)continue;
+    if(scan.paths.size()>=openxmb::desktop::retroachievements_match_limit){++scan.over_limit;continue;}
+    scan.paths.push_back(std::move(path));
+  }
+  return scan;
+}
+enum class WorkKind {profiles,sets,account,progress,match};
 struct WorkResult {
   WorkKind kind{};std::vector<Profile> profiles;std::vector<Record> records;
   desktop::RetroAccountResult account;desktop::RetroProgressResult progress;
+  desktop::RetroMatchResult match;desktop::RetroAccount owner;LibraryScan scan;
   unsigned game_id{};std::string message;
 };
 std::string path_text(const fs::path& path){const auto value=path.u8string();return {value.begin(),value.end()};}
@@ -196,7 +214,7 @@ inline constexpr float settings_label_size=static_cast<float>(openxmb::xmb::kIna
 inline constexpr float settings_idle_alpha=static_cast<float>(openxmb::xmb::kInactiveItemAlpha);
 inline constexpr float settings_above_y=120.0F,settings_next_padding=static_cast<float>(openxmb::xmb::kSelectedToNextPadding);
 inline constexpr float settings_value_right=1840.0F,settings_value_size=26.0F,settings_value_width=600.0F,settings_description_size=22.0F;
-inline constexpr std::size_t settings_rows=5;
+inline constexpr std::size_t settings_rows=6;
 
 inline float text_width(const xmb_canvas& c,std::string_view text,float size){return c.renderer.text_width_pixels(text,size*c.scale*config::CONFIG.textScale)/c.scale;}
 inline std::size_t utf8_floor(std::string_view text,std::size_t length){while(length>0&&length<text.size()&&(static_cast<unsigned char>(text[length])&0xC0U)==0x80U)--length;return length;}
@@ -365,6 +383,7 @@ private:
     switch(value.kind){case trophy_detail::WorkKind::profiles:choose_profiles(std::move(value.profiles));break;
     case trophy_detail::WorkKind::sets:records_=std::move(value.records);append_remote();if(page_==Page::trophies&&!reload_game_id_.empty()){auto found=std::ranges::find_if(records_,[&](const auto& r){return !r.remote&&r.game.game_id==reload_game_id_;});if(found==records_.end()){page_=Page::games;selected_=0;}else {selected_game_=static_cast<std::size_t>(found-records_.begin());selected_=std::min(selected_,found->game.entries.empty()?std::size_t{}:found->game.entries.size()-1);}}else selected_=std::min(selected_,records_.size());if(message_=="Loading local trophies...")message_=records_.empty()?"No trophy sets were found.":"Local trophy data loaded.";break;
     case trophy_detail::WorkKind::account:if(value.account.rate_limited)retry_after_=Clock::now()+std::chrono::seconds(60);if(!value.account){message_=value.account.error;break;}if(save([&](auto& prefs){prefs["achievements.ra.username"]=value.account.value->username;prefs["achievements.ra.ulid"]=value.account.value->ulid;})){ra_=*value.account.value;std::erase_if(records_,[](const auto& r){return r.remote;});append_remote();message_="RetroAchievements account linked.";}break;
+    case trophy_detail::WorkKind::match:apply_match(std::move(value));break;
     case trophy_detail::WorkKind::progress:{if(value.progress.rate_limited)retry_after_=Clock::now()+std::chrono::seconds(60);auto found=std::ranges::find_if(records_,[&](const auto& r){return r.remote&&r.game.game_id==std::to_string(value.game_id);});if(found==records_.end())break;if(!value.progress){message_=value.progress.error;break;}found->game=std::move(*value.progress.game);found->details=std::move(value.progress.details);found->loaded=true;tallies_dirty_=true;message_=value.progress.warning.empty()?(value.progress.from_cache?(value.progress.stale?"Showing stale offline data.":"Showing cached data."):"Progress refreshed."):value.progress.warning;break;}}
   }
   std::optional<std::string> key(){if(!trophy_detail::env_name(key_env_)){message_="Set a valid API key environment variable name in Settings.";return {};}const char* p=std::getenv(key_env_.c_str());if(!p||!*p){message_="Set the "+key_env_+" environment variable to your RetroAchievements web API key.";return {};}return std::string(p);}
@@ -372,6 +391,53 @@ private:
     start(trophy_detail::WorkKind::progress,[account,cache,id,secret=std::move(secret),online](auto cancelled){WorkResult out;out.game_id=id;out.progress=openxmb::desktop::retroachievements_progress(cache,account,id,secret,trophy_detail::transport(cancelled),online);return out;});
   }
   void link(std::string username){if(Clock::now()<retry_after_){message_="Rate limited. Wait before trying again.";return;}auto secret=key();if(!secret)return;message_="Checking RetroAchievements account...";start(trophy_detail::WorkKind::account,[username=std::move(username),secret=std::move(*secret)](auto cancelled){WorkResult out;out.account=openxmb::desktop::retroachievements_account(username,secret,trophy_detail::transport(cancelled));return out;});}
+  std::string api_key_if_set()const{if(!trophy_detail::env_name(key_env_))return {};const char* p=std::getenv(key_env_.c_str());return p?std::string(p):std::string{};}
+  // Explicit action. Hashing and the single hash-list request per console run
+  // off the UI thread; ROM bytes and paths never leave the machine. Without a
+  // key only cached hash lists are used.
+  void match_library(){
+    if(ra_.username.empty()){message_="Link a RetroAchievements account in Settings.";return;}
+    if(busy_){message_="Please wait for the current request.";return;}
+    auto secret=api_key_if_set();const bool online=!secret.empty();
+    if(online&&Clock::now()<retry_after_){message_="Rate limited. Wait before trying again.";return;}
+    const auto account=ra_;const auto cache=cache_root_;const auto root=origin_root_;const auto profile_id=origin_profile_;
+    message_=online?"Matching library games with RetroAchievements...":"Matching library games from cached hash lists...";
+    start(trophy_detail::WorkKind::match,[account,cache,root,profile_id,secret=std::move(secret),online](auto cancelled){
+      WorkResult out;out.owner=account;out.scan=trophy_detail::library_paths(root,profile_id);
+      out.match=openxmb::desktop::retroachievements_match(cache,account,secret,out.scan.paths,trophy_detail::transport(cancelled),[cancelled]{return cancelled->load();},online);return out;});
+  }
+  // Runs on the UI thread after the origin profile was re-validated. A result
+  // for another account, or a cancelled one, is discarded; only exact positive
+  // provider IDs are merged into this profile's list, keeping manual IDs.
+  void apply_match(WorkResult value){
+    const auto& m=value.match;
+    if(m.cancelled){message_="Library matching was cancelled.";return;}
+    if(value.owner.username!=ra_.username||value.owner.ulid!=ra_.ulid){message_="The RetroAchievements account changed. Matching result discarded.";return;}
+    if(m.rate_limited)retry_after_=Clock::now()+std::chrono::seconds(60);
+    if(m.items.empty()&&!m.error.empty()){message_=m.error;return;}
+    auto updated=ra_games_;unsigned added=0,known=0,full=0;
+    for(const auto& item:m.items)if(item.status==openxmb::desktop::RetroMatchStatus::matched&&item.game_id){
+      if(std::ranges::find(updated,item.game_id)!=updated.end()){++known;continue;}
+      if(updated.size()>=64){++full;continue;}updated.push_back(item.game_id);++added;
+    }
+    if(added){std::string serial;for(const auto id:updated){if(!serial.empty())serial+=',';serial+=std::to_string(id);}
+      if(!save([&](auto& p){p["achievements.ra.games"]=serial;}))return;
+      ra_games_=std::move(updated);std::erase_if(records_,[](const auto& r){return r.remote;});append_remote();}
+    const unsigned unavailable=m.unavailable+value.scan.unavailable,unsupported=m.unsupported+value.scan.unsupported,over=m.skipped+value.scan.over_limit;
+    const auto count=[](unsigned n){return std::to_string(n);};
+    std::string text="Account "+ra_.username+" · this OpenXMB profile\nChecked "+count(static_cast<unsigned>(m.items.size()-m.skipped))+" raw GB, GBC or GBA ROMs by exact file hash.\n"
+      "Matched: "+count(m.matched)+" ("+count(added)+" added, "+count(known)+" already listed)\nUnmatched: "+count(m.unmatched)+" (no RetroAchievements set lists the exact file)\n"
+      "Unsupported library games: "+count(unsupported)+" (only raw .gb, .gbc and .gba files are matched; add other games by ID)\nUnavailable: "+count(unavailable)+" (unreadable files or no hash list)";
+    if(over)text+="\nNot checked: "+count(over)+" (at most 64 ROMs per run)";
+    if(full)text+="\nNot added: "+count(full)+" (the list holds at most 64 games)";
+    if(m.stale)text+="\nHash list is older than a day; newer RetroAchievements sets may be missing.";
+    if(m.rate_limited)text+="\nRate limited. Try again later.";
+    if(!m.warning.empty())text+="\n"+m.warning;else if(!m.error.empty())text+="\n"+m.error;
+    text+="\nProgress and unlocks are read from RetroAchievements; OpenXMB awards nothing.";
+    match_report_=text;
+    message_="Matched "+count(m.matched)+", unmatched "+count(m.unmatched)+", unsupported "+count(unsupported)+", unavailable "+count(unavailable)+".";
+    if(host_)host_->emplace_overlay<message_overlay>("Match library games",match_report_,std::vector<std::string>{"OK"});
+  }
   std::size_t row_count()const{if(page_==Page::settings)return trophy_view::settings_rows;if(page_==Page::games)return records_.size()+1;if(selected_game_>=records_.size())return 0;return records_[selected_game_].game.entries.size();}
   void activate(){if(page_==Page::games){if(selected_>=records_.size()){page_=Page::settings;selected_game_=selected_;selected_=0;paged(1);return;}selected_game_=selected_;page_=Page::trophies;selected_=0;paged(1);if(records_[selected_game_].remote&&!records_[selected_game_].loaded){unsigned id{};const auto& s=records_[selected_game_].game.game_id;auto parsed=std::from_chars(s.data(),s.data()+s.size(),id);if(parsed.ec==std::errc{})load_remote(id,false);}return;}
     if(page_==Page::trophies){show_information();return;}settings_action();}
@@ -380,7 +446,8 @@ private:
     else if(selected_==1)prompt_profile();
     else if(selected_==2)host_->emplace_overlay<text_entry_overlay>("RetroAchievements user name",ra_.username,[this,weak](std::string value){auto live=weak.lock();if(live&&live->load())link(std::move(value));});
     else if(selected_==3)host_->emplace_overlay<text_entry_overlay>("API key environment variable",key_env_,[this,weak](std::string value){auto live=weak.lock();if(!live||!live->load())return;if(!trophy_detail::env_name(value)){message_="Enter an environment variable name, not the API key.";return;}if(save([&](auto& p){p["achievements.ra.key_env"]=value;})){key_env_=value;message_="Environment variable name saved.";}});
-    else host_->emplace_overlay<text_entry_overlay>("RetroAchievements game ID","",[this,weak](std::string value){auto live=weak.lock();if(!live||!live->load())return;try{const auto ids=trophy_detail::game_ids(value);if(ids.size()!=1)throw std::runtime_error("Enter one numeric game ID.");auto updated=ra_games_;if(std::ranges::find(updated,ids.front())==updated.end())updated.push_back(ids.front());if(updated.size()>64)throw std::runtime_error("At most 64 game IDs are supported.");std::string serial;for(auto id:updated){if(!serial.empty())serial+=',';serial+=std::to_string(id);}if(save([&](auto& p){p["achievements.ra.games"]=serial;})){ra_games_=std::move(updated);std::erase_if(records_,[](const auto& r){return r.remote;});append_remote();message_="Game ID added.";}}catch(const std::exception& e){message_=e.what();}});
+    else if(selected_==4)host_->emplace_overlay<text_entry_overlay>("RetroAchievements game ID","",[this,weak](std::string value){auto live=weak.lock();if(!live||!live->load())return;try{const auto ids=trophy_detail::game_ids(value);if(ids.size()!=1)throw std::runtime_error("Enter one numeric game ID.");auto updated=ra_games_;if(std::ranges::find(updated,ids.front())==updated.end())updated.push_back(ids.front());if(updated.size()>64)throw std::runtime_error("At most 64 game IDs are supported.");std::string serial;for(auto id:updated){if(!serial.empty())serial+=',';serial+=std::to_string(id);}if(save([&](auto& p){p["achievements.ra.games"]=serial;})){ra_games_=std::move(updated);std::erase_if(records_,[](const auto& r){return r.remote;});append_remote();message_="Game ID added.";}}catch(const std::exception& e){message_=e.what();}});
+    else match_library();
   }
   void refresh(){if(busy_){message_="Please wait for the current request.";return;}textures_.forget_failed();if(page_==Page::settings){begin_profiles();return;}const auto index=page_==Page::trophies?selected_game_:selected_;if(index<records_.size()&&records_[index].remote){unsigned id{};const auto& text=records_[index].game.game_id;const auto parsed=std::from_chars(text.data(),text.data()+text.size(),id);if(parsed.ec==std::errc{})load_remote(id,true);}else if(!profile_.user.empty())load_sets();else begin_profiles();}
   // Information carries what normal browsing labels leave out: provider
@@ -428,7 +495,8 @@ private:
     case 1:text=profile_.user.empty()?"No RPCS3 user is selected.":"User: "+profile_.user+"\nData root: "+trophy_detail::path_text(profile_.root);text+="\nTrophies are local RPCS3 records for this user only; they are not synchronised with PlayStation Network.";break;
     case 2:text=ra_.username.empty()?"No account is linked.":"Account: "+ra_.username+(ra_.ulid.empty()?std::string():"\nULID: "+ra_.ulid);text+="\nRetroAchievements awards points, not PlayStation trophy grades.";break;
     case 3:text="Variable: "+key_env_+"\nYour web API key is read from this variable only when OpenXMB contacts RetroAchievements. The key is never saved.";break;
-    default:{std::string ids;for(const auto id:ra_games_){if(!ids.empty())ids+=", ";ids+=std::to_string(id);}text=ids.empty()?"No game IDs added.":"Game IDs: "+ids;break;}
+    case 4:{std::string ids;for(const auto id:ra_games_){if(!ids.empty())ids+=", ";ids+=std::to_string(id);}text=ids.empty()?"No game IDs added.":"Game IDs: "+ids;break;}
+    default:text=match_report_.empty()?"Hashes raw .gb, .gbc and .gba ROMs in this library on this computer and asks RetroAchievements for exact matches. Only the hash list for each system is downloaded; ROM files, paths and hashes are never uploaded. Other formats and platforms keep manual game IDs.":match_report_;break;
     }
     host_->emplace_overlay<message_overlay>(setting_row(selected_).label,text,std::vector<std::string>{"OK"});
   }
@@ -438,7 +506,8 @@ private:
     case 1:return {"RPCS3 user",profile_.user.empty()?"Not selected":profile_.user,"Trophies are read from one RPCS3 user at a time."};
     case 2:return {"Link RetroAchievements",ra_.username.empty()?"Not linked":ra_.username,"Checks a RetroAchievements account with your web API key."};
     case 3:return {"API key environment variable",key_env_,"Name of the variable that holds your web API key. The key is never saved."};
-    default:return {"Add RetroAchievements game ID",ra_games_.empty()?std::string("None"):std::to_string(ra_games_.size())+(ra_games_.size()==1?" game":" games"),"Adds a game by its numeric RetroAchievements ID."};
+    case 4:return {"Add RetroAchievements game ID",ra_games_.empty()?std::string("None"):std::to_string(ra_games_.size())+(ra_games_.size()==1?" game":" games"),"Adds a game by its numeric RetroAchievements ID."};
+    default:return {"Match library games","GB, GBC, GBA","Finds RetroAchievements games for raw ROMs by exact file hash. Nothing is uploaded."};
     }
   }
   void retally(){tallies_.clear();tallies_.reserve(records_.size());aggregate_={};rpcs3_sets_=0;for(const auto& r:records_){tallies_.push_back(trophy_detail::tally(r.game));if(!r.remote){trophy_detail::add(aggregate_,tallies_.back());++rpcs3_sets_;}}tallies_dirty_=false;}
@@ -598,5 +667,6 @@ private:
   std::vector<Tally> tallies_;Tally aggregate_;std::size_t rpcs3_sets_{};bool tallies_dirty_{true};
   std::size_t focus_from_{};Clock::time_point focus_at_{},page_at_{};int page_dir_{1};
   media_icons icons_;trophy_detail::icon_cache textures_;
+  std::string match_report_;
 };
 } // namespace app

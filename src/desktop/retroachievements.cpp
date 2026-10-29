@@ -7,6 +7,7 @@
 #include <fstream>
 #include <limits>
 #include <map>
+#include <memory>
 #include <set>
 #include <stdexcept>
 #include <string_view>
@@ -19,6 +20,10 @@
 #include <fcntl.h>
 #include <unistd.h>
 #endif
+extern "C" {
+#include <libavutil/md5.h>
+#include <libavutil/mem.h>
+}
 namespace openxmb::desktop {
 namespace {
 namespace fs=std::filesystem; using json=nlohmann::json;
@@ -146,6 +151,100 @@ RetroProgressResult cached(const fs::path& path,const RetroAccount& account,unsi
     auto result=decode(doc.at("payload"),account,game);result.from_cache=true;result.fetched_at=seconds;result.stale=now()>seconds&&static_cast<std::uint64_t>(now()-seconds)>max_age;return result;
   } catch(...) {return {};}
 }
+// ---- Exact ROM matching -------------------------------------------------
+constexpr std::uintmax_t gb_min=0x150,gb_max=8u*1024u*1024u,gba_min=0xC0,gba_max=32u*1024u*1024u;
+constexpr std::size_t chunk=64*1024,max_games=50000,max_hashes=100000,max_hashes_per_game=256;
+std::string lower_ascii(std::string value) {for(auto& c:value)if(c>='A'&&c<='Z')c=static_cast<char>(c-'A'+'a');return value;}
+std::optional<RetroRomFormat> rom_format(const fs::path& path) {
+  const auto text=path.extension().u8string();const auto ext=lower_ascii(std::string(text.begin(),text.end()));
+  if(ext==".gb")return RetroRomFormat::game_boy;if(ext==".gbc")return RetroRomFormat::game_boy_color;if(ext==".gba")return RetroRomFormat::game_boy_advance;return std::nullopt;
+}
+bool size_in_bounds(RetroRomFormat format,std::uintmax_t size) {
+  return format==RetroRomFormat::game_boy_advance?size>=gba_min&&size<=gba_max:size>=gb_min&&size<=gb_max;
+}
+struct FileState {
+  std::uintmax_t size{};fs::file_time_type modified{};fs::path canonical;
+  bool operator==(const FileState& other) const {return size==other.size&&modified==other.modified&&canonical==other.canonical;}
+};
+std::optional<FileState> snapshot(const fs::path& path) {
+  std::error_code ec;if(!fs::is_regular_file(path,ec)||ec)return std::nullopt;
+  FileState state;state.size=fs::file_size(path,ec);if(ec)return std::nullopt;state.modified=fs::last_write_time(path,ec);if(ec)return std::nullopt;state.canonical=fs::canonical(path,ec);if(ec)return std::nullopt;return state;
+}
+RetroRomHashResult rom_failure(RetroRomHashStatus status,std::string message) {RetroRomHashResult out;out.status=status;out.error=std::move(message);return out;}
+std::string hex_digest(const std::uint8_t (&digest)[16]) {
+  constexpr char hex[]="0123456789abcdef";std::string out;out.reserve(32);for(const auto byte:digest){out+=hex[byte>>4];out+=hex[byte&15];}return out;
+}
+// 32 hexadecimal characters, normalised to lowercase; empty when malformed.
+std::string md5_text(std::string_view value) {
+  if(value.size()!=32)return {};std::string out(value);
+  for(auto& c:out){if(c>='A'&&c<='F')c=static_cast<char>(c-'A'+'a');if(!((c>='0'&&c<='9')||(c>='a'&&c<='f')))return {};}
+  return out;
+}
+// md5 -> game ID. A hash the provider lists for more than one game maps to 0:
+// it is never resolved by guessing.
+using HashMap=std::map<std::string,unsigned>;
+HashMap decode_game_list(const json& payload,unsigned console) {
+  if(!payload.is_array()||payload.empty()||payload.size()>max_games)throw std::runtime_error("Unexpected game list.");
+  HashMap hashes;std::set<unsigned> ids;
+  for(const auto& game:payload) {
+    if(!game.is_object()||number(game,"ConsoleID")!=console)throw std::runtime_error("Game list is for another console.");
+    const auto id=number(game,"ID");if(!id||!ids.insert(id).second)throw std::runtime_error("Invalid game identity.");
+    const auto list=game.find("Hashes");if(list==game.end()||!list->is_array()||list->size()>max_hashes_per_game)throw std::runtime_error("Invalid hash list.");
+    for(const auto& value:*list) {
+      if(!value.is_string())throw std::runtime_error("Invalid hash.");
+      const auto md5=md5_text(value.get_ref<const std::string&>());if(md5.empty())throw std::runtime_error("Invalid hash.");
+      const auto [it,inserted]=hashes.emplace(md5,id);if(!inserted&&it->second!=id)it->second=0;
+      if(hashes.size()>max_hashes)throw std::runtime_error("Hash list is too large.");
+    }
+  }
+  return hashes;
+}
+struct HashIndex {HashMap hashes;bool loaded{},from_cache{},stale{},rate_limited{};std::string error,warning;};
+fs::path index_path(const fs::path& root,const RetroAccount& account,unsigned console) {return root/"retroachievements"/identity(account)/("hashes-"+std::to_string(console)+".json");}
+HashIndex cached_index(const fs::path& path,const RetroAccount& account,unsigned console,std::uint64_t max_age) {
+  try {
+    const auto bytes=read_cache(path);if(!bytes)return {};const auto doc=parse(*bytes);
+    if(!doc.is_object()||doc.value("version",0)!=1||bounded_string(doc,"account",64)!=identity(account)||number(doc,"console")!=console)return {};
+    const auto& fetched=doc.at("fetched_at");if(!fetched.is_number_integer())return {};const auto seconds=fetched.get<std::int64_t>();if(seconds<0||seconds>now()+300)return {};
+    const auto& map=doc.at("hashes");if(!map.is_object()||map.size()>max_hashes)return {};
+    HashIndex index;for(auto it=map.begin();it!=map.end();++it){const auto md5=md5_text(it.key());if(md5.empty()||md5!=it.key()||!it.value().is_number_unsigned())return {};index.hashes.emplace(md5,static_cast<unsigned>(std::min<std::uint64_t>(it.value().get<std::uint64_t>(),std::numeric_limits<unsigned>::max())));}
+    index.loaded=index.from_cache=true;index.stale=now()>seconds&&static_cast<std::uint64_t>(now()-seconds)>max_age;return index;
+  } catch(...) {return {};}
+}
+std::string list_url(unsigned console,const std::string& key) {return std::string(host)+"/API/API_GetGameList.php?y="+encode(key)+"&i="+std::to_string(console)+"&h=1&f=1";}
+// A list newer than max_age is reused without a request. `network` is false
+// once a 429 was seen in this call.
+HashIndex load_index(const fs::path& root,const RetroAccount& account,unsigned console,const std::string& key,const HttpTransport& transport,bool refresh,bool network,std::uint64_t max_age) {
+  const auto path=index_path(root,account,console);
+  auto fallback=cache_directory(root,identity(account),false)?cached_index(path,account,console,max_age):HashIndex{};
+  if(fallback.loaded&&!fallback.stale)return fallback;
+  const auto use_fallback=[&](std::string warning)->HashIndex {fallback.warning=std::move(warning);return std::move(fallback);};
+  if(!refresh||!network||!safe_key(key)||!transport) {
+    if(fallback.loaded)return use_fallback(refresh&&network?"Using an older RetroAchievements hash list; refreshing requires a web API key.":"Using an older RetroAchievements hash list.");
+    HashIndex none;none.error=refresh&&network?"No cached hash list is available; enter a web API key to download it.":"No cached hash list is available.";return none;
+  }
+  try {
+    HttpRequest query;query.url=list_url(console,key);query.sensitive=true;query.max_redirects=0;query.max_bytes=limit;
+    const auto response=transport(query);
+    if(response.status==429) {
+      if(fallback.loaded){fallback.rate_limited=true;return use_fallback("Rate limit reached; using an older hash list. Try again later.");}
+      HashIndex none;none.rate_limited=true;none.error="RetroAchievements rate limit reached. Try again later.";return none;
+    }
+    if(!response.success||response.status!=200) {
+      if(fallback.loaded)return use_fallback("Refresh failed; using an older hash list.");
+      HashIndex none;none.error="Could not download the RetroAchievements hash list.";return none;
+    }
+    HashIndex index;index.hashes=decode_game_list(parse(response.body),console);index.loaded=true;
+    json map=json::object();for(const auto& [md5,id]:index.hashes)map[md5]=id;
+    const auto cache=json{{"version",1},{"account",identity(account)},{"console",console},{"fetched_at",now()},{"hashes",std::move(map)}}.dump();
+    if(cache.find(key)!=std::string::npos)index.warning="Hash list loaded, but could not safely cache it.";
+    else if(cache.size()>limit||!cache_directory(root,identity(account),true)||!write_cache(path,cache))index.warning="Hash list loaded, but could not save its offline cache.";
+    return index;
+  } catch(...) {
+    if(fallback.loaded)return use_fallback("Invalid or unavailable response; using an older hash list.");
+    HashIndex none;none.error="RetroAchievements returned an invalid hash list.";return none;
+  }
+}
 } // namespace
 RetroAccountResult retroachievements_account(const std::string& username,const std::string& key,const HttpTransport& transport) {
   if(!valid_username(username)||!safe_key(key)||!transport)return {{},"Enter a valid account name and web API key.",false};
@@ -175,6 +274,65 @@ RetroProgressResult retroachievements_progress(const fs::path& root,const RetroA
     else if(cache.size()>limit||!cache_directory(root,identity(account),true)||!write_cache(path,cache))result.warning="Progress loaded, but could not save its offline cache.";
     return result;
   } catch(...) {if(fallback){fallback.warning="Invalid or unavailable response; showing cached data.";return fallback;}error.error="RetroAchievements returned invalid or unavailable progress.";return error;}
+}
+RetroRomHashResult retroachievements_hash_rom(const fs::path& path,const RetroCancel& cancelled) {
+  const auto format=rom_format(path);
+  if(!format)return rom_failure(RetroRomHashStatus::unsupported,"Only raw .gb, .gbc and .gba files are supported.");
+  const auto stop=[&]{return cancelled&&cancelled();};
+  if(stop())return rom_failure(RetroRomHashStatus::cancelled,"Cancelled.");
+  const auto before=snapshot(path);if(!before)return rom_failure(RetroRomHashStatus::unreadable,"The ROM is missing or is not a regular file.");
+  if(!size_in_bounds(*format,before->size))return rom_failure(RetroRomHashStatus::invalid,"The file size is outside the valid range for this format.");
+  std::ifstream in(path,std::ios::binary);if(!in)return rom_failure(RetroRomHashStatus::unreadable,"The ROM could not be opened.");
+  std::unique_ptr<AVMD5,decltype(&av_free)> context(av_md5_alloc(),&av_free);if(!context)return rom_failure(RetroRomHashStatus::unreadable,"Hashing is unavailable.");
+  av_md5_init(context.get());
+  std::vector<std::uint8_t> buffer(chunk);std::uintmax_t remaining=before->size;
+  while(remaining) {
+    if(stop())return rom_failure(RetroRomHashStatus::cancelled,"Cancelled.");
+    const auto want=static_cast<std::size_t>(std::min<std::uintmax_t>(remaining,buffer.size()));
+    in.read(reinterpret_cast<char*>(buffer.data()),static_cast<std::streamsize>(want));
+    if(static_cast<std::size_t>(in.gcount())!=want)return rom_failure(RetroRomHashStatus::changed,"The ROM changed or could not be read completely.");
+    av_md5_update(context.get(),buffer.data(),want);remaining-=want;
+  }
+  if(in.peek()!=std::char_traits<char>::eof())return rom_failure(RetroRomHashStatus::changed,"The ROM changed while it was read.");
+  const auto after=snapshot(path);if(!after||!(*after==*before))return rom_failure(RetroRomHashStatus::changed,"The ROM changed while it was read.");
+  std::uint8_t digest[16];av_md5_final(context.get(),digest);
+  RetroRomHashResult out;out.status=RetroRomHashStatus::ok;out.value=RetroRomHash{hex_digest(digest),*format,before->size};return out;
+}
+RetroMatchResult retroachievements_match(const fs::path& root,const RetroAccount& account,const std::string& key,const std::vector<fs::path>& paths,const HttpTransport& transport,const RetroCancel& cancelled,bool refresh,std::uint64_t max_age) {
+  RetroMatchResult out;
+  if(!valid_account(account)||root.empty()){out.error="Invalid account or cache location.";return out;}
+  struct Pending {std::size_t item;std::string md5;unsigned console;};
+  std::vector<Pending> pending;out.items.reserve(paths.size());
+  const auto stop=[&]{return cancelled&&cancelled();};
+  for(std::size_t i=0;i<paths.size()&&!out.cancelled;++i) {
+    RetroMatchItem item;item.path=paths[i];
+    if(i>=retroachievements_match_limit){item.status=RetroMatchStatus::skipped;item.message="Over the per-run limit.";out.items.push_back(std::move(item));continue;}
+    const auto hash=retroachievements_hash_rom(paths[i],cancelled);
+    if(hash) {item.status=RetroMatchStatus::unmatched;pending.push_back({out.items.size(),hash.value->md5,static_cast<unsigned>(hash.value->format)});}
+    else if(hash.status==RetroRomHashStatus::cancelled)out.cancelled=true;
+    else {item.status=hash.status==RetroRomHashStatus::unsupported?RetroMatchStatus::unsupported:RetroMatchStatus::unavailable;item.message=hash.error;}
+    if(!out.cancelled)out.items.push_back(std::move(item));
+  }
+  std::map<unsigned,HashIndex> indices;bool network=true;
+  for(const auto& entry:pending) {
+    if(out.cancelled||stop()){out.cancelled=true;break;}
+    auto found=indices.find(entry.console);
+    if(found==indices.end()) {
+      auto index=load_index(root,account,entry.console,key,transport,refresh,network,max_age);
+      if(index.rate_limited){network=false;out.rate_limited=true;}
+      if(index.from_cache)out.from_cache=true;if(index.stale)out.stale=true;
+      if(out.warning.empty())out.warning=index.warning;if(out.error.empty()&&!index.loaded)out.error=index.error;
+      found=indices.emplace(entry.console,std::move(index)).first;
+    }
+    auto& item=out.items[entry.item];const auto& index=found->second;item.stale=index.loaded&&index.stale;
+    if(!index.loaded){item.status=RetroMatchStatus::unavailable;item.message=index.error;continue;}
+    const auto hit=index.hashes.find(entry.md5);
+    if(hit==index.hashes.end()){item.status=RetroMatchStatus::unmatched;item.message="No RetroAchievements set lists this exact file.";}
+    else if(!hit->second){item.status=RetroMatchStatus::unmatched;item.message="RetroAchievements lists this file for more than one game.";}
+    else {item.status=RetroMatchStatus::matched;item.game_id=hit->second;}
+  }
+  for(const auto& item:out.items)switch(item.status){case RetroMatchStatus::matched:++out.matched;break;case RetroMatchStatus::unmatched:++out.unmatched;break;case RetroMatchStatus::unsupported:++out.unsupported;break;case RetroMatchStatus::unavailable:++out.unavailable;break;case RetroMatchStatus::skipped:++out.skipped;break;}
+  return out;
 }
 } // namespace openxmb::desktop
 

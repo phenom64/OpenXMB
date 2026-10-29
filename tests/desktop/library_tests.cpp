@@ -52,7 +52,18 @@ void profiles(const fs::path &root) {
   second.name = "Renamed User"; library.update_profile(second);
   require(library.profiles()[1].name == "Renamed User", "profile rename persisted");
   library.save_friend({{}, "Local Friend", "Test status", true});
+  Game first_game; first_game.title = "First profile game"; first_game.executable = root / "first.exe";
+  const auto first_id = library.save_game(first_game).id;
   library.switch_profile(second.id);
+  Game second_game; second_game.title = "Second profile game"; second_game.executable = root / "second.exe";
+  const auto second_id = library.save_game(second_game).id;
+  require(library.games().size() == 1 && library.games().front().id == second_id, "active game view follows the selected profile");
+  const auto pinned = library.games("default");
+  require(pinned.size() == 1 && pinned.front().id == first_id, "background game read stays on the originating profile");
+  require(library.active_profile().id == second.id, "pinned game read does not switch the active profile");
+  bool unsafe_read = false;
+  try { (void)library.games("../outside"); } catch (const std::runtime_error &) { unsafe_read = true; }
+  require(unsafe_read, "pinned game read rejects an escaping profile identifier");
   require(library.friends().empty(), "local social collections are profile scoped");
   auto account = library.account(); account.biography = "Offline biography"; library.save_account(account);
   require(Library(root).account().biography == "Offline biography", "local account survives reopening");
@@ -63,6 +74,9 @@ void profiles(const fs::path &root) {
   library.remove_profile(second.id);
   require(library.active_profile().id == "default" && library.friends().size() == 1, "deleting active profile restores retained profile");
   require(!fs::exists(library.profile_directory(second.id)) && !fs::is_empty(root / "profile-trash"), "deleted profile data is archived recoverably");
+  bool removed_read = false;
+  try { (void)library.games(second.id); } catch (const std::runtime_error &) { removed_read = true; }
+  require(removed_read && !fs::exists(library.profile_directory(second.id)), "pinned read rejects removed profiles without recreating them");
   bool rejected = false;
   try { library.remove_profile("default"); } catch (const std::runtime_error &) { rejected = true; }
   require(rejected, "last profile deletion rejected");

@@ -709,7 +709,14 @@ fs::path Library::switch_profile(const std::string &id) {
   return config_path(id);
 }
 std::vector<Game> Library::games() const {
-  auto result=items<Game>(library(root_),"games",game);
+  return games(active_id(root_));
+}
+std::vector<Game> Library::games(const std::string &profile_id) const {
+  valid_id(profile_id);
+  const auto entries=profiles();
+  if(std::ranges::none_of(entries,[&](const Profile& value){return value.id==profile_id;}))
+    throw std::runtime_error("Profile does not exist");
+  auto result=items<Game>(read(profile_directory(profile_id)/"library.json",{{"version",1}}),"games",game);
   std::erase_if(result,[](const Game& value){return !steam_game_is_playable(value);});
   return result;
 }
