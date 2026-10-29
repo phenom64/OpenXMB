@@ -255,6 +255,69 @@ void defaults(const fs::path &root) {
   owner_only(managed / cfg_relative() / "config.yml");
   require(environment_value() == before, "helper changed the host process environment");
 }
+void foreground_input(const fs::path &root) {
+  const std::vector<std::pair<std::string, std::string>> cases{
+      {"Input/Output:\n  Keyboard: Null\n  Background input enabled: true # keep comment\nAudio:\n  Renderer: Cubeb\n",
+       "Input/Output:\n  Keyboard: Null\n  Background input enabled: false # keep comment\nAudio:\n  Renderer: Cubeb\n"},
+      {"Core: keep exactly\n", "Core: keep exactly\nInput/Output:\n  Background input enabled: false\n"},
+      {"Input/Output:\n  Keyboard: Null\nAudio: preserve\n",
+       "Input/Output:\n  Keyboard: Null\n  Background input enabled: false\nAudio: preserve\n"},
+      {"'Input/Output':\n    'Background input enabled': true\n    Other: {value: unchanged}\n",
+       "'Input/Output':\n    'Background input enabled': false\n    Other: {value: unchanged}\n"},
+      {"\xef\xbb\xbfInput/Output:\r\n  Background input enabled: true",
+       "\xef\xbb\xbfInput/Output:\r\n  Background input enabled: false"},
+      {"Input/Output:\n  Background input enabled: false\n",
+       "Input/Output:\n  Background input enabled: false\n"},
+      {"Input/Output:\n  Data: |\n    Background input enabled: true\n  Keyboard: Null\n",
+       "Input/Output:\n  Data: |\n    Background input enabled: true\n  Keyboard: Null\n  Background input enabled: false\n"},
+      {"", "Input/Output:\n  Background input enabled: false\n"}};
+  for (std::size_t index = 0; index < cases.size(); ++index) {
+    Fixture fixture(root / std::to_string(index));
+    const auto &[source, expected] = cases[index];
+    write(fixture.source_config / "config.yml", source);
+    const auto custom = fixture.source_config / "custom_configs/config_TEST00001.yml";
+    const std::string custom_source =
+        "Input/Output:\n  Background input enabled: true\nVideo:\n  Renderer: Vulkan\n";
+    write(custom, custom_source);
+    write(fixture.source_config / "custom_configs/config_OTHER0001.yml",
+          "Input/Output: {Background input enabled: true}\n");
+    const auto source_time = fs::last_write_time(fixture.source_config / "config.yml");
+    const auto custom_time = fs::last_write_time(custom);
+    auto request = fixture.request();
+    request.foreground_input_only = true;
+    request.title_id = "TEST00001";
+    auto result = prepare_rpcs3_session(request);
+    require(static_cast<bool>(result), "foreground-only private snapshot failed");
+    require(read(fixture.managed() / cfg_relative() / "config.yml") == expected,
+            "private global RPCS3 input gating did not preserve unrelated YAML");
+    require(read(fixture.managed() / cfg_relative() / "custom_configs/config_TEST00001.yml") ==
+                "Input/Output:\n  Background input enabled: false\nVideo:\n  Renderer: Vulkan\n",
+            "per-game RPCS3 configuration overrode foreground-only navigation");
+    require(read(fixture.managed() / cfg_relative() / "custom_configs/config_OTHER0001.yml") ==
+                "Input/Output: {Background input enabled: true}\n",
+            "foreground-only preparation changed an unrelated game's private settings");
+    require(read(fixture.source_config / "config.yml") == source &&
+                fs::last_write_time(fixture.source_config / "config.yml") == source_time &&
+                read(custom) == custom_source && fs::last_write_time(custom) == custom_time,
+            "foreground-only preparation changed original emulator settings");
+    require(read(fixture.managed() / cfg_relative() / "input_configs/TEST00001/Default.yml") ==
+                "Handler: DualSense\n",
+            "foreground-only preparation changed controller mappings");
+  }
+  for (const auto &source : {
+           "Input/Output:\n  Background input enabled: true\nInput/Output:\n  Keyboard: Null\n",
+           "Input/Output:\n  Background input enabled: true\n  Background input enabled: false\n",
+           "Input/Output: {Background input enabled: true}\n"}) {
+    Fixture fixture(root / ("invalid-" + std::to_string(std::char_traits<char>::length(source))));
+    write(fixture.source_config / "config.yml", source);
+    auto request = fixture.request();
+    request.foreground_input_only = true;
+    const auto result = prepare_rpcs3_session(request);
+    require(!result && !fs::exists(fixture.destination) &&
+                read(fixture.source_config / "config.yml") == source,
+            "ambiguous RPCS3 input settings were modified or accepted silently");
+  }
+}
 void custom_vfs(const fs::path &root) {
   Fixture f(root);
   const auto emu = root / "User storage";
@@ -1188,6 +1251,7 @@ int main(int argc, char **argv) {
       return 0;
     }
     defaults(root / "defaults");
+    foreground_input(root / "foreground-input");
     custom_vfs(root / "custom");
     rejection(root / "rejections");
     unsupported_vfs(root / "unsupported");

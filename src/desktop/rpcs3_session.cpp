@@ -780,6 +780,125 @@ Vfs preserve_vfs(const std::string &input, const fs::path &original) {
   }
   return result;
 }
+std::string patch_foreground_input(std::string_view input) try {
+  const std::string newline = input.find("\r\n") != std::string_view::npos ? "\r\n" : "\n";
+  std::string output;
+  if (input.starts_with("\xef\xbb\xbf")) {
+    output = "\xef\xbb\xbf";
+    input.remove_prefix(3);
+  }
+  bool section = false, target = false, key = false, document_start = false,
+       document_end = false, root_content = false;
+  std::optional<std::size_t> child_indent;
+  const auto finish_section = [&] {
+    if (!target || key) return;
+    if (!output.empty() && !output.ends_with('\n')) output += newline;
+    output += std::string(child_indent.value_or(2), ' ') + "Background input enabled: false" + newline;
+    key = true;
+  };
+  const auto add_section = [&] {
+    if (section) return;
+    if (!output.empty() && !output.ends_with('\n')) output += newline;
+    output += "Input/Output:" + newline + "  Background input enabled: false" + newline;
+    section = key = true;
+  };
+  while (!input.empty()) {
+    const auto end = input.find('\n');
+    const auto raw = input.substr(0, end == std::string_view::npos ? input.size() : end + 1);
+    auto line = raw;
+    if (line.ends_with('\n')) line.remove_suffix(1);
+    const std::string ending = line.ends_with('\r') ? "\r\n" : raw.ends_with('\n') ? "\n" : "";
+    if (line.ends_with('\r')) line.remove_suffix(1);
+    input = end == std::string_view::npos ? std::string_view{} : input.substr(end + 1);
+    std::size_t at = 0;
+    while (at < line.size() && line[at] == ' ') ++at;
+    if (at == line.size() || line[at] == '#') {
+      output += raw;
+      continue;
+    }
+    if (document_end)
+      fail(Rpcs3SessionError::invalid_input, "Multiple RPCS3 YAML documents cannot define session input ownership");
+    if (at == 0 && trim(line) == "---") {
+      if (document_start || root_content)
+        fail(Rpcs3SessionError::invalid_input, "Multiple RPCS3 YAML documents cannot define session input ownership");
+      document_start = true;
+      output += raw;
+      continue;
+    }
+    if (at == 0 && trim(line) == "...") {
+      finish_section();
+      add_section();
+      document_end = true;
+      output += raw;
+      continue;
+    }
+    if (at == 0) {
+      finish_section();
+      target = false;
+      root_content = true;
+      const auto name = scalar(line, at, true);
+      while (at < line.size() && line[at] == ' ') ++at;
+      if (at == line.size() || line[at++] != ':')
+        fail(Rpcs3SessionError::invalid_input, "RPCS3 input settings require standard YAML block mappings");
+      if (name == "Input/Output") {
+        if (section)
+          fail(Rpcs3SessionError::invalid_input, "Duplicate RPCS3 Input/Output sections cannot define session input ownership");
+        while (at < line.size() && line[at] == ' ') ++at;
+        if (at < line.size() && line[at] != '#')
+          fail(Rpcs3SessionError::invalid_input, "RPCS3 Input/Output must use its standard YAML block mapping");
+        section = target = true;
+        child_indent.reset();
+      }
+      output += raw;
+      continue;
+    }
+    if (!target) {
+      output += raw;
+      continue;
+    }
+    if (line[at] == '\t')
+      fail(Rpcs3SessionError::invalid_input, "RPCS3 Input/Output must use space-indented YAML");
+    if (!child_indent) child_indent = at;
+    if (at < *child_indent)
+      fail(Rpcs3SessionError::invalid_input, "RPCS3 Input/Output has inconsistent YAML indentation");
+    if (at != *child_indent) {
+      output += raw;
+      continue;
+    }
+    const auto name = scalar(line, at, true);
+    while (at < line.size() && line[at] == ' ') ++at;
+    if (at == line.size() || line[at++] != ':')
+      fail(Rpcs3SessionError::invalid_input, "RPCS3 input settings require standard YAML block mappings");
+    if (name != "Background input enabled") {
+      output += raw;
+      continue;
+    }
+    if (key)
+      fail(Rpcs3SessionError::invalid_input, "Duplicate RPCS3 background input keys cannot define session input ownership");
+    while (at < line.size() && line[at] == ' ') ++at;
+    const auto value_start = at;
+    if (at < line.size() && line[at] != '#') static_cast<void>(scalar(line, at, false));
+    auto value_end = at;
+    while (value_end > value_start && line[value_end - 1] == ' ') --value_end;
+    while (at < line.size() && line[at] == ' ') ++at;
+    if (at < line.size() && line[at] != '#')
+      fail(Rpcs3SessionError::invalid_input, "RPCS3 background input must be a single YAML scalar");
+    output += line.substr(0, value_start);
+    if (value_start && line[value_start - 1] == ':') output += ' ';
+    output += "false";
+    if (value_end < line.size() && line[value_end] == '#') output += ' ';
+    output += line.substr(value_end);
+    output += ending;
+    key = true;
+  }
+  finish_section();
+  add_section();
+  return output;
+} catch (const Failure &error) {
+  if (error.code == Rpcs3SessionError::unsupported_vfs)
+    fail(Rpcs3SessionError::invalid_input, "RPCS3 input settings require the standard YAML block-map format");
+  throw;
+}
 std::string patch_confirmation(std::string_view input) {
   std::string output;
   const std::string newline = input.find("\r\n") != std::string_view::npos ? "\r\n" : "\n";
@@ -1231,6 +1350,27 @@ Rpcs3SessionResult prepare_rpcs3_session(const Rpcs3SessionRequest &request) {
     data.replace(vfs_relative, vfs.bytes);
     data.replace("GuiConfigs/CurrentSettings.ini",
                  patch_confirmation(data.get("GuiConfigs/CurrentSettings.ini")));
+    if (request.foreground_input_only) {
+      if (!request.title_id.empty() &&
+          (request.title_id.size() != 9 ||
+           !std::ranges::all_of(request.title_id, [](char value) {
+             return (value >= 'A' && value <= 'Z') || (value >= '0' && value <= '9');
+           })))
+        fail(Rpcs3SessionError::invalid_input, "RPCS3 input ownership requires a valid title identifier");
+      const auto global = config_relative() / "config.yml";
+      data.replace(global, patch_foreground_input(data.get(global)));
+      const auto custom_directory = config_relative() / "custom_configs";
+      std::vector<fs::path> custom_files;
+      for (const auto &[path, file] : data.files) {
+        if (path.parent_path() == custom_directory && path.extension() == ".yml" &&
+            utf8(path.filename()).starts_with("config_") &&
+            (request.title_id.empty() ||
+             path.filename() == fs::path("config_" + request.title_id + ".yml")))
+          custom_files.push_back(path);
+      }
+      for (const auto &path : custom_files)
+        data.replace(path, patch_foreground_input(data.get(path)));
+    }
     const auto user = selected_user(request, data.get("GuiConfigs/persistent_settings.dat"));
     Rpcs3SessionConfig config;
     config.user_id = user;

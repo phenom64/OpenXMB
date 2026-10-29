@@ -29,6 +29,11 @@ struct Rpcs3SessionRequest {
   // environment. Explicit roots must already be absolute directories.
   std::filesystem::path effective_config_root, private_directory, executable;
   std::optional<std::string> user_id;
+  // OpenXMB's in-game menu needs exclusive navigation while RPCS3 loses
+  // foreground focus. Changes only the private global/per-game YAML copies.
+  bool foreground_input_only{false};
+  // When known, limits the private per-game input override to this title.
+  std::string title_id{};
 };
 struct Rpcs3SessionConfig {
   std::filesystem::path private_directory, dev_hdd0;
