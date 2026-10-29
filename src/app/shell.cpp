@@ -46,9 +46,11 @@ module;
 #include <ctime>
 #include <SDL2/SDL.h>
 #undef main
+#if defined(_WIN32) || defined(__linux__)
+#include <SDL2/SDL_syswm.h>
+#endif
 #ifdef _WIN32
 #include <windows.h>
-#include <SDL2/SDL_syswm.h>
 #include <SDL2/SDL_system.h>
 #endif
 
@@ -63,16 +65,24 @@ module;
 #include "openxmb/integrations/desktop.hpp"
 #include "openxmb/desktop/library.hpp"
 #include "openxmb/desktop/session.hpp"
+#include "openxmb/desktop/rpcs3_session.hpp"
+#include "openxmb/desktop/trophy_watch.hpp"
+#include "openxmb/xmb/trophy_notice.hpp"
 #include "openxmb/desktop/runners.hpp"
 #include "openxmb/desktop/youtube.hpp"
 #include "openxmb/desktop/steamgriddb.hpp"
 #include "openxmb/desktop/steam.hpp"
 #include "openxmb/desktop/async_job.hpp"
+#include <atomic>
 #include <set>
 #include "openxmb/integrations/session_window.hpp"
 #include "openxmb/integrations/xmb_overlay.hpp"
 #include "openxmb/integrations/guide_input.hpp"
+#include "openxmb/integrations/session_hotkey.hpp"
 #include "guide_timing.hpp"
+#include "overlay_keys.hpp"
+#include "components/dialog_text_layout.hpp"
+#include "components/trophy_notice_view.hpp"
 #include "openxmb/themes/library.hpp"
 #include "openxmb/setup/model.hpp"
 #include "openxmb/input/prompt.hpp"
@@ -143,17 +153,55 @@ namespace app
     struct shell::game_state {
         struct ArtworkResult {std::filesystem::path root,icon,cover,background;std::string profile,game_id;};
         openxmb::desktop::SessionManager sessions;
+        openxmb::desktop::Rpcs3TrophyWatch trophy_watch;
+        std::optional<openxmb::desktop::Rpcs3SessionConfig> rpcs3_config;
+        std::string rpcs3_session_id;
+        void retire_rpcs3_config() {
+            if(!rpcs3_config)return;
+            const auto records=sessions.snapshot();
+            const auto record=std::ranges::find_if(records,[&](const auto& value){return value.id==rpcs3_session_id;});
+            // Shutdown/detached sessions may still use their private files.
+            // Only a confirmed process exit authorizes storage retirement.
+            if(record!=records.end()&&record->state==openxmb::desktop::SessionState::exited) {
+                const auto cleaned=openxmb::desktop::cleanup_rpcs3_session(*rpcs3_config);
+                if(!cleaned)spdlog::warn("RPCS3 private snapshot cleanup deferred: {}",cleaned.message);
+            }
+            rpcs3_config.reset();rpcs3_session_id.clear();
+        }
+        std::shared_ptr<const openxmb::desktop::Game> session_game;
+        std::optional<openxmb::desktop::TrophyWatchSession> trophy_origin;
+        std::uint64_t trophy_generation{};
+        openxmb::xmb::TrophyNoticeQueue trophy_notices;
+        // Artwork for the current notice only. A loaded image is destroyed
+        // after a device idle; a load owns its texture until its future ends.
+        struct NoticeArt {
+            std::uint64_t serial{};std::unique_ptr<texture> image;std::future<void> ready;bool failed{};
+            NoticeArt()=default;NoticeArt(const NoticeArt&)=delete;NoticeArt& operator=(const NoticeArt&)=delete;
+            ~NoticeArt(){if(ready.valid())ready.wait();}
+        };
+        NoticeArt trophy_art;
         openxmb::integrations::GuideInput guide;
+        openxmb::integrations::SessionHotkey session_hotkey;
         GuideTiming guide_edges;
         std::string guide_session_id;
         std::chrono::steady_clock::time_point guide_probe_at{};
         std::unique_ptr<app::game_presentation> presentation;
         std::unique_ptr<app::session_xmb> overlay;
+        // Passive host for trophy notices while the game owns focus; open only
+        // while a notice is due so gameplay otherwise renders nothing.
+        std::unique_ptr<app::session_xmb> notice;
+        float notice_scale{1.0F};
+        std::uint64_t notice_unavailable{};
         std::shared_ptr<std::vector<openxmb::integrations::OverlayInput>> overlay_input=std::make_shared<std::vector<openxmb::integrations::OverlayInput>>();
         bool overlay_dismiss{},overlay_return{},overlay_return_after_dismiss{},screenshot_status{};
         std::optional<std::chrono::steady_clock::time_point> screenshot_status_started;
-        struct PendingCapture {std::string session;openxmb::integrations::SessionWindowTarget target;std::chrono::steady_clock::time_point due,deadline;};
+        struct PendingCapture {
+            std::string session;openxmb::integrations::SessionWindowTarget target;
+            std::chrono::steady_clock::time_point due,deadline;
+            std::shared_ptr<openxmb::desktop::AsyncJob<openxmb::integrations::SessionCaptureResult>> job;
+        };
         std::optional<PendingCapture> pending_capture;
+        std::shared_ptr<std::atomic_bool> capture_worker_busy=std::make_shared<std::atomic_bool>(false);
         std::shared_ptr<const openxmb::desktop::Game> highlighted;
         std::future<openxmb::desktop::GameDiscovery> discovery;
         std::filesystem::path discovery_root;
@@ -359,6 +407,8 @@ namespace app
 
     shell::~shell()
     {
+        // Retire only confirmed exits; retained live-child storage survives.
+        try {games->retire_rpcs3_config();} catch(...) {}
 #ifdef _WIN32
         if(games->hotkey_registered) UnregisterHotKey(reinterpret_cast<HWND>(games->shell_handle),0x4f58);
         if(games->shell_handle) SDL_SetWindowsMessageHook(nullptr,nullptr);
@@ -647,6 +697,9 @@ namespace app
     void shell::prepare(std::vector<vk::Image> swapchainImages, std::vector<vk::ImageView> swapchainViews)
     {
         phase::prepare(swapchainImages, swapchainViews);
+        font_render->set_target_extent(win->swapchainExtent);
+        image_render->set_target_extent(win->swapchainExtent);
+        simple_render->set_target_extent(win->swapchainExtent);
 
         const auto imageCount = static_cast<std::uint32_t>(swapchainImages.size());
         this->swapchainImages = swapchainImages;
@@ -861,6 +914,10 @@ namespace app
         vk::CommandBuffer commandBuffer = commandBuffers[frame];
         auto& blurFrame = blurFrames[frame];
         auto now = std::chrono::steady_clock::now();
+        // The passive trophy host's framebuffer is only the banner: no shell
+        // background, blur or dim, and a transparent clear.
+        const bool passive_notice=games->notice&&games->notice->active();
+        const bool composited=ingame_mode||passive_notice;
 
         if(theme->active && !theme->active->animation.empty()) {
             try {
@@ -897,7 +954,7 @@ namespace app
             } catch(const std::exception& error) { spdlog::warn("Theme animation failed: {}",error.what()); }
         }
 #if OPENXMB_ENABLE_VIDEO_PLAYER
-        const bool background_video_active=!background_video_path.empty() && !ingame_mode &&
+        const bool background_video_active=!background_video_path.empty() && !composited &&
             (config::CONFIG.backgroundType==config::config::background_type::video || theme->frame.background==background_video_path);
         video_background_render->set_active(background_video_active);
         video_background_render->tick();
@@ -996,7 +1053,8 @@ namespace app
                 glm::vec3 c = themeColour.shaded_colour;
                 color = vk::ClearColorValue(std::array<float, 4>{ c.r, c.g, c.b, 1.0f });
             }
-            if(ingame_mode) {
+            if(passive_notice) color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f});
+            else if(ingame_mode) {
                 const float visibility=games->overlay&&games->overlay->active()?games->overlay->motion().opacity:1.0F;
                 color = vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.65f*visibility});
             }
@@ -1013,7 +1071,7 @@ namespace app
             commandBuffer.setViewport(0, viewport);
             commandBuffer.setScissor(0, scissor);
 
-            if(!ingame_mode) {
+            if(!composited) {
                 if(music_scene||music_mix>0.001F||config::CONFIG.backgroundType == config::config::background_type::original) {
                     if(can_render_monthly_background) {
                         try {
@@ -1058,7 +1116,7 @@ namespace app
 #if OPENXMB_ENABLE_VIDEO_PLAYER
             if(background_video_active) video_background_render->render(commandBuffer,frame,backgroundRenderPass.get(),win->swapchainExtent);
 #endif
-            if(theme->active && !ingame_mode) {
+            if(theme->active && !composited) {
                 gui_renderer theme_gui(commandBuffer,frame,backgroundRenderPass.get(),win->swapchainExtent,font_render.get(),image_render.get(),simple_render.get());
                 if(const auto it=theme->textures.find(theme->frame.background);it!=theme->textures.end() && it->second->loaded)
                     image_render->renderImageSized(commandBuffer,frame,backgroundRenderPass.get(),*it->second,0,0,win->swapchainExtent.width,win->swapchainExtent.height);
@@ -1077,7 +1135,7 @@ namespace app
                     theme_gui.draw_textured_triangles(*it->second,vertices,draw.additive,draw.depth);
                 }
             }
-            if(games->presentation && !ingame_mode) {
+            if(games->presentation && !composited) {
                 gui_renderer game_gui(commandBuffer,frame,backgroundRenderPass.get(),win->swapchainExtent,font_render.get(),image_render.get(),simple_render.get());
                 games->presentation->draw_background(game_gui);
             }
@@ -1088,11 +1146,11 @@ namespace app
         const auto startup_blur_radius = std::max(0.0f, startup_background_blur_px);
         const bool use_startup_blur_background = startup_blur_radius > 0.05f;
         const bool opaque_scene=std::any_of(overlays.begin(),overlays.end(),[](const auto& overlay){return overlay->is_opaque();});
-        const auto menu_blur_radius = background_only ? 0.0F : media_motion::backdrop(menu.background_blur_px(),opaque_scene);
-        const auto menu_dim_alpha = background_only ? 0.0F : media_motion::backdrop(menu.background_dim_alpha(),opaque_scene);
+        const auto menu_blur_radius = background_only||passive_notice ? 0.0F : media_motion::backdrop(menu.background_blur_px(),opaque_scene);
+        const auto menu_dim_alpha = background_only||passive_notice ? 0.0F : media_motion::backdrop(menu.background_dim_alpha(),opaque_scene);
         const bool use_menu_blur_background = menu_blur_radius > 0.05F;
-        const bool use_blur_background = blur_background || blur_background_progress < 1.0 ||
-            use_startup_blur_background || use_menu_blur_background;
+        const bool use_blur_background = !passive_notice && (blur_background || blur_background_progress < 1.0 ||
+            use_startup_blur_background || use_menu_blur_background);
         vk::ImageView compositedBackgroundView = backgroundResolve[frame]->imageView.get();
         if(use_blur_background) {
             ensure_blur(frame);
@@ -1675,6 +1733,27 @@ namespace app
             procedural_wave_render->particles_enabled = config::CONFIG.particlesEnabled&&!config::CONFIG.enabled("power.reduced.motion",false);
             procedural_wave_render->particle_color = config::CONFIG.particleColor;
         }
+        // One compact banner for every surface. Coordinates are framebuffer
+        // pixels of the current target extent; scale maps 1080p typography.
+        const float notice_alpha=games->trophy_notices.opacity(app::session_xmb::seconds(),config::CONFIG.enabled("power.reduced.motion",false));
+        const auto draw_trophy_notice=[&](float x,float y,float w,float h,float scale) {
+            const auto* entry=games->trophy_notices.current();
+            if(!entry||notice_alpha<=0.0F)return;
+            const auto& earned=entry->event.achievement;
+            const auto& art=games->trophy_art;
+            const bool art_slot=art.serial==entry->serial&&!earned.icon.empty()&&!art.failed;
+            // loaded is read only after the upload future has ended.
+            const texture* const image=art_slot&&art.image&&!art.ready.valid()&&art.image->loaded?art.image.get():nullptr;
+            const auto label=::openxmb::localization::shell_locale::translate("RPCS3 trophy earned");
+            const auto grade=::openxmb::localization::shell_locale::translate(trophy_detail::grade(earned.grade));
+            trophy_notice_view::draw(renderer,trophy_notice_view::Notice<texture,glm::vec4>{label,grade,trophy_detail::grade_colour(earned.grade,notice_alpha),earned.title,art_slot,image},
+                notice_alpha,x,y,w,h,scale);
+        };
+        if(games->notice&&games->notice->active()) {
+            // The passive host's framebuffer is exactly the banner.
+            draw_trophy_notice(0,0,static_cast<float>(renderer.frame_size.width),static_cast<float>(renderer.frame_size.height),games->notice_scale);
+            return;
+        }
         const bool session_transition=ingame_mode&&games->overlay&&games->overlay->active();
         if(session_transition) {
             const auto motion=games->overlay->motion();
@@ -1778,6 +1857,11 @@ namespace app
                 renderer.draw_rect({0.70F,0.13F},{0.27F,0.06F},{0,0,0,0.65F});
                 renderer.draw_text_pixels(::openxmb::localization::shell_locale::translate("Screenshot saved"),width*0.715F,height*0.170F,26*scale,{1,1,1,1},0.7F);
             } else {games->screenshot_status=false;games->screenshot_status_started.reset();}
+        }
+        if(games->trophy_notices.started()&&!games->screenshot_status&&overlays.empty()&&!old_overlay) {
+            const auto width=static_cast<float>(renderer.frame_size.width),height=static_cast<float>(renderer.frame_size.height);
+            const auto& frame=openxmb::xmb::trophy_notice_frame;
+            draw_trophy_notice(width*frame.x,height*frame.y,width*frame.width,height*frame.height,std::min(width/1920.0F,height/1080.0F));
         }
         bool enable_cursor = false;
         for(unsigned int i=overlay_begin; i < overlays.size(); i++) {
@@ -1892,6 +1976,7 @@ namespace app
             return result::success;
         }
         try {
+            games->retire_rpcs3_config();
             openxmb::desktop::Library library;
             openxmb::desktop::SessionDescriptor descriptor;
             descriptor.identity=game.id; descriptor.title=game.title;
@@ -1901,8 +1986,9 @@ namespace app
             if(!plan) throw std::runtime_error(plan.message);
             descriptor.runner=plan.runner;
             descriptor.profile_directory=library.active_directory();
+            std::filesystem::path profile_directory;
             descriptor.tracking=plan.tracking;
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__linux__)
             if(game.runner=="steam" && game.launch_override.mode==openxmb::desktop::GameLaunchMode::provider) {
                 openxmb::desktop::ProviderObservationSpec observation;
                 observation.executable=game.launch_override.executable;
@@ -1913,8 +1999,44 @@ namespace app
                     descriptor.observation=std::move(observation);
             }
 #endif
-            const auto launched=games->sessions.launch(std::move(descriptor),plan.arguments,plan.working_directory);
+            auto arguments=plan.arguments;
+            std::map<std::string,std::string> environment;
+            std::vector<std::uintptr_t> inherited_handles;
+            std::optional<openxmb::desktop::Rpcs3SessionConfig> rpcs3_config;
+            if(plan.runner=="rpcs3") {
+                profile_directory=std::filesystem::canonical(descriptor.profile_directory);
+                openxmb::desktop::Rpcs3SessionRequest request;
+                request.executable=std::filesystem::u8path(arguments.front());
+                request.private_directory=profile_directory/
+                    ("rpcs3-session-"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+                const auto user=config::CONFIG.preference("trophies.rpcs3.user");
+                if(!user.empty())request.user_id=user;
+                const auto prepared=openxmb::desktop::prepare_rpcs3_session(request);
+                if(prepared) {
+                    rpcs3_config=*prepared.config;
+                    if(!rpcs3_config->warm_cache_directory.empty())spdlog::debug("RPCS3 managed session reuses its original recompiler cache");
+                    else if(!rpcs3_config->cache_fallback_reason.empty())spdlog::warn("RPCS3 managed cache fallback: {}",rpcs3_config->cache_fallback_reason);
+                    environment=rpcs3_config->environment_overrides;
+                    inherited_handles=rpcs3_config->inherited_handles;
+                    arguments.insert(arguments.begin()+1,rpcs3_config->arguments.begin(),rpcs3_config->arguments.end());
+                } else if(openxmb::desktop::rpcs3_session_native_fallback(prepared.error)) {
+                    spdlog::warn("RPCS3 managed session unavailable; native confirmation remains: {}",prepared.message);
+                } else throw std::runtime_error(prepared.message);
+            }
+            const auto launched=games->sessions.launch(std::move(descriptor),arguments,plan.working_directory,environment,inherited_handles);
             if(!launched) throw std::runtime_error(launched.message);
+            if(rpcs3_config)static_cast<void>(openxmb::desktop::retain_rpcs3_session(*rpcs3_config));
+            games->rpcs3_config=std::move(rpcs3_config);
+            games->rpcs3_session_id=games->rpcs3_config?launched.session_id:std::string{};
+            games->session_game=std::make_shared<const openxmb::desktop::Game>(game);
+            games->trophy_watch.set_session({});games->trophy_origin.reset();
+            games->trophy_notices.clear();
+            if(games->rpcs3_config&&!game.game_directory.empty()) {
+                games->trophy_origin=openxmb::desktop::TrophyWatchSession{++games->trophy_generation,launched.session_id,
+                    profile_directory,game.game_directory,
+                    games->rpcs3_config->dev_hdd0,games->rpcs3_config->user_id};
+                games->trophy_watch.set_session(games->trophy_origin);
+            }
             games->known_session_id=launched.session_id;queue_menu_reload();
             games->tracking=plan.tracking;
             games->photo_root=config::CONFIG.pictures_path();
@@ -1956,6 +2078,7 @@ namespace app
             emplace_overlay<app::message_overlay>("Application running","Quit the current game or app before starting another.",std::vector<std::string>{"OK"});return result::success;
         }
         try {
+            games->retire_rpcs3_config();
             openxmb::desktop::Library library;
             openxmb::desktop::SessionDescriptor descriptor;
             descriptor.identity=std::move(identity);descriptor.title=std::move(title);descriptor.provider="application";
@@ -1963,6 +2086,9 @@ namespace app
             descriptor.kind=openxmb::desktop::SessionKind::application;descriptor.tracking=tracking;
             const auto launched=games->sessions.launch(std::move(descriptor),argv,cwd);
             if(!launched)throw std::runtime_error(launched.message);
+            games->trophy_watch.set_session({});games->trophy_origin.reset();
+            games->trophy_notices.clear();
+            games->rpcs3_config.reset();games->session_game.reset();
             games->known_session_id=launched.session_id;games->tracking=tracking;
             games->photo_root=config::CONFIG.pictures_path();games->highlighted.reset();
             if(games->presentation)games->presentation->stop();
@@ -2050,7 +2176,14 @@ namespace app
         if(!win->config.headless && !shell_focused()) {
             last_controller_axis_input={};controller_axis_position={};cursor_joystick_delta={};button_timing.clear();held_scancodes.fill(false);
         }
+        const auto close_notice=[&] {
+            if(!games->notice || !games->notice->active())return;
+            if(const auto closed=games->notice->close();!closed)spdlog::warn("Trophy notice presentation could not close: {}",closed.message);
+        };
+        // Every return to a focusable XMB or normal window first retires the
+        // passive host, whose offscreen presentation would otherwise persist.
         const auto close_overlay=[&] {
+            close_notice();
             if(games->overlay && games->overlay->active()) {
                 const auto closed=games->overlay->close();
                 if(!closed) {games->pending_notice=closed.message;return false;}
@@ -2065,6 +2198,28 @@ namespace app
             games->shell_is_session_xmb=shell_focused();
             if(!games->shell_is_session_xmb) games->shell_focus_requested=std::chrono::steady_clock::now();
         };
+        // Physical-pixel bounds of the monitor showing the session window.
+        const auto game_monitor=[&](const openxmb::integrations::SessionWindowTarget& target)->std::optional<openxmb::integrations::OverlayBounds> {
+#ifdef _WIN32
+            MONITORINFO info{};info.cbSize=sizeof(info);
+            const auto monitor=MonitorFromWindow(reinterpret_cast<HWND>(target.handle),MONITOR_DEFAULTTONEAREST);
+            if(GetMonitorInfoW(monitor,&info))
+                return openxmb::integrations::OverlayBounds{info.rcMonitor.left,info.rcMonitor.top,
+                    static_cast<unsigned>(info.rcMonitor.right-info.rcMonitor.left),static_cast<unsigned>(info.rcMonitor.bottom-info.rcMonitor.top)};
+#elif defined(__linux__)
+            if(const auto client=openxmb::integrations::session_window_bounds(target)) {
+                const auto center_x=client->x+static_cast<int>(client->width/2),center_y=client->y+static_cast<int>(client->height/2);
+                for(int display=0;display<SDL_GetNumVideoDisplays();++display) {
+                    SDL_Rect bounds{};
+                    if(SDL_GetDisplayBounds(display,&bounds)==0&&center_x>=bounds.x&&center_x<bounds.x+bounds.w&&center_y>=bounds.y&&center_y<bounds.y+bounds.h)
+                        return openxmb::integrations::OverlayBounds{bounds.x,bounds.y,static_cast<unsigned>(bounds.w),static_cast<unsigned>(bounds.h)};
+                }
+            }
+#else
+            static_cast<void>(target);
+#endif
+            return std::nullopt;
+        };
         if(games->shell_focus_requested) {
             if(shell_focused()) {games->shell_is_session_xmb=true;games->shell_focus_requested.reset();}
             else if(std::chrono::steady_clock::now()-*games->shell_focus_requested>std::chrono::seconds(1)) {
@@ -2073,6 +2228,23 @@ namespace app
             }
         }
         auto active=games->sessions.active_session();
+        if(games->trophy_origin) {
+            const auto selected_user=config::CONFIG.preference("trophies.rpcs3.user");
+            bool current=active&&active->id==games->trophy_origin->session_id&&
+                (selected_user.empty()||selected_user==games->trophy_origin->rpcs3_user_id);
+            auto events=games->trophy_watch.take_events();
+            if(current&&!events.empty())try {
+                current=std::filesystem::canonical(openxmb::desktop::Library{}.active_directory())==games->trophy_origin->profile_directory&&
+                    (selected_user.empty()||selected_user==games->trophy_origin->rpcs3_user_id);
+            } catch(const std::exception&) {current=false;}
+            if(!current) {
+                games->trophy_watch.set_session({});games->trophy_origin.reset();
+                games->trophy_notices.clear();
+                if(!active){games->retire_rpcs3_config();games->session_game.reset();}
+            } else for(auto& event:events) {
+                static_cast<void>(games->trophy_notices.push(std::move(event),*games->trophy_origin));
+            }
+        } else if(!active) {games->retire_rpcs3_config();games->session_game.reset();}
         // This optional native listener supplements SDL while another process
         // owns focus. Runtime absence keeps the existing shortcut/SDL path.
         if(!win->config.headless && active) {
@@ -2142,6 +2314,26 @@ namespace app
             }
         }
 #endif
+#ifdef __linux__
+        if(!win->config.headless && !games->shell_handle) {
+            SDL_SysWMinfo info{};SDL_VERSION(&info.version);
+            if(SDL_GetWindowWMInfo(win->win.get(),&info)&&info.subsystem==SDL_SYSWM_X11)
+                games->shell_handle=static_cast<std::uintptr_t>(info.info.x11.window);
+        }
+        const auto chord=active&&!win->config.headless?config::CONFIG.preference("session.hotkey","Ctrl+Shift+F1"):std::string{};
+        if(chord!=games->hotkey_setting) {
+            games->session_hotkey.stop();games->hotkey_setting=chord;
+            if(!chord.empty()) {
+                unsigned function_key=1;
+                if(chord=="Ctrl+Shift+F2")function_key=2;
+                else if(chord=="Ctrl+Shift+F3")function_key=3;
+                else if(chord=="Ctrl+Shift+F4")function_key=4;
+                const auto registered=games->session_hotkey.configure(function_key);
+                if(!registered)games->pending_notice=registered.message;
+            }
+        }
+        if(games->session_hotkey.take_presses()%2)toggle_session_xmb();
+#endif
         if(active && games->overlay && games->overlay->active() && (!active->capabilities.focus || !active->window)) {
             // Windows are destroyed before their owning process signals exit.
             // Allow normal/manual shutdown to settle before treating a missing
@@ -2168,9 +2360,9 @@ namespace app
                 if(input.kind==close || input.kind==focus_lost) {
                     games->overlay_dismiss=true;games->overlay_return=input.kind==close;continue;
                 }
-#ifdef _WIN32
                 if(input.kind==key_down || input.kind==key_up) {
                     SDL_Keycode code=SDLK_UNKNOWN;
+#ifdef _WIN32
                     if(input.virtual_key>='A' && input.virtual_key<='Z')code=static_cast<SDL_Keycode>(input.virtual_key-'A'+'a');
                     else if(input.virtual_key>='0' && input.virtual_key<='9')code=static_cast<SDL_Keycode>(input.virtual_key);
                     else if(input.virtual_key>=VK_F1 && input.virtual_key<=VK_F12)code=SDLK_F1+static_cast<int>(input.virtual_key-VK_F1);
@@ -2186,22 +2378,34 @@ namespace app
                         case VK_CAPITAL:code=SDLK_CAPSLOCK;break;
                         default:break;
                     }
+#elif defined(__linux__)
+                    code=x11_overlay_key(input.virtual_key);
+#endif
                     if(code!=SDLK_UNKNOWN) {
                         SDL_Keysym key{};key.sym=code;key.scancode=SDL_GetScancodeFromKey(code);
+#ifdef _WIN32
                         if(input.modifiers&MOD_CONTROL)key.mod|=KMOD_CTRL;
                         if(input.modifiers&MOD_SHIFT)key.mod|=KMOD_SHIFT;
                         if(input.modifiers&MOD_ALT)key.mod|=KMOD_ALT;
+#elif defined(__linux__)
+                        key.mod=x11_overlay_modifiers(input.modifiers);
+#endif
                         if(input.kind==key_down)this->key_down(key);else this->key_up(key);
                     }
                 } else if(input.kind==mouse_move) {
                     dispatch(event{action::none,events::mouse_move{static_cast<float>(input.x)/win->swapchainExtent.width,
                         static_cast<float>(input.y)/win->swapchainExtent.height,0,0}});
                 } else if(input.kind==mouse_down || input.kind==mouse_up) {
+#ifdef _WIN32
                     const auto button=to_logical_mouse_button(input.virtual_key==VK_LBUTTON?SDL_BUTTON_LEFT:input.virtual_key==VK_RBUTTON?SDL_BUTTON_RIGHT:SDL_BUTTON_MIDDLE);
+#else
+                    const auto native_button=x11_overlay_button(input.virtual_key);
+                    if(!native_button)continue;
+                    const auto button=to_logical_mouse_button(native_button);
+#endif
                     if(input.kind==mouse_down)dispatch(event{action::none,events::mouse_button_down{button}});
                     else dispatch(event{action::none,events::mouse_button_up{button}});
                 }
-#endif
             }
         }
         const bool toggle=std::exchange(games->toggle_requested,false);
@@ -2219,17 +2423,17 @@ namespace app
                 games->overlay_dismiss=false;games->overlay_return=false;
             } else if(!shell_focused()) {
                 bool opened=false;
+                // Promotion: the passive notice gives the offscreen presentation
+                // to the interactive XMB, which keeps drawing the same notice.
+                close_notice();
                 if(active->capabilities.focus && active->window) {
                     games->target=active->window;
-#ifdef _WIN32
                     if(games->target && openxmb::integrations::validate_session_window(*games->target)) {
-                        MONITORINFO info{};info.cbSize=sizeof(info);
-                        const auto monitor=MonitorFromWindow(reinterpret_cast<HWND>(games->target->handle),MONITOR_DEFAULTTONEAREST);
-                        if(GetMonitorInfoW(monitor,&info)) {
+                        const auto overlay_bounds=game_monitor(*games->target);
+                        if(overlay_bounds) {
                             if(!games->overlay)games->overlay=std::make_unique<app::session_xmb>(win);
                             set_ingame_mode(true);
-                            const auto prepared=games->overlay->open({info.rcMonitor.left,info.rcMonitor.top,
-                                static_cast<unsigned>(info.rcMonitor.right-info.rcMonitor.left),static_cast<unsigned>(info.rcMonitor.bottom-info.rcMonitor.top)},
+                            const auto prepared=games->overlay->open(*overlay_bounds,
                                 [queue=games->overlay_input](const openxmb::integrations::OverlayInput& input) {
                                     if(queue->size()<256)queue->push_back(input);
                                     else if(input.kind==openxmb::integrations::OverlayInputKind::focus_lost || input.kind==openxmb::integrations::OverlayInputKind::close) {
@@ -2243,7 +2447,6 @@ namespace app
                             } else {set_ingame_mode(false);spdlog::warn("Transparent XMB entry failed: {}",prepared.message);}
                         }
                     }
-#endif
                 }
                 if(!opened) {restore_shell();queue_menu_reload();}
             } else if(active->capabilities.focus && active->window) {
@@ -2260,11 +2463,78 @@ namespace app
                 if(!focused){restore_shell();games->pending_notice=focused.message;}
             }
         }
+        // RPCS3 trophy notices. A visible shell or in-game XMB draws the front
+        // notice itself; otherwise a passive host shows it above the game
+        // without focus or input. The host exists only while a notice is due,
+        // so gameplay renders no OpenXMB frames once the queue drains.
+        {
+            auto& notices=games->trophy_notices;
+            const auto now=app::session_xmb::seconds();
+            static_cast<void>(notices.expire(now));
+            const auto* current=notices.current();
+            const auto serial=current?current->serial:std::uint64_t{};
+            auto& art=games->trophy_art;
+            if(art.serial!=serial) {
+                if(art.ready.valid())art.ready.wait();
+                // Submitted frames may still sample the retiring artwork.
+                if(art.image&&art.image->loaded)win->waitIdle();
+                art.image.reset();art.ready={};art.failed=false;art.serial=serial;
+                if(current&&!current->event.achievement.icon.empty()) {
+                    std::error_code error;
+                    if(std::filesystem::is_regular_file(current->event.achievement.icon,error)&&!error) {
+                        try {art.image=std::make_unique<texture>(device,allocator);art.ready=loader->loadTexture(art.image.get(),current->event.achievement.icon);}
+                        catch(const std::exception& failure) {art.image.reset();art.failed=true;spdlog::warn("Trophy artwork unavailable: {}",failure.what());}
+                    } else art.failed=true;
+                }
+            } else if(art.ready.valid()&&art.ready.wait_for(std::chrono::seconds(0))==std::future_status::ready) {
+                try {art.ready.get();} catch(const std::exception& failure) {art.failed=true;spdlog::warn("Trophy artwork unavailable: {}",failure.what());}
+                if(art.failed||!art.image||!art.image->loaded){art.failed=true;art.image.reset();}
+            }
+            const bool shell_visible=win->config.headless||(games->overlay&&games->overlay->active())||shell_focused();
+            const bool capture_busy=games->screenshot_requested||games->pending_capture.has_value();
+            const bool passive_due=current&&!shell_visible&&!games->shell_focus_requested&&!capture_busy&&serial!=games->notice_unavailable;
+            if(!passive_due)close_notice();
+            if(current&&shell_visible&&overlays.empty()&&!old_overlay&&!games->screenshot_status)notices.start(now);
+            if(passive_due) {
+                // An unavailable host drains its notice instead of holding it.
+                const auto unavailable=[&](std::string_view reason) {
+                    spdlog::warn("Passive trophy notice unavailable: {}",reason);
+                    close_notice();games->notice_unavailable=serial;notices.start(now);
+                };
+                if(!games->notice||!games->notice->active()) {
+                    std::optional<openxmb::integrations::OverlayBounds> monitor;
+                    if(games->target&&openxmb::integrations::validate_session_window(*games->target))monitor=game_monitor(*games->target);
+#ifdef _WIN32
+                    if(!monitor&&games->shell_handle) {
+                        MONITORINFO info{};info.cbSize=sizeof(info);
+                        if(GetMonitorInfoW(MonitorFromWindow(reinterpret_cast<HWND>(games->shell_handle),MONITOR_DEFAULTTONEAREST),&info))
+                            monitor=openxmb::integrations::OverlayBounds{info.rcMonitor.left,info.rcMonitor.top,
+                                static_cast<unsigned>(info.rcMonitor.right-info.rcMonitor.left),static_cast<unsigned>(info.rcMonitor.bottom-info.rcMonitor.top)};
+                    }
+#else
+                    if(SDL_Rect bounds{};!monitor&&SDL_GetDisplayBounds(std::max(0,SDL_GetWindowDisplayIndex(win->win.get())),&bounds)==0)
+                        monitor=openxmb::integrations::OverlayBounds{bounds.x,bounds.y,static_cast<unsigned>(bounds.w),static_cast<unsigned>(bounds.h)};
+#endif
+                    const auto bounds=monitor?openxmb::xmb::trophy_notice_bounds(monitor->x,monitor->y,monitor->width,monitor->height):std::nullopt;
+                    if(!bounds)unavailable("no monitor is available for the running session");
+                    else {
+                        if(!games->notice)games->notice=std::make_unique<app::session_xmb>(win);
+                        games->notice_scale=bounds->scale;
+                        const auto opened=games->notice->open({bounds->x,bounds->y,bounds->width,bounds->height},{},
+                            config::CONFIG.enabled("power.reduced.motion",false),openxmb::integrations::OverlayInteraction::passive);
+                        if(!opened)unavailable(opened.message);
+                    }
+                } else if(const auto error=games->notice->take_error();!error.empty())unavailable(error);
+                else if(games->notice->presented())notices.start(now);
+            }
+        }
         if(games->screenshot_requested&&games->overlay&&games->overlay->active()) {
             games->overlay->dismiss(config::CONFIG.enabled("power.reduced.motion",false));
             games->overlay_return_after_dismiss=true;
         } else if(std::exchange(games->screenshot_requested,false)) {
-            if(!active || !active->capabilities.capture || !active->window || win->config.headless) {
+            if(games->capture_worker_busy->load()) {
+                games->pending_notice="The previous screenshot is still finishing. Try again shortly.";
+            } else if(!active || !active->capabilities.capture || !active->window || win->config.headless) {
                 games->pending_notice="Screenshots require a live, identified application window.";
             } else {
                 if(!close_overlay())return;
@@ -2282,11 +2552,22 @@ namespace app
             }
         }
         if(games->pending_capture && std::chrono::steady_clock::now()>=games->pending_capture->due) {
+            if(games->pending_capture->job&&!games->pending_capture->job->ready()) {
+                if(std::chrono::steady_clock::now()<games->pending_capture->deadline+std::chrono::milliseconds(2500))return;
+                games->pending_capture->job->cancel();games->pending_capture.reset();
+                restore_shell();games->pending_notice="The screenshot could not be captured in time. Try again shortly.";
+                return;
+            }
             const auto request=std::exchange(games->pending_capture,{});
             const auto current=games->sessions.active_session();
             if(!current || current->id!=request->session) {
                 restore_shell();games->pending_notice="The session changed before the screenshot could be saved.";
             } else {
+                openxmb::integrations::SessionCaptureResult captured;
+                if(request->job) {
+                    try {captured=request->job->get();}
+                    catch(const std::exception& error){captured={openxmb::integrations::CaptureState::unavailable,error.what()};}
+                } else {
                 auto title=current->descriptor.title;
                 for(auto& c:title)if(static_cast<unsigned char>(c)<32||std::string_view{"<>:\"/\\|?*"}.find(c)!=std::string_view::npos)c='_';
                 if(title.size()>80){std::size_t end=80;while(end>0&&(static_cast<unsigned char>(title[end])&0xc0)==0x80)--end;title.resize(end);}
@@ -2296,13 +2577,26 @@ namespace app
                 const auto stamp=std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
                 const auto destination=folder/(std::to_string(stamp)+"-"+std::to_string(++serial)+".png");
                 std::error_code folder_error;std::filesystem::create_directories(folder,folder_error);
-                const auto captured=folder_error?openxmb::integrations::SessionCaptureResult{openxmb::integrations::CaptureState::unavailable,"Cannot create the screenshot folder: "+folder_error.message()}:
-                    openxmb::integrations::capture_session_window(request->target,destination,games->shell_handle);
+                if(folder_error)captured={openxmb::integrations::CaptureState::unavailable,"Cannot create the screenshot folder: "+folder_error.message()};
+                else {
+                    auto pending=*request;
+                    pending.job=std::make_shared<openxmb::desktop::AsyncJob<openxmb::integrations::SessionCaptureResult>>();
+                    const auto busy=games->capture_worker_busy;busy->store(true);
+                    try {
+                        pending.job->start([target=request->target,destination,shell_handle=games->shell_handle,busy](std::stop_token cancellation) {
+                            struct Completion {std::shared_ptr<std::atomic_bool> busy;~Completion(){busy->store(false);}} completion{busy};
+                            return openxmb::integrations::capture_session_window(target,destination,shell_handle,cancellation);
+                        });
+                        games->pending_capture=std::move(pending);return;
+                    } catch(...) {busy->store(false);captured={openxmb::integrations::CaptureState::unavailable,"The screenshot worker could not start. Try again shortly."};}
+                }
+                }
                 if(captured) {
                     games->screenshot_status=true;games->screenshot_status_started.reset();
                     games->shell_is_session_xmb=false;games->launched_minimized=true;
                 } else if(captured.state==openxmb::integrations::CaptureState::pending && std::chrono::steady_clock::now()<request->deadline) {
                     games->pending_capture=*request;
+                    games->pending_capture->job.reset();
                     games->pending_capture->due=std::chrono::steady_clock::now()+std::chrono::milliseconds(50);
                 } else {
                     spdlog::warn("Session screenshot unavailable: {}",captured.message);
@@ -2526,6 +2820,8 @@ namespace app
     void shell::switch_profile(const std::filesystem::path& path) {
         win->waitIdle();
         config::CONFIG.switch_profile(path);
+        games->trophy_watch.set_session({});games->trophy_origin.reset();
+        games->trophy_notices.clear();
         games->highlighted.reset();
         games->artwork.cancel();games->artwork_attempted.clear();
         if(games->presentation) games->presentation->stop();

@@ -13,6 +13,13 @@
 #include <windows.h>
 #include <tlhelp32.h>
 #endif
+#ifdef __linux__
+#include "linux_observed_process.hpp"
+#include "x11_support.hpp"
+#include <cstdlib>
+#include <limits>
+#include <thread>
+#endif
 
 namespace openxmb::integrations {
 namespace fs=std::filesystem;
@@ -25,7 +32,35 @@ struct ObservedProcess::State {
   HANDLE handle{};
   ~State(){if(handle)CloseHandle(handle);}
 #endif
+#ifdef __linux__
+  // The retained pidfd, not the PID number, is the process identity.
+  linux_observer::Fd pidfd;std::string display;
+#endif
 };
+#ifdef __linux__
+namespace {
+// Sends only the advertised WM_DELETE_WINDOW protocol message to the XRes-pinned
+// window of the pinned process. It never requests focus and never signals.
+Result close_x11_window(const ObservedProcess& process,const SessionWindowTarget& target) {
+  if(!target.handle||target.handle>std::numeric_limits<xcb_window_t>::max())return {false,"The observed game window identity is invalid."};
+  x11_detail::Connection x;
+  if(!x)return {false,"A native local X11 display is required to close the observed game."};
+  const auto window=static_cast<xcb_window_t>(target.handle);
+  const auto owner=x.client_pid(window);
+  const auto token=linux_detail::process_creation(target.pid);
+  if(!owner||*owner!=target.pid||!token||*token!=target.process_creation||process.observe().state!=ProcessState::running)
+    return {false,"The observed game window changed."};
+  const auto protocols=x.property(window,"WM_PROTOCOLS",XCB_ATOM_ATOM);
+  const auto close=x.atom("WM_DELETE_WINDOW");
+  if(close==XCB_ATOM_NONE||std::ranges::find(protocols,close)==protocols.end())return {false,"The game window does not advertise WM_DELETE_WINDOW; no close request was sent."};
+  xcb_client_message_event_t event{};
+  event.response_type=XCB_CLIENT_MESSAGE;event.format=32;event.window=window;event.type=x.atom("WM_PROTOCOLS");
+  event.data.data32[0]=close;event.data.data32[1]=XCB_CURRENT_TIME;
+  const bool sent=x.check(xcb_send_event_checked(x.c,0,window,XCB_EVENT_MASK_NO_EVENT,reinterpret_cast<const char*>(&event)));
+  return {sent,sent?"Window close requested; the game may prompt or remain running.":"X11 could not deliver the game close request."};
+}
+}
+#endif
 ObservedProcess::ObservedProcess(std::shared_ptr<State> state):state_(std::move(state)){}
 std::int64_t ObservedProcess::id()const noexcept{return state_->pid;}
 std::uint64_t ObservedProcess::creation_time()const noexcept{return state_->creation;}
@@ -40,6 +75,20 @@ ProcessObservation ObservedProcess::observe()const {
       else state_->observation={ProcessState::unknown,{},"The observed game exit code is unavailable."};
     }else if(waited!=WAIT_TIMEOUT)state_->observation={ProcessState::unknown,{},"The observed game identity is unavailable."};
   }
+#elif defined(__linux__)
+  if(state_->observation.state==ProcessState::running) {
+    switch(linux_observer::pidfd_state(state_->pidfd.get())) {
+    case linux_observer::PidfdState::exited:
+      // A non-child exit status belongs to the parent; never invent one.
+      state_->observation={ProcessState::exited,std::nullopt,"The observed game exited; the exit status of a non-child process is unavailable."};break;
+    case linux_observer::PidfdState::failed:
+      state_->observation={ProcessState::unknown,{},"The observed game identity is unavailable."};break;
+    case linux_observer::PidfdState::running:
+      if(const auto token=linux_detail::process_creation(state_->pid);token&&*token!=state_->creation)
+        state_->observation={ProcessState::unknown,{},"The observed game identity changed."};
+      break;
+    }
+  }
 #else
   state_->observation={ProcessState::unknown,{},"Provider process observation is unavailable on this platform."};
 #endif
@@ -47,6 +96,10 @@ ProcessObservation ObservedProcess::observe()const {
 }
 std::optional<SessionWindowTarget> ObservedProcess::window()const {
   if(observe().state!=ProcessState::running)return {};
+#ifdef __linux__
+  const auto* display=std::getenv("DISPLAY");
+  if(!display||state_->display!=display)return {};
+#endif
   const auto target=find_session_window(id());
   if(!target||target->process_creation!=creation_time()||!validate_session_window(*target))return {};
   return target;
@@ -58,6 +111,8 @@ Result ObservedProcess::request_close()const {
   if(observe().state!=ProcessState::running||!validate_session_window(*target))return {false,"The observed game window changed."};
   const bool sent=PostMessageW(reinterpret_cast<HWND>(target->handle),WM_CLOSE,0,0)!=FALSE;
   return {sent,sent?"Window close requested; the game may prompt or remain running.":"Windows could not request game closure."};
+#elif defined(__linux__)
+  return close_x11_window(*this,*target);
 #else
   return {false,"Provider game closure is unavailable on this platform."};
 #endif
@@ -181,6 +236,70 @@ struct ExecutableObservation::Impl {
     }
     CloseHandle(snapshot);return result;
   }
+#elif defined(__linux__)
+  // Native X11 only. The observer retains a pidfd for the candidate it returns;
+  // a PID number is never rebound after association.
+  struct Candidate {std::shared_ptr<ObservedProcess::State> state;bool windowed{};};
+  std::string display;
+  std::uint64_t since{},candidate_creation{};std::int64_t candidate_pid{-1};Clock::time_point candidate_at{};
+  std::shared_ptr<ObservedProcess::State> inspect(std::int64_t pid,bool probe_window,bool& windowed) {
+    using namespace linux_observer;
+    windowed=false;
+    const auto proc="/proc/"+std::to_string(pid);int link_error{};
+    const auto image=link_target(proc+"/exe",link_error);
+    if(!image) {
+      // A same-user nondumpable (protected) process hides its image. In exact
+      // mode a same-name one is explicitly unsupported rather than invisible.
+      if(!directory&&link_error==EACCES&&comm_matches(pid,executable.filename().string())&&same_user(pid))
+        error="A matching process is protected or inaccessible; protected games are unsupported.";
+      return {};
+    }
+    const fs::path path(*image);
+    if(directory?!(within(executable,path)&&!helper_image(executable,path)):path!=executable)return {};
+    if(!same_user(pid))return {};
+    if(!same_filesystem_view(pid)){error="A matching game runs in another mount namespace or root; only host-native X11 games are supported.";return {};}
+    const auto start=linux_detail::process_creation(pid);
+    const auto named=file_id(*image,true),running=file_id(proc+"/exe",true);
+    if(!start||!named||!running||*named!=*running)return {};
+    int pin_error{};auto pidfd=open_pidfd(pid,pin_error);
+    if(!pidfd){if(pin_error!=ESRCH)error="Linux pidfd process pinning is unavailable; game observation fails closed.";return {};}
+    // Both reads bracket the pidfd, so it refers to the process that was inspected.
+    const auto again=link_target(proc+"/exe",link_error);const auto after=linux_detail::process_creation(pid);
+    if(!again||*again!=*image||!after||*after!=*start||pidfd_state(pidfd.get())!=PidfdState::running)return {};
+    auto state=std::make_shared<ObservedProcess::State>();
+    state->pid=pid;state->creation=*start;state->pidfd=std::move(pidfd);state->display=display;
+    if(probe_window) {
+      const auto window=find_session_window(pid);
+      windowed=window&&window->process_creation==*start&&validate_session_window(*window);
+    }
+    if(pidfd_state(state->pidfd.get())!=PidfdState::running)return {};
+    return state;
+  }
+  std::vector<Candidate> scan(std::stop_token stop,bool baseline) {
+    std::vector<Candidate> result;
+    if(stop.stop_requested()){error="Game process discovery was stopped.";return result;}
+    const auto self=static_cast<std::int64_t>(::getpid());
+    // Exact mode counts every matching process; directory mode only windowed
+    // ones, so a windowless background process of the install cannot block.
+    const bool probe=directory||!baseline;const std::size_t wanted=baseline?1:2;std::size_t matches=0;
+    const auto status=linux_observer::enumerate_processes(stop,Clock::now()+std::chrono::milliseconds(500),[&](std::int64_t pid) {
+      if(pid==self||pid==excluded)return true;
+      bool windowed{};auto state=inspect(pid,probe,windowed);
+      if(!error.empty())return false;
+      if(!state)return true;
+      if(++matches>16){error="Too many processes match this game; observation is ambiguous.";return false;}
+      if(directory&&!windowed)return true;
+      result.push_back({std::move(state),windowed});
+      return result.size()<wanted;
+    });
+    if(error.empty()) switch(status) {
+    case linux_observer::Enumeration::stopped:error="Game process discovery was stopped.";break;
+    case linux_observer::Enumeration::limit:error="The process enumeration exceeds its time or entry limit.";break;
+    case linux_observer::Enumeration::failed:error="Linux process enumeration is unavailable.";break;
+    case linux_observer::Enumeration::complete:break;
+    }
+    return result;
+  }
 #endif
 };
 ExecutableObservation::ExecutableObservation(const fs::path& target,bool installation_directory):impl_(std::make_unique<Impl>()) {
@@ -198,6 +317,35 @@ ExecutableObservation::ExecutableObservation(const fs::path& target,bool install
   if(!p.error.empty())p.failed=ExecutableMatchState::unavailable;
   else if(!baseline.empty()){p.failed=ExecutableMatchState::rejected;p.error="A matching game was already running before this launch; it was not adopted.";}
   FILETIME now{};GetSystemTimeAsFileTime(&now);p.since=Impl::stamp(now);
+#elif defined(__linux__)
+  if(!target.is_absolute()||target.native().size()>PATH_MAX||target.native().find('\0')!=std::string::npos)throw std::runtime_error("Choose a full executable or installation path for Steam game observation.");
+  std::error_code error;p.executable=fs::canonical(target,error);
+  if(error)throw std::runtime_error("The selected Steam observation path is unavailable.");
+  if(p.directory) {
+    if(!fs::is_directory(p.executable,error)||error||!linux_observer::safe_root(p.executable))throw std::runtime_error("Choose a specific local game installation directory, not a home, system, mount, shared or Steam library root.");
+  } else {
+    struct stat info{};
+    if(::stat(p.executable.c_str(),&info)||!S_ISREG(info.st_mode)||::access(p.executable.c_str(),X_OK))throw std::runtime_error("Choose an existing native Linux game executable for observation.");
+  }
+  if(const auto* display=std::getenv("DISPLAY"))p.display=display;
+  if(!x11_detail::x11_session()) {p.failed=ExecutableMatchState::unavailable;p.error="Game observation does not support Wayland sessions.";return;}
+  {
+    const x11_detail::Connection x;
+    if(!x){p.failed=ExecutableMatchState::unavailable;p.error="Game observation requires a native local X11 display; Wayland, Xwayland and remote displays are unsupported.";return;}
+  }
+  int pin_error{};
+  if(!linux_observer::open_pidfd(::getpid(),pin_error)||!linux_detail::process_creation(::getpid())||!linux_observer::boot_ticks()) {
+    p.failed=ExecutableMatchState::unavailable;p.error="Game observation requires pidfd and readable /proc process identity.";return;
+  }
+  // Start times are whole kernel ticks. Anything that starts at or before this
+  // tick predates the launch; the launch is only released after the tick ends
+  // so a genuinely new game always starts in a later tick.
+  p.since=linux_observer::boot_ticks().value_or(std::numeric_limits<std::uint64_t>::max());
+  const auto baseline=p.scan({},true);
+  if(!p.error.empty())p.failed=ExecutableMatchState::unavailable;
+  else if(!baseline.empty()){p.failed=ExecutableMatchState::rejected;p.error="A matching game was already running before this launch; it was not adopted.";}
+  for(const auto limit=Clock::now()+std::chrono::milliseconds(100);p.since!=std::numeric_limits<std::uint64_t>::max()&&linux_observer::boot_ticks().value_or(0)<=p.since;std::this_thread::sleep_for(std::chrono::milliseconds(1)))
+    if(Clock::now()>limit){p.since=std::numeric_limits<std::uint64_t>::max();break;}
 #else
   (void)target;p.failed=ExecutableMatchState::unavailable;p.error="Steam game process observation is unavailable on this platform.";
 #endif
@@ -216,6 +364,19 @@ ExecutableMatch ExecutableObservation::poll(std::stop_token stop) {
   if(candidates.size()>1){p.failed=ExecutableMatchState::rejected;return {p.failed,{},"Several matching game processes appeared; observation is ambiguous."};}
   if(candidates.empty()){p.candidate_pid=-1;return {};}
   const auto& candidate=candidates.front();
+  if(candidate->creation<=p.since){p.failed=ExecutableMatchState::rejected;return {p.failed,{},"The matching process predates this launch; it was not adopted."};}
+  if(candidate->pid!=p.candidate_pid||candidate->creation!=p.candidate_creation){p.candidate_pid=candidate->pid;p.candidate_creation=candidate->creation;p.candidate_at=Clock::now();return {};}
+  if(Clock::now()-p.candidate_at<std::chrono::milliseconds(200))return {};
+  p.matched=std::shared_ptr<ObservedProcess>(new ObservedProcess(candidate));return {ExecutableMatchState::matched,p.matched,{}};
+#elif defined(__linux__)
+  // Discovery ends at association. The retained pidfd stays through exit; a
+  // later instance or a reused PID never triggers rediscovery.
+  if(p.matched)return {ExecutableMatchState::matched,p.matched,{}};
+  const auto found=p.scan(stop,false);
+  if(!p.error.empty()){p.failed=ExecutableMatchState::unavailable;return {p.failed,{},p.error};}
+  if(found.size()>1){p.failed=ExecutableMatchState::rejected;return {p.failed,{},"Several matching game processes appeared; observation is ambiguous."};}
+  if(found.empty()||(!p.directory&&!found.front().windowed)){p.candidate_pid=-1;return {};}
+  const auto& candidate=found.front().state;
   if(candidate->creation<=p.since){p.failed=ExecutableMatchState::rejected;return {p.failed,{},"The matching process predates this launch; it was not adopted."};}
   if(candidate->pid!=p.candidate_pid||candidate->creation!=p.candidate_creation){p.candidate_pid=candidate->pid;p.candidate_creation=candidate->creation;p.candidate_at=Clock::now();return {};}
   if(Clock::now()-p.candidate_at<std::chrono::milliseconds(200))return {};

@@ -1,9 +1,11 @@
 #include "openxmb/integrations/session_window.hpp"
 #ifdef _WIN32
+#include "windows_capture.hpp"
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
 #include <atomic>
+#include <cstring>
 #include <windows.h>
 #include <dwmapi.h>
 #include <gdiplus.h>
@@ -116,7 +118,8 @@ std::optional<SessionWindowBounds> session_window_bounds(const SessionWindowTarg
   if(!client_geometry(reinterpret_cast<HWND>(target.handle),rect,width,height))return {};
   return SessionWindowBounds{rect.left,rect.top,static_cast<unsigned>(width),static_cast<unsigned>(height)};
 }
-SessionCaptureResult capture_session_window(const SessionWindowTarget& target, const std::filesystem::path& destination, std::uintptr_t excluded_shell_handle) {
+SessionCaptureResult capture_session_window(const SessionWindowTarget& target, const std::filesystem::path& destination, std::uintptr_t excluded_shell_handle,std::stop_token cancellation) {
+  if(cancellation.stop_requested())return {CaptureState::unavailable,"Screenshot capture cancelled."};
   PhysicalCoordinates coordinates;
   if (!valid_target(target)) return {CaptureState::unavailable, "The session window is no longer valid."};
   std::error_code destination_error;
@@ -131,34 +134,54 @@ SessionCaptureResult capture_session_window(const SessionWindowTarget& target, c
   RECT rect{}; int width{}, height{};
   if (!client_geometry(hwnd, rect, width, height)) return {CaptureState::pending, "The session client area is offscreen or unavailable."};
   if (FAILED(DwmFlush())) return {CaptureState::unavailable, "Windows could not synchronize the desktop before capture."};
-  if (!unobstructed(hwnd, rect)) return {CaptureState::pending, "The session window is obscured. Move other windows away and try again."};
-  HDC screen = GetDC(nullptr); if (!screen) return {CaptureState::unavailable, "Windows could not access the visible screen."};
-  HDC memory = CreateCompatibleDC(screen);
-  BITMAPINFO info{}; info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER); info.bmiHeader.biWidth = width; info.bmiHeader.biHeight = -height;
-  info.bmiHeader.biPlanes = 1; info.bmiHeader.biBitCount = 32; info.bmiHeader.biCompression = BI_RGB;
-  void* pixels{}; HBITMAP bitmap = CreateDIBSection(screen, &info, DIB_RGB_COLORS, &pixels, nullptr, 0);
-  HGDIOBJ old = memory && bitmap ? SelectObject(memory, bitmap) : nullptr;
-  bool copied = old && old != HGDI_ERROR && BitBlt(memory, 0, 0, width, height, screen, rect.left, rect.top, SRCCOPY | CAPTUREBLT);
-  if (copied) copied = GdiFlush() != FALSE;
-  if (old && old != HGDI_ERROR) SelectObject(memory, old);
-  if (memory) DeleteDC(memory); ReleaseDC(nullptr, screen);
+  auto native=windows_capture::acquire(target.handle,{rect.left,rect.top,static_cast<unsigned>(width),static_cast<unsigned>(height)});
+  if(cancellation.stop_requested())return {CaptureState::unavailable,"Screenshot capture cancelled."};
+  std::vector<unsigned char> pixels;
+  if(native.supported) {
+    if(!native.result)return native.result;
+    pixels=std::move(native.bgra);
+  } else {
+    if (!unobstructed(hwnd, rect)) return {CaptureState::pending, "The session window is obscured. Move other windows away and try again."};
+    pixels.resize(static_cast<std::size_t>(width)*height*4);
+    HDC screen = GetDC(nullptr); if (!screen) return {CaptureState::unavailable, "Windows could not access the visible screen."};
+    HDC memory = CreateCompatibleDC(screen);
+    BITMAPINFO info{}; info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER); info.bmiHeader.biWidth = width; info.bmiHeader.biHeight = -height;
+    info.bmiHeader.biPlanes = 1; info.bmiHeader.biBitCount = 32; info.bmiHeader.biCompression = BI_RGB;
+    void* source{}; HBITMAP bitmap = CreateDIBSection(screen, &info, DIB_RGB_COLORS, &source, nullptr, 0);
+    HGDIOBJ old = memory && bitmap ? SelectObject(memory, bitmap) : nullptr;
+    bool copied = old && old != HGDI_ERROR && BitBlt(memory, 0, 0, width, height, screen, rect.left, rect.top, SRCCOPY | CAPTUREBLT);
+    if (copied) copied = GdiFlush() != FALSE;
+    if(copied)std::memcpy(pixels.data(),source,pixels.size());
+    if (old && old != HGDI_ERROR) SelectObject(memory, old);
+    if (memory) DeleteDC(memory);if(bitmap)DeleteObject(bitmap);ReleaseDC(nullptr, screen);
+    if(!copied)return {CaptureState::pending,"Windows has not provided the game screen pixels yet."};
+  }
   RECT after{}; int after_width{}, after_height{};
-  const bool stable = copied && valid_target(target) && shell_hidden(excluded_shell_handle) && GetForegroundWindow() == hwnd && !IsIconic(hwnd) && client_geometry(hwnd, after, after_width, after_height) && EqualRect(&rect, &after) && unobstructed(hwnd, after);
-  if (!stable) { if (bitmap) DeleteObject(bitmap); return {CaptureState::pending, "The session window changed, lost focus, or became obscured during capture."}; }
-  const auto* data = static_cast<const unsigned char*>(pixels); bool nonblack = false;
+  const bool stable = valid_target(target) && shell_hidden(excluded_shell_handle) && GetForegroundWindow() == hwnd && !IsIconic(hwnd) && client_geometry(hwnd, after, after_width, after_height) && EqualRect(&rect, &after) && (native.supported||unobstructed(hwnd, after));
+  if (!stable) return {CaptureState::pending, "The session window changed, lost focus, or became obscured during capture."};
+  const auto* data = pixels.data(); bool nonblack = false;
   for (std::size_t i = 0, n = static_cast<std::size_t>(width) * height * 4; i < n; i += 4) if (data[i] || data[i+1] || data[i+2]) { nonblack = true; break; }
-  if (!nonblack) { DeleteObject(bitmap); return {CaptureState::pending, "The captured surface was black or unavailable. A black game frame cannot be distinguished from an unavailable surface."}; }
+  if (!nonblack) return {CaptureState::pending, "The captured surface was black or unavailable. A black game frame cannot be distinguished from an unavailable surface."};
+  for(std::size_t at=3;at<pixels.size();at+=4)pixels[at]=255;
   Gdiplus::GdiplusStartupInput startup; ULONG_PTR token{};
-  if (Gdiplus::GdiplusStartup(&token, &startup, nullptr) != Gdiplus::Ok) { DeleteObject(bitmap); return {CaptureState::unavailable, "Windows image encoding could not start."}; }
+  if (Gdiplus::GdiplusStartup(&token, &startup, nullptr) != Gdiplus::Ok) return {CaptureState::unavailable, "Windows image encoding could not start."};
   static std::atomic<std::uint64_t> capture_serial{};
   auto temporary=destination;
   temporary+=".part-"+std::to_string(GetCurrentProcessId())+"-"+std::to_string(GetTickCount64())+"-"+std::to_string(++capture_serial);
   CLSID encoder{}; bool saved = false;
-  if (png_encoder(encoder)) { Gdiplus::Bitmap output(bitmap, nullptr); saved = output.GetLastStatus() == Gdiplus::Ok && output.Save(temporary.c_str(), &encoder, nullptr) == Gdiplus::Ok; }
-  Gdiplus::GdiplusShutdown(token); DeleteObject(bitmap);
+  if (png_encoder(encoder)) { Gdiplus::Bitmap output(width,height,width*4,PixelFormat32bppARGB,pixels.data()); saved = output.GetLastStatus() == Gdiplus::Ok && output.Save(temporary.c_str(), &encoder, nullptr) == Gdiplus::Ok; }
+  Gdiplus::GdiplusShutdown(token);
+  if(cancellation.stop_requested()) {
+    DeleteFileW(temporary.c_str());return {CaptureState::unavailable,"Screenshot capture cancelled."};
+  }
+  DWORD final_affinity{};
+  if(!valid_target(target)||!GetWindowDisplayAffinity(hwnd,&final_affinity)||final_affinity!=WDA_NONE) {
+    DeleteFileW(temporary.c_str());return {CaptureState::unavailable,"The window capture policy changed before the screenshot could be saved."};
+  }
   // Publish a complete PNG atomically; never replace a user's existing file.
-  if(saved)saved=MoveFileExW(temporary.c_str(),destination.c_str(),MOVEFILE_WRITE_THROUGH)!=FALSE;
+  if(saved)saved=!cancellation.stop_requested()&&MoveFileExW(temporary.c_str(),destination.c_str(),MOVEFILE_WRITE_THROUGH)!=FALSE;
   if(!saved)DeleteFileW(temporary.c_str());
+  if(!saved&&cancellation.stop_requested())return {CaptureState::unavailable,"Screenshot capture cancelled."};
   return saved ? SessionCaptureResult{CaptureState::saved, "Session window captured."} : SessionCaptureResult{CaptureState::unavailable, "Could not save the PNG screenshot at the requested location."};
 }
 } // namespace openxmb::integrations
@@ -194,13 +217,21 @@ bool valid_target(const Connection& x,const SessionWindowTarget& target) {
   const auto token=linux_detail::process_creation(target.pid);
   return token&&*token==target.process_creation&&eligible(x,static_cast<xcb_window_t>(target.handle),target.pid);
 }
-std::optional<SessionWindowBounds> geometry(const Connection& x,xcb_window_t window) {
-  Reply<xcb_get_window_attributes_reply_t> attributes{xcb_get_window_attributes_reply(x.c,xcb_get_window_attributes(x.c,window),nullptr)};
+std::optional<SessionWindowBounds> raw_geometry(const Connection& x,xcb_window_t window,bool border=false) {
   Reply<xcb_get_geometry_reply_t> size{xcb_get_geometry_reply(x.c,xcb_get_geometry(x.c,window),nullptr)};
   Reply<xcb_translate_coordinates_reply_t> point{xcb_translate_coordinates_reply(x.c,xcb_translate_coordinates(x.c,window,x.screen->root,0,0),nullptr)};
-  if(!attributes||attributes->map_state!=XCB_MAP_STATE_VIEWABLE||!size||!point||!size->width||!size->height||size->width>16384||size->height>16384||static_cast<std::size_t>(size->width)*size->height>64*1024*1024)return {};
-  if(point->dst_x<0||point->dst_y<0||point->dst_x+size->width>x.screen->width_in_pixels||point->dst_y+size->height>x.screen->height_in_pixels)return {};
-  return SessionWindowBounds{point->dst_x,point->dst_y,size->width,size->height};
+  if(!size||!point||!point->same_screen||size->root!=x.screen->root||!size->width||!size->height)return {};
+  const unsigned edge=border?size->border_width:0;
+  return SessionWindowBounds{point->dst_x-static_cast<int>(edge),point->dst_y-static_cast<int>(edge),size->width+2*edge,size->height+2*edge};
+}
+std::optional<SessionWindowBounds> geometry(const Connection& x,xcb_window_t window) {
+  Reply<xcb_get_window_attributes_reply_t> attributes{xcb_get_window_attributes_reply(x.c,xcb_get_window_attributes(x.c,window),nullptr)};
+  const auto bounds=raw_geometry(x,window);
+  // Capture allocation and complete onscreen eligibility apply only to the
+  // target. An unrelated blocker may extend beyond the screen or size limit.
+  if(!attributes||attributes->map_state!=XCB_MAP_STATE_VIEWABLE||!bounds||bounds->width>16384||bounds->height>16384||static_cast<std::size_t>(bounds->width)*bounds->height>64*1024*1024)return {};
+  if(bounds->x<0||bounds->y<0||bounds->x+static_cast<int>(bounds->width)>x.screen->width_in_pixels||bounds->y+static_cast<int>(bounds->height)>x.screen->height_in_pixels)return {};
+  return bounds;
 }
 bool shell_hidden(const Connection& x,std::uintptr_t handle) {
   if(!handle||handle>std::numeric_limits<xcb_window_t>::max())return false;
@@ -219,13 +250,13 @@ bool unobstructed(const Connection& x,xcb_window_t target,const SessionWindowBou
   for(unsigned i=0;i<tree->children_len;++i){if(children[i]==frame){found=true;continue;}if(!found)continue;
     Reply<xcb_get_window_attributes_reply_t> attributes{xcb_get_window_attributes_reply(x.c,xcb_get_window_attributes(x.c,children[i]),nullptr)};
     if(!attributes)return false;if(attributes->_class==XCB_WINDOW_CLASS_INPUT_ONLY||attributes->map_state!=XCB_MAP_STATE_VIEWABLE)continue;
-    const auto other=geometry(x,children[i]);if(!other)return false;
+    const auto other=raw_geometry(x,children[i],true);if(!other)return false;
     if(other->x<rect.x+static_cast<int>(rect.width)&&rect.x<other->x+static_cast<int>(other->width)&&other->y<rect.y+static_cast<int>(rect.height)&&rect.y<other->y+static_cast<int>(other->height))return false;
   }
   return found;
 }
 bool same_geometry(const SessionWindowBounds& a,const SessionWindowBounds& b){return a.x==b.x&&a.y==b.y&&a.width==b.width&&a.height==b.height;}
-bool write_png(const std::filesystem::path& destination,std::span<const unsigned char> rgba,unsigned width,unsigned height) {
+bool write_png(const std::filesystem::path& destination,std::span<const unsigned char> rgba,unsigned width,unsigned height,std::stop_token cancellation) {
 #ifdef OPENXMB_X11_PNG
   void* module=dlopen("libpng16.so.16",RTLD_NOW|RTLD_LOCAL);if(!module)return false;
   using Write=decltype(&png_image_write_to_stdio);const auto write=reinterpret_cast<Write>(dlsym(module,"png_image_write_to_stdio"));
@@ -238,10 +269,10 @@ bool write_png(const std::filesystem::path& destination,std::span<const unsigned
   if(fclose(stream)!=0)saved=false;
   // link publishes without replacing an existing destination, even if another
   // process creates it after our initial inspection. Temporary is same FS.
-  if(saved)saved=::link(temporary.c_str(),destination.c_str())==0;
+  if(saved)saved=!cancellation.stop_requested()&&::link(temporary.c_str(),destination.c_str())==0;
   ::unlink(temporary.c_str());dlclose(module);return saved;
 #else
-  (void)destination;(void)rgba;(void)width;(void)height;return false;
+  (void)destination;(void)rgba;(void)width;(void)height;(void)cancellation;return false;
 #endif
 }
 }
@@ -261,7 +292,8 @@ Result focus_session_window(const SessionWindowTarget& target) {
   for(unsigned attempt=0;attempt<20;++attempt){if(x.active(target.handle)&&x.focused(target.handle)&&valid_target(x,target))return {true,"Session window focused."};std::this_thread::sleep_for(std::chrono::milliseconds(5));}
   return {false,"The X11 window manager did not grant application focus. Select it using the window switcher."};
 }
-SessionCaptureResult capture_session_window(const SessionWindowTarget& target,const std::filesystem::path& destination,std::uintptr_t excluded_shell_handle) {
+SessionCaptureResult capture_session_window(const SessionWindowTarget& target,const std::filesystem::path& destination,std::uintptr_t excluded_shell_handle,std::stop_token cancellation) {
+  if(cancellation.stop_requested())return {CaptureState::unavailable,"Screenshot capture cancelled."};
   Connection x;if(!x||!valid_target(x,target))return {CaptureState::unavailable,"A native local X11 session window is required for capture."};
   std::error_code error;if(std::filesystem::exists(destination,error)||error)return {CaptureState::unavailable,"The screenshot destination already exists or cannot be inspected."};
   if(!shell_hidden(x,excluded_shell_handle))return {CaptureState::unavailable,"Hide or minimize the OpenXMB window before capturing."};
@@ -282,7 +314,8 @@ SessionCaptureResult capture_session_window(const SessionWindowTarget& target,co
   const auto* pixels=xcb_get_image_data(image.get());std::vector<unsigned char> rgba(size);bool nonblack=false;
   for(std::size_t i=0;i<size;i+=4){rgba[i]=pixels[i+2];rgba[i+1]=pixels[i+1];rgba[i+2]=pixels[i];rgba[i+3]=255;nonblack=nonblack||pixels[i]||pixels[i+1]||pixels[i+2];}
   if(!nonblack)return {CaptureState::pending,"A black frame cannot be distinguished from an unavailable GPU surface."};
-  return write_png(destination,rgba,before->width,before->height)?SessionCaptureResult{CaptureState::saved,"Visible X11 session window captured."}:SessionCaptureResult{CaptureState::unavailable,"Could not encode or publish the PNG screenshot; libpng16 and a writable destination are required."};
+  if(cancellation.stop_requested())return {CaptureState::unavailable,"Screenshot capture cancelled."};
+  return write_png(destination,rgba,before->width,before->height,cancellation)?SessionCaptureResult{CaptureState::saved,"Visible X11 session window captured."}:SessionCaptureResult{CaptureState::unavailable,cancellation.stop_requested()?"Screenshot capture cancelled.":"Could not encode or publish the PNG screenshot; libpng16 and a writable destination are required."};
 }
 }
 #else
@@ -291,7 +324,7 @@ std::optional<SessionWindowTarget> find_session_window(std::int64_t) { return {}
 std::optional<SessionWindowBounds> session_window_bounds(const SessionWindowTarget&) {return {};}
 Result validate_session_window(const SessionWindowTarget&) { return {false,"Session window identity is unavailable on this platform."}; }
 Result focus_session_window(const SessionWindowTarget&) { return {false, "Session window switching is unavailable on this platform."}; }
-SessionCaptureResult capture_session_window(const SessionWindowTarget&, const std::filesystem::path&, std::uintptr_t) { return {CaptureState::unavailable, "Session window capture is unavailable on this platform."}; }
+SessionCaptureResult capture_session_window(const SessionWindowTarget&, const std::filesystem::path&, std::uintptr_t,std::stop_token cancellation) { return {CaptureState::unavailable,cancellation.stop_requested()?"Screenshot capture cancelled.":"Session window capture is unavailable on this platform."}; }
 } // namespace openxmb::integrations
 #endif
 

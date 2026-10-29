@@ -8,7 +8,7 @@
 
 namespace openxmb::integrations {
 // A pinned, read-only identity. It cannot be converted into OwnedProcess and
-// has no termination operation. A close request addresses one validated HWND.
+// has no termination operation. A close request addresses one validated window.
 class ObservedProcess {
 public:
   struct State;

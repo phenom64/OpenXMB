@@ -297,9 +297,11 @@ struct SessionManager::Impl {
     const bool controlled=snapshot.descriptor.tracking==TrackingQuality::direct_child||snapshot.descriptor.tracking==TrackingQuality::provider_observed;
     snapshot.capabilities={controlled&&window.has_value(),controlled&&window.has_value(),controlled&&window.has_value()};
 #ifndef _WIN32
-    // Preserve the existing owned-child SIGTERM request on POSIX. Provider
-    // observation remains unavailable; no external PID is signalled.
-    snapshot.capabilities.graceful_close=snapshot.descriptor.tracking==TrackingQuality::direct_child&&observation.state==integrations::ProcessState::running;
+    // Owned children retain their POSIX close path. An observed X11 game can
+    // only receive its advertised WM_DELETE_WINDOW; no external PID is signalled.
+    snapshot.capabilities.graceful_close=observation.state==integrations::ProcessState::running&&
+      (snapshot.descriptor.tracking==TrackingQuality::direct_child||
+       (snapshot.descriptor.tracking==TrackingQuality::provider_observed&&window.has_value()));
 #endif
     if(observation.state==integrations::ProcessState::running)return;
     snapshot.state=observation.state==integrations::ProcessState::exited?SessionState::exited:SessionState::interrupted;

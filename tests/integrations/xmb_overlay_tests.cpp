@@ -63,6 +63,36 @@ int main(){try{
   require(wrong_thread_rejected,"native presentation accepted another thread");
   overlay.hide();
   require(GetForegroundWindow()==foreground,"hidden compositor changed foreground ownership");
+  {
+    // Hit testing needs an on-screen rectangle; one alpha step keeps the
+    // 32x16 fixture imperceptible. Nothing here activates a window.
+    std::vector<std::uint8_t> faint(32*16*4);for(std::size_t i=0;i<faint.size();i+=4)faint[i+3]=1;
+    const POINT inside{16,12};
+    std::vector<OverlayInput> passive_events;XmbOverlay notice;
+    require(bool(notice.prepare({8,8,32,16},[&](const OverlayInput& input){passive_events.push_back(input);},OverlayInteraction::passive)),"passive host prepare failed");
+    const auto hwnd=reinterpret_cast<HWND>(notice.native_handle());
+    const auto style=static_cast<DWORD>(GetWindowLongPtrW(hwnd,GWL_EXSTYLE));
+    require((style&(WS_EX_NOACTIVATE|WS_EX_TRANSPARENT|WS_EX_TOPMOST|WS_EX_LAYERED))==(WS_EX_NOACTIVATE|WS_EX_TRANSPARENT|WS_EX_TOPMOST|WS_EX_LAYERED),"passive host lacks nonactivating, input-transparent topmost styles");
+    require(bool(notice.present(faint,32,16,32*4)),"passive present failed");
+    require(!notice.show(true)&&!notice.visible(),"passive host accepted activation");
+    require(bool(notice.show(false))&&notice.visible()&&!notice.focused(),"passive host was not shown without focus");
+    require(GetForegroundWindow()==foreground,"showing the passive host changed foreground ownership");
+    require(WindowFromPoint(inside)!=hwnd,"pointer hit testing reached the passive host");
+    require(SendMessageW(hwnd,WM_NCHITTEST,0,MAKELPARAM(inside.x,inside.y))==HTTRANSPARENT&&SendMessageW(hwnd,WM_MOUSEACTIVATE,0,MAKELPARAM(HTCLIENT,WM_LBUTTONDOWN))==MA_NOACTIVATE,"passive host can be hit or activated by the pointer");
+    for(const UINT message:{UINT{WM_KEYDOWN},UINT{WM_KEYUP},UINT{WM_LBUTTONDOWN},UINT{WM_MOUSEMOVE},UINT{WM_KILLFOCUS},UINT{WM_CLOSE}})SendMessageW(hwnd,message,VK_LEFT,0);
+    require(passive_events.empty()&&notice.visible(),"passive host routed input, focus loss or close");
+    require(bool(notice.present(faint,32,16,32*4))&&GetForegroundWindow()==foreground,"passive topmost refresh changed foreground ownership");
+    notice.hide();require(!notice.visible()&&GetForegroundWindow()==foreground,"hiding the passive host changed foreground ownership");
+    std::vector<OverlayInput> events;XmbOverlay interactive;
+    require(bool(interactive.prepare({8,8,32,16},[&](const OverlayInput& input){events.push_back(input);})),"interactive host prepare failed");
+    const auto interactive_hwnd=reinterpret_cast<HWND>(interactive.native_handle());
+    require(!(GetWindowLongPtrW(interactive_hwnd,GWL_EXSTYLE)&(WS_EX_NOACTIVATE|WS_EX_TRANSPARENT)),"interactive host became passive");
+    require(bool(interactive.present(faint,32,16,32*4))&&bool(interactive.show(false)),"interactive nonactivating show failed");
+    require(WindowFromPoint(inside)==interactive_hwnd,"interactive host no longer accepts pointer input");
+    SendMessageW(interactive_hwnd,WM_KEYDOWN,VK_LEFT,0);SendMessageW(interactive_hwnd,WM_KILLFOCUS,0,0);
+    require(events.size()==2&&events[0].kind==OverlayInputKind::key_down&&events[0].virtual_key==VK_LEFT&&events[1].kind==OverlayInputKind::focus_lost,"interactive host stopped routing navigation or dismissal");
+    interactive.hide();require(GetForegroundWindow()==foreground,"interactive fixture changed foreground ownership");
+  }
 #endif
   std::cout<<"Overlay conversion fixtures passed\n";return 0;
 }catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}

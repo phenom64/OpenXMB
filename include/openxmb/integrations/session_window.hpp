@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <optional>
+#include <stop_token>
 
 namespace openxmb::integrations {
 // A process creation time and HWND identify one candidate, not an ownership
@@ -20,10 +21,13 @@ struct SessionWindowBounds {int x{},y{};unsigned width{},height{};};
 [[nodiscard]] Result validate_session_window(const SessionWindowTarget& target);
 // Foreground activation is subject to OS policy and may be denied.
 [[nodiscard]] Result focus_session_window(const SessionWindowTarget& target);
-// PNG capture of the visible foreground client only. A valid hidden/minimized
+// PNG capture of the foreground client. Windows Graphics Capture isolates the
+// exact HWND; unsupported systems and X11 require an unobstructed visible client.
+// A valid hidden/minimized
 // shell HWND owned by this process is mandatory. The caller must revalidate its
 // session capability and pinned identity. Occlusion/protected/black content can be unavailable;
-// no desktop capture can guarantee a live GPU frame or rule out every overlay.
+// Cancellation is checked before native capture and immediately before atomic
+// publication; a cancelled request must not publish a later PNG.
 enum class CaptureState { saved, pending, unavailable };
 struct SessionCaptureResult {
   CaptureState state{CaptureState::unavailable};
@@ -31,5 +35,6 @@ struct SessionCaptureResult {
   explicit operator bool() const noexcept {return state==CaptureState::saved;}
 };
 [[nodiscard]] SessionCaptureResult capture_session_window(const SessionWindowTarget& target,
-  const std::filesystem::path& destination, std::uintptr_t excluded_shell_handle = 0);
+  const std::filesystem::path& destination, std::uintptr_t excluded_shell_handle = 0,
+  std::stop_token cancellation = {});
 } // namespace openxmb::integrations

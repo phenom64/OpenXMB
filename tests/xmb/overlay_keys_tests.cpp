@@ -15,6 +15,10 @@ int main() try {
     check(app::x11_overlay_key(0xffffff)==SDLK_UNKNOWN);
     check((app::x11_overlay_modifiers(5)&(KMOD_SHIFT|KMOD_CTRL))==(KMOD_SHIFT|KMOD_CTRL));
     check((app::x11_overlay_modifiers(10)&(KMOD_CAPS|KMOD_ALT))==(KMOD_CAPS|KMOD_ALT));
+    check(app::x11_overlay_button(1)==SDL_BUTTON_LEFT);
+    check(app::x11_overlay_button(2)==SDL_BUTTON_MIDDLE);
+    check(app::x11_overlay_button(3)==SDL_BUTTON_RIGHT);
+    for(unsigned button=4;button<=12;++button)check(app::x11_overlay_button(button)==0);
     std::cout<<"X11 overlay controls, remappable key symbols and modifiers passed\n";
     return 0;
 } catch(const std::exception& error){std::cerr<<error.what()<<'\n';return 1;}

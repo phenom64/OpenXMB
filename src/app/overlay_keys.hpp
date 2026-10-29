@@ -2,6 +2,14 @@
 #include <SDL2/SDL.h>
 
 namespace app {
+inline unsigned x11_overlay_button(unsigned button) {
+    switch(button) {
+    case 1:return SDL_BUTTON_LEFT;
+    case 2:return SDL_BUTTON_MIDDLE;
+    case 3:return SDL_BUTTON_RIGHT;
+    default:return 0;
+    }
+}
 inline SDL_Keycode x11_overlay_key(unsigned symbol) {
     if(symbol>='A'&&symbol<='Z')return static_cast<SDL_Keycode>(symbol-'A'+'a');
     if(symbol>=0x20&&symbol<=0x7e)return static_cast<SDL_Keycode>(symbol);

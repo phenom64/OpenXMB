@@ -5,6 +5,7 @@ add_library(openxmb_integrations STATIC
   "${_openxmb_integrations_root}/src/integrations/owned_process.cpp"
   "${_openxmb_integrations_root}/src/integrations/observed_process.cpp"
   "${_openxmb_integrations_root}/src/integrations/session_window.cpp"
+  "${_openxmb_integrations_root}/src/integrations/windows_capture.cpp"
   "${_openxmb_integrations_root}/src/integrations/xmb_overlay.cpp"
   "${_openxmb_integrations_root}/src/integrations/guide_input.cpp"
   "${_openxmb_integrations_root}/src/integrations/session_hotkey.cpp"
@@ -16,7 +17,21 @@ target_compile_features(openxmb_integrations PUBLIC cxx_std_23)
 target_link_libraries(openxmb_integrations PRIVATE nlohmann_json::nlohmann_json)
 set_target_properties(openxmb_integrations PROPERTIES CXX_SCAN_FOR_MODULES OFF)
 if(WIN32)
+  option(OPENXMB_REQUIRE_WINDOWS_CAPTURE "Require Windows Graphics Capture SDK support" ON)
   target_link_libraries(openxmb_integrations PUBLIC advapi32 gdiplus gdi32 user32 dwmapi)
+  file(GLOB _openxmb_cppwinrt_roots "$ENV{SystemDrive}/Program Files (x86)/Windows Kits/10/Include/*/cppwinrt")
+  list(SORT _openxmb_cppwinrt_roots COMPARE NATURAL ORDER DESCENDING)
+  find_path(OPENXMB_CPPWINRT_INCLUDE_DIR winrt/Windows.Graphics.Capture.h HINTS ${_openxmb_cppwinrt_roots})
+  if(OPENXMB_CPPWINRT_INCLUDE_DIR AND EXISTS "${OPENXMB_CPPWINRT_INCLUDE_DIR}/winrt/Windows.Graphics.Capture.h")
+    message(STATUS "Windows screenshot backend: Windows Graphics Capture (exact window)")
+    target_include_directories(openxmb_integrations SYSTEM PRIVATE "${OPENXMB_CPPWINRT_INCLUDE_DIR}")
+    target_compile_definitions(openxmb_integrations PRIVATE OPENXMB_HAVE_WINDOWS_CAPTURE=1)
+    target_link_libraries(openxmb_integrations PUBLIC d3d11 dxgi windowsapp)
+  elseif(OPENXMB_REQUIRE_WINDOWS_CAPTURE)
+    message(FATAL_ERROR "Windows Graphics Capture C++/WinRT headers are required. Install a Windows 10/11 SDK, or explicitly set OPENXMB_REQUIRE_WINDOWS_CAPTURE=OFF for a development build with conservative desktop capture.")
+  else()
+    message(WARNING "Windows Graphics Capture is disabled: screenshots use conservative visible-screen sampling and may be unavailable with other overlays.")
+  endif()
 elseif(APPLE)
   target_link_libraries(openxmb_integrations PUBLIC "-framework ApplicationServices")
 else()
@@ -75,6 +90,9 @@ if(OPENXMB_BUILD_NATIVE_TESTS)
     target_link_libraries(openxmb_session_window_child PRIVATE user32 gdi32)
     target_link_libraries(openxmb_session_window_tests PRIVATE OpenXMB::Integrations OpenXMB::DesktopCore)
     set_target_properties(openxmb_session_window_child openxmb_session_window_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+    add_executable(openxmb_windows_capture_tests EXCLUDE_FROM_ALL "${_openxmb_integrations_root}/tests/integrations/windows_capture_tests.cpp")
+    target_link_libraries(openxmb_windows_capture_tests PRIVATE OpenXMB::Integrations)
+    set_target_properties(openxmb_windows_capture_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
   endif()
   add_executable(openxmb_integrations_tests "${_openxmb_integrations_root}/tests/integrations/integration_tests.cpp")
   target_link_libraries(openxmb_integrations_tests PRIVATE OpenXMB::Integrations)
@@ -104,6 +122,16 @@ if(OPENXMB_BUILD_NATIVE_TESTS AND UNIX AND NOT APPLE)
         "OPENXMB_X11_TEST_BINARY=$<TARGET_FILE:openxmb_x11_session_tests>" "OPENXMB_X11_COMPOSITOR=${OPENXMB_XCOMPMGR}"
         "${OPENXMB_BASH}" "${_openxmb_integrations_root}/tests/integrations/run_x11_session_tests.sh")
       set_tests_properties(openxmb_x11_session_tests PROPERTIES TIMEOUT 30)
+    endif()
+    if(OPENXMB_BASH)
+      add_executable(openxmb_linux_observed_process_tests "${_openxmb_integrations_root}/tests/integrations/linux_observed_process_tests.cpp")
+      target_include_directories(openxmb_linux_observed_process_tests PRIVATE ${X11_INCLUDE_DIR} "${_openxmb_integrations_root}/src/integrations")
+      target_link_libraries(openxmb_linux_observed_process_tests PRIVATE OpenXMB::Integrations)
+      set_target_properties(openxmb_linux_observed_process_tests PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+      add_test(NAME openxmb_linux_observed_process_tests COMMAND "${CMAKE_COMMAND}" -E env
+        "OPENXMB_OBSERVED_TEST_BINARY=$<TARGET_FILE:openxmb_linux_observed_process_tests>"
+        "${OPENXMB_BASH}" "${_openxmb_integrations_root}/tests/integrations/run_linux_observed_process_tests.sh")
+      set_tests_properties(openxmb_linux_observed_process_tests PROPERTIES TIMEOUT 90)
     endif()
     add_test(NAME openxmb_session_hotkey_tests COMMAND "${OPENXMB_XVFB_RUN}" -a
       "${CMAKE_COMMAND}" -E env --unset=WAYLAND_DISPLAY XDG_SESSION_TYPE=x11 OPENXMB_HOTKEY_TEST_ISOLATED=1

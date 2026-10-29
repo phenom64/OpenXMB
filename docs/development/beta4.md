@@ -14,10 +14,13 @@ release brief remains gated on the user's testing and explicit go-ahead.
 - Version, configuration defaults, package manifest and packaging assertions
   use `0.4.0-beta.4`. Packaging filenames derive from `VERSION`; About, System
   Information and command-line version derive from `OPENXMB_VERSION_STRING`.
-- The integration pins AuroreEngine `4cd2a05`, which includes the Opus visual
+- The integration pins AuroreEngine `e7abb65`, which includes the Opus visual
   work, minimized lifecycle hook, native-size artwork upload and offscreen frame
   presentation, primary-face-preserving script fallback and bounded incremental
-  glyph uploads on its `dev` branch. Engine `master` and
+  glyph uploads, retained renderer extent updates and bounded command-buffer
+  reuse on its `dev` branch. The engine prefers a shared graphics/present queue
+  and uses concurrent swapchain sharing when those queue families differ.
+  Separate-family hardware acceptance remains open. Engine `master` and
   the original visual worktree remain unchanged.
 
 ## Ownership and implementation sequence
@@ -141,15 +144,30 @@ controller polling.
 The user's original PS3 references establish **Quit Game under Game** and
 **Save Screenshot under Photo**. Applications use Quit App. The current Windows
 screenshot adapter requires a live, identity-pinned, unique foreground window,
-hidden/minimized OpenXMB, stable client bounds and no detected occluding window.
-It captures the client at native resolution to the launching profile's Photo
-folder, grouped by game/application and title. A bounded settling period retries
-transient restoration, geometry and occlusion states without blocking navigation.
+hidden/minimized OpenXMB and stable client bounds. Windows Graphics Capture
+captures the exact HWND, excluding unrelated windows and overlays, with native
+client cropping. Systems without that backend use conservative desktop sampling
+only when capture permission was not denied and no occluder is detected. Capture
+runs off the UI thread and writes to the launching profile's Photo folder,
+grouped by game/application and title. A bounded settling period retries
+transient restoration and geometry states without blocking navigation.
 Complete PNGs are published atomically and existing files are never replaced.
-Protected, black, obscured and unavailable surfaces fail with a message after
-applicable retries. Transient system overlays and live GPU frame content cannot be
-guaranteed by this desktop sampling backend. Linux/macOS focus/capture adapters
-remain unavailable; they must not be presented as supported native overlays.
+Protected, black and unavailable surfaces fail with a message after applicable
+retries. Window identity and display affinity are checked again before publication.
+Graphics Capture keeps a process-lifetime MTA reference: releasing the final COM
+reference on its capture worker can unload a DLL before that worker returns.
+Windows builds require the capture SDK by default. Explicit development builds
+can opt out with `OPENXMB_REQUIRE_WINDOWS_CAPTURE=OFF`; CMake then warns about
+the weaker visible-screen backend. A denied capture permission never falls back.
+Cancelled requests check their stop token before capture and atomic publication.
+A five-second watchdog clears a stalled request from the UI, and a worker guard
+prevents another capture from starting until that worker actually finishes.
+Linux X11 now has identity-pinned
+window discovery, EWMH focus requests, compositor-backed ARGB presentation and
+visible-client PNG capture. It requires a local X11 session, an active compositor,
+XRes client identity and libpng16. Wayland/Xwayland and macOS use the explicit
+switch-to-XMB fallback. Linux desktop/game acceptance remains open; isolated
+Xvfb/compositor fixtures are not a claim of parity on those desktops.
 
 AuroreEngine `dev` includes the event-loop lifecycle hook introduced in `f7396a2` before
 frame throttling/minimized skips and defers minimized/zero-sized swapchain
@@ -212,12 +230,16 @@ Steam game Triangle options include Launch Settings. A selected direct executabl
 literal arguments and working folder survive discovery refresh without changing
 the Steam identity or duplicating the game. Some titles require Steam even when
 started directly; no authentication or DRM bypass is provided. Forwarding launcher
-lifetime is not game lifetime. On Windows, Steam launch observes a newly launched
+lifetime is not game lifetime. On Windows and native Linux X11, Steam launch observes a newly launched
 game inside its registered installation directory using read-only process rights
 and conservative association. An explicit executable override takes priority.
 Preexisting, ambiguous, inaccessible and expired matches stay unavailable.
 Observed playtime is separate from owned-child playtime; Quit Game sends only a
-graceful window close request. The executable selection remains available when
+graceful window close request. Linux pins PID/start-time/executable identity and
+requires a unique same-user XRes-associated window advertising WM_DELETE_WINDOW;
+it never sends termination signals or invents a non-child exit code. Isolated
+Xvfb fixtures pass; real Steam/Proton/container desktop acceptance remains open.
+The executable selection remains available when
 installation-root discovery cannot identify a unique game window. Steam starts
 with `-silent -applaunch`; its client and any required authentication remain
 necessary. OpenXMB does not alter Steam's controller mappings, inject a proxy DLL,
@@ -234,6 +256,50 @@ RetroAchievements account reads. SteamGridDB uses official search/role APIs with
 explicit artwork selection, caching and native PS3 priority. Live account/API-key
 acceptance remains deferred at the user's request. API keys are read from named
 launch-environment variables and are not written into the library or settings.
+The explicit **Match library games** action hashes raw GB/GBC/GBA ROMs locally
+and matches only exact hashes in official `API_GetGameList` hash lists. It retains
+manual IDs and account/profile ownership, limits each run to 64 ROMs and caches
+lists for one day, including unmatched results. Offline/stale lists are identified.
+Other formats require manual IDs; titles are never used to guess a match. ROM
+bytes, paths and hashes are not uploaded, and OpenXMB does not award achievements
+or implement a Hardcore evaluator.
+
+RPCS3 managed launches prepare a bounded, owner-only configuration snapshot and
+disable the native quit confirmation in that snapshot only. The original VFS
+mounts, selected RPCS3 user, controller mappings and settings are preserved.
+Windows retains a read-only exclusive lease on the original `RPCS3.buf`, including
+an explicitly inherited child handle so the lease survives an OpenXMB exit.
+Another RPCS3 instance using that root must close first. Linux retains the native
+cache/instance-lock directory through `XDG_CACHE_HOME`. Unsupported portable/VFS
+layouts, unavailable original instance locks and macOS retain the ordinary native
+launch and confirmation. On Windows, a validated private cache junction reuses an
+existing original recompiler cache on supported local filesystems. Preparation
+does not create, enumerate or modify the original cache. Missing/unsafe cache
+layouts retain a cold private cache with a reported reason; RPCS3 can update a
+shared cache normally during gameplay. Cleanup must remove the junction without
+traversing it. Fixture tests cover original settings/cache preservation and
+cross-volume cleanup.
+Snapshot size/IO failures also fall back to an ordinary native launch; unsafe or
+invalid paths and an in-use original configuration block launch with an error.
+Preparation failures and failed child launches roll back only newly owned private
+storage. After launch, storage is retained until the exact session is confirmed
+exited, then removed after root/parent identity and owner-marker validation.
+Cleanup removes a cache junction without traversing its target. Shutdown while
+the game still runs preserves its configuration. Crash/forced-exit residues and
+failed/refused cleanup remain in place; no prefix-based startup sweep is performed.
+
+A background trophy watcher associates only the active game's exact `TROPDIR`
+set IDs with the launched RPCS3 user and HDD. Historical unlocks form a silent
+baseline; stable, known locked-to-unlocked changes produce provider-labelled
+events. Session/profile/user changes discard stale events. Windows and composited
+native X11 can display a passive, input-transparent banner while the game retains
+focus; the same renderer draws it inside XMB. Guide promotes it into interactive
+XMB on the first press, and screenshots suppress it. Banner-sized offscreen
+rendering stops when the queue expires. RPCS3's own trophy popups remain enabled.
+The banner identifies RPCS3 and uses genuine title/art/grade data. Its geometry
+has not been calibrated against an original PS3 trophy popup. A real earned
+in-game unlock and physical input during that notification remain acceptance gates.
+An outstanding focus request alone does not start a banner's visible hold time.
 
 YouTube has a packaged menu icon, an installed-client detector and a native setup
 progress view. Information identifies the VacuumTube client. Windows managed
@@ -254,9 +320,11 @@ source build. Do not replace a snapshot's binaries while a tester is running it.
 
 Windows verification includes automated CTests (one reference-frame
 comparison remains explicitly disabled), refreshed setup/reset and provider UI
-smokes, and native-size GPU artwork upload. Real provider credentials, actual
-emulator/game boot, physical controllers and Linux/macOS session adapters remain
-release gates. These development results do not declare Beta 4 release-ready.
+smokes, and native-size GPU artwork upload. Real provider credentials,
+physical controllers and real Linux/macOS desktops remain
+release gates. Windows real G-Force, Bomb Rush Cyberfunk through Steam and YouTube
+have passed overlay/capture/graceful-exit lifecycle checks with isolated profiles.
+These development results do not declare Beta 4 release-ready.
 
 The in-game Vulkan frame smoke verifies a 65-percent black veil, a transparent
 clock/date frame interior and independent text/icon opacity. The veil was darkened
@@ -283,8 +351,17 @@ Only one runtime owner may be active or tearing down at a time. Deterministic
 boundary tests and an opt-in installed-runtime lifecycle test cover these paths;
 physical Guide delivery remains unverified. A focused exclusive Guide owner or
 operating-system policy can suppress background delivery. Exclusive fullscreen,
-protected processes and Linux/macOS overlay parity remain separate acceptance
+protected processes and Linux/macOS desktop overlay parity remain separate acceptance
 gates; no injection or protection bypass is used.
+
+The Linux X11 keyboard shortcut uses checked passive root grabs with lock-key
+variants and per-client detectable autorepeat. It never requests focus, rolls
+back partial grabs on conflict, and stops with the session. Independent Xvfb/XTest
+tests cover held keys, 300 rapid taps, focus preservation, conflict rollback and
+unchanged global keyboard settings. Wayland/Xwayland fail explicitly rather than
+claiming a global shortcut that cannot be delivered.
+Interactive mouse input maps buttons 1/2/3 explicitly; wheel and side-button
+events are dropped until a corresponding input action is supported.
 
 The setup fidelity pass uses the original 1080p frames for luminous text selection,
 fixed-width date cells, 13x7 spinner marks, name-field chrome and confirmation

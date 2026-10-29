@@ -1,10 +1,12 @@
 #include "openxmb/integrations/session_window.hpp"
 #include "openxmb/desktop/session.hpp"
 #include <filesystem>
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <iterator>
 #include <stdexcept>
+#include <chrono>
 #ifdef _WIN32
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -24,6 +26,10 @@ int main(int argc, char** argv) {
     require(!focus_session_window(invalid), "invalid target must not focus");
     const auto invalid_capture=capture_session_window(invalid,fs::temp_directory_path()/"invalid-session.png");
     require(!invalid_capture && invalid_capture.state==CaptureState::unavailable,"invalid target must fail permanently without retrying");
+    std::stop_source cancelled_request;cancelled_request.request_stop();
+    const auto cancelled_path=fs::temp_directory_path()/("openxmb-cancelled-"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count())+".png");
+    const auto cancelled_capture=capture_session_window(invalid,cancelled_path,0,cancelled_request.get_token());
+    require(!cancelled_capture&&cancelled_capture.message.find("cancelled")!=std::string::npos&&!fs::exists(cancelled_path),"cancelled capture must stop before native work or publication");
 #ifdef _WIN32
     require(argc == 2, "fixture executable argument is required");
     const auto root = fs::temp_directory_path() / ("openxmb-window-" + std::to_string(GetCurrentProcessId()));
@@ -33,13 +39,16 @@ int main(int argc, char** argv) {
     descriptor.identity="window-fixture";descriptor.title="Window Fixture";descriptor.provider="application";descriptor.runner="fixture";
     descriptor.profile_directory=root;descriptor.kind=openxmb::desktop::SessionKind::application;descriptor.tracking=openxmb::desktop::TrackingQuality::launcher_only;
     const auto helper=fs::path(argv[1]).u8string(),destination=ready.u8string();
-    const auto launched=manager.launch(descriptor,{std::string(helper.begin(),helper.end()),std::string(destination.begin(),destination.end())});
+    const auto launched=manager.launch(descriptor,{std::string(helper.begin(),helper.end()),std::string(destination.begin(),destination.end()),"15000"});
     require(bool(launched),"fixture launch failed");
     struct Guard {openxmb::desktop::SessionManager& manager;std::string id;~Guard(){static_cast<void>(manager.quit(id,ProcessStopMode::force_stop));}} guard{manager,launched.session_id};
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
     while (!fs::exists(ready) && std::chrono::steady_clock::now() < deadline) std::this_thread::sleep_for(std::chrono::milliseconds(20));
     require(fs::exists(ready), "fixture did not become ready");
-    auto target = find_session_window(manager.active_session()->process_id); require(bool(target), "fixture target not found");
+    const auto launched_entries=manager.snapshot();
+    const auto launched_entry=std::find_if(launched_entries.begin(),launched_entries.end(),[&](const auto& entry){return entry.id==launched.session_id;});
+    require(launched_entry!=launched_entries.end(),"fixture process record missing");
+    auto target = find_session_window(launched_entry->process_id); require(bool(target), "fixture target not found");
     auto stale = *target; ++stale.process_creation;
     require(!focus_session_window(stale), "stale creation token must not focus");
     require(!capture_session_window(stale, image), "stale creation token must not capture");
@@ -68,6 +77,24 @@ int main(int argc, char** argv) {
       const auto collision=capture_session_window(*target,image,reinterpret_cast<std::uintptr_t>(shell));
       require(!collision && collision.state==CaptureState::unavailable,"capture must never overwrite an existing screenshot");
       require(read_bytes()==original_png,"screenshot collision modified an existing file");
+      RECT target_rect{};GetWindowRect(reinterpret_cast<HWND>(target->handle),&target_rect);
+      HWND obstruction=CreateWindowExW(WS_EX_TOPMOST|WS_EX_NOACTIVATE,L"STATIC",L"Capture fixture occluder",WS_POPUP|SS_BLACKRECT,
+        target_rect.left+20,target_rect.top+40,80,80,nullptr,nullptr,GetModuleHandleW(nullptr),nullptr);
+      require(obstruction!=nullptr,"capture occluder fixture failed");
+      struct ObstructionGuard{HWND window;~ObstructionGuard(){DestroyWindow(window);}} obstruction_guard{obstruction};
+      SetWindowPos(obstruction,HWND_TOPMOST,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE|SWP_SHOWWINDOW);
+      require(GetForegroundWindow()==reinterpret_cast<HWND>(target->handle),"passive capture fixture stole focus");
+      const auto unobscured=capture_session_window(*target,root/"under-overlay.png",reinterpret_cast<std::uintptr_t>(shell));
+      require(bool(unobscured),"native window capture must exclude unrelated topmost overlays");
+      require(Gdiplus::GdiplusStartup(&token,&input,nullptr)==Gdiplus::Ok,"capture verification encoder unavailable");
+      {
+        Gdiplus::Bitmap bitmap((root/"under-overlay.png").c_str());RECT client{};POINT origin{};
+        GetClientRect(reinterpret_cast<HWND>(target->handle),&client);ClientToScreen(reinterpret_cast<HWND>(target->handle),&origin);
+        require(bitmap.GetWidth()==static_cast<unsigned>(client.right)&&bitmap.GetHeight()==static_cast<unsigned>(client.bottom),"native capture changed client dimensions");
+        Gdiplus::Color behind;bitmap.GetPixel(target_rect.left+40-origin.x,target_rect.top+60-origin.y,&behind);
+        require(behind.GetRed()>180&&behind.GetGreen()<70&&behind.GetAlpha()==255,"native capture included the black occluder or lost alpha");
+      }
+      Gdiplus::GdiplusShutdown(token);
       std::cout << "Windows session window identity, focus and screenshot pixel checks passed\n";
     } else std::cout << "Foreground denied; visual capture checks skipped\n";
     DestroyWindow(shell); PostMessageW(reinterpret_cast<HWND>(target->handle), WM_CLOSE, 0, 0);

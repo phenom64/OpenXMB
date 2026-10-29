@@ -17,6 +17,11 @@ struct OverlayInput {
 };
 struct OverlayStats { std::uint64_t frames{}, conversion_ns{}, present_ns{}; };
 using OverlayCallback=std::function<void(const OverlayInput&)>;
+// interactive: focusable host that routes keyboard/mouse/close/focus events.
+// passive: topmost, never-activating, input-transparent notice host. It
+// never invokes a callback, never takes focus and fails where the platform
+// cannot make it input-transparent.
+enum class OverlayInteraction { interactive, passive };
 // Converts sRGB-encoded linear-premultiplied BGRA to 8-bit sRGB-premultiplied
 // BGRA. Strides are bytes; input and output must not overlap.
 [[nodiscard]] Result convert_overlay_bgra(std::span<const std::uint8_t> input, unsigned width, unsigned height,
@@ -29,9 +34,11 @@ public:
   ~XmbOverlay();
   XmbOverlay(const XmbOverlay&)=delete;
   XmbOverlay& operator=(const XmbOverlay&)=delete;
-  [[nodiscard]] Result prepare(OverlayBounds bounds, OverlayCallback callback);
+  [[nodiscard]] Result prepare(OverlayBounds bounds, OverlayCallback callback,
+    OverlayInteraction interaction=OverlayInteraction::interactive);
   // Input is consumed synchronously and never retained. Present a first frame
-  // before show(); a failed activation hides the native window again.
+  // before show(); a failed activation hides the native window again. Passive
+  // hosts reject activation.
   [[nodiscard]] Result present(std::span<const std::uint8_t> bgra, unsigned width, unsigned height, std::size_t stride);
   [[nodiscard]] Result show(bool activate=true);
   void hide();

@@ -2,6 +2,7 @@
 """Opt-in Windows compositor/input/focus/capture test over an owned fixture."""
 import argparse
 import ctypes
+import hashlib
 from ctypes import wintypes as w
 import json
 import os
@@ -16,29 +17,39 @@ def main():
     parser.add_argument('--child', type=Path)
     parser.add_argument('--game-executable', type=Path, help='Opt in to an installed game instead of the controlled fixture')
     parser.add_argument('--youtube-executable', type=Path, help='Opt in to the real YouTube application flow with isolated client data')
+    parser.add_argument('--rpcs3-executable', type=Path, help='Opt in to a verified real RPCS3 runtime (use an isolated copy)')
+    parser.add_argument('--rpcs3-content', type=Path, help='Actual PS3_GAME folder or EBOOT.BIN to boot')
     parser.add_argument('--steam-executable', type=Path)
     parser.add_argument('--steam-app-id')
     parser.add_argument('--automatic-steam', action='store_true', help='Test default installation-root identification without an executable override')
     parser.add_argument('--title')
+    parser.add_argument('--settle-seconds', type=float, help='Bounded actual-app startup settling before overlay checks (0..120)')
     parser.add_argument('--capture-only', action='store_true', help='Skip the initial Back/reopen cycle while diagnosing capture')
     parser.add_argument('--check-transitions', action='store_true', help='Measure the rendered entrance over the controlled game')
     parser.add_argument('--trace', action='store_true', help='Record detailed keyboard and lifecycle diagnostics')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--allow-other-previews', action='store_true', help='Explicitly allow independent previews; restore prior focus afterward')
     args = parser.parse_args()
+    if args.settle_seconds is not None and not 0 <= args.settle_seconds <= 120:
+        parser.error('--settle-seconds must be between 0 and 120')
     if os.name != 'nt':
         raise SystemExit('This fixture requires Windows.')
     from PIL import Image, ImageGrab
     actual_game = args.game_executable is not None
     actual_app = args.youtube_executable is not None
-    if actual_game and actual_app:
-        parser.error('Choose either a Steam game or YouTube for one run')
+    actual_rpcs3 = args.rpcs3_executable is not None
+    actual_external = actual_game or actual_app or actual_rpcs3
+    if sum((actual_game, actual_app, actual_rpcs3)) > 1:
+        parser.error('Choose one actual game/application provider per run')
+    if actual_rpcs3 and not args.rpcs3_content:
+        parser.error('Real RPCS3 acceptance requires --rpcs3-content')
     if actual_game and (not args.steam_executable or not args.steam_app_id):
         parser.error('Installed game tests require --steam-executable and --steam-app-id')
-    if not actual_game and not actual_app and not args.child:
+    if not actual_external and not args.child:
         parser.error('--child is required for the controlled fixture')
     app, root = args.app.resolve(), args.output.resolve()
-    child = args.game_executable.resolve() if actual_game else args.youtube_executable.resolve() if actual_app else args.child.resolve()
+    child = (args.game_executable.resolve() if actual_game else args.youtube_executable.resolve() if actual_app
+             else args.rpcs3_executable.resolve() if actual_rpcs3 else args.child.resolve())
     kernel = ctypes.WinDLL('kernel32', use_last_error=True)
     class ProcessEntry(ctypes.Structure):
         _fields_ = [('size', w.DWORD), ('usage', w.DWORD), ('pid', w.DWORD),
@@ -56,7 +67,7 @@ def main():
         entry = ProcessEntry(); entry.size = ctypes.sizeof(entry)
         available = kernel.Process32FirstW(inventory, ctypes.byref(entry))
         while available:
-            if (actual_game or actual_app) and entry.exe.lower() == child.name.lower():
+            if actual_external and entry.exe.lower() == child.name.lower():
                 raise SystemExit('The selected game is already running; it will not be adopted or closed.')
             if not args.allow_other_previews and entry.exe.lower() in {'xms.bin.exe', 'openxmb.exe', app.name.lower()}:
                 raise SystemExit('Close other OpenXMB previews before this desktop focus fixture.')
@@ -86,6 +97,7 @@ def main():
     user.SendInput.argtypes = [w.UINT, ctypes.POINTER(Input), ctypes.c_int]
     user.SendInput.restype = w.UINT
     def shortcut():
+        if args.trace: print('Shortcut sent:', time.time(), flush=True)
         events = (Input * 6)()
         for event, vk, flags in zip(events, (0x11, 0x10, 0x73, 0x73, 0x10, 0x11), (0, 0, 0, 2, 2, 2)):
             event.kind = 1; event.key.vk = vk; event.key.flags = flags
@@ -172,15 +184,34 @@ def main():
         settings = json.loads(config.read_text())
         settings['preferences']['youtube.executable'] = str(child)
         config.write_text(json.dumps(settings))
+    if actual_rpcs3:
+        game_directory = args.rpcs3_content.resolve()
+        content = game_directory / 'USRDIR/EBOOT.BIN' if game_directory.is_dir() else game_directory
+        if game_directory.is_file():
+            game_directory = game_directory.parent.parent
+        game = {'id': 'rpcs3-integration', 'title': args.title or 'RPCS3 game', 'runner': 'rpcs3',
+            'platform': 'PlayStation 3', 'content': str(content),
+            'game_directory': str(game_directory), 'executable': str(child)}
+        settings = json.loads(config.read_text())
+        settings['preferences']['runner.rpcs3.path'] = str(child)
+        config.write_text(json.dumps(settings))
+        # The selected runtime is an explicitly isolated copy. Managed launch
+        # must preserve its settings, including genuine controller mappings.
+        original_preferences = {}
+        had_original_cache = (child.parent / 'cache').is_dir()
+        for directory in ('config', 'GuiConfigs'):
+            for source in (child.parent / directory).rglob('*'):
+                if source.is_file():
+                    original_preferences[source] = (hashlib.sha256(source.read_bytes()).digest(), source.stat().st_mtime_ns)
     (profile / 'library.json').write_text(json.dumps({'version': 1, 'games': [] if actual_app else [game]}))
     journal = profile / 'sessions/history.json'
     def game_record():
         try:
             records = json.loads(journal.read_text(encoding='utf-8'))['recent']
             return next((item for item in reversed(records) if item['identity'] == game['id']), {})
-        except (FileNotFoundError, json.JSONDecodeError): return {}
+        except (FileNotFoundError, PermissionError, json.JSONDecodeError): return {}
     env = {k: v for k, v in os.environ.items() if not k.startswith(('OPENXMB_SETUP_', 'OPENXMB_HARNESS_',
-        'OPENXMB_FIXED_', 'OPENXMB_INITIAL_', 'AUROREENGINE_HEADLESS'))}
+        'OPENXMB_FIXED_', 'OPENXMB_INITIAL_', 'AUROREENGINE_HEADLESS', 'RPCS3_'))}
     env.update({'OPENXMB_CONFIG': str(config), 'OPENXMB_DATA_DIR': str(root / 'data'),
         'XMB_ASSET_DIR': str(app.parent / 'shell'), 'XMB_LOCALE_DIR': str(app.parent / 'locales'),
         'OPENXMB_FORCE_SETUP': '0', 'OPENXMB_INITIAL_CATEGORY': 'tv' if actual_app else 'game', 'OPENXMB_HARNESS_ACTIONS': '1:ok',
@@ -191,6 +222,8 @@ def main():
             folder = root / directory
             folder.mkdir()
             env[environment_name] = str(folder)
+    if actual_rpcs3:
+        env['RPCS3_CONFIG_DIR'] = str(child.parent) + os.sep
     shell_hwnd = game_hwnd = None
     with (root / 'native.log').open('w', encoding='utf-8') as log:
         process = subprocess.Popen([str(app), '--no-fullscreen', '--width', '960', '--height', '540',
@@ -214,14 +247,34 @@ def main():
 
         try:
             shell_hwnd = wait(lambda: next((hwnd for hwnd in windows(process.pid) if user.IsWindowVisible(hwnd)), None), 'Visible shell window missing')
-            if actual_game or actual_app:
+            if actual_external:
                 def associated_window():
                     record = game_record()
-                    if record.get('tracking') == (0 if actual_app else 3) and record.get('process_id', -1) > 0:
-                        return next((hwnd for hwnd in windows(record['process_id']) if user.IsWindowVisible(hwnd)), None)
-                game_hwnd = wait(associated_window, 'Steam game was not associated with a new window', seconds=50)
+                    if record.get('tracking') == (3 if actual_game else 0) and record.get('process_id', -1) > 0:
+                        for hwnd in windows(record['process_id']):
+                            if not user.IsWindowVisible(hwnd): continue
+                            if actual_rpcs3:
+                                kernel.OpenProcess.argtypes = [w.DWORD, w.BOOL, w.DWORD]
+                                kernel.OpenProcess.restype = w.HANDLE
+                                kernel.QueryFullProcessImageNameW.argtypes = [w.HANDLE, w.DWORD, w.LPWSTR, ctypes.POINTER(w.DWORD)]
+                                handle = kernel.OpenProcess(0x1000, False, record['process_id'])
+                                assert handle, 'Cannot verify the isolated RPCS3 child image'
+                                try:
+                                    image = ctypes.create_unicode_buffer(32768); count = w.DWORD(len(image))
+                                    assert kernel.QueryFullProcessImageNameW(handle, 0, image, ctypes.byref(count))
+                                    assert Path(image.value).resolve() == child, 'RPCS3 launch escaped the selected isolated runtime'
+                                finally:
+                                    kernel.CloseHandle(handle)
+                                import re
+                                label = ctypes.create_unicode_buffer(1024)
+                                user.GetWindowTextW(w.HWND(hwnd), label, len(label))
+                                fps = re.search(r'FPS:\s*([0-9.]+)', label.value)
+                                if not fps or float(fps.group(1)) <= .1 or (args.title and args.title not in label.value): continue
+                                (root / 'actual-game-window.txt').write_text(label.value, encoding='utf-8')
+                            return hwnd
+                game_hwnd = wait(associated_window, 'Actual game/app was not associated with a live rendering window', seconds=300 if actual_rpcs3 else 50)
+                time.sleep(args.settle_seconds if args.settle_seconds is not None else 30 if actual_rpcs3 else 8 if actual_app else 18)
                 focus_game()
-                time.sleep(8 if actual_app else 18)  # Finish startup without sending gameplay input.
             else:
                 wait(ready.exists, 'Owned game did not launch')
                 game_hwnd = int(ready.read_text())
@@ -230,7 +283,7 @@ def main():
             assert user.GetMonitorInfoW(user.MonitorFromWindow(game_hwnd, 2), ctypes.byref(monitor))
             bounds = monitor.bounds
             box = (bounds.left, bounds.top, bounds.right, bounds.bottom)
-            if actual_game or actual_app:
+            if actual_external:
                 client = w.RECT(); origin = w.POINT()
                 assert user.GetClientRect(game_hwnd, ctypes.byref(client))
                 assert user.ClientToScreen(game_hwnd, ctypes.byref(origin))
@@ -246,7 +299,7 @@ def main():
 
             overlay = open_overlay()
             assert user.IsIconic(shell_hwnd), 'Ordinary shell restored underneath transparent host'
-            if args.check_transitions and not actual_game and not actual_app:
+            if args.check_transitions and not actual_external:
                 samples = []
                 point = (int(baseline.width * .1), int(baseline.height * .8))
                 channel = max(range(3), key=lambda i: baseline.getpixel(point)[i])
@@ -262,7 +315,7 @@ def main():
             rendered = ImageGrab.grab(box)
             rendered.save(root / 'overlay-game.png')
             # Far from menus: both halves of the real game remain visible through black dimming.
-            for nx in (() if actual_game else (.1, .9)):
+            for nx in (() if actual_game or actual_rpcs3 else (.1, .9)):
                 point = (int(rendered.width * nx), int(rendered.height * .8))
                 before, after = baseline.getpixel(point)[:3], rendered.getpixel(point)[:3]
                 assert all(abs(a - b * .35) <= 12 for a, b in zip(after, before)), (point, before, after)
@@ -276,27 +329,62 @@ def main():
             ImageGrab.grab(box).save(root / 'overlay-photo.png')
             key(overlay, 0x0d)  # Save Screenshot in Photo
             shots = root / 'media/Pictures/Screenshots'
-            screenshot = wait(lambda: next(iter(shots.rglob('*.png')), None), 'Photo screenshot was not saved')
+            capture_windows = []
+            def saved_screenshot():
+                shot = next(iter(shots.rglob('*.png')), None)
+                if args.trace and not shot and len(capture_windows) < 60:
+                    inventory = []
+                    @visit_type
+                    def inspect(hwnd, _):
+                        if not user.IsWindowVisible(hwnd) or user.IsIconic(hwnd): return True
+                        bounds = w.RECT(); owner = w.DWORD(); name = ctypes.create_unicode_buffer(256)
+                        user.GetWindowThreadProcessId(hwnd, ctypes.byref(owner))
+                        user.GetClassNameW(hwnd, name, len(name)); user.GetWindowRect(hwnd, ctypes.byref(bounds))
+                        inventory.append({'handle': int(hwnd), 'pid': owner.value, 'class': name.value,
+                            'bounds': [bounds.left, bounds.top, bounds.right, bounds.bottom]})
+                        return hwnd != game_hwnd
+                    user.EnumWindows(inspect, 0)
+                    capture_windows.append({'time': time.monotonic(), 'above_game': inventory})
+                    (root / 'capture-windows.json').write_text(json.dumps(capture_windows), encoding='utf-8')
+                return shot
+            screenshot = wait(saved_screenshot, 'Photo screenshot was not saved')
             wait(lambda: user.GetForegroundWindow() == game_hwnd, 'Screenshot did not restore game focus')
             with Image.open(screenshot) as captured:
                 assert captured.size == baseline.size, (captured.size, baseline.size)
                 assert captured.convert('RGB').getbbox(), 'Screenshot is entirely black'
-                for nx in (() if actual_game else (.1, .9)):
+                for nx in (() if actual_game or actual_rpcs3 else (.1, .9)):
                     point = (int(captured.width * nx), int(captured.height * .8))
                     assert captured.getpixel(point)[:3] == baseline.getpixel(point)[:3], 'Screenshot included overlay dimming'
 
             overlay = open_overlay()
-            if actual_game or actual_app:
+            if actual_rpcs3:
+                private = list(profile.glob('rpcs3-session-*/GuiConfigs/CurrentSettings.ini'))
+                assert len(private) == 1 and 'confirmationBoxExitGame=false' in private[0].read_text(encoding='utf-8'), 'Managed RPCS3 override was not applied'
+                private_base = private[0].parent.parent
+                if had_original_cache:
+                    assert (private_base / 'cache').resolve() == (child.parent / 'cache').resolve(), 'Managed RPCS3 did not reuse the original warm cache'
+            if actual_external:
                 key(overlay, 0x0d)  # Quit Game confirmation in the real XMB
                 time.sleep(.3)
                 key(overlay, 0x27)
                 key(overlay, 0x0d)
                 wait(lambda: game_record().get('state') == 1, 'Game did not honor graceful Quit Game', seconds=25)
                 record = game_record()
-                assert record['tracking'] == (0 if actual_app else 3) and record['duration_ms'] > 0, record
+                assert record['tracking'] == (3 if actual_game else 0) and record['duration_ms'] > 0, record
                 if actual_app:
                     assert record['kind'] == 1, 'YouTube was tracked as a game instead of an application'
-                print('PASS real application flow:' if actual_app else 'PASS real Steam launch:', game['title'], 'identified window, overlay, screenshot, graceful Quit App' if actual_app else 'identified window, overlay, screenshot, graceful Quit Game')
+                print('PASS real application flow:' if actual_app else 'PASS real RPCS3 boot:' if actual_rpcs3 else 'PASS real Steam launch:', game['title'], 'identified window, overlay, screenshot, graceful Quit App' if actual_app else 'identified window, overlay, screenshot, graceful Quit Game')
+                if actual_rpcs3:
+                    assert original_preferences, 'Isolated RPCS3 preference fixture is missing'
+                    after_preferences = {source for directory in ('config', 'GuiConfigs')
+                        for source in (child.parent / directory).rglob('*') if source.is_file()}
+                    assert after_preferences == set(original_preferences), 'Original RPCS3 preference file inventory changed'
+                    for source, expected in original_preferences.items():
+                        assert source.exists() and (hashlib.sha256(source.read_bytes()).digest(), source.stat().st_mtime_ns) == expected, f'Original RPCS3 preference changed: {source.name}'
+                    wait(lambda: not private_base.exists(), 'Exited RPCS3 left its private configuration snapshot behind')
+                    if had_original_cache:
+                        assert (child.parent / 'cache').is_dir(), 'Private snapshot cleanup removed the original cache'
+                    print('PASS private RPCS3 override, warm cache, post-exit cleanup and original settings/controller preservation')
             else:
                 user.PostMessageW(game_hwnd, 0x0010, 0, 0)
             wait(lambda: not user.IsIconic(shell_hwnd), 'Game exit did not restore normal shell')
@@ -322,6 +410,12 @@ def main():
                 print('PASS YouTube relaunch after Quit App, external window close and session restoration')
             print('PASS transparent pixels, Game/Photo navigation, Back focus, clean screenshot, exit lifecycle')
         finally:
+            if game_hwnd is None:
+                # An early harness failure can precede the first HWND lookup.
+                # Only the unique run-owned journal may identify cleanup targets.
+                record = game_record()
+                if record.get('process_id', -1) > 0:
+                    game_hwnd = next((hwnd for hwnd in windows(record['process_id']) if user.IsWindowVisible(hwnd)), None)
             foreground = user.GetForegroundWindow()
             owner = w.DWORD()
             if foreground: user.GetWindowThreadProcessId(foreground, ctypes.byref(owner))

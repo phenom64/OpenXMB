@@ -18,7 +18,7 @@ export class session_xmb {
   struct State {
     openxmb::integrations::XmbOverlay native;
     bool shown{};
-    bool closing{},reduced{};
+    bool closing{},reduced{},passive{};
     openxmb::xmb::OverlayMotion motion;
     std::string error;
   };
@@ -31,6 +31,9 @@ public:
   session_xmb(const session_xmb&)=delete;
   session_xmb& operator=(const session_xmb&)=delete;
   [[nodiscard]] bool active() const {return active_;}
+  [[nodiscard]] bool passive() const {return state_ && state_->passive;}
+  // The native host has shown its first frame.
+  [[nodiscard]] bool presented() const {return state_ && state_->shown;}
   [[nodiscard]] bool focused() const {return state_ && state_->native.focused();}
   [[nodiscard]] bool visible() const {return state_ && state_->native.visible();}
   [[nodiscard]] bool closing() const {return state_ && state_->closing;}
@@ -42,21 +45,24 @@ public:
   [[nodiscard]] bool dismissal_finished() const {const auto sample=motion();return closing()&&sample.settled&&sample.opacity<=0;}
   [[nodiscard]] std::string take_error() {return state_?std::exchange(state_->error,{}):std::string{};}
   [[nodiscard]] openxmb::integrations::OverlayStats stats() const {return state_?state_->native.stats():openxmb::integrations::OverlayStats{};}
-  openxmb::integrations::Result open(openxmb::integrations::OverlayBounds bounds,openxmb::integrations::OverlayCallback callback,bool reduced=false) {
+  // Passive hosts never activate, route input or report focus loss; the
+  // callback is ignored.
+  openxmb::integrations::Result open(openxmb::integrations::OverlayBounds bounds,openxmb::integrations::OverlayCallback callback,bool reduced=false,
+    openxmb::integrations::OverlayInteraction interaction=openxmb::integrations::OverlayInteraction::interactive) {
     if(active_)return {false,"The in-game XMB is already visible."};
     try {
       state_=std::make_shared<State>();
-      state_->reduced=reduced;
-      const auto prepared=state_->native.prepare(bounds,std::move(callback));
+      state_->reduced=reduced;state_->passive=interaction==openxmb::integrations::OverlayInteraction::passive;
+      const auto prepared=state_->native.prepare(bounds,std::move(callback),interaction);
       if(!prepared) {state_.reset();return prepared;}
       state_->error.clear();state_->shown=false;
       window_->begin_offscreen_presentation(vk::Extent2D{bounds.width,bounds.height},[state=state_](const auroreengine::OffscreenFrame& frame) {
         if(!state->error.empty())return;
         if(frame.format!=vk::Format::eB8G8R8A8Srgb) {state->error="The overlay frame format is unavailable.";return;}
-        const auto presented=state->native.present(frame.bytes,frame.width,frame.height,frame.row_stride);
-        if(!presented) {state->error=presented.message;state->native.hide();return;}
+        const auto delivered=state->native.present(frame.bytes,frame.width,frame.height,frame.row_stride);
+        if(!delivered) {state->error=delivered.message;state->native.hide();return;}
         if(!state->shown) {
-          const auto activated=state->native.show(true);
+          const auto activated=state->native.show(!state->passive);
           if(!activated) {state->error=activated.message;return;}
           state->shown=true;
           state->motion.show(seconds(),state->reduced);
