@@ -111,6 +111,12 @@ json clean_search(const json& data) {
   }
   return result;
 }
+json clean_steam_game(const json& data) {
+  if (!data.is_object()) throw std::runtime_error("Invalid Steam game response");
+  const auto id = positive(data.at("id")); const auto name = data.at("name").get<std::string>();
+  if (!safe_string(name, 512)) throw std::runtime_error("Invalid Steam game title");
+  return json::array({{{"id", id}, {"name", name}}});
+}
 json clean_assets(const json& data, SteamGridDBRole role) {
   if (!data.is_array() || data.size() > 50) throw std::runtime_error("Invalid asset response");
   json result = json::array(); std::set<std::uint64_t> seen;
@@ -315,6 +321,47 @@ SteamGridDBSearchResult SteamGridDB::search(const std::string& title, const std:
   std::lock_guard lock(impl_->mutex); const auto query = impl_->query("/search/autocomplete/" + encode(term), "search/" + term, key, clean_search);
   result.success = query.success; result.from_cache = query.cached; result.stale = query.stale; result.message = query.message;
   if (query.success) for (const auto& game : query.data) { const auto name = game.at("name").get<std::string>(); result.games.push_back({positive(game.at("id")), name, normalized(name) == term}); }
+  return result;
+}
+std::string steamgriddb_match_title(std::string_view title) {
+  std::string out; bool gap = false;
+  const auto word = [&](std::string_view text) { if (gap && !out.empty()) out += ' '; gap = false; out += text; };
+  for (std::size_t at = 0; at < title.size(); ++at) {
+    const auto c = static_cast<unsigned char>(title[at]);
+    // U+2122 (TM), U+00AE (R), U+00A9 (C) and U+2019 (right quote) are dropped.
+    const auto rest = title.substr(at);
+    if (rest.starts_with("\xE2\x84\xA2") || rest.starts_with("\xE2\x80\x99")) { at += 2; continue; }
+    if (rest.starts_with("\xC2\xAE") || rest.starts_with("\xC2\xA9")) { at += 1; continue; }
+    if (rest.starts_with("(TM)") || rest.starts_with("(tm)")) { at += 3; continue; }
+    if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c >= 0x80) { word(std::string(1, static_cast<char>(c))); continue; }
+    if (c >= 'A' && c <= 'Z') { word(std::string(1, static_cast<char>(c - 'A' + 'a'))); continue; }
+    if (c == '&') { gap = true; word("and"); gap = true; continue; }
+    if (c == '\'' || c == '.') continue; // Marvel's -> marvels, S.T.A.L.K.E.R. -> stalker
+    gap = true;
+  }
+  return out;
+}
+SteamGridDBMatchResult SteamGridDB::match(const SteamGridDBMatchQuery& query, const std::string& key) {
+  SteamGridDBMatchResult result;
+  if (query.steam_app_id) {
+    std::lock_guard lock(impl_->mutex);
+    const auto found = impl_->query("/games/steam/" + std::to_string(query.steam_app_id), "steam/" + std::to_string(query.steam_app_id), key, clean_steam_game);
+    result.from_cache = found.cached; result.stale = found.stale; result.message = found.message; result.by_steam_id = true;
+    if (found.success && found.data.size() == 1) {
+      result.success = true; result.game = {positive(found.data[0].at("id")), found.data[0].at("name").get<std::string>(), true};
+      result.message = "Matched by Steam app ID";
+    }
+    return result;
+  }
+  const auto wanted = steamgriddb_match_title(query.title);
+  if (wanted.empty()) { result.message = "This title has no searchable text"; return result; }
+  const auto found = search(query.title, key);
+  result.from_cache = found.from_cache; result.stale = found.stale; result.message = found.message;
+  if (!found) return result;
+  const SteamGridDBGame* chosen{}; unsigned matches{};
+  for (const auto& game : found.games) if (steamgriddb_match_title(game.name) == wanted && (!chosen || chosen->id != game.id)) { chosen = &game; ++matches; }
+  if (matches != 1) { result.message = matches ? "Several SteamGridDB games share this title; choose one in Artwork" : "No SteamGridDB game has exactly this title; choose one in Artwork"; return result; }
+  result.success = true; result.game = *chosen; result.message = "Matched by exact title";
   return result;
 }
 SteamGridDBAssetsResult SteamGridDB::assets(std::uint64_t game_id, SteamGridDBRole role, const std::string& key, unsigned page) {

@@ -152,7 +152,7 @@ namespace app
         }
     }
     struct shell::game_state {
-        struct ArtworkResult {std::filesystem::path root,icon,cover,background;std::string profile,game_id;};
+        struct ArtworkResult {std::filesystem::path root,icon,cover,background,logo;std::string profile,game_id;};
         openxmb::desktop::SessionManager sessions;
         openxmb::desktop::Rpcs3TrophyWatch trophy_watch;
         openxmb::desktop::TrophySound trophy_sound;
@@ -233,7 +233,7 @@ namespace app
         std::chrono::steady_clock::time_point window_probe_at{};
         openxmb::desktop::AsyncJob<ArtworkResult> artwork;
         std::set<std::string> artwork_attempted;
-        std::chrono::steady_clock::time_point highlighted_at{};
+        std::chrono::steady_clock::time_point highlighted_at{},artwork_sweep_at{};
     };
     struct shell::theme_state {
         std::shared_ptr<openxmb::themes::ThemeLibrary> library;
@@ -2721,47 +2721,72 @@ namespace app
                         fill(&openxmb::desktop::Game::icon,"icon",result.icon);
                         fill(&openxmb::desktop::Game::cover,"cover",result.cover);
                         fill(&openxmb::desktop::Game::background,"background",result.background);
+                        fill(&openxmb::desktop::Game::logo,"logo",result.logo);
                         if(changed) {current.save_game(std::move(*found));queue_menu_reload();}
                     }
                 }
             } catch(const std::exception& error) {spdlog::warn("Automatic artwork could not be applied: {}",error.what());}
         }
-        if(games->highlighted && !games->artwork.running() && overlays.empty() && !old_overlay && !games->sessions.active_session() &&
-           config::CONFIG.enabled("artwork.steamgriddb.automatic",true) && std::chrono::steady_clock::now()-games->highlighted_at>=std::chrono::milliseconds(350) &&
-           (games->highlighted->icon.empty() || games->highlighted->background.empty())) {
+        // Automatic SteamGridDB artwork: the highlighted game first, then an
+        // idle sweep of the library. Steam titles match by app ID; others need
+        // one exact normalised title. Each game is attempted once per run.
+        if(!games->artwork.running() && overlays.empty() && !old_overlay && !games->sessions.active_session() &&
+           config::CONFIG.enabled("artwork.steamgriddb.automatic",true)) {
+            const auto now=std::chrono::steady_clock::now();
+            const auto missing=[](const openxmb::desktop::Game& game) {return game.icon.empty() || game.background.empty() || game.logo.empty();};
             const auto variable=config::CONFIG.preference("artwork.steamgriddb.key_env","STEAMGRIDDB_API_KEY");
             const bool valid=!variable.empty() && variable.size()<=128 && std::ranges::all_of(variable,[](unsigned char c) {return (c>='a'&&c<='z')||(c>='A'&&c<='Z')||(c>='0'&&c<='9')||c=='_';});
             const auto* key=valid?std::getenv(variable.c_str()):nullptr;
-            if(key && *key) {
+            const bool highlighted_due=games->highlighted && missing(*games->highlighted) && now-games->highlighted_at>=std::chrono::milliseconds(350);
+            const bool sweep_due=!highlighted_due && now>=games->artwork_sweep_at;
+            if(key && *key && (highlighted_due || sweep_due) && games->artwork_attempted.size()<1024) {
                 openxmb::desktop::Library library;
                 const auto profile=library.active_profile().id;
                 const auto root_bytes=library.root().u8string();
-                const auto attempt=std::string(root_bytes.begin(),root_bytes.end())+"\n"+profile+"\n"+games->highlighted->id;
-                if(games->artwork_attempted.size()<1024 && games->artwork_attempted.insert(attempt).second) {
-                    const auto game=*games->highlighted;const auto root=library.root();const std::string secret(key);
-                    games->artwork.start([game,root,profile,secret](std::stop_token stop) {
+                const auto attempt_key=[&](const openxmb::desktop::Game& game) {return std::string(root_bytes.begin(),root_bytes.end())+"\n"+profile+"\n"+game.id;};
+                std::optional<openxmb::desktop::Game> chosen;
+                if(highlighted_due && !games->artwork_attempted.contains(attempt_key(*games->highlighted)))chosen=*games->highlighted;
+                else if(sweep_due) {
+                    games->artwork_sweep_at=now+std::chrono::seconds(2);
+                    for(const auto& game:library.games())
+                        if(missing(game) && !games->artwork_attempted.contains(attempt_key(game))) {chosen=game;break;}
+                }
+                if(chosen) {
+                    games->artwork_attempted.insert(attempt_key(*chosen));
+                    const auto game=std::move(*chosen);const auto root=library.root();const std::string secret(key);
+                    std::uint32_t steam_id{};
+                    if(game.runner=="steam") {
+                        const auto text=game.content.generic_string();
+                        const auto parsed=std::from_chars(text.data(),text.data()+text.size(),steam_id);
+                        if(parsed.ec!=std::errc{} || parsed.ptr!=text.data()+text.size())steam_id=0;
+                    }
+                    games->artwork.start([game,root,profile,secret,steam_id](std::stop_token stop) {
                         using namespace openxmb::desktop;
                         game_state::ArtworkResult output;output.root=root;output.profile=profile;output.game_id=game.id;
                         HttpTransport transport=[stop](HttpRequest request) {request.progress=[stop](std::uint64_t,std::uint64_t) {return !stop.stop_requested();};return http_get(request);};
                         SteamGridDB provider(root/"cache/artwork"/profile,transport);
-                        const auto matching=provider.search(game.title,secret);
-                        if(!matching || stop.stop_requested())return output;
-                        std::uint64_t id{};unsigned exact{};
-                        for(const auto& candidate:matching.games)if(candidate.exact_match) {id=candidate.id;++exact;}
-                        if(exact!=1)return output;
+                        auto matched=provider.match({game.title,steam_id},secret);
+                        // A Steam ID unknown to SteamGridDB may still have one exact title.
+                        if(!matched && steam_id && !stop.stop_requested())matched=provider.match({game.title,0},secret);
+                        if(!matched || stop.stop_requested()) {spdlog::debug("Automatic artwork for '{}': {}",game.title,matched.message);return output;}
+                        const auto id=matched.game.id;
                         const auto download=[&](SteamGridDBRole role) {
                             if(stop.stop_requested())return std::filesystem::path{};
                             const auto assets=provider.assets(id,role,secret);
                             if(!assets || assets.assets.empty() || stop.stop_requested())return std::filesystem::path{};
+                            // Official results are score-ordered; the first static,
+                            // role-valid asset is the community's preferred choice.
                             const auto selected=provider.select(id,assets.assets.front().id,role,{},SteamGridDBOverride::preserve_native,secret);
                             return selected?selected.path:std::filesystem::path{};
                         };
-                        if(game.icon.empty()) {
-                            output.cover=download(SteamGridDBRole::horizontal_grid);output.icon=output.cover;
-                            if(output.icon.empty())output.icon=download(SteamGridDBRole::icon);
+                        if(game.icon.empty() || game.cover.empty()) {
+                            output.cover=download(SteamGridDBRole::horizontal_grid);
+                            if(game.icon.empty())output.icon=output.cover;
+                            if(game.icon.empty() && output.icon.empty())output.icon=download(SteamGridDBRole::icon);
                         }
                         if(game.background.empty())output.background=download(SteamGridDBRole::hero);
-                        if(stop.stop_requested()) {output.icon.clear();output.cover.clear();output.background.clear();}
+                        if(game.logo.empty())output.logo=download(SteamGridDBRole::logo);
+                        if(stop.stop_requested()) {output.icon.clear();output.cover.clear();output.background.clear();output.logo.clear();}
                         return output;
                     });
                 }

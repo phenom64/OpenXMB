@@ -214,8 +214,36 @@ void pagination(const fs::path& root) {
   no_secret(root);
 }
 }
+void matching(const fs::path& root) {
+  require(steamgriddb_match_title("Marvel's Spider-Man\xE2\x84\xA2") == "marvels spider man", "trademark/apostrophe normalisation");
+  require(steamgriddb_match_title("  RATCHET & CLANK: Tools of Destruction ") == "ratchet and clank tools of destruction", "case, ampersand and punctuation normalisation");
+  require(steamgriddb_match_title("S.T.A.L.K.E.R.(TM)") == "stalker", "dotted acronym normalisation");
+  require(steamgriddb_match_title("Pok\xC3\xA9mon") == "pok\xC3\xA9mon", "non-ASCII bytes retained");
+  require(steamgriddb_match_title("!!!").empty(), "punctuation-only title has no key");
+  std::vector<std::string> urls;
+  std::string search_body = R"({"success":true,"data":[{"id":7,"name":"Marvel's Spider-Man"},{"id":8,"name":"Marvel's Spider-Man 2"}]})";
+  HttpTransport transport = [&](const HttpRequest& request) {
+    urls.push_back(request.url);
+    if (request.url.ends_with("/games/steam/1817070")) return HttpResponse{true, 200, R"({"success":true,"data":{"id":5136,"name":"Marvel's Spider-Man Remastered","types":["steam"]}})", {}};
+    if (request.url.find("/games/steam/") != std::string::npos) return HttpResponse{true, 404, R"({"success":false,"errors":["Game not found"]})", {}};
+    return HttpResponse{true, 200, search_body, {}};
+  };
+  std::uint64_t now = 1'800'000'000;
+  SteamGridDB client(root, transport, [&] { return now; });
+  const auto steam = client.match({"Anything", 1817070}, secret);
+  require(bool(steam) && steam.by_steam_id && steam.game.id == 5136 && urls.back().ends_with("/games/steam/1817070"), "Steam app ID match");
+  require(!client.match({"Unknown", 99}, secret), "unknown Steam app ID was accepted");
+  const auto exact = client.match({"MARVEL'S SPIDER-MAN\xE2\x84\xA2"}, secret);
+  require(bool(exact) && exact.game.id == 7 && !exact.by_steam_id, "unique normalised title match");
+  require(!client.match({"Marvel's Spider"}, secret), "prefix title was guessed");
+  search_body = R"({"success":true,"data":[{"id":11,"name":"Doom"},{"id":12,"name":"DOOM"}]})";
+  const auto ambiguous = client.match({"doom"}, secret);
+  require(!ambiguous && ambiguous.message.find("Several") != std::string::npos, "ambiguous title was guessed");
+  require(!client.match({"???"}, secret), "empty match key was searched");
+  no_secret(root);
+}
 int main() {
   const auto root = fs::weakly_canonical(fs::temp_directory_path()) / ("openxmb-sgdb-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
-  try { provider(root / "provider"); failures(root / "failures"); image_formats(root / "formats"); roles_and_bounds(root / "bounds"); pagination(root / "pagination"); fs::remove_all(root); std::cout << "SteamGridDB selection, cache and native-priority checks passed\n"; }
+  try { provider(root / "provider"); failures(root / "failures"); image_formats(root / "formats"); roles_and_bounds(root / "bounds"); pagination(root / "pagination"); matching(root / "matching"); fs::remove_all(root); std::cout << "SteamGridDB selection, cache and native-priority checks passed\n"; }
   catch (const std::exception& error) { fs::remove_all(root); std::cerr << error.what() << '\n'; return 1; }
 }

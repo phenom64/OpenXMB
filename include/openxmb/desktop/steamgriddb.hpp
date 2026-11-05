@@ -6,6 +6,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace openxmb::desktop {
@@ -32,6 +33,16 @@ struct SteamGridDBAssetsResult {
   bool has_more{};
   explicit operator bool() const noexcept { return success; }
 };
+// Automatic identity. A Steam app ID is authoritative (official
+// /games/steam endpoint). Otherwise exactly one search result must have the
+// same match_title() key; ambiguous or approximate titles are never guessed.
+struct SteamGridDBMatchQuery { std::string title; std::uint32_t steam_app_id{}; };
+struct SteamGridDBMatchResult {
+  bool success{}, from_cache{}, stale{}, by_steam_id{};
+  SteamGridDBGame game;
+  std::string message;
+  explicit operator bool() const noexcept { return success; }
+};
 struct SteamGridDBDownloadResult {
   bool success{}, from_cache{}, used_native{};
   std::filesystem::path path;
@@ -44,6 +55,11 @@ struct SteamGridDBDownloadResult {
 // image dimensions/aspect; this backend never changes Library fields. Format
 // signatures, container structure and header dimensions are checked before use;
 // full compressed-image decoding remains the renderer's responsibility.
+// Case/punctuation/trademark-insensitive comparison key: "Marvel's Spider-Man(TM)"
+// and "marvels spider man" match; "&" equals "and"; apostrophes and dots join
+// (S.T.A.L.K.E.R. is "stalker"); other punctuation separates words; non-ASCII
+// bytes are kept verbatim.
+[[nodiscard]] std::string steamgriddb_match_title(std::string_view title);
 class SteamGridDB {
 public:
   explicit SteamGridDB(std::filesystem::path cache_root, HttpTransport transport = http_get,
@@ -52,6 +68,7 @@ public:
   SteamGridDB(const SteamGridDB&) = delete;
   SteamGridDB& operator=(const SteamGridDB&) = delete;
   [[nodiscard]] SteamGridDBSearchResult search(const std::string& title, const std::string& api_key = {});
+  [[nodiscard]] SteamGridDBMatchResult match(const SteamGridDBMatchQuery& query, const std::string& api_key = {});
   [[nodiscard]] SteamGridDBAssetsResult assets(std::uint64_t game_id, SteamGridDBRole role,
                                               const std::string& api_key = {}, unsigned page = 0);
   // Explicit game/asset IDs enable manual choices. Selection must be present
