@@ -4,9 +4,10 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
-#ifdef _WIN32
+#include <vector>
 #include <archive.h>
 #include <archive_entry.h>
+#ifdef _WIN32
 #include <windows.h>
 #include <bcrypt.h>
 #endif
@@ -32,6 +33,59 @@ std::string hash(const std::string& bytes) {
   require(BCryptCreateHash(a,&h,reinterpret_cast<PUCHAR>(object.data()),object_size,nullptr,0,0)>=0,"sha init");require(BCryptHashData(h,reinterpret_cast<PUCHAR>(const_cast<char*>(bytes.data())),static_cast<ULONG>(bytes.size()),0)>=0&&BCryptFinishHash(h,reinterpret_cast<PUCHAR>(out.data()),32,0)>=0,"sha finish");BCryptDestroyHash(h);BCryptCloseAlgorithmProvider(a,0);const char* hex="0123456789abcdef";std::string result;for(unsigned char c:out){result+=hex[c>>4];result+=hex[c&15];}return result;
 }
 #endif
+struct Entry {std::string name;unsigned type{AE_IFREG};unsigned perm{0644};std::string data,link;};
+// Builds a ZIP or gzip-compressed ustar archive entirely in memory.
+std::string build_archive(bool tarball,const std::vector<Entry>& entries) {
+  std::string bytes(1024*1024,'\0');std::size_t used{};auto a=archive_write_new();
+  if(tarball){archive_write_set_format_pax_restricted(a);archive_write_add_filter_gzip(a);}else archive_write_set_format_zip(a);
+  require(archive_write_open_memory(a,bytes.data(),bytes.size(),&used)==ARCHIVE_OK,"archive open");
+  for(const auto& item:entries){auto e=archive_entry_new();archive_entry_set_pathname(e,item.name.c_str());archive_entry_set_filetype(e,item.type);archive_entry_set_perm(e,item.perm);
+    if(item.type==AE_IFLNK)archive_entry_set_symlink(e,item.link.c_str());archive_entry_set_size(e,item.type==AE_IFREG?static_cast<la_int64_t>(item.data.size()):0);
+    require(archive_write_header(a,e)==ARCHIVE_OK,"archive header");if(item.type==AE_IFREG&&!item.data.empty())require(archive_write_data(a,item.data.data(),item.data.size())==static_cast<la_ssize_t>(item.data.size()),"archive body");archive_entry_free(e);}
+  require(archive_write_close(a)==ARCHIVE_OK,"archive close");archive_write_free(a);bytes.resize(used);return bytes;
+}
+bool extracts(const std::string& bytes,YoutubePlatform platform,YoutubeArch arch,const fs::path& stage,std::string* error=nullptr) {
+  fs::remove_all(stage);fs::create_directories(stage);
+  try{detail::extract_youtube_archive(bytes,platform,arch,stage);return true;}catch(const std::exception& e){if(error)*error=e.what();return false;}
+}
+void cross_platform_layouts(const fs::path& root) {
+  require(detail::youtube_sha256("")=="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","SHA-256 empty vector");
+  require(detail::youtube_sha256("abc")=="ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad","SHA-256 abc vector");
+  require(detail::youtube_sha256("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq")=="248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1","SHA-256 two-block vector");
+  require(detail::youtube_sha256(std::string(1000000,'a'))=="cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0","SHA-256 million-a vector");
+  const std::string digest(64,'b');
+  for(const auto& [platform,name]:{std::pair{YoutubePlatform::linux,std::string("VacuumTube-x64.tar.gz")},std::pair{YoutubePlatform::macos,std::string("VacuumTube-x64.zip")}}) {
+    const auto metadata=std::string{"{\"tag_name\":\"v2.0.1\",\"assets\":[{\"name\":\""}+name+"\",\"size\":121295523,\"digest\":\"sha256:"+digest+"\",\"browser_download_url\":\"https://github.com/shy1132/VacuumTube/releases/download/v2.0.1/"+name+"\"}]}";
+    const auto chosen=select_youtube_release(metadata,platform,YoutubeArch::x64);require(bool(chosen)&&chosen.value->install_supported&&chosen.value->asset_name==name,"Linux/macOS official asset selection");
+  }
+  const auto stage=root/"layout";std::string error;
+  const auto linux_archive=build_archive(true,{{"VacuumTube-x64/",AE_IFDIR,0755},{"VacuumTube-x64/vacuumtube",AE_IFREG,0755,"elf"},{"VacuumTube-x64/locales/",AE_IFDIR,0755},{"VacuumTube-x64/locales/en-GB.pak",AE_IFREG,0644,"pak"}});
+  if(!extracts(linux_archive,YoutubePlatform::linux,YoutubeArch::x64,stage,&error))throw std::runtime_error("Linux tarball: "+error);
+  require(fs::is_regular_file(stage/"VacuumTube-x64"/"vacuumtube")&&fs::is_regular_file(stage/"VacuumTube-x64"/"locales"/"en-GB.pak"),"Linux tarball layout");
+#ifndef _WIN32
+  require((fs::status(stage/"VacuumTube-x64"/"vacuumtube").permissions()&fs::perms::owner_exec)!=fs::perms::none,"Linux executable bit preserved");
+  require((fs::status(stage/"VacuumTube-x64"/"locales"/"en-GB.pak").permissions()&fs::perms::owner_exec)==fs::perms::none,"Linux data file made executable");
+#endif
+  require(!extracts(linux_archive,YoutubePlatform::linux,YoutubeArch::arm64,stage),"Linux arm64 accepted an x64 tarball");
+  require(!extracts(build_archive(true,{{"VacuumTube-x64/vacuumtube",AE_IFREG,0755,"elf"},{"VacuumTube-x64/lib",AE_IFLNK,0777,{},"vacuumtube"}}),YoutubePlatform::linux,YoutubeArch::x64,stage),"Linux tarball symbolic link accepted");
+  require(!extracts(build_archive(true,{{"../VacuumTube-x64/vacuumtube",AE_IFREG,0755,"elf"}}),YoutubePlatform::linux,YoutubeArch::x64,stage)&&!fs::exists(root/"VacuumTube-x64"),"Linux tarball traversal accepted");
+  const std::vector<Entry> bundle{{"VacuumTube.app/Contents/MacOS/VacuumTube",AE_IFREG,0755,"macho"},{"VacuumTube.app/Contents/Info.plist",AE_IFREG,0644,"<key>CFBundleShortVersionString</key><string>2.0.1</string>"},
+    {"VacuumTube.app/Contents/Frameworks/E.framework/Versions/A/E",AE_IFREG,0755,"dylib"},{"VacuumTube.app/Contents/Frameworks/E.framework/Versions/Current",AE_IFLNK,0755,{},"A"},
+    {"VacuumTube.app/Contents/Frameworks/E.framework/E",AE_IFLNK,0755,{},"Versions/Current/E"}};
+  const auto mac_archive=build_archive(false,bundle);
+  bool links=true;
+#ifdef _WIN32
+  // Creating links needs Developer Mode or a privilege on Windows; the macOS
+  // positive case still runs whenever this host can create them.
+  {std::error_code ec;fs::create_directories(root/"probe");std::ofstream(root/"probe"/"t")<<"t";fs::create_symlink("t",root/"probe"/"l",ec);links=!ec;}
+#endif
+  if(links){if(!extracts(mac_archive,YoutubePlatform::macos,YoutubeArch::x64,stage,&error))throw std::runtime_error("macOS bundle: "+error);
+    require(fs::is_symlink(stage/"VacuumTube.app/Contents/Frameworks/E.framework/E")&&fs::read_symlink(stage/"VacuumTube.app/Contents/Frameworks/E.framework/Versions/Current")=="A","macOS framework links");}
+  for(const auto* hostile:{"../../../outside","/etc/passwd","Versions/../../escape","./A","A//B"})
+    require(!extracts(build_archive(false,{bundle[0],{"VacuumTube.app/Contents/x",AE_IFLNK,0755,{},hostile}}),YoutubePlatform::macos,YoutubeArch::x64,stage),"hostile macOS link target accepted");
+  require(!extracts(build_archive(false,{{"VacuumTube.app/Contents/MacOS/Other",AE_IFREG,0755,"x"}}),YoutubePlatform::macos,YoutubeArch::x64,stage),"macOS bundle without the executable accepted");
+  fs::remove_all(stage);
+}
 int live_install(const fs::path& root) {
   try {
     require(!fs::exists(root),"Use a new isolated directory for live installation acceptance");
@@ -57,6 +111,12 @@ int live_install(const fs::path& root) {
 }
 int main(int argc,char** argv){
  if(argc==3&&std::string_view(argv[1])=="--live-install")return live_install(fs::absolute(fs::u8path(argv[2])));
+ // Opt-in: extract a real downloaded release archive for another platform.
+ if(argc==6&&std::string_view(argv[1])=="--extract") try {
+   const std::string_view os=argv[2],cpu=argv[3];const auto platform=os=="linux"?YoutubePlatform::linux:os=="macos"?YoutubePlatform::macos:YoutubePlatform::windows;
+   std::ifstream in(fs::u8path(argv[4]),std::ios::binary);const std::string bytes{std::istreambuf_iterator<char>(in),{}};const auto stage=fs::absolute(fs::u8path(argv[5]));require(!fs::exists(stage),"Use a new extraction directory");fs::create_directories(stage);
+   detail::extract_youtube_archive(bytes,platform,cpu=="arm64"?YoutubeArch::arm64:YoutubeArch::x64,stage);std::cout<<"PASS "<<bytes.size()<<" bytes, sha256 "<<detail::youtube_sha256(bytes)<<"\n";return 0;
+ } catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}
  if(argc!=1){std::cerr<<"Use --live-install <new isolated directory> for opt-in network acceptance\n";return 2;}
  const auto root=fs::temp_directory_path()/"openxmb-youtube-fixture";try{fs::remove_all(root);
   const std::string digest(64,'a');const auto json=std::string{"{\"tag_name\":\"v2.0.1\",\"assets\":[{\"name\":\"VacuumTube-x64-Portable.zip\",\"size\":155272382,\"digest\":\"sha256:"}+digest+"\",\"browser_download_url\":\"https://github.com/shy1132/VacuumTube/releases/download/v2.0.1/VacuumTube-x64-Portable.zip\"}]}";
@@ -68,6 +128,7 @@ int main(int argc,char** argv){
   HttpTransport metadata=[&](const HttpRequest& r){require(r.url=="https://api.github.com/repos/shy1132/VacuumTube/releases/latest"&&r.max_redirects==0,"unexpected metadata endpoint");return HttpResponse{true,200,json,{}};};
   require(bool(fetch_youtube_release(YoutubePlatform::windows,YoutubeArch::x64,metadata)),"release lookup failed");
   auto bad=json;bad.replace(bad.find("github.com"),10,"evil.testX");require(!select_youtube_release(bad,YoutubePlatform::windows,YoutubeArch::x64),"untrusted URL accepted");
+  cross_platform_layouts(root);
   YoutubeDetectionOptions options;options.data_root=root;options.search_defaults=false;require(!detect_youtube(options),"missing app detected");
   fs::create_directories(root/"custom");const auto exe=root/"custom"/"vacuumtube.exe";std::ofstream(exe)<<"fixture";options.executable_override=exe;
   auto app=detect_youtube(options);require(bool(app)&&app.value->arguments.back()=="--fullscreen"&&app.value->tracking==TrackingQuality::launcher_only&&app.value->version.empty(),"override launch plan and unknown version");

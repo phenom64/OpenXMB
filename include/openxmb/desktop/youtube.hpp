@@ -49,8 +49,16 @@ inline constexpr std::string_view youtube_information="VacuumTube YouTube Leanba
 [[nodiscard]] YoutubeDetectionResult detect_youtube(const YoutubeDetectionOptions& options);
 [[nodiscard]] YoutubeReleaseResult select_youtube_release(std::string_view metadata, YoutubePlatform platform, YoutubeArch arch);
 [[nodiscard]] YoutubeReleaseResult fetch_youtube_release(YoutubePlatform platform, YoutubeArch arch, const HttpTransport& transport);
-// Windows portable ZIP only; no host application is launched by this function.
+// Installs the host platform's official archive (Windows portable ZIP, Linux
+// tarball, macOS application ZIP) into the managed per-profile directory. No
+// host application is launched by this function.
 [[nodiscard]] YoutubeInstallResult install_youtube(const std::filesystem::path& data_root,const YoutubeRelease& release,const HttpTransport& transport,const YoutubeProgress& progress);
+namespace detail {
+// Exposed for fixtures: portable SHA-256 and the bounded extractor for any
+// platform's layout. Throws std::runtime_error with a user-facing message.
+[[nodiscard]] std::string youtube_sha256(std::string_view bytes);
+void extract_youtube_archive(std::string_view bytes,YoutubePlatform platform,YoutubeArch arch,const std::filesystem::path& stage);
+} // namespace detail
 } // namespace openxmb::desktop
 
 

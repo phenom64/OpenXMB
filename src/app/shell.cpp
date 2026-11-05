@@ -2130,13 +2130,13 @@ namespace app
                 arguments.emplace_back("--portable="+std::string(profile));
             static_cast<void>(launch_application("youtube","YouTube",arguments,detected.value->executable.parent_path(),"youtube",detected.value->tracking));return;
         }
-#ifdef _WIN32
+        if(openxmb::desktop::youtube_arch()==openxmb::desktop::YoutubeArch::unknown) {
+            emplace_overlay<app::message_overlay>("YouTube","A supported YouTube app was not found, and automatic setup does not support this processor. Select an installed executable in application settings.",std::vector<std::string>{"OK"});
+            return;
+        }
         emplace_overlay<app::message_overlay>("Set Up YouTube","Download and set up the controller-friendly YouTube app? You can stay in OpenXMB while it gets ready.",std::vector<std::string>{"Not Now","Set Up"},[this,root=options.data_root](unsigned index) {
             if(index)emplace_overlay<app::youtube_setup>(root);
         });
-#else
-        emplace_overlay<app::message_overlay>("YouTube","A supported YouTube app was not found. Automatic setup is not available in this build. Select an installed executable in application settings.",std::vector<std::string>{"OK"});
-#endif
     }
 
     void shell::show_youtube_information() {
